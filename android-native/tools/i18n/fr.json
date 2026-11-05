@@ -461,5 +461,12 @@
 "leave": "Quitter",
 "stay": "Rester",
 "open_elsewhere": "TalkLive est ouvert sur un autre appareil",
-"use_here": "Utiliser ici"
+"use_here": "Utiliser ici",
+"dm_one_message": "Vous pouvez envoyer un message à %1$s jusqu'à ce qu'il accepte votre demande",
+"dm_accept_to_reply": "%1$s veut être ami avec vous. Acceptez pour répondre.",
+"online_now": "En ligne",
+"finding_in": "Recherche de quelqu'un en %1$s",
+"n_online": "%1$d en ligne",
+"contact_save": "Enregistrer les coordonnées que je partage",
+"contact_save_desc": "Les e-mails, numéros et pseudos que vous écrivez dans les chats sont enregistrés sur votre profil. Désactivé par défaut ; le désactiver les supprime."
 }

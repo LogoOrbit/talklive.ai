@@ -49,6 +49,7 @@ class EngageViewModel @Inject constructor(private val repo: EngageRepository, pr
     fun loadLikes() = viewModelScope.launch { likes = repo.likes() }
     fun requestReferral() = repo.requestReferral()
     fun setFilters(f: Filters) = repo.setFilters(f)
+    suspend fun countryCounts() = repo.countryCounts()
     fun sendFeedback(text: String) = repo.sendFeedback(text)
 
     /** Search as you type, after a short pause. */

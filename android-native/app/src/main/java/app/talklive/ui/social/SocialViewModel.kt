@@ -21,6 +21,7 @@ class SocialViewModel @Inject constructor(
     private val player: app.talklive.voice.VoicePlayer,
 ) : ViewModel() {
     val voice = repo.voice
+    val gates = repo.gates
     val playback = player.state
     fun requestVoice(id: String) = repo.requestVoice(id)
     fun respondVoice(id: String, accept: Boolean) = repo.respondVoice(id, accept)

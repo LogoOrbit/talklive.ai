@@ -462,6 +462,13 @@
     <string name="stay">Tetap</string>
     <string name="open_elsewhere">TalkLive terbuka di perangkat lain</string>
     <string name="use_here">Gunakan di sini</string>
+    <string name="dm_one_message">Kamu bisa mengirim satu pesan ke %1$s sampai permintaanmu diterima</string>
+    <string name="dm_accept_to_reply">%1$s ingin berteman. Terima untuk membalas.</string>
+    <string name="online_now">Online sekarang</string>
+    <string name="finding_in">Mencari seseorang di %1$s</string>
+    <string name="n_online">%1$d online</string>
+    <string name="contact_save">Simpan info kontak yang saya bagikan</string>
+    <string name="contact_save_desc">Email, nomor, dan akun sosial yang kamu ketik di obrolan disimpan di profilmu. Mati secara bawaan; mematikannya akan menghapusnya.</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s pengunjung hari ini</item>
         <item quantity="other">%1$s pengunjung hari ini</item>

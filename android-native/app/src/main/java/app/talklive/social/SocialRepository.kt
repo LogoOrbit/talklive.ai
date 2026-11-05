@@ -72,6 +72,9 @@ class SocialRepository @Inject constructor(
     private val _outgoing = MutableStateFlow<OutgoingCall?>(null)
     val outgoing: StateFlow<OutgoingCall?> = _outgoing
 
+    private val _gates = MutableStateFlow<Map<String, String>>(emptyMap())
+    /** The server's latest word on whether a non-friend can be messaged (open, one, accept, request, waiting). */
+    val gates: StateFlow<Map<String, String>> = _gates
     private val _voice = MutableStateFlow<Map<String, String>>(emptyMap())
     /** Voice-message permission per friend: off, sent, received or on. */
     val voice: StateFlow<Map<String, String>> = _voice
@@ -109,6 +112,12 @@ class SocialRepository @Inject constructor(
         socket.on("friend-message-sent") { a -> (a.firstOrNull() as? JSONObject)?.let { scope.launch { onSent(it) } } }
         socket.on("chat-blocked") { a -> (a.firstOrNull() as? JSONObject)?.let { scope.launch { onBlocked(it) } } }
         socket.on("friend-chat-history") { a -> (a.firstOrNull() as? JSONObject)?.let { scope.launch { onHistory(it) } } }
+        socket.on("dm-gate") { a ->
+            (a.firstOrNull() as? JSONObject)?.let { o ->
+                val id = o.optString("clientId"); val g = o.optString("gate")
+                if (id.isNotBlank() && g.isNotBlank()) _gates.update { it + (id to g) }
+            }
+        }
         socket.on("friend-typing") { a -> (a.firstOrNull() as? JSONObject)?.optString("fromClientId")?.let { scope.launch { onTyping(it) } } }
         socket.on("chat-seen") { a ->
             val by = (a.firstOrNull() as? JSONObject)?.optString("byClientId") ?: return@on
@@ -212,7 +221,11 @@ class SocialRepository @Inject constructor(
         when {
             !res.optBoolean("ok") -> _toasts.tryEmit(res.optString("error").takeIf { it.isNotBlank() }?.let { UiText.Raw(it) } ?: UiText.Res(R.string.t_request_failed))
             res.optBoolean("accepted") || res.optBoolean("alreadyFriends") -> _toasts.tryEmit(UiText.Res(R.string.t_now_friends))
-            else -> { _sent.update { it + targetClientId }; _toasts.tryEmit(UiText.Res(R.string.t_request_sent)) }
+            else -> {
+                _sent.update { it + targetClientId }
+                _gates.update { g -> if (g[targetClientId] == "request" || g[targetClientId] == null) g + (targetClientId to "one") else g }
+                _toasts.tryEmit(UiText.Res(R.string.t_request_sent))
+            }
         }
     }
 
@@ -224,6 +237,7 @@ class SocialRepository @Inject constructor(
 
     fun respond(fromClientId: String, accept: Boolean) = scope.launch {
         _requests.update { list -> list.filterNot { it.clientId == fromClientId } }
+        _gates.update { it + (fromClientId to if (accept) "open" else "request") }
         socket.emit("friend-request-respond", JSONObject().put("fromClientId", fromClientId).put("accept", accept))
     }
 
@@ -524,6 +538,7 @@ class SocialRepository @Inject constructor(
     private fun onHistory(o: JSONObject) {
         val id = o.optString("friendClientId")
         o.optString("voice").takeIf { it.isNotBlank() }?.let { v -> _voice.update { it + (id to v) } }
+        o.optString("gate").takeIf { it.isNotBlank() }?.let { g -> _gates.update { it + (id to g) } }
         val arr = o.optJSONArray("messages") ?: JSONArray()
         val fromServer = (0 until arr.length()).mapNotNull { arr.optJSONObject(it)?.let { m -> ChatMessage.from(m, identity.clientId) } }
         updateThread(id) { local ->

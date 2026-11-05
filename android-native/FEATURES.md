@@ -55,6 +55,12 @@ are also rendered in `ScreenshotTest`.
 | "Keep my filters" when nobody matches | Snackbar | — |
 | Remove someone from "met today" | Long-press their card | ✅ e2e |
 | Links open the app, shortcuts | talklive.app links, long-press icon | — |
+| Online now (tap to look in their country) | Home | screenshot |
+| People online per country | Filters → country picker | ✅ e2e |
+| One message before a request is accepted, accept to reply | Chat screen | ✅ e2e |
+| Save contact info I share (opt-in) | Profile → Privacy | ✅ e2e |
+| Call quality summary for the owner dashboard | Automatic after voice calls | device only |
+| Same account on two devices (identity ping, Use here) | Banner at the top | ✅ e2e |
 
 ## Not in the app yet
 

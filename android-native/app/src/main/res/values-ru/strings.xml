@@ -462,6 +462,13 @@
     <string name="stay">Остаться</string>
     <string name="open_elsewhere">TalkLive открыт на другом устройстве</string>
     <string name="use_here">Использовать здесь</string>
+    <string name="dm_one_message">Вы можете отправить %1$s одно сообщение, пока заявку не примут</string>
+    <string name="dm_accept_to_reply">%1$s хочет дружить. Примите, чтобы ответить.</string>
+    <string name="online_now">Сейчас онлайн</string>
+    <string name="finding_in">Ищем собеседника: %1$s</string>
+    <string name="n_online">%1$d онлайн</string>
+    <string name="contact_save">Сохранять контакты, которыми я делюсь</string>
+    <string name="contact_save_desc">Почта, номера и аккаунты соцсетей из ваших чатов сохраняются в профиле. По умолчанию выключено; выключение удаляет их.</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s посетитель сегодня</item>
         <item quantity="other">%1$s посетителя сегодня</item>

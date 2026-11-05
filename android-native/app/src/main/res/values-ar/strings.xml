@@ -462,6 +462,13 @@
     <string name="stay">البقاء</string>
     <string name="open_elsewhere">TalkLive مفتوح على جهاز آخر</string>
     <string name="use_here">استخدم هنا</string>
+    <string name="dm_one_message">يمكنك إرسال رسالة واحدة إلى %1$s حتى يقبل طلبك</string>
+    <string name="dm_accept_to_reply">%1$s يريد أن يكون صديقك. اقبل للرد.</string>
+    <string name="online_now">متصل الآن</string>
+    <string name="finding_in">نبحث عن شخص في %1$s</string>
+    <string name="n_online">%1$d متصل</string>
+    <string name="contact_save">حفظ معلومات الاتصال التي أشاركها</string>
+    <string name="contact_save_desc">تُحفظ في ملفك عناوين البريد والأرقام وحسابات التواصل التي تكتبها في الدردشات. مُعطّل افتراضيًا، وإيقافه يحذفها.</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s زائر اليوم</item>
         <item quantity="other">%1$s زائر اليوم</item>

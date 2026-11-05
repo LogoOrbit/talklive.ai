@@ -234,6 +234,8 @@ class EngageRepository(
         if (body.isNotEmpty()) socket.emit("feedback", JSONObject().put("text", body))
     }
 
+    suspend fun countryCounts(): Map<String, Int> = socket.countryCounts()
+
     fun setFilters(f: Filters) {
         _filters.value = f
         prefs.edit()

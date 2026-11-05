@@ -21,6 +21,9 @@ data class LinkStats(
     val rttMs: Int?,
     val packetsLost: Long,
     val packetsReceived: Long,
+    val jitterMs: Int? = null,
+    /** True when audio goes through a TURN relay rather than directly. */
+    val relay: Boolean = false,
 )
 
 /** One audio-only peer connection to one stranger. */
@@ -120,6 +123,8 @@ class RtcSession(
             var rtt: Int? = null
             var lost = 0L
             var received = 0L
+            var jitter: Int? = null
+            var localId: String? = null
             for (st in report.statsMap.values) {
                 val m = st.members
                 when (st.type) {
@@ -127,13 +132,16 @@ class RtcSession(
                         (m["audioLevel"] as? Number)?.let { level = it.toFloat() }
                         (m["packetsLost"] as? Number)?.let { lost = it.toLong() }
                         (m["packetsReceived"] as? Number)?.let { received = it.toLong() }
+                        (m["jitter"] as? Number)?.let { jitter = (it.toDouble() * 1000).toInt() }
                     }
                     "candidate-pair" -> if (m["state"] == "succeeded" && m["nominated"] == true) {
                         (m["currentRoundTripTime"] as? Number)?.let { rtt = (it.toDouble() * 1000).toInt() }
+                        localId = m["localCandidateId"] as? String
                     }
                 }
             }
-            if (cont.isActive) cont.resume(LinkStats(level, rtt, lost, received))
+            val relay = localId?.let { report.statsMap[it]?.members?.get("candidateType") == "relay" } ?: false
+            if (cont.isActive) cont.resume(LinkStats(level, rtt, lost, received, jitter, relay))
         }
     }
 

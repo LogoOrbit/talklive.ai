@@ -69,7 +69,14 @@ class ScreenshotTest {
     }
     @Test fun login() = shot("06_login") { LoginScreen(vm(), {}, {}) }
     @Test fun home() = shot("07_home") { HomeScreen(true, 3412, "fox", "Sam", false, {}, {}, {}) }
-    @Test fun homeDark() = shot("07b_home_dark", dark = true) { HomeScreen(true, 3412, "fox", "Sam", true, {}, {}, {}) }
+    @Test fun homeDark() = shot("07b_home_dark", dark = true) {
+        val P = { n: String, c: String, cn: String, a: String, i: List<String>, w: Boolean -> app.talklive.net.OnlinePerson(n, c, cn, a, i, w) }
+        HomeScreen(true, 3412, "fox", "Sam", true, {}, {}, {}, online = listOf(
+            P("Kenji Ito", "JP", "Japan", "panda", emptyList(), false), P("Lucía", "ES", "Spain", "fox", emptyList(), true),
+            P("Amara", "NG", "Nigeria", "lion", emptyList(), false), P("Mateus", "BR", "Brazil", "owl", emptyList(), false),
+            P("Priya", "IN", "India", "cat", emptyList(), true), P("Jonas", "DE", "Germany", "wolf", emptyList(), false),
+        ))
+    }
     @Test fun animals() = shot("10_animals") { app.talklive.ui.animals.AnimalSetupScreen("owl") {} }
     @Test fun chatsEmpty() = shot("11_chats") { app.talklive.ui.main.EmptyTab(app.talklive.ui.main.MainTab.Chats, onStart = {}) }
     @Test fun reconnecting() = shot("12_reconnecting") {

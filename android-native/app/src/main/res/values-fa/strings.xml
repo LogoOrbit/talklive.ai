@@ -462,6 +462,13 @@
     <string name="stay">ماندن</string>
     <string name="open_elsewhere">TalkLive روی دستگاه دیگری باز است</string>
     <string name="use_here">استفاده در اینجا</string>
+    <string name="dm_one_message">تا وقتی %1$s درخواستتان را بپذیرد می‌توانید یک پیام بفرستید</string>
+    <string name="dm_accept_to_reply">%1$s می‌خواهد دوست شما باشد. برای پاسخ بپذیرید.</string>
+    <string name="online_now">اکنون آنلاین</string>
+    <string name="finding_in">در حال جستجوی کسی در %1$s</string>
+    <string name="n_online">%1$d آنلاین</string>
+    <string name="contact_save">ذخیره اطلاعات تماسی که به اشتراک می‌گذارم</string>
+    <string name="contact_save_desc">ایمیل‌ها، شماره‌ها و شناسه‌های شبکه‌های اجتماعی که در گفتگو می‌نویسید در نمایه ذخیره می‌شوند. به‌طور پیش‌فرض خاموش؛ خاموش کردن آن‌ها را پاک می‌کند.</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s بازدیدکننده امروز</item>
         <item quantity="other">%1$s بازدیدکننده امروز</item>

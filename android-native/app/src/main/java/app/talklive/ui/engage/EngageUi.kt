@@ -304,7 +304,7 @@ private fun Modifier.matchParentSizeCompat() = this.fillMaxWidth().aspectRatio(2
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun FiltersSheet(current: Filters, premium: Boolean, onApply: (Filters) -> Unit, onDismiss: () -> Unit, onPlus: () -> Unit = {}) {
+fun FiltersSheet(current: Filters, premium: Boolean, onApply: (Filters) -> Unit, onDismiss: () -> Unit, onPlus: () -> Unit = {}, loadCounts: suspend () -> Map<String, Int> = { emptyMap() }) {
     val freeCountries = 2 // the website's free limit per list (server FREE_LIMITS)
     var f by remember { mutableStateOf(current) }
     var newInterest by remember { mutableStateOf("") }
@@ -403,6 +403,7 @@ fun FiltersSheet(current: Filters, premium: Boolean, onApply: (Filters) -> Unit,
             pickingCountries = false
         },
         onDismiss = { pickingCountries = false },
+        loadCounts = loadCounts,
     )
 }
 
@@ -416,8 +417,12 @@ private fun CountryPicker(
     onLimit: () -> Unit,
     onDone: (List<String>) -> Unit,
     onDismiss: () -> Unit,
+    loadCounts: suspend () -> Map<String, Int> = { emptyMap() },
 ) {
     var picked by remember { mutableStateOf(selected) }
+    // Who is online where, so busy countries come first (like the website).
+    var counts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+    LaunchedEffect(Unit) { counts = loadCounts() }
     var query by remember { mutableStateOf("") }
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxWidth(0.92f).fillMaxHeight(0.82f)) {
@@ -428,7 +433,10 @@ private fun CountryPicker(
                 }
                 Spacer(Modifier.height(12.dp))
                 Box(Modifier.padding(horizontal = 16.dp)) { InlineField(query, { query = it }, stringResource(R.string.find_country), onDone = null) }
-                val shown = remember(query, countries) { countries.filter { query.isBlank() || it.second.contains(query, ignoreCase = true) || it.first.equals(query, ignoreCase = true) } }
+                val shown = remember(query, countries, counts) {
+                    countries.filter { query.isBlank() || it.second.contains(query, ignoreCase = true) || it.first.equals(query, ignoreCase = true) }
+                        .sortedByDescending { counts[it.first] ?: 0 }
+                }
                 androidx.compose.foundation.lazy.LazyColumn(Modifier.weight(1f).padding(top = 8.dp)) {
                     items(shown.size) { idx ->
                         val (cc, name) = shown[idx]
@@ -446,6 +454,9 @@ private fun CountryPicker(
                             Text(flag(cc) ?: "🏳️", fontSize = 22.sp)
                             Spacer(Modifier.width(14.dp))
                             Text(name, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+                            counts[cc]?.takeIf { it > 0 }?.let { n ->
+                                Text(stringResource(R.string.n_online, n), style = MaterialTheme.typography.labelMedium, color = app.talklive.ui.theme.Success, modifier = Modifier.padding(end = 12.dp))
+                            }
                             Box(
                                 Modifier.size(24.dp).clip(CircleShape)
                                     .background(if (on) app.talklive.ui.components.BrandGradient else androidx.compose.ui.graphics.SolidColor(Color.Transparent))

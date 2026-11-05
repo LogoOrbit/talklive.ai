@@ -462,6 +462,13 @@
     <string name="stay">続ける</string>
     <string name="open_elsewhere">TalkLiveは別の端末で開いています</string>
     <string name="use_here">ここで使う</string>
+    <string name="dm_one_message">%1$sがリクエストを承認するまで、メッセージは1通だけ送れます</string>
+    <string name="dm_accept_to_reply">%1$sが友達になりたがっています。承認すると返信できます。</string>
+    <string name="online_now">オンライン中</string>
+    <string name="finding_in">%1$sの人を探しています</string>
+    <string name="n_online">%1$d人オンライン</string>
+    <string name="contact_save">共有した連絡先を保存</string>
+    <string name="contact_save_desc">チャットで入力したメール、番号、SNSアカウントがプロフィールに保存されます。初期設定はオフ。オフにすると削除されます。</string>
     <plurals name="visitors_today">
         <item quantity="other">今日の訪問者 %1$s人</item>
     </plurals>

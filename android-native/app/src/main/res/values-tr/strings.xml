@@ -462,6 +462,13 @@
     <string name="stay">Kal</string>
     <string name="open_elsewhere">TalkLive başka bir cihazda açık</string>
     <string name="use_here">Burada kullan</string>
+    <string name="dm_one_message">İsteğini kabul edene kadar %1$s kişisine bir mesaj gönderebilirsin</string>
+    <string name="dm_accept_to_reply">%1$s arkadaş olmak istiyor. Yanıtlamak için kabul et.</string>
+    <string name="online_now">Şu an çevrimiçi</string>
+    <string name="finding_in">%1$s ülkesinden biri aranıyor</string>
+    <string name="n_online">%1$d çevrimiçi</string>
+    <string name="contact_save">Paylaştığım iletişim bilgilerini kaydet</string>
+    <string name="contact_save_desc">Sohbetlerde yazdığın e-posta, numara ve sosyal medya adları profiline kaydedilir. Varsayılan olarak kapalı; kapatınca silinir.</string>
     <plurals name="visitors_today">
         <item quantity="one">Bugün %1$s ziyaretçi</item>
         <item quantity="other">Bugün %1$s ziyaretçi</item>

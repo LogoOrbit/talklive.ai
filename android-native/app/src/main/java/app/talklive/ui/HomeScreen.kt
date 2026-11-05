@@ -81,6 +81,8 @@ fun HomeScreen(
     onFilters: () -> Unit = {},
     premium: Boolean = true,
     onPlus: () -> Unit = {},
+    online: List<app.talklive.net.OnlinePerson> = emptyList(),
+    onFindIn: (String) -> Unit = {},
 ) {
     Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 24.dp, vertical = 16.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -140,7 +142,9 @@ fun HomeScreen(
             }
         }
         Spacer(Modifier.height(20.dp))
-        HowItWorks(mode == app.talklive.call.CallMode.Chat)
+        val placed = online.filter { it.countryCode != null }
+        if (placed.size >= 3) OnlineNow(placed, enabled = connected, onFindIn = onFindIn)
+        else HowItWorks(mode == app.talklive.call.CallMode.Chat)
         Spacer(Modifier.weight(1f))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f)) { ModeSwitch(mode, onMode) }
@@ -160,6 +164,39 @@ fun HomeScreen(
             enabled = connected,
             icon = if (mode == app.talklive.call.CallMode.Chat) Icons.AutoMirrored.Rounded.Chat else Icons.Rounded.Mic,
         )
+    }
+}
+
+/** A few people online right now; tapping one looks for someone in their country. */
+@Composable
+private fun OnlineNow(people: List<app.talklive.net.OnlinePerson>, enabled: Boolean, onFindIn: (String) -> Unit) {
+    Column(Modifier.fillMaxWidth()) {
+        Text(
+            stringResource(R.string.online_now),
+            style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp),
+        )
+        androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp)) {
+            items(people.take(8).size) { i ->
+                val p = people[i]
+                Column(
+                    Modifier.width(60.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                        .clickable(enabled = enabled) { p.countryCode?.let(onFindIn) },
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Box {
+                        AnimalAvatar(p.animal, p.name, 48.dp)
+                        Box(Modifier.align(Alignment.BottomEnd).size(12.dp).clip(CircleShape).background(MaterialTheme.colorScheme.background).padding(2.dp).clip(CircleShape).background(Success))
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        listOfNotNull(app.talklive.ui.social.flag(p.countryCode), p.name.substringBefore(' ')).joinToString(" "),
+                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onBackground,
+                        maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
     }
 }
 

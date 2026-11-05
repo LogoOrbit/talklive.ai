@@ -45,6 +45,7 @@ import androidx.compose.material.icons.rounded.WorkspacePremium
 import androidx.compose.material.icons.rounded.Feedback
 import androidx.compose.material.icons.rounded.SupportAgent
 import androidx.compose.material.icons.rounded.Block
+import androidx.compose.material.icons.rounded.ContactMail
 import androidx.compose.material.icons.rounded.Call
 import androidx.compose.material.icons.rounded.Tag
 import androidx.compose.material.icons.rounded.Visibility
@@ -266,6 +267,10 @@ fun ProfileScreen(
                 })
                 SettingRow(Icons.Rounded.Call, stringResource(R.string.allow_calls), stringResource(R.string.allow_calls_desc), onClick = { vm.setAcceptCalls(!acceptCalls) }, trailing = {
                     Switch(checked = acceptCalls, onCheckedChange = { vm.setAcceptCalls(it) }, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary))
+                })
+                val contactConsent by vm.contactConsent.collectAsStateWithLifecycle()
+                SettingRow(Icons.Rounded.ContactMail, stringResource(R.string.contact_save), stringResource(R.string.contact_save_desc), onClick = { vm.setContactConsent(!contactConsent) }, trailing = {
+                    Switch(checked = contactConsent, onCheckedChange = { vm.setContactConsent(it) }, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary))
                 })
                 SettingRow(Icons.Rounded.Block, stringResource(R.string.blocked_people), if (blocked.isEmpty()) stringResource(R.string.none) else blocked.size.toString()) {
                     vm.open(ProfileSheet.Blocked)

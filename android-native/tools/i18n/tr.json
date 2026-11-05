@@ -461,5 +461,12 @@
 "leave": "Çık",
 "stay": "Kal",
 "open_elsewhere": "TalkLive başka bir cihazda açık",
-"use_here": "Burada kullan"
+"use_here": "Burada kullan",
+"dm_one_message": "İsteğini kabul edene kadar %1$s kişisine bir mesaj gönderebilirsin",
+"dm_accept_to_reply": "%1$s arkadaş olmak istiyor. Yanıtlamak için kabul et.",
+"online_now": "Şu an çevrimiçi",
+"finding_in": "%1$s ülkesinden biri aranıyor",
+"n_online": "%1$d çevrimiçi",
+"contact_save": "Paylaştığım iletişim bilgilerini kaydet",
+"contact_save_desc": "Sohbetlerde yazdığın e-posta, numara ve sosyal medya adları profiline kaydedilir. Varsayılan olarak kapalı; kapatınca silinir."
 }

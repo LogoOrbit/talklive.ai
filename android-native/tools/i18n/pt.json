@@ -461,5 +461,12 @@
 "leave": "Sair",
 "stay": "Ficar",
 "open_elsewhere": "O TalkLive está aberto em outro aparelho",
-"use_here": "Usar aqui"
+"use_here": "Usar aqui",
+"dm_one_message": "Você pode enviar uma mensagem para %1$s até aceitarem seu pedido",
+"dm_accept_to_reply": "%1$s quer ser seu amigo. Aceite para responder.",
+"online_now": "Online agora",
+"finding_in": "Procurando alguém em %1$s",
+"n_online": "%1$d online",
+"contact_save": "Salvar os contatos que eu compartilho",
+"contact_save_desc": "E-mails, números e perfis que você digita nos chats ficam salvos no seu perfil. Desativado por padrão; desativar apaga tudo."
 }

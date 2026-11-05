@@ -237,7 +237,15 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
         }
 
         // Composer.
-        if (person.canMessage || isFriend) {
+        val gates by vm.gates.collectAsStateWithLifecycle()
+        val gate = if (isFriend) "open" else gates[clientId] ?: person.dm
+        if (gate == "open" || gate == "one") {
+            if (gate == "one") Text(
+                stringResource(R.string.dm_one_message, person.displayName),
+                style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+            )
             AnimatedVisibility(isFriend && voiceState == "received", enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
                 Row(
                     Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primaryContainer).padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
@@ -327,14 +335,23 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
             Surface(color = MaterialTheme.colorScheme.surface) {
                 Row(Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        stringResource(if (clientId in sent) R.string.waiting_accept else R.string.add_to_message, person.displayName),
+                        stringResource(
+                            when {
+                                gate == "accept" -> R.string.dm_accept_to_reply
+                                gate == "waiting" || clientId in sent -> R.string.waiting_accept
+                                else -> R.string.add_to_message
+                            },
+                            person.displayName,
+                        ),
                         style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f),
                     )
-                    if (clientId !in sent) {
+                    if (gate == "accept" || (gate != "waiting" && clientId !in sent)) {
                         Spacer(Modifier.width(12.dp))
                         Box(
-                            Modifier.clip(CircleShape).background(BrandGradient).clickable { vm.sendRequest(clientId) }.padding(horizontal = 18.dp, vertical = 10.dp),
-                        ) { Text(stringResource(R.string.add_friend), color = Color.White, style = MaterialTheme.typography.labelLarge) }
+                            Modifier.clip(CircleShape).background(BrandGradient)
+                                .clickable { if (gate == "accept") vm.respond(clientId, true) else vm.sendRequest(clientId) }
+                                .padding(horizontal = 18.dp, vertical = 10.dp),
+                        ) { Text(stringResource(if (gate == "accept") R.string.accept else R.string.add_friend), color = Color.White, style = MaterialTheme.typography.labelLarge) }
                     }
                 }
             }

@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -134,6 +135,12 @@ class ServerE2ETest {
         check("b is in a's history") { a.social.history.value.any { it.clientId == b.identity.clientId } }
         a.social.sendRequest(b.identity.clientId)
         check("b gets the request") { b.social.requests.value.any { it.clientId == a.identity.clientId } }
+        // Before they accept: one message, then wait. b is told to accept to reply.
+        check("a may send one message") { a.social.gates.value[b.identity.clientId] == "one" }
+        a.social.send(b.identity.clientId, "hey, nice chat")
+        check("a now waits") { a.social.gates.value[b.identity.clientId] == "waiting" }
+        b.social.loadThread(a.identity.clientId)
+        check("b must accept to reply") { b.social.gates.value[a.identity.clientId] == "accept" }
         // Removing someone from the list sticks after a fresh state sync.
         b.social.removeFromHistory(a.identity.clientId)
         b.socket.register()
@@ -254,6 +261,20 @@ class ServerE2ETest {
         Thread.sleep(500)
         check("cleared for b only") { b.social.threads.value[aId].isNullOrEmpty() }
         check("a still has it") { a.social.threads.value[bId]?.any { it.text == "another" } == true }
+    }
+
+    @Test fun contact_consent_and_country_counts(): Unit = runBlocking {
+        val a = Client("cc")
+        assertFalse(a.socket.contactConsent.value)
+        a.socket.setContactConsent(true)
+        a.socket.register()
+        check("consent is on after a fresh sync") { a.socket.contactConsent.value }
+        a.socket.setContactConsent(false)
+        a.socket.register()
+        Thread.sleep(500)
+        assertFalse(a.socket.contactConsent.value)
+        // Answered (local test clients have no country, so the map is empty).
+        assertNotNull(a.socket.countryCounts())
     }
 
     @Test fun block_unblock_cancel_request_privacy_and_call_later() {

@@ -462,6 +462,13 @@
     <string name="stay">رکیں</string>
     <string name="open_elsewhere">TalkLive کسی اور ڈیوائس پر کھلا ہے</string>
     <string name="use_here">یہاں استعمال کریں</string>
+    <string name="dm_one_message">درخواست قبول ہونے تک آپ %1$s کو ایک پیغام بھیج سکتے ہیں</string>
+    <string name="dm_accept_to_reply">%1$s دوست بننا چاہتے ہیں۔ جواب دینے کے لیے قبول کریں۔</string>
+    <string name="online_now">ابھی آن لائن</string>
+    <string name="finding_in">%1$s میں کسی کو تلاش کر رہے ہیں</string>
+    <string name="n_online">%1$d آن لائن</string>
+    <string name="contact_save">میری شیئر کردہ رابطے کی معلومات محفوظ کریں</string>
+    <string name="contact_save_desc">چیٹ میں لکھے گئے ای میل، نمبر اور سوشل ہینڈل آپ کی پروفائل میں محفوظ ہوتے ہیں۔ پہلے سے بند؛ بند کرنے پر حذف ہو جاتے ہیں۔</string>
     <plurals name="visitors_today">
         <item quantity="one">آج %1$s وزیٹر</item>
         <item quantity="other">آج %1$s وزیٹرز</item>

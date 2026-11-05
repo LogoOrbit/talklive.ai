@@ -460,5 +460,12 @@
 "leave": "离开",
 "stay": "留下",
 "open_elsewhere": "TalkLive 已在另一台设备上打开",
-"use_here": "在此使用"
+"use_here": "在此使用",
+"dm_one_message": "在 %1$s 接受请求前，你可以发送一条消息",
+"dm_accept_to_reply": "%1$s 想加你为好友。接受后即可回复。",
+"online_now": "在线用户",
+"finding_in": "正在寻找来自%1$s的人",
+"n_online": "%1$d 人在线",
+"contact_save": "保存我分享的联系方式",
+"contact_save_desc": "你在聊天中输入的邮箱、号码和社交账号会保存到你的资料。默认关闭；关闭后会删除。"
 }

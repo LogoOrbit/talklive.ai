@@ -464,5 +464,12 @@
 "leave": "Leave",
 "stay": "Stay",
 "open_elsewhere": "TalkLive is open on another device",
-"use_here": "Use here"
+"use_here": "Use here",
+"dm_one_message": "You can send %1$s one message until they accept your request",
+"dm_accept_to_reply": "%1$s wants to be friends. Accept to reply.",
+"online_now": "Online now",
+"finding_in": "Looking for someone in %1$s",
+"n_online": "%1$d online",
+"contact_save": "Save contact info I share",
+"contact_save_desc": "Emails, numbers and social handles you type in chats are saved to your profile. Off by default; turning it off deletes them."
 }

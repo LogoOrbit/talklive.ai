@@ -48,6 +48,7 @@ class TalkViewModel @Inject constructor(
     fun setAutoConnect(on: Boolean) = calls.setAutoConnect(on)
     val connected = socket.connected
     val elsewhere = socket.elsewhere
+    val onlinePeople = socket.onlinePeople
     fun useHere() = socket.useHere()
     /** Today's visitors; the last known number while reconnecting, so Home never flashes "Connecting…". */
     val visitorCount = socket.visitorCount

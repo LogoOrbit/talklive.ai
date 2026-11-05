@@ -461,5 +461,12 @@
 "leave": "Keluar",
 "stay": "Tetap",
 "open_elsewhere": "TalkLive terbuka di perangkat lain",
-"use_here": "Gunakan di sini"
+"use_here": "Gunakan di sini",
+"dm_one_message": "Kamu bisa mengirim satu pesan ke %1$s sampai permintaanmu diterima",
+"dm_accept_to_reply": "%1$s ingin berteman. Terima untuk membalas.",
+"online_now": "Online sekarang",
+"finding_in": "Mencari seseorang di %1$s",
+"n_online": "%1$d online",
+"contact_save": "Simpan info kontak yang saya bagikan",
+"contact_save_desc": "Email, nomor, dan akun sosial yang kamu ketik di obrolan disimpan di profilmu. Mati secara bawaan; mematikannya akan menghapusnya."
 }

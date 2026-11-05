@@ -572,6 +572,7 @@ class CallManager @Inject constructor(
                             else -> LinkQuality.Good
                         }
                         _state.update { it.copy(quality = q) }
+                        quality.add(st, loss, q == LinkQuality.Poor)
                     }
                 }
                 delay(250)
@@ -579,7 +580,30 @@ class CallManager @Inject constructor(
         }
     }
 
+    /** One summary per voice call for the server's quality totals, like the website sends. */
+    private class QualitySummary {
+        var samples = 0; var rtt = 0L; var rttN = 0; var jit = 0L; var jitN = 0; var lossSum = 0f; var poor = 0; var relay = false
+        fun add(st: LinkStats, loss: Float, poorNow: Boolean) {
+            samples++
+            st.rttMs?.let { rtt += it; rttN++ }
+            st.jitterMs?.let { jit += it; jitN++ }
+            lossSum += loss
+            if (poorNow) poor++
+            if (st.relay) relay = true
+        }
+        fun json(): JSONObject? = if (samples < 3) null else JSONObject()
+            .put("samples", samples)
+            .put("rttMs", if (rttN > 0) rtt / rttN else JSONObject.NULL)
+            .put("lossPct", Math.round(lossSum / samples * 10000) / 100.0)
+            .put("jitterMs", if (jitN > 0) jit / jitN else JSONObject.NULL)
+            .put("poorShare", poor.toDouble() / samples)
+            .put("relay", relay)
+    }
+    private var quality = QualitySummary()
+
     private fun teardown() {
+        quality.json()?.let { socket.emit("call-quality", it) }
+        quality = QualitySummary()
         statsJob?.cancel()
         statsJob = null
         _remoteLevel.value = 0f

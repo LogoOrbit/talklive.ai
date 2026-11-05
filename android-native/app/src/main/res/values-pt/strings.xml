@@ -462,6 +462,13 @@
     <string name="stay">Ficar</string>
     <string name="open_elsewhere">O TalkLive está aberto em outro aparelho</string>
     <string name="use_here">Usar aqui</string>
+    <string name="dm_one_message">Você pode enviar uma mensagem para %1$s até aceitarem seu pedido</string>
+    <string name="dm_accept_to_reply">%1$s quer ser seu amigo. Aceite para responder.</string>
+    <string name="online_now">Online agora</string>
+    <string name="finding_in">Procurando alguém em %1$s</string>
+    <string name="n_online">%1$d online</string>
+    <string name="contact_save">Salvar os contatos que eu compartilho</string>
+    <string name="contact_save_desc">E-mails, números e perfis que você digita nos chats ficam salvos no seu perfil. Desativado por padrão; desativar apaga tudo.</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s visitante hoje</item>
         <item quantity="other">%1$s visitantes hoje</item>

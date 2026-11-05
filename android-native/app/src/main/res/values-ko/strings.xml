@@ -462,6 +462,13 @@
     <string name="stay">머무르기</string>
     <string name="open_elsewhere">TalkLive가 다른 기기에서 열려 있어요</string>
     <string name="use_here">여기서 사용</string>
+    <string name="dm_one_message">%1$s님이 요청을 수락할 때까지 메시지를 하나 보낼 수 있어요</string>
+    <string name="dm_accept_to_reply">%1$s님이 친구가 되고 싶어 해요. 수락하면 답장할 수 있어요.</string>
+    <string name="online_now">지금 접속 중</string>
+    <string name="finding_in">%1$s에서 찾는 중</string>
+    <string name="n_online">%1$d명 접속 중</string>
+    <string name="contact_save">내가 공유한 연락처 저장</string>
+    <string name="contact_save_desc">채팅에 입력한 이메일, 번호, SNS 계정이 프로필에 저장돼요. 기본은 꺼짐이며, 끄면 삭제돼요.</string>
     <plurals name="visitors_today">
         <item quantity="other">오늘 방문자 %1$s명</item>
     </plurals>

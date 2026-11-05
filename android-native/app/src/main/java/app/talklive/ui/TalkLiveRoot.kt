@@ -226,6 +226,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     }
 
     val inCall = state.phase !is CallPhase.Idle
+    val onlinePeople by vm.onlinePeople.collectAsStateWithLifecycle()
     val game by vm.game.collectAsStateWithLifecycle()
     var showGames by remember { mutableStateOf(false) }
     // A game that starts opens the board on both phones.
@@ -313,6 +314,13 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                         onFilters = { if (premium.active) showFilters = true else showPlus = "filters" },
                         premium = premium.active,
                         onPlus = { showPlus = "home" },
+                        online = onlinePeople,
+                        onFindIn = { code ->
+                            // Like the website: look for someone in that country now.
+                            engageVm.setFilters(filters.copy(includeCountries = listOf(code), excludeCountries = filters.excludeCountries - code))
+                            scope.launch { snackbar.say(context.getString(R.string.finding_in, app.talklive.ui.engage.countryName(code))) }
+                            onStart()
+                        },
                     )
                     MainTab.Chats -> ChatsScreen(social, onOpenChat = { openChat = it }, onStartTalking = { tab = MainTab.Talk })
                     MainTab.Friends -> FriendsScreen(social, onOpenChat = { openChat = it }, onStartTalking = { tab = MainTab.Talk })
@@ -475,7 +483,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
             onRestore = engageVm::restoreStreak, onPlus = { showStreak = false; showPlus = "streak" },
         )
     }
-    if (showFilters) app.talklive.ui.engage.FiltersSheet(filters, premium.active, onApply = engageVm::setFilters, onDismiss = { showFilters = false }, onPlus = { showFilters = false; showPlus = "locked" })
+    if (showFilters) app.talklive.ui.engage.FiltersSheet(filters, premium.active, onApply = engageVm::setFilters, onDismiss = { showFilters = false }, onPlus = { showFilters = false; showPlus = "locked" }, loadCounts = engageVm::countryCounts)
     // Same favourite film or show as the person who just connected: say so.
     val myFilms by engageVm.films.collectAsStateWithLifecycle()
     val livePartner = (state.phase as? CallPhase.Connected)?.partner

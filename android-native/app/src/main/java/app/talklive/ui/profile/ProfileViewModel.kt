@@ -26,6 +26,8 @@ class ProfileViewModel @Inject constructor(
     private val social: app.talklive.social.SocialRepository,
 ) : ViewModel() {
     val hideStatus = privacy.hideStatus
+    val contactConsent = socket.contactConsent
+    fun setContactConsent(on: Boolean) = socket.setContactConsent(on)
     val acceptCalls = privacy.acceptCalls
     val blocked = social.blocked
     val myFriendId = social.myFriendId

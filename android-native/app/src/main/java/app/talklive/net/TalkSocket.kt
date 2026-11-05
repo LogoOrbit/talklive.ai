@@ -57,6 +57,18 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
     /** The site is in maintenance mode: the owner's message. */
     val maintenance: StateFlow<String?> = _maintenance
 
+    private val _contactConsent = MutableStateFlow(false)
+    /** Settings > Privacy > "Save contact info I share" (opt-in; off erases what was saved). */
+    val contactConsent: StateFlow<Boolean> = _contactConsent
+    fun setContactConsent(on: Boolean) {
+        _contactConsent.value = on
+        socket.emit("set-contact-consent", JSONObject().put("on", on))
+    }
+
+    private val _onlinePeople = MutableStateFlow<List<OnlinePerson>>(emptyList())
+    /** A small sample of people online and not in a call (the website's "Online now"). */
+    val onlinePeople: StateFlow<List<OnlinePerson>> = _onlinePeople
+
     private val _warnings = MutableStateFlow<List<OwnerWarning>>(emptyList())
     /** Warnings from the moderators, shown until acknowledged. */
     val warnings: StateFlow<List<OwnerWarning>> = _warnings
@@ -124,6 +136,20 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
             val token = o.optString("token")
             if (o.optString("clientId") == identity.clientId && TOKEN_RE.matches(token)) {
                 identity.identityToken = token
+            }
+        }
+        socket.on("contact-consent") { args -> (args.firstOrNull() as? JSONObject)?.let { _contactConsent.value = it.optBoolean("on") } }
+        socket.on("online-people") { args ->
+            val arr = args.firstOrNull() as? org.json.JSONArray ?: return@on
+            _onlinePeople.value = (0 until arr.length()).mapNotNull { arr.optJSONObject(it) }.map { o ->
+                OnlinePerson(
+                    name = o.optString("username"),
+                    countryCode = o.optString("countryCode").takeIf { it.length == 2 && it != "XX" },
+                    country = o.optString("country").takeIf { it.isNotBlank() && it != "Unknown" },
+                    animal = o.optString("animal").takeIf { it.isNotBlank() && it != "null" },
+                    interests = o.optJSONArray("interests")?.let { a -> (0 until a.length()).map { a.optString(it) } }.orEmpty(),
+                    waiting = o.optBoolean("waiting"),
+                )
             }
         }
         socket.on("online-count") { args ->
@@ -217,6 +243,19 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
         socket.disconnect()
         socket.connect()
     }
+
+    /** People online per country (aggregate only), for the country picker. */
+    suspend fun countryCounts(): Map<String, Int> = runCatching {
+        withTimeout(5000) {
+            suspendCancellableCoroutine<Map<String, Int>> { cont ->
+                socket.emit("country-counts", io.socket.client.Ack { args ->
+                    val o = args.firstOrNull() as? JSONObject
+                    val m = o?.keys()?.asSequence()?.associateWith { o.optInt(it) }.orEmpty()
+                    if (cont.isActive) cont.resume(m)
+                })
+            }
+        }
+    }.getOrDefault(emptyMap())
 
     fun emit(event: String, payload: Any? = null) {
         if (payload == null) socket.emit(event) else socket.emit(event, payload)
@@ -324,3 +363,13 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
         val TOKEN_RE = Regex("^[a-f0-9]{64}$")
     }
 }
+
+/** One row of the server's "online now" sample. */
+data class OnlinePerson(
+    val name: String,
+    val countryCode: String?,
+    val country: String?,
+    val animal: String?,
+    val interests: List<String>,
+    val waiting: Boolean,
+)
