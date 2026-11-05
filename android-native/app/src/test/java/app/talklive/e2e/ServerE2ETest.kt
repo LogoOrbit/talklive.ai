@@ -386,6 +386,20 @@ class ServerE2ETest {
         val b = Client("b")
         val found = b.social.find("droid#4242").getOrThrow()
         assertEquals(a.identity.clientId, found.clientId)
+        // What people actually type: capitals, spaces around it.
+        assertEquals(a.identity.clientId, b.social.find("  DROID#4242 ").getOrThrow().clientId)
+        // Unknown IDs say so instead of failing silently.
+        assertTrue("unknown ID is an error", b.social.find("nobody#9999").isFailure)
+        // The auto-generated ID works too (guests have one), and a request
+        // sent from the result arrives.
+        val c = Client("c")
+        val cId = c.social.myFriendId.value!!
+        val viaAuto = b.social.find(cId).getOrThrow()
+        assertEquals(c.identity.clientId, viaAuto.clientId)
+        assertEquals(c.identity.clientId, b.social.find(cId.lowercase()).getOrThrow().clientId)
+        b.social.sendRequest(viaAuto.clientId, viaAuto.friendId)
+        val arrived = waitFor("request found by ID arrives") { c.social.requests.value.firstOrNull { it.clientId == b.identity.clientId } }
+        assertNotNull(arrived)
     }
 
     @Test fun engage_filters_films_likes_referral(): Unit = runBlocking {
