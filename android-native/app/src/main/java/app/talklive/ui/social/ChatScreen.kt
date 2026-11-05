@@ -190,6 +190,13 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                     IconButton(onClick = { menuOpen = true }) { Icon(Icons.Rounded.MoreVert, null) }
                     androidx.compose.material3.DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                         val isMuted = clientId in mutedSet
+                        val archivedSet by vm.archived.collectAsStateWithLifecycle()
+                        val isArchived = clientId in archivedSet
+                        androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.view_profile)) }, onClick = { menuOpen = false; showProfile = true })
+                        androidx.compose.material3.DropdownMenuItem(
+                            text = { Text(stringResource(if (isArchived) R.string.unarchive else R.string.archive)) },
+                            onClick = { menuOpen = false; vm.setArchived(clientId, !isArchived) },
+                        )
                         androidx.compose.material3.DropdownMenuItem(
                             text = { Text(stringResource(if (isMuted) R.string.unmute_chat else R.string.mute_chat)) },
                             onClick = { menuOpen = false; vm.setMuted(clientId, !isMuted) },

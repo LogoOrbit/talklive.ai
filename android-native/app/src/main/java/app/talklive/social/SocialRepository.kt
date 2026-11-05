@@ -55,6 +55,8 @@ class SocialRepository @Inject constructor(
     private val _unread = MutableStateFlow<Map<String, Int>>(emptyMap())
     val unread: StateFlow<Map<String, Int>> = _unread
 
+    val archived: StateFlow<Set<String>> = privacy?.archived ?: MutableStateFlow(emptySet())
+    fun setArchived(clientId: String, on: Boolean) { privacy?.setArchived(clientId, on) }
     private val _muted = MutableStateFlow<Set<String>>(emptySet())
     val muted: StateFlow<Set<String>> = _muted
 
@@ -508,6 +510,8 @@ class SocialRepository @Inject constructor(
     private fun onIncomingMessage(o: JSONObject) {
         val from = o.optString("fromClientId")
         val msg = ChatMessage.from(o, identity.clientId).copy(mine = false)
+        // A new message brings an archived chat back to the list.
+        if (from in archived.value) privacy?.setArchived(from, false)
         updateThread(from) { list -> if (list.any { it.id == msg.id }) list else list + msg }
         _typing.update { it - from }
         bumpLast(from, LastMessage(false, msg.text, msg.gifUrl != null, msg.voiceMs != null, msg.ts, false))

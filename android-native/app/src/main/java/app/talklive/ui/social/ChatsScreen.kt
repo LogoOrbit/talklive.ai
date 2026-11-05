@@ -2,6 +2,14 @@ package app.talklive.ui.social
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Archive
+import androidx.compose.material.icons.rounded.Unarchive
+import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Block
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -40,33 +48,116 @@ import app.talklive.ui.components.BrandGradient
 import app.talklive.ui.main.EmptyTab
 import app.talklive.ui.main.MainTab
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class, androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun ChatsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalking: () -> Unit) {
     val conversations by vm.conversations.collectAsStateWithLifecycle()
+    val archived by vm.archived.collectAsStateWithLifecycle()
+    var showArchived by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    var menuFor by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Conversation?>(null) }
+    var confirm by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Pair<String, Conversation>?>(null) }
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val active = conversations.filter { it.person.clientId !in archived }
+    val stored = conversations.filter { it.person.clientId in archived }
+    val shown = if (showArchived) stored else active
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
-        Text(
-            stringResource(R.string.tab_chats),
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(start = 24.dp, top = 20.dp, bottom = 8.dp),
-        )
+        Row(Modifier.padding(start = if (showArchived) 8.dp else 24.dp, top = 20.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (showArchived) androidx.compose.material3.IconButton(onClick = { showArchived = false }) {
+                Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.back))
+            }
+            Text(
+                stringResource(if (showArchived) R.string.archived else R.string.tab_chats),
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+        }
+        if (showArchived) androidx.activity.compose.BackHandler { showArchived = false }
         if (conversations.isEmpty()) {
             Box(Modifier.weight(1f)) { EmptyTab(MainTab.Chats, onStart = onStartTalking, showTitle = false) }
             return@Column
         }
         LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(vertical = 4.dp)) {
-            items(conversations, key = { it.person.clientId }) { c -> ConversationRow(c, Modifier.animateItem()) { onOpenChat(c.person.clientId) } }
+            // Archived chats sit in one row at the top, like other messengers.
+            if (!showArchived && stored.isNotEmpty()) item(key = "archived") {
+                Row(
+                    Modifier.fillMaxWidth().clickable { app.talklive.sound.Tap.soft(); showArchived = true }.padding(horizontal = 20.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(Modifier.size(54.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Rounded.Archive, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Spacer(Modifier.width(14.dp))
+                    Text(stringResource(R.string.archived), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+                    Text(stored.size.toString(), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            items(shown, key = { it.person.clientId }) { c ->
+                ConversationRow(
+                    c,
+                    Modifier.animateItem(),
+                    onLongClick = { haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress); menuFor = c },
+                ) { onOpenChat(c.person.clientId) }
+            }
         }
+    }
+
+    menuFor?.let { c ->
+        val id = c.person.clientId
+        val isArchived = id in archived
+        androidx.compose.material3.ModalBottomSheet(onDismissRequest = { menuFor = null }, containerColor = MaterialTheme.colorScheme.background) {
+            Column(Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
+                Row(Modifier.padding(horizontal = 24.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    PersonAvatar(c.person, 44.dp)
+                    Spacer(Modifier.width(12.dp))
+                    Text(c.person.displayName, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
+                }
+                @Composable
+                fun item(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, color: Color = MaterialTheme.colorScheme.onSurface, onClick: () -> Unit) =
+                    Row(
+                        Modifier.fillMaxWidth().clickable { app.talklive.sound.Tap.soft(); onClick() }.padding(horizontal = 24.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(icon, null, tint = color)
+                        Spacer(Modifier.width(16.dp))
+                        Text(label, style = MaterialTheme.typography.bodyLarge, color = color)
+                    }
+                item(if (isArchived) Icons.Rounded.Unarchive else Icons.Rounded.Archive, stringResource(if (isArchived) R.string.unarchive else R.string.archive)) {
+                    vm.setArchived(id, !isArchived); menuFor = null
+                }
+                item(if (c.muted) Icons.Rounded.Notifications else Icons.Rounded.NotificationsOff, stringResource(if (c.muted) R.string.unmute_chat else R.string.mute_chat)) {
+                    vm.setMuted(id, !c.muted); menuFor = null
+                }
+                item(Icons.Rounded.Delete, stringResource(R.string.delete_chat), app.talklive.ui.theme.Danger) { confirm = "delete" to c; menuFor = null }
+                item(Icons.Rounded.Block, stringResource(R.string.block), app.talklive.ui.theme.Danger) { confirm = "block" to c; menuFor = null }
+            }
+        }
+    }
+
+    confirm?.let { (what, c) ->
+        val name = c.person.displayName
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { confirm = null },
+            title = { Text(if (what == "block") stringResource(R.string.block_title, name) else stringResource(R.string.delete_chat_title)) },
+            text = { Text(stringResource(if (what == "block") R.string.block_body else R.string.delete_chat_body)) },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    if (what == "block") vm.block(c.person.clientId) else { vm.clearChat(c.person.clientId); vm.setArchived(c.person.clientId, false) }
+                    confirm = null
+                }) { Text(stringResource(if (what == "block") R.string.block else R.string.delete), color = app.talklive.ui.theme.Danger) }
+            },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { confirm = null }) { Text(stringResource(R.string.cancel)) } },
+        )
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun ConversationRow(c: Conversation, modifier: Modifier, onClick: () -> Unit) {
+private fun ConversationRow(c: Conversation, modifier: Modifier, onLongClick: () -> Unit = {}, onClick: () -> Unit) {
     val p = c.person
     val last = p.last
     val bold = c.unread > 0
     Row(
-        modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 12.dp),
+        modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = onLongClick).padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         PersonAvatar(p, 54.dp)

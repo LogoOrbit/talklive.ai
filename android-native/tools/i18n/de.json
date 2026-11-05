@@ -477,5 +477,19 @@
 "plus_trial_then_month": "%1$d Tage gratis, danach %2$s pro Monat",
 "plus_price_year": "%1$s pro Jahr",
 "plus_price_month": "%1$s pro Monat",
-"request_sent": "Anfrage gesendet"
+"request_sent": "Anfrage gesendet",
+"archived": "Archiviert",
+"archive": "Chat archivieren",
+"unarchive": "Aus dem Archiv holen",
+"delete_chat": "Chat löschen",
+"delete_chat_title": "Diesen Chat löschen?",
+"delete_chat_body": "Nachrichten werden nur auf deinem Handy entfernt. Die andere Person sieht ihre weiterhin.",
+"back": "Zurück",
+"view_profile": "Profil ansehen",
+"friends_online": "Online (%1$d)",
+"friends_offline": "Offline (%1$d)",
+"section_calls": "Anrufe",
+"auto_connect_desc": "Nach einem Anruf direkt zur nächsten Person",
+"speaker_default": "Mit Lautsprecher starten",
+"speaker_default_desc": "Aus: Anrufe starten an der Hörmuschel, wie ein Telefonat"
 }

@@ -477,5 +477,19 @@
 "plus_trial_then_month": "%1$d hari gratis, lalu %2$s per bulan",
 "plus_price_year": "%1$s per tahun",
 "plus_price_month": "%1$s per bulan",
-"request_sent": "Permintaan terkirim"
+"request_sent": "Permintaan terkirim",
+"archived": "Diarsipkan",
+"archive": "Arsipkan obrolan",
+"unarchive": "Batalkan arsip",
+"delete_chat": "Hapus obrolan",
+"delete_chat_title": "Hapus obrolan ini?",
+"delete_chat_body": "Pesan hanya dihapus dari ponselmu. Mereka masih bisa melihat milik mereka.",
+"back": "Kembali",
+"view_profile": "Lihat profil",
+"friends_online": "Online (%1$d)",
+"friends_offline": "Offline (%1$d)",
+"section_calls": "Panggilan",
+"auto_connect_desc": "Langsung ke orang berikutnya saat panggilan selesai",
+"speaker_default": "Mulai dengan speaker",
+"speaker_default_desc": "Mati: panggilan dimulai di earpiece, seperti telepon"
 }

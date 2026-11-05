@@ -476,5 +476,19 @@
 "plus_trial_then_month": "%1$d日間無料、その後は月額%2$s",
 "plus_price_year": "年額%1$s",
 "plus_price_month": "月額%1$s",
-"request_sent": "リクエスト送信済み"
+"request_sent": "リクエスト送信済み",
+"archived": "アーカイブ",
+"archive": "チャットをアーカイブ",
+"unarchive": "アーカイブを解除",
+"delete_chat": "チャットを削除",
+"delete_chat_title": "このチャットを削除しますか？",
+"delete_chat_body": "メッセージはあなたの端末からのみ削除されます。相手側には残ります。",
+"back": "戻る",
+"view_profile": "プロフィールを見る",
+"friends_online": "オンライン (%1$d)",
+"friends_offline": "オフライン (%1$d)",
+"section_calls": "通話",
+"auto_connect_desc": "通話が終わったらすぐ次の人へ",
+"speaker_default": "スピーカーで開始",
+"speaker_default_desc": "オフ：電話のように受話口で開始"
 }

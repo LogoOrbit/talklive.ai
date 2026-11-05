@@ -480,5 +480,19 @@
 "plus_trial_then_month": "%1$d days free, then %2$s a month",
 "plus_price_year": "%1$s a year",
 "plus_price_month": "%1$s a month",
-"request_sent": "Request sent"
+"request_sent": "Request sent",
+"archived": "Archived",
+"archive": "Archive chat",
+"unarchive": "Unarchive chat",
+"delete_chat": "Delete chat",
+"delete_chat_title": "Delete this chat?",
+"delete_chat_body": "Messages are removed from your phone only. They can still see theirs.",
+"back": "Back",
+"view_profile": "View profile",
+"friends_online": "Online (%1$d)",
+"friends_offline": "Offline (%1$d)",
+"section_calls": "Calls",
+"auto_connect_desc": "Go straight to the next person when a call ends",
+"speaker_default": "Start on speaker",
+"speaker_default_desc": "Off: calls start on the earpiece, like a phone call"
 }

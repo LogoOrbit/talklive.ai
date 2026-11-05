@@ -484,4 +484,18 @@
     <string name="plus_price_year">%1$s a year</string>
     <string name="plus_price_month">%1$s a month</string>
     <string name="request_sent">Request sent</string>
+    <string name="archived">Archived</string>
+    <string name="archive">Archive chat</string>
+    <string name="unarchive">Unarchive chat</string>
+    <string name="delete_chat">Delete chat</string>
+    <string name="delete_chat_title">Delete this chat?</string>
+    <string name="delete_chat_body">Messages are removed from your phone only. They can still see theirs.</string>
+    <string name="back">Back</string>
+    <string name="view_profile">View profile</string>
+    <string name="friends_online">Online (%1$d)</string>
+    <string name="friends_offline">Offline (%1$d)</string>
+    <string name="section_calls">Calls</string>
+    <string name="auto_connect_desc">Go straight to the next person when a call ends</string>
+    <string name="speaker_default">Start on speaker</string>
+    <string name="speaker_default_desc">Off: calls start on the earpiece, like a phone call</string>
 </resources>

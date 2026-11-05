@@ -477,5 +477,19 @@
 "plus_trial_then_month": "%1$d روز رایگان، سپس ماهانه %2$s",
 "plus_price_year": "سالانه %1$s",
 "plus_price_month": "ماهانه %1$s",
-"request_sent": "درخواست ارسال شد"
+"request_sent": "درخواست ارسال شد",
+"archived": "بایگانی‌شده",
+"archive": "بایگانی گفتگو",
+"unarchive": "خروج از بایگانی",
+"delete_chat": "حذف گفتگو",
+"delete_chat_title": "این گفتگو حذف شود؟",
+"delete_chat_body": "پیام‌ها فقط از گوشی شما پاک می‌شوند. طرف مقابل همچنان پیام‌هایش را می‌بیند.",
+"back": "بازگشت",
+"view_profile": "دیدن نمایه",
+"friends_online": "آنلاین (%1$d)",
+"friends_offline": "آفلاین (%1$d)",
+"section_calls": "تماس‌ها",
+"auto_connect_desc": "پس از پایان تماس مستقیم به نفر بعدی بروید",
+"speaker_default": "شروع با بلندگو",
+"speaker_default_desc": "خاموش: تماس‌ها مثل تلفن با گوشی شروع می‌شوند"
 }

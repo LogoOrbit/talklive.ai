@@ -477,5 +477,19 @@
 "plus_trial_then_month": "%1$d giorni gratis, poi %2$s al mese",
 "plus_price_year": "%1$s all'anno",
 "plus_price_month": "%1$s al mese",
-"request_sent": "Richiesta inviata"
+"request_sent": "Richiesta inviata",
+"archived": "Archiviate",
+"archive": "Archivia chat",
+"unarchive": "Rimuovi dall'archivio",
+"delete_chat": "Elimina chat",
+"delete_chat_title": "Eliminare questa chat?",
+"delete_chat_body": "I messaggi vengono rimossi solo dal tuo telefono. L'altra persona vede ancora i suoi.",
+"back": "Indietro",
+"view_profile": "Vedi profilo",
+"friends_online": "Online (%1$d)",
+"friends_offline": "Offline (%1$d)",
+"section_calls": "Chiamate",
+"auto_connect_desc": "Passa subito alla persona successiva a fine chiamata",
+"speaker_default": "Inizia in vivavoce",
+"speaker_default_desc": "Disattivato: le chiamate partono dall'auricolare"
 }

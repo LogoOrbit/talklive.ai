@@ -148,9 +148,13 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
                     }
                 }
             }
-            if (sorted.isNotEmpty()) {
-                item { SectionLabel(stringResource(R.string.your_friends, sorted.size)) }
-                items(sorted, key = { "f" + it.clientId }) { p ->
+            // Online first, then offline, each under its own heading.
+            listOf(
+                R.string.friends_online to sorted.filter { it.online },
+                R.string.friends_offline to sorted.filter { !it.online },
+            ).filter { it.second.isNotEmpty() }.forEach { (label, group) ->
+                item(key = "h$label") { SectionLabel(stringResource(label, group.size)) }
+                items(group, key = { "f" + it.clientId }) { p ->
                     FriendRow(
                         p,
                         modifier = Modifier.animateItem().combinedClickable(

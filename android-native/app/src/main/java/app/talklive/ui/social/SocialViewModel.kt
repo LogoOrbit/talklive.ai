@@ -38,6 +38,8 @@ class SocialViewModel @Inject constructor(
     val typing = repo.typing
     val threads = repo.threads
     val muted = repo.muted
+    val archived = repo.archived
+    fun setArchived(id: String, on: Boolean) = repo.setArchived(id, on)
     val myFriendId = repo.myFriendId
     val incoming = repo.incoming
     val outgoing = repo.outgoing

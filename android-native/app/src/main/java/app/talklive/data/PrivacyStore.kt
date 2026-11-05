@@ -29,6 +29,14 @@ class PrivacyStore(context: Context, name: String) {
     val readReceipts: StateFlow<Boolean> = _readReceipts
     fun setReadReceipts(v: Boolean) { prefs.edit().putBoolean("read_receipts", v).apply(); _readReceipts.value = v }
 
+    private val _archived = MutableStateFlow(prefs.getStringSet("archived", emptySet()).orEmpty().toSet())
+    /** Chats moved out of the list (kept on this phone; a new message brings one back). */
+    val archived: StateFlow<Set<String>> = _archived
+    fun setArchived(clientId: String, on: Boolean) {
+        val next = if (on) _archived.value + clientId else _archived.value - clientId
+        prefs.edit().putStringSet("archived", next).apply(); _archived.value = next
+    }
+
     fun setHideStatus(v: Boolean) { prefs.edit().putBoolean("hide_status", v).apply(); _hideStatus.value = v }
     fun setAcceptCalls(v: Boolean) { prefs.edit().putBoolean("accept_calls", v).apply(); _acceptCalls.value = v }
 }

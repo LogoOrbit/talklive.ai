@@ -477,5 +477,19 @@
 "plus_trial_then_month": "%1$d دن مفت، پھر %2$s ماہانہ",
 "plus_price_year": "%1$s سالانہ",
 "plus_price_month": "%1$s ماہانہ",
-"request_sent": "درخواست بھیج دی گئی"
+"request_sent": "درخواست بھیج دی گئی",
+"archived": "آرکائیو شدہ",
+"archive": "چیٹ آرکائیو کریں",
+"unarchive": "آرکائیو سے نکالیں",
+"delete_chat": "چیٹ حذف کریں",
+"delete_chat_title": "یہ چیٹ حذف کریں؟",
+"delete_chat_body": "پیغامات صرف آپ کے فون سے حذف ہوں گے۔ وہ اپنے پیغامات اب بھی دیکھ سکتے ہیں۔",
+"back": "واپس",
+"view_profile": "پروفائل دیکھیں",
+"friends_online": "آن لائن (%1$d)",
+"friends_offline": "آف لائن (%1$d)",
+"section_calls": "کالز",
+"auto_connect_desc": "کال ختم ہونے پر سیدھا اگلے شخص سے جڑیں",
+"speaker_default": "اسپیکر پر شروع کریں",
+"speaker_default_desc": "بند: کال فون کی طرح ایئرپیس پر شروع ہوگی"
 }

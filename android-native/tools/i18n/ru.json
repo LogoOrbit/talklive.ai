@@ -479,5 +479,19 @@
 "plus_trial_then_month": "%1$d дн. бесплатно, затем %2$s в месяц",
 "plus_price_year": "%1$s в год",
 "plus_price_month": "%1$s в месяц",
-"request_sent": "Заявка отправлена"
+"request_sent": "Заявка отправлена",
+"archived": "Архив",
+"archive": "Архивировать чат",
+"unarchive": "Вернуть из архива",
+"delete_chat": "Удалить чат",
+"delete_chat_title": "Удалить этот чат?",
+"delete_chat_body": "Сообщения удаляются только с вашего телефона. У собеседника они останутся.",
+"back": "Назад",
+"view_profile": "Профиль",
+"friends_online": "В сети (%1$d)",
+"friends_offline": "Не в сети (%1$d)",
+"section_calls": "Звонки",
+"auto_connect_desc": "Сразу переходить к следующему собеседнику",
+"speaker_default": "Начинать с динамика",
+"speaker_default_desc": "Выкл.: звонок начинается в разговорном динамике"
 }

@@ -477,5 +477,19 @@
 "plus_trial_then_month": "%1$d dias grátis, depois %2$s por mês",
 "plus_price_year": "%1$s por ano",
 "plus_price_month": "%1$s por mês",
-"request_sent": "Pedido enviado"
+"request_sent": "Pedido enviado",
+"archived": "Arquivadas",
+"archive": "Arquivar conversa",
+"unarchive": "Desarquivar conversa",
+"delete_chat": "Apagar conversa",
+"delete_chat_title": "Apagar esta conversa?",
+"delete_chat_body": "As mensagens são apagadas só do seu celular. A outra pessoa ainda vê as dela.",
+"back": "Voltar",
+"view_profile": "Ver perfil",
+"friends_online": "Online (%1$d)",
+"friends_offline": "Offline (%1$d)",
+"section_calls": "Chamadas",
+"auto_connect_desc": "Vá direto para a próxima pessoa quando a chamada acabar",
+"speaker_default": "Começar no viva-voz",
+"speaker_default_desc": "Desligado: as chamadas começam no fone, como uma ligação"
 }

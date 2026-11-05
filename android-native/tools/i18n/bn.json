@@ -477,5 +477,19 @@
 "plus_trial_then_month": "%1$d দিন বিনামূল্যে, তারপর মাসে %2$s",
 "plus_price_year": "বছরে %1$s",
 "plus_price_month": "মাসে %1$s",
-"request_sent": "অনুরোধ পাঠানো হয়েছে"
+"request_sent": "অনুরোধ পাঠানো হয়েছে",
+"archived": "আর্কাইভ করা",
+"archive": "চ্যাট আর্কাইভ করুন",
+"unarchive": "আর্কাইভ থেকে সরান",
+"delete_chat": "চ্যাট মুছুন",
+"delete_chat_title": "এই চ্যাট মুছবেন?",
+"delete_chat_body": "বার্তাগুলো শুধু আপনার ফোন থেকে মুছে যাবে। তারা তাদেরটা দেখতে পাবে।",
+"back": "ফিরে যান",
+"view_profile": "প্রোফাইল দেখুন",
+"friends_online": "অনলাইনে (%1$d)",
+"friends_offline": "অফলাইনে (%1$d)",
+"section_calls": "কল",
+"auto_connect_desc": "কল শেষ হলে সরাসরি পরের জনের কাছে যান",
+"speaker_default": "স্পিকারে শুরু করুন",
+"speaker_default_desc": "বন্ধ থাকলে: কল ইয়ারপিসে শুরু হয়, ফোন কলের মতো"
 }

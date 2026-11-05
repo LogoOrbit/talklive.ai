@@ -477,5 +477,19 @@
 "plus_trial_then_month": "%1$d jours gratuits, puis %2$s par mois",
 "plus_price_year": "%1$s par an",
 "plus_price_month": "%1$s par mois",
-"request_sent": "Demande envoyée"
+"request_sent": "Demande envoyée",
+"archived": "Archivées",
+"archive": "Archiver la discussion",
+"unarchive": "Désarchiver",
+"delete_chat": "Supprimer la discussion",
+"delete_chat_title": "Supprimer cette discussion ?",
+"delete_chat_body": "Les messages sont supprimés de votre téléphone uniquement. L'autre personne voit toujours les siens.",
+"back": "Retour",
+"view_profile": "Voir le profil",
+"friends_online": "En ligne (%1$d)",
+"friends_offline": "Hors ligne (%1$d)",
+"section_calls": "Appels",
+"auto_connect_desc": "Passer directement à la personne suivante après un appel",
+"speaker_default": "Démarrer sur haut-parleur",
+"speaker_default_desc": "Désactivé : les appels démarrent sur l'écouteur"
 }

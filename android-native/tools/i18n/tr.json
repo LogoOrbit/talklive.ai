@@ -477,5 +477,19 @@
 "plus_trial_then_month": "%1$d gün ücretsiz, sonra aylık %2$s",
 "plus_price_year": "Yıllık %1$s",
 "plus_price_month": "Aylık %1$s",
-"request_sent": "İstek gönderildi"
+"request_sent": "İstek gönderildi",
+"archived": "Arşivlenenler",
+"archive": "Sohbeti arşivle",
+"unarchive": "Arşivden çıkar",
+"delete_chat": "Sohbeti sil",
+"delete_chat_title": "Bu sohbet silinsin mi?",
+"delete_chat_body": "Mesajlar yalnızca telefonundan silinir. Karşı taraf kendi mesajlarını görmeye devam eder.",
+"back": "Geri",
+"view_profile": "Profili gör",
+"friends_online": "Çevrimiçi (%1$d)",
+"friends_offline": "Çevrimdışı (%1$d)",
+"section_calls": "Aramalar",
+"auto_connect_desc": "Arama bitince doğrudan sonraki kişiye geç",
+"speaker_default": "Hoparlörle başlat",
+"speaker_default_desc": "Kapalı: aramalar telefon gibi ahizeden başlar"
 }

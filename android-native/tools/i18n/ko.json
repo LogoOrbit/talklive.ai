@@ -476,5 +476,19 @@
 "plus_trial_then_month": "%1$d일 무료, 이후 월 %2$s",
 "plus_price_year": "연 %1$s",
 "plus_price_month": "월 %1$s",
-"request_sent": "요청 보냄"
+"request_sent": "요청 보냄",
+"archived": "보관됨",
+"archive": "채팅 보관",
+"unarchive": "보관 해제",
+"delete_chat": "채팅 삭제",
+"delete_chat_title": "이 채팅을 삭제할까요?",
+"delete_chat_body": "메시지는 내 휴대폰에서만 삭제돼요. 상대방은 계속 볼 수 있어요.",
+"back": "뒤로",
+"view_profile": "프로필 보기",
+"friends_online": "온라인 (%1$d)",
+"friends_offline": "오프라인 (%1$d)",
+"section_calls": "통화",
+"auto_connect_desc": "통화가 끝나면 바로 다음 사람과 연결",
+"speaker_default": "스피커로 시작",
+"speaker_default_desc": "끄면 전화처럼 수화 스피커로 시작"
 }

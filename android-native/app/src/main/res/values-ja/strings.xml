@@ -478,6 +478,20 @@
     <string name="plus_price_year">年額%1$s</string>
     <string name="plus_price_month">月額%1$s</string>
     <string name="request_sent">リクエスト送信済み</string>
+    <string name="archived">アーカイブ</string>
+    <string name="archive">チャットをアーカイブ</string>
+    <string name="unarchive">アーカイブを解除</string>
+    <string name="delete_chat">チャットを削除</string>
+    <string name="delete_chat_title">このチャットを削除しますか？</string>
+    <string name="delete_chat_body">メッセージはあなたの端末からのみ削除されます。相手側には残ります。</string>
+    <string name="back">戻る</string>
+    <string name="view_profile">プロフィールを見る</string>
+    <string name="friends_online">オンライン (%1$d)</string>
+    <string name="friends_offline">オフライン (%1$d)</string>
+    <string name="section_calls">通話</string>
+    <string name="auto_connect_desc">通話が終わったらすぐ次の人へ</string>
+    <string name="speaker_default">スピーカーで開始</string>
+    <string name="speaker_default_desc">オフ：電話のように受話口で開始</string>
     <plurals name="visitors_today">
         <item quantity="other">今日の訪問者 %1$s人</item>
     </plurals>

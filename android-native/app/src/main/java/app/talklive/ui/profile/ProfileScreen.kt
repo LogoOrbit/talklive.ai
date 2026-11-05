@@ -46,6 +46,7 @@ import androidx.compose.material.icons.rounded.Feedback
 import androidx.compose.material.icons.rounded.SupportAgent
 import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.ContactMail
+import androidx.compose.material.icons.rounded.AllInclusive
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Vibration
 import androidx.compose.material.icons.rounded.Call
@@ -250,6 +251,22 @@ fun ProfileScreen(
             val acceptCalls by vm.acceptCalls.collectAsStateWithLifecycle()
             val blocked by vm.blocked.collectAsStateWithLifecycle()
             val friendId by vm.myFriendId.collectAsStateWithLifecycle()
+            // Calls: how a call starts and who can ring you.
+            Section(stringResource(R.string.section_calls)) {
+                val autoConnect by vm.autoConnect.collectAsStateWithLifecycle()
+                val speakerDefault by vm.speakerDefault.collectAsStateWithLifecycle()
+                val acceptCallsC by vm.acceptCalls.collectAsStateWithLifecycle()
+                SettingRow(Icons.Rounded.AllInclusive, stringResource(R.string.auto_connect), stringResource(R.string.auto_connect_desc), onClick = { vm.setAutoConnect(!autoConnect) }, trailing = {
+                    Switch(checked = autoConnect, onCheckedChange = { vm.setAutoConnect(it) }, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary))
+                })
+                SettingRow(Icons.Rounded.VolumeUp, stringResource(R.string.speaker_default), stringResource(R.string.speaker_default_desc), onClick = { vm.setSpeakerDefault(!speakerDefault) }, trailing = {
+                    Switch(checked = speakerDefault, onCheckedChange = { vm.setSpeakerDefault(it) }, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary))
+                })
+                SettingRow(Icons.Rounded.Call, stringResource(R.string.allow_calls), stringResource(R.string.allow_calls_desc), onClick = { vm.setAcceptCalls(!acceptCallsC) }, trailing = {
+                    Switch(checked = acceptCallsC, onCheckedChange = { vm.setAcceptCalls(it) }, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary))
+                })
+            }
+
             Section(stringResource(R.string.section_privacy)) {
                 // Tap to copy your ID (with a little "Copied" moment); accounts edit it with the pencil.
                 var idCopied by remember { mutableStateOf(false) }
@@ -266,9 +283,6 @@ fun ProfileScreen(
                 )
                 SettingRow(Icons.Rounded.Visibility, stringResource(R.string.show_online), stringResource(R.string.show_online_desc), onClick = { vm.setHideStatus(!hideStatus) }, trailing = {
                     Switch(checked = !hideStatus, onCheckedChange = { vm.setHideStatus(!it) }, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary))
-                })
-                SettingRow(Icons.Rounded.Call, stringResource(R.string.allow_calls), stringResource(R.string.allow_calls_desc), onClick = { vm.setAcceptCalls(!acceptCalls) }, trailing = {
-                    Switch(checked = acceptCalls, onCheckedChange = { vm.setAcceptCalls(it) }, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary))
                 })
                 val readReceipts by vm.readReceipts.collectAsStateWithLifecycle()
                 SettingRow(Icons.Rounded.DoneAll, stringResource(R.string.read_receipts), stringResource(R.string.read_receipts_desc), onClick = { vm.setReadReceipts(!readReceipts) }, trailing = {

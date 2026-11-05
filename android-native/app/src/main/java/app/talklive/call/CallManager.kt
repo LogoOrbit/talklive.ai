@@ -112,6 +112,10 @@ class CallManager @Inject constructor(
     private val _autoConnect = MutableStateFlow(uiPrefs.getBoolean("auto_connect", true))
     val autoConnect: StateFlow<Boolean> = _autoConnect
     fun setAutoConnect(on: Boolean) { uiPrefs.edit().putBoolean("auto_connect", on).apply(); _autoConnect.value = on }
+    private val _speakerDefault = MutableStateFlow(uiPrefs.getBoolean("speaker_default", true))
+    /** Settings > Calls: start each call on the loudspeaker (off: the earpiece). */
+    val speakerDefault: StateFlow<Boolean> = _speakerDefault
+    fun setSpeakerDefault(on: Boolean) { uiPrefs.edit().putBoolean("speaker_default", on).apply(); _speakerDefault.value = on }
 
     /** Live spectrum of the other person's voice (call screen visualiser). */
     private val spectrum = Spectrum()
@@ -184,7 +188,7 @@ class CallManager @Inject constructor(
 
     fun start(mode: CallMode = CallMode.Talk) = scope.launch {
         if (_state.value.phase != CallPhase.Idle) return@launch
-        _state.update { it.copy(notice = null, muted = false, mode = mode) }
+        _state.update { it.copy(notice = null, muted = false, mode = mode, speakerOn = _speakerDefault.value) }
         if (mode == CallMode.Talk) audio.start(_state.value.speakerOn)
         search()
     }

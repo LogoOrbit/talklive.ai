@@ -477,5 +477,19 @@
 "plus_trial_then_month": "%1$d أيام مجانًا، ثم %2$s شهريًا",
 "plus_price_year": "%1$s سنويًا",
 "plus_price_month": "%1$s شهريًا",
-"request_sent": "تم إرسال الطلب"
+"request_sent": "تم إرسال الطلب",
+"archived": "المؤرشفة",
+"archive": "أرشفة الدردشة",
+"unarchive": "إلغاء أرشفة الدردشة",
+"delete_chat": "حذف الدردشة",
+"delete_chat_title": "حذف هذه الدردشة؟",
+"delete_chat_body": "تُحذف الرسائل من هاتفك فقط. لا يزال بإمكانهم رؤية رسائلهم.",
+"back": "رجوع",
+"view_profile": "عرض الملف",
+"friends_online": "متصل (%1$d)",
+"friends_offline": "غير متصل (%1$d)",
+"section_calls": "المكالمات",
+"auto_connect_desc": "انتقل مباشرة إلى الشخص التالي عند انتهاء المكالمة",
+"speaker_default": "البدء بمكبر الصوت",
+"speaker_default_desc": "عند الإيقاف: تبدأ المكالمات بالسماعة الداخلية مثل الهاتف"
 }

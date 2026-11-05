@@ -478,6 +478,20 @@
     <string name="plus_price_year">每年 %1$s</string>
     <string name="plus_price_month">每月 %1$s</string>
     <string name="request_sent">请求已发送</string>
+    <string name="archived">已归档</string>
+    <string name="archive">归档聊天</string>
+    <string name="unarchive">取消归档</string>
+    <string name="delete_chat">删除聊天</string>
+    <string name="delete_chat_title">删除此聊天？</string>
+    <string name="delete_chat_body">消息只会从你的手机删除，对方仍能看到。</string>
+    <string name="back">返回</string>
+    <string name="view_profile">查看资料</string>
+    <string name="friends_online">在线 (%1$d)</string>
+    <string name="friends_offline">离线 (%1$d)</string>
+    <string name="section_calls">通话</string>
+    <string name="auto_connect_desc">通话结束后直接连接下一位</string>
+    <string name="speaker_default">默认使用扬声器</string>
+    <string name="speaker_default_desc">关闭：像打电话一样从听筒开始</string>
     <plurals name="visitors_today">
         <item quantity="other">今日访客 %1$s 人</item>
     </plurals>

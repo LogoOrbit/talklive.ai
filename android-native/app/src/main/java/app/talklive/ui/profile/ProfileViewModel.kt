@@ -17,6 +17,7 @@ enum class ProfileSheet { Delete, Edit, Animal, Nickname, Email, Password, Block
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
+    private val calls: app.talklive.call.CallManager,
     private val auth: AuthRepository,
     private val identity: IdentityStore,
     private val themeStore: ThemeStore,
@@ -26,6 +27,10 @@ class ProfileViewModel @Inject constructor(
     private val social: app.talklive.social.SocialRepository,
 ) : ViewModel() {
     val hideStatus = privacy.hideStatus
+    val autoConnect = calls.autoConnect
+    fun setAutoConnect(on: Boolean) = calls.setAutoConnect(on)
+    val speakerDefault = calls.speakerDefault
+    fun setSpeakerDefault(on: Boolean) = calls.setSpeakerDefault(on)
     val contactConsent = socket.contactConsent
     fun setContactConsent(on: Boolean) = socket.setContactConsent(on)
     val acceptCalls = privacy.acceptCalls

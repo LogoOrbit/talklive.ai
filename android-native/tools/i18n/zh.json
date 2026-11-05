@@ -476,5 +476,19 @@
 "plus_trial_then_month": "免费 %1$d 天，之后每月 %2$s",
 "plus_price_year": "每年 %1$s",
 "plus_price_month": "每月 %1$s",
-"request_sent": "请求已发送"
+"request_sent": "请求已发送",
+"archived": "已归档",
+"archive": "归档聊天",
+"unarchive": "取消归档",
+"delete_chat": "删除聊天",
+"delete_chat_title": "删除此聊天？",
+"delete_chat_body": "消息只会从你的手机删除，对方仍能看到。",
+"back": "返回",
+"view_profile": "查看资料",
+"friends_online": "在线 (%1$d)",
+"friends_offline": "离线 (%1$d)",
+"section_calls": "通话",
+"auto_connect_desc": "通话结束后直接连接下一位",
+"speaker_default": "默认使用扬声器",
+"speaker_default_desc": "关闭：像打电话一样从听筒开始"
 }

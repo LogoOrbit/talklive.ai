@@ -477,5 +477,19 @@
 "plus_trial_then_month": "%1$d दिन मुफ़्त, फिर %2$s प्रति माह",
 "plus_price_year": "%1$s प्रति वर्ष",
 "plus_price_month": "%1$s प्रति माह",
-"request_sent": "अनुरोध भेजा गया"
+"request_sent": "अनुरोध भेजा गया",
+"archived": "संग्रहित",
+"archive": "चैट संग्रहित करें",
+"unarchive": "संग्रह से हटाएँ",
+"delete_chat": "चैट हटाएँ",
+"delete_chat_title": "यह चैट हटाएँ?",
+"delete_chat_body": "संदेश सिर्फ़ आपके फ़ोन से हटेंगे। वे अपने संदेश अब भी देख सकते हैं।",
+"back": "वापस",
+"view_profile": "प्रोफ़ाइल देखें",
+"friends_online": "ऑनलाइन (%1$d)",
+"friends_offline": "ऑफ़लाइन (%1$d)",
+"section_calls": "कॉल",
+"auto_connect_desc": "कॉल खत्म होते ही अगले व्यक्ति से जुड़ें",
+"speaker_default": "स्पीकर पर शुरू करें",
+"speaker_default_desc": "बंद: कॉल फ़ोन कॉल की तरह ईयरपीस पर शुरू होगी"
 }

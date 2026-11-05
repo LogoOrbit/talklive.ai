@@ -145,6 +145,24 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     var showFilters by remember { mutableStateOf(false) }
     // The Plus page; from a free feature it offers to carry on free.
     var showPlus by remember { mutableStateOf<String?>(null) }
+    // Plus is offered once, after someone's 3rd good conversation (a minute or
+    // more), when they are back on Home: they already know they like it, and
+    // nobody is interrupted mid-call.
+    var liveSince by remember { mutableStateOf<Long?>(null) }
+    LaunchedEffect(state.phase) {
+        val p = state.phase
+        if (p is CallPhase.Connected) { if (liveSince == null) liveSince = p.sinceMs; return@LaunchedEffect }
+        val prefs = context.getSharedPreferences("ui", android.content.Context.MODE_PRIVATE)
+        liveSince?.let { since ->
+            liveSince = null
+            if (System.currentTimeMillis() - since >= 60_000) prefs.edit().putInt("good_calls", prefs.getInt("good_calls", 0) + 1).apply()
+        }
+        if (p is CallPhase.Idle && !premium.active && prefs.getInt("good_calls", 0) >= 3 && !prefs.getBoolean("plus_offered", false)) {
+            prefs.edit().putBoolean("plus_offered", true).apply()
+            kotlinx.coroutines.delay(1200) // let the call screen close first
+            showPlus = "good_calls"
+        }
+    }
     LaunchedEffect(Unit) {
         engageVm.moments.collect { m ->
             snackbar.say(
