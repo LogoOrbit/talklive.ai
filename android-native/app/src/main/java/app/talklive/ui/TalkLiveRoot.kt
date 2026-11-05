@@ -315,6 +315,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         },
     ) { pad ->
         Box(Modifier.fillMaxSize().padding(bottom = if (inCall) 0.dp else pad.calculateBottomPadding())) {
+            val homeAutoConnect by vm.autoConnect.collectAsStateWithLifecycle()
             AnimatedContent(
                 targetState = tab,
                 transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(120)) },
@@ -341,6 +342,8 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                         premium = premium.active,
                         onPlus = { showPlus = "home" },
                         online = onlinePeople,
+                        autoConnect = homeAutoConnect,
+                        onAutoConnect = vm::setAutoConnect,
                         onFindIn = { code ->
                             // Look for someone in that country for this search only;
                             // the person's own filters come back when it ends (it

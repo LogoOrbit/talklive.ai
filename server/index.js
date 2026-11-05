@@ -3580,6 +3580,22 @@ async function findOrCreateGoogleAccount(idToken) {
   // Google again. Skipped if another account already claims the address.
   const googleEmail = normalizeEmail(payload.email);
   let username = googleAccounts.get(googleId);
+  // Older Google sign-ins made a separate Google-only account even when a
+  // password account already used the address. That account has no email of
+  // its own; the one that owns the (Google-verified) address is the person's
+  // real account, so Google moves there and the stray one is left unlinked.
+  if (username && googleEmail) {
+    const linked = accounts.get(username);
+    const owner = store.findUsernameByEmail(googleEmail);
+    const ownerAccount = owner && owner !== username && accounts.get(owner);
+    if (linked && !linked.email && ownerAccount && !ownerAccount.googleId) {
+      linked.googleId = null;
+      linked.mergedInto = owner;
+      persistAccount(username);
+      console.log(`[auth] Google sign-in moved from Google-only account ${username} to ${owner}, which owns its email`);
+      username = null;
+    }
+  }
   // Google verified this address. If an account already uses it, sign in to
   // that account (and link Google to it) instead of making a second one.
   if (!username && googleEmail) {

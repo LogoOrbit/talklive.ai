@@ -36,6 +36,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.requiredWidth
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -250,7 +252,7 @@ fun MainCallButton(
     val countdown = remember { Animatable(1f) }
     LaunchedEffect(mode) { if (mode == MainMode.Confirm) { countdown.snapTo(1f); countdown.animateTo(0f, tween(2600, easing = LinearEasing)) } }
     Box(
-        Modifier.scale(scale).width(width).height(56.dp)
+        Modifier.scale(scale).requiredWidth(width).requiredHeight(56.dp)
             .graphicsLayer { shadowElevation = 14f; shape = RoundedCornerShape(34.dp); clip = true }
             .background(Brush.linearGradient(listOf(color, color.copy(alpha = 0.78f))))
             .drawBehind {
@@ -334,4 +336,15 @@ fun LeaveButton(onClick: () -> Unit) {
         Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)).clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) { Icon(Icons.Rounded.Close, stringResource(R.string.end), tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(20.dp)) }
+}
+
+/** Link quality as three small bars (like a phone's signal icon), no words. */
+@Composable
+fun SignalBars(level: Int, color: Color, modifier: Modifier = Modifier) {
+    val dim = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+    Row(modifier.height(16.dp), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.Bottom) {
+        listOf(6.dp, 11.dp, 16.dp).forEachIndexed { i, h ->
+            Box(Modifier.width(4.dp).height(h).clip(RoundedCornerShape(2.dp)).background(if (i < level) color else dim))
+        }
+    }
 }

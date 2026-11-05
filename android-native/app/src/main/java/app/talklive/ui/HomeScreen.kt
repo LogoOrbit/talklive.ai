@@ -83,6 +83,8 @@ fun HomeScreen(
     onPlus: () -> Unit = {},
     online: List<app.talklive.net.OnlinePerson> = emptyList(),
     onFindIn: (String) -> Unit = {},
+    autoConnect: Boolean = true,
+    onAutoConnect: (Boolean) -> Unit = {},
 ) {
     Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 24.dp, vertical = 16.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -163,7 +165,11 @@ fun HomeScreen(
                 }
             }
         }
-        Spacer(Modifier.height(14.dp))
+        // Auto-connect is set here, before a call, so the call screen stays clean.
+        Box(Modifier.fillMaxWidth().padding(top = 12.dp), contentAlignment = Alignment.Center) {
+            app.talklive.ui.call.AutoConnectToggle(autoConnect, onAutoConnect)
+        }
+        Spacer(Modifier.height(12.dp))
         PrimaryButton(
             text = stringResource(if (mode == app.talklive.call.CallMode.Chat) R.string.start_chatting else R.string.start_talking),
             onClick = onStart,

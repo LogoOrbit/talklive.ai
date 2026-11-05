@@ -2522,7 +2522,23 @@ function isAccountFriendId(friendId) {
 // Which account, if any, a recovery email belongs to. Returns usernameLower.
 function findUsernameByEmail(email) {
   if (typeof email !== 'string' || !email) return null;
-  return data.emailIndex[email.trim().toLowerCase()] || null;
+  const key = email.trim().toLowerCase();
+  if (data.emailIndex[key]) return data.emailIndex[key];
+  // Gmail ignores dots and "+tags" and treats googlemail.com as gmail.com, so
+  // a.b+x@gmail.com is the same inbox as ab@gmail.com: find that account too
+  // (Google sign-in reports the address as the person typed it at Google).
+  const canon = gmailCanonical(key);
+  if (!canon) return null;
+  for (const [indexed, username] of Object.entries(data.emailIndex)) {
+    if (gmailCanonical(indexed) === canon) return username;
+  }
+  return null;
+}
+
+function gmailCanonical(email) {
+  const m = /^([^@]+)@(gmail\.com|googlemail\.com)$/.exec(email);
+  if (!m) return '';
+  return m[1].split('+')[0].replace(/\./g, '') + '@gmail.com';
 }
 
 // --- Durable login sessions ------------------------------------------------

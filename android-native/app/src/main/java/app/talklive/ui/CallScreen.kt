@@ -157,10 +157,21 @@ fun CallScreen(
             Spacer(Modifier.width(8.dp))
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                 AnimatedContent(
-                    targetState = banner ?: if (live) QualityBanner(state.quality) else null,
+                    targetState = banner,
                     transitionSpec = { (fadeIn() + scaleIn(initialScale = 0.9f)) togetherWith fadeOut() },
                     label = "banner",
                 ) { b -> if (b != null) StatusPill(b) }
+            }
+            if (live && banner == null) {
+                val (level, tint) = when (state.quality) {
+                    LinkQuality.Good -> 3 to Success
+                    LinkQuality.Fair -> 2 to Amber
+                    LinkQuality.Poor -> 1 to Danger
+                    else -> 0 to Success
+                }
+                if (level > 0) {
+                    app.talklive.ui.call.SignalBars(level, tint, Modifier.padding(end = 12.dp))
+                }
             }
             if (onGames != null && live) {
                 Surface(onClick = onGames, shape = CircleShape, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f), modifier = Modifier.size(40.dp)) {
@@ -169,8 +180,6 @@ fun CallScreen(
                 Spacer(Modifier.width(8.dp))
             }
         }
-        Spacer(Modifier.height(10.dp))
-        app.talklive.ui.call.AutoConnectToggle(autoConnect, onAutoConnect)
 
         Spacer(Modifier.weight(1f))
         // The person, on a slightly faster layer than the background: a gentle parallax.
@@ -223,10 +232,6 @@ fun CallScreen(
                         if (p.partner.interests.isNotEmpty()) {
                             Spacer(Modifier.height(10.dp))
                             InterestChips(p.partner.interests)
-                        }
-                        if (p.partner.films.isNotEmpty()) {
-                            Spacer(Modifier.height(10.dp))
-                            app.talklive.ui.engage.FilmPosters(p.partner.films, 44.dp)
                         }
                     }
                     CallPhase.Idle -> Unit
