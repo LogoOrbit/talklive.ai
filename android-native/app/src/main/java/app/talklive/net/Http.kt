@@ -9,8 +9,17 @@ import java.util.concurrent.TimeUnit
  * instead of repeating the TLS handshake each time.
  */
 object Http {
+    /**
+     * Who is calling: the server treats a bare "okhttp/x" agent as a bot and
+     * leaves it out of Online now, country counts and visitor stats.
+     */
+    val userAgent: String = runCatching {
+        "TalkLive-Android/${app.talklive.BuildConfig.VERSION_NAME} (Linux; Android ${android.os.Build.VERSION.RELEASE}; ${android.os.Build.MODEL})"
+    }.getOrDefault("TalkLive-Android/1.0 (Linux; Android)")
+
     val client: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
+        .addInterceptor { chain -> chain.proceed(chain.request().newBuilder().header("User-Agent", userAgent).build()) }
         .build()
 
     /** The shared client with its own overall time limit. */

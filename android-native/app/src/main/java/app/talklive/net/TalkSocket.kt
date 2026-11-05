@@ -40,7 +40,11 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
             .setReconnection(true)
             .setReconnectionDelay(1_000)
             .setReconnectionDelayMax(10_000)
-            .build(),
+            .build().apply {
+                // A real app identity, and the app's shared connection pool.
+                callFactory = Http.client
+                webSocketFactory = Http.client
+            },
     )
 
     private val _connected = MutableStateFlow(false)

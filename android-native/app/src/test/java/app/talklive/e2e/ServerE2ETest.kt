@@ -200,6 +200,64 @@ class ServerE2ETest {
         check("a told it was declined") { a.social.outgoing.value == null }
     }
 
+    @Test fun call_status_partner_id_interest_cap_online_and_message_events(): Unit = runBlocking {
+        val a = Client("fa", withCalls = true)
+        val b = Client("fb", withCalls = true)
+        val aId = a.identity.clientId
+        val bId = b.identity.clientId
+        // Free plan: three tags chosen, the server keeps two.
+        a.engage.setFilters(app.talklive.engage.Filters(interests = listOf("music", "anime", "travel")))
+        Thread.sleep(500)
+        // Online now: the other idle person is listed.
+        check("online now lists someone") { b.socket.onlinePeople.value.isNotEmpty() }
+
+        a.calls!!.start(CallMode.Chat)
+        b.calls!!.start(CallMode.Chat)
+        check("matched") { a.calls.state.value.phase is CallPhase.Connected && b.calls.state.value.phase is CallPhase.Connected }
+        val aSeenByB = (b.calls.state.value.phase as CallPhase.Connected).partner
+        assertEquals("free plan keeps 2 interest tags", 2, aSeenByB.interests.size)
+        assertNotNull("the match carries their ID (tap to copy)", aSeenByB.friendId)
+
+        a.social.sendRequest(bId)
+        check("b sees the request") { b.social.requests.value.any { it.clientId == aId } }
+        b.social.respond(aId, true)
+        check("friends") { a.social.friends.value.any { it.clientId == bId } }
+        a.calls.end(); b.calls.end()
+        check("both idle") { a.calls.state.value.phase is CallPhase.Idle && b.calls.state.value.phase is CallPhase.Idle }
+
+        // A friend's message raises a message event (the quick note / notification).
+        val events = CopyOnWriteArrayList<Triple<String, String, String>>()
+        val job = CoroutineScope(Dispatchers.Default).launch { b.social.messageEvents.collect { events += it } }
+        Thread.sleep(200)
+        a.social.send(bId, "ping from a")
+        check("message event fired") { events.any { it.first == aId && it.third == "ping from a" } }
+        job.cancel()
+
+        val bPerson = a.social.friends.value.first { it.clientId == bId }
+        // App open on their phone: Ringing.
+        a.social.call(bPerson)
+        check("ringing when their app is open") { a.social.outgoing.value?.status == "ringing" }
+        a.social.cancelCall()
+        check("call cancelled") { a.social.outgoing.value == null }
+        Thread.sleep(400)
+        // App in the background: Calling (a notification on their side).
+        b.socket.hidden = true
+        Thread.sleep(400)
+        a.social.call(bPerson)
+        check("calling when their app is in the background") { a.social.outgoing.value?.status == "calling" }
+        a.social.cancelCall()
+        b.socket.hidden = false
+        Thread.sleep(400)
+        // On a call with someone else: On another call.
+        val c = Client("fc", withCalls = true)
+        b.calls.start(CallMode.Chat)
+        c.calls!!.start(CallMode.Chat)
+        check("b busy with c") { b.calls.state.value.phase is CallPhase.Connected }
+        a.social.call(bPerson)
+        check("on another call") { a.social.outgoing.value?.status == "busy" }
+        a.social.cancelCall()
+    }
+
     @Test fun friend_call_accept_connects_both() {
         // Socket-level clients (no call engine: WebRTC needs a real device).
         val a = Client("a")
@@ -460,6 +518,15 @@ class ServerE2ETest {
         assertEquals(AuthResult.Ok, b.auth.login(email, "secret456"))
         assertEquals("Droid Tester", b.auth.account.value?.nickname)
         assertEquals("owl", b.identity.animal)
+        // Gender and age group set on one phone come back on the other.
+        a.engage.setMyGender("female")
+        Thread.sleep(600)
+        val g = Client("g")
+        assertEquals(AuthResult.Ok, g.auth.login(email, "secret456"))
+        check("gender restored at sign-in") { g.engage.myGender.value == "female" }
+        // Report a problem reaches the server (dashboard + owner alert).
+        g.engage.sendFeedback("the call button froze", problem = true)
+        waitFor("problem report logged") { server.findInLog(Regex("\\[feedback:problem\\] from (.*the call button froze)")) }
 
         // Two phones, one account: the newer one takes the profile, the other
         // steps aside (no endless back and forth) until "Use here" is tapped.
