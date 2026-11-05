@@ -1,0 +1,32 @@
+# Gives someone TalkLive Plus for a number of days, from the Actions tab.
+# The same as the dashboard's "Give Plus" form (Revenue page): it runs inside
+# the Fly machine and calls the server on localhost, which is the only place
+# /internal/premium/grant answers.
+name: Give Plus
+
+on:
+  workflow_dispatch:
+    inputs:
+      who:
+        description: Email, ID (asad#1234 or the 8-letter code) or username
+        required: true
+      days:
+        description: Number of days
+        required: true
+        default: '1'
+
+jobs:
+  grant:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Give Plus
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          WHO: ${{ inputs.who }}
+          DAYS: ${{ inputs.days }}
+        run: |
+          body=$(jq -cn --arg who "$WHO" --arg days "$DAYS" '{who: $who, days: ($days | tonumber)}')
+          b64=$(printf '%s' "$body" | base64 -w0)
+          flyctl ssh console -a talklive-ai -C "node -e \"fetch('http://127.0.0.1:'+(process.env.PORT||8080)+'/internal/premium/grant',{method:'POST',headers:{'Content-Type':'application/json'},body:Buffer.from('$b64','base64').toString()}).then(r=>r.text()).then(t=>console.log(t))\""

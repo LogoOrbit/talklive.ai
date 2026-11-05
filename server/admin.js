@@ -415,7 +415,7 @@ function generateConclusion(runtime, report) {
 }
 
 // --- Module wiring ---
-function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats, automod, talkguard, patterns, support }) {
+function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats, automod, talkguard, patterns, support, grantPlus }) {
   if (automod) automod.setAlert(sendAlertEmail);
   const router = express.Router();
   router.use(express.json({ limit: '64kb' }));
@@ -1779,6 +1779,14 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
 
   // Subscriptions, referrals and push reach - all read from existing records,
   // nothing here writes or removes anything.
+  // Give someone Plus by hand: email, ID or username, and a number of days.
+  router.post('/api/premium/grant', (req, res) => {
+    if (typeof grantPlus !== 'function') return res.status(503).json({ error: 'Not available.' });
+    const r = grantPlus((req.body || {}).who, (req.body || {}).days);
+    if (r.ok) store.audit('premium-grant', reqIp(req), `Gave ${Number((req.body || {}).days) || 0} day(s) of Plus to ${String((req.body || {}).who || '').slice(0, 80)}`);
+    res.status(r.status || 200).json(r);
+  });
+
   router.get('/api/premium', (req, res) => {
     const rows = premiumRows();
     const now = Date.now();

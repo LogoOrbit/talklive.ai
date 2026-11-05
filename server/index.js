@@ -762,6 +762,38 @@ app.post('/billing/play/rtdn', express.json({ limit: '64kb' }), async (req, res)
   }
 });
 
+// --- Owner: give Plus by hand ------------------------------------------------
+// Answers only connections from inside the machine (flyctl ssh, see
+// .github/workflows/grant-plus.yml): the raw socket address is checked, not
+// any header, so nothing from the internet can reach it through Fly's proxy.
+app.post('/internal/premium/grant', express.json({ limit: '2kb' }), (req, res) => {
+  const ip = String((req.socket && req.socket.remoteAddress) || '');
+  if (!/^(127\.0\.0\.1|::1|::ffff:127\.0\.0\.1)$/.test(ip)) return res.status(404).end();
+  const r = grantPlusTo(req.body && req.body.who, req.body && req.body.days, 'ssh');
+  res.status(r.status || 200).json(r);
+});
+
+// Plus for `days` days to an account found by email, ID (asad#1234 or the
+// 8-letter code) or username. Adds to any time left; a permanent grant stays.
+function grantPlusTo(whoRaw, daysRaw, by) {
+  const who = String(whoRaw || '').trim();
+  const days = Math.min(3650, Math.max(0, Number(daysRaw) || 0));
+  if (!who || !days) return { ok: false, status: 400, error: 'Enter an email or ID, and a number of days.' };
+  let clientId = null;
+  if (who.includes('@') && !who.includes('#')) {
+    const u = store.findUsernameByEmail(normalizeEmail(who));
+    clientId = u ? store.getAccountClientId(u) : null;
+  }
+  if (!clientId) clientId = clientIdForFriendId(normalizeFriendId(who));
+  if (!clientId) clientId = store.getAccountClientId(who.toLowerCase());
+  if (!clientId) return { ok: false, status: 404, error: 'No account found for ' + who };
+  const p = store.extendPremium(clientId, days * 24 * 60 * 60 * 1000, { source: 'manual', lastEvent: 'manual:grant' });
+  store.persistNow();
+  emitPremiumStatus(clientId);
+  console.log(`[premium] owner (${by}) granted ${days} day(s) of Plus to ${who}`);
+  return { ok: true, clientId, expiresAt: p && p.expiresAt ? new Date(p.expiresAt).toISOString() : null, permanent: !!(p && !p.expiresAt) };
+}
+
 // --- Web push ----------------------------------------------------------------
 
 // Handed to the service worker registration so the browser can build a
@@ -1441,7 +1473,7 @@ app.get('/talkguard/model.json', (req, res) => {
   if (req.headers['if-none-match'] === tag) return res.status(304).end();
   res.json(m);
 });
-const admin = createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getUserStats, automod, talkguard, patterns, support, getLiveGames: () => gameTracker.live() });
+const admin = createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getUserStats, automod, talkguard, patterns, support, getLiveGames: () => gameTracker.live(), grantPlus: (who, days) => grantPlusTo(who, days, 'dashboard') });
 app.use('/owner', admin.router);
 
 // Maintenance mode: when on, every non-dashboard page gets a friendly 503.

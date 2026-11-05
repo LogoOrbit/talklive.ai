@@ -3371,6 +3371,17 @@ async function viewTraffic(){
 }
 
 /* ---------- revenue: subscriptions, referrals, push reach ---------- */
+async function grantPlusFromForm(){
+  const who=$('#gpWho').value.trim(),days=+$('#gpDays').value,msg=$('#gpMsg'),btn=$('#gpGo');
+  if(!who){msg.textContent='Type an email or ID first.';return;}
+  btn.disabled=true;msg.textContent='Giving Plus...';
+  try{
+    const r=await api('premium/grant',{method:'POST',body:JSON.stringify({who,days})});
+    msg.innerHTML=r.permanent?`✅ ${esc(who)} already has permanent Plus.`:`✅ ${esc(who)} has Plus until <b>${esc(new Date(r.expiresAt).toLocaleString())}</b>.`;
+    setTimeout(viewRevenue,1800);
+  }catch(e){msg.textContent='❌ '+e.message;}
+  btn.disabled=false;
+}
 async function viewRevenue(){
   const r=await vapi('premium');
   const t=r.totals,ref=r.referrals;
@@ -3378,7 +3389,15 @@ async function viewRevenue(){
   const actMax=Math.max(1,...act.map(d=>Math.max(d.activated,d.cancelled)));
   const srcColor={stripe:'var(--good)',referral:'var(--s1)',client:'var(--s3)',unknown:'var(--muted)'};
   const expiringSoon=r.rows.filter(x=>x.status==='active'&&x.expiresAt&&x.expiresAt-Date.now()<7*86400000);
-  $('#main').innerHTML=`<div class="grid tiles anim">
+  $('#main').innerHTML=`<div class="card anim"><h2>🎁 Give Plus <span class="sub">to anyone, by email, ID or username</span></h2>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+      <input id="gpWho" placeholder="email, asad#1234, or ID" style="flex:1;min-width:200px">
+      <select id="gpDays"><option value="1">1 day</option><option value="7">7 days</option><option value="15">15 days</option><option value="30">30 days</option><option value="365">1 year</option></select>
+      <button class="btn" id="gpGo">Give Plus</button>
+    </div>
+    <div id="gpMsg" class="muted" style="margin-top:8px">Adds to any Plus time they already have. They see it right away.</div>
+  </div>
+  <div class="grid tiles anim">
     <div class="tile"><div class="k">💎 Active Plus</div><div class="v grad" data-count="${t.active}">0</div><div class="s">${num(t.paying)} paying · ${num(t.permanent)} permanent</div></div>
     <div class="tile"><div class="k">Expiring in 7 days</div><div class="v" style="color:${t.expiringIn7Days?'var(--warn)':'inherit'}" data-count="${t.expiringIn7Days}">0</div><div class="s">renew or lapse</div></div>
     <div class="tile"><div class="k">Lapsed</div><div class="v" data-count="${t.expired}">0</div><div class="s">${num(t.revoked)} cancelled</div></div>
@@ -3421,6 +3440,8 @@ async function viewRevenue(){
   <td>${x.activatedAt?fmtTs(x.activatedAt):'-'}</td>
   <td>${x.expiresAt?fmtTs(x.expiresAt):x.status==='active'?'<span class="muted">never</span>':'-'}</td>
   <td class="muted">${esc(x.lastEvent||'')}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">No subscriptions yet. Once Stripe checkout or a referral reward runs, it shows up here.</td></tr>'}</table></div>`;
+  $('#gpGo').onclick=grantPlusFromForm;
+  $('#gpWho').onkeydown=e=>{if(e.key==='Enter')grantPlusFromForm();};
   animateCounters();
 }
 
