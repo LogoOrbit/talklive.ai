@@ -13,6 +13,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -262,6 +263,17 @@ internal fun ChooseScreen(vm: AuthViewModel, onSignup: () -> Unit, onLogin: () -
             stringResource(R.string.terms_note), style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center,
         )
+        // The rules are one tap away before anyone talks to a stranger.
+        Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+            listOf(R.string.terms to "terms", R.string.privacy_policy to "privacy", R.string.community_guidelines to "community-guidelines").forEach { (label, page) ->
+                Text(
+                    stringResource(label), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                        .clickable { runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("${app.talklive.net.ServerConfig.url}/$page"))) } }
+                        .padding(horizontal = 6.dp, vertical = 6.dp),
+                )
+            }
+        }
     }
 }
 
