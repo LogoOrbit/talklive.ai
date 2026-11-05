@@ -495,5 +495,10 @@
 "auto_connect_desc": "Go straight to the next person when a call ends",
 "speaker_default": "Start on speaker",
 "speaker_default_desc": "Off: calls start on the earpiece, like a phone call",
-"filters_interests_hint_free": "Free: up to %1$d interests. Plus: up to 10."
+"filters_interests_hint_free": "Free: up to %1$d interests. Plus: up to 10.",
+"ringing": "Ringing…",
+"on_another_call": "On another call",
+"chat_with": "Chat with %1$s",
+"in_call_chat_empty": "Send a message, an emoji or a GIF while you talk.",
+"is_calling": "%1$s is calling"
 }

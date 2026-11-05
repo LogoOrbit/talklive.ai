@@ -492,5 +492,10 @@
 "auto_connect_desc": "انتقل مباشرة إلى الشخص التالي عند انتهاء المكالمة",
 "speaker_default": "البدء بمكبر الصوت",
 "speaker_default_desc": "عند الإيقاف: تبدأ المكالمات بالسماعة الداخلية مثل الهاتف",
-"filters_interests_hint_free": "مجانًا: حتى %1$d اهتمامات. Plus: حتى 10."
+"filters_interests_hint_free": "مجانًا: حتى %1$d اهتمامات. Plus: حتى 10.",
+"ringing": "يرن…",
+"on_another_call": "في مكالمة أخرى",
+"chat_with": "دردشة مع %1$s",
+"in_call_chat_empty": "أرسل رسالة أو رمزًا تعبيريًا أو صورة متحركة أثناء الحديث.",
+"is_calling": "%1$s يتصل"
 }

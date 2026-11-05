@@ -493,6 +493,11 @@
     <string name="speaker_default">스피커로 시작</string>
     <string name="speaker_default_desc">끄면 전화처럼 수화 스피커로 시작</string>
     <string name="filters_interests_hint_free">무료: 관심사 최대 %1$d개. Plus: 10개까지.</string>
+    <string name="ringing">벨 울리는 중…</string>
+    <string name="on_another_call">다른 통화 중</string>
+    <string name="chat_with">%1$s님과 채팅</string>
+    <string name="in_call_chat_empty">통화하면서 메시지, 이모지, GIF를 보내 보세요.</string>
+    <string name="is_calling">%1$s님의 전화</string>
     <plurals name="visitors_today">
         <item quantity="other">오늘 방문자 %1$s명</item>
     </plurals>

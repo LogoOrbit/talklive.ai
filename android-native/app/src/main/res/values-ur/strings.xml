@@ -493,6 +493,11 @@
     <string name="speaker_default">اسپیکر پر شروع کریں</string>
     <string name="speaker_default_desc">بند: کال فون کی طرح ایئرپیس پر شروع ہوگی</string>
     <string name="filters_interests_hint_free">مفت: %1$d دلچسپیوں تک۔ Plus: 10 تک۔</string>
+    <string name="ringing">گھنٹی بج رہی ہے…</string>
+    <string name="on_another_call">دوسری کال پر ہیں</string>
+    <string name="chat_with">%1$s سے چیٹ</string>
+    <string name="in_call_chat_empty">بات کرتے ہوئے پیغام، ایموجی یا GIF بھیجیں۔</string>
+    <string name="is_calling">%1$s کال کر رہے ہیں</string>
     <plurals name="visitors_today">
         <item quantity="one">آج %1$s وزیٹر</item>
         <item quantity="other">آج %1$s وزیٹرز</item>

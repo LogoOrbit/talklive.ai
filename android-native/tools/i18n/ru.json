@@ -494,5 +494,10 @@
 "auto_connect_desc": "Сразу переходить к следующему собеседнику",
 "speaker_default": "Начинать с динамика",
 "speaker_default_desc": "Выкл.: звонок начинается в разговорном динамике",
-"filters_interests_hint_free": "Бесплатно: до %1$d интересов. Plus: до 10."
+"filters_interests_hint_free": "Бесплатно: до %1$d интересов. Plus: до 10.",
+"ringing": "Идёт вызов…",
+"on_another_call": "Разговаривает с кем-то",
+"chat_with": "Чат с %1$s",
+"in_call_chat_empty": "Отправьте сообщение, эмодзи или GIF прямо во время звонка.",
+"is_calling": "Звонит %1$s"
 }

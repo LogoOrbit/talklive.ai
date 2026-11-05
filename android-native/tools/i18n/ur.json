@@ -492,5 +492,10 @@
 "auto_connect_desc": "کال ختم ہونے پر سیدھا اگلے شخص سے جڑیں",
 "speaker_default": "اسپیکر پر شروع کریں",
 "speaker_default_desc": "بند: کال فون کی طرح ایئرپیس پر شروع ہوگی",
-"filters_interests_hint_free": "مفت: %1$d دلچسپیوں تک۔ Plus: 10 تک۔"
+"filters_interests_hint_free": "مفت: %1$d دلچسپیوں تک۔ Plus: 10 تک۔",
+"ringing": "گھنٹی بج رہی ہے…",
+"on_another_call": "دوسری کال پر ہیں",
+"chat_with": "%1$s سے چیٹ",
+"in_call_chat_empty": "بات کرتے ہوئے پیغام، ایموجی یا GIF بھیجیں۔",
+"is_calling": "%1$s کال کر رہے ہیں"
 }

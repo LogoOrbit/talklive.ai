@@ -493,6 +493,11 @@
     <string name="speaker_default">Começar no viva-voz</string>
     <string name="speaker_default_desc">Desligado: as chamadas começam no fone, como uma ligação</string>
     <string name="filters_interests_hint_free">Grátis: até %1$d interesses. Plus: até 10.</string>
+    <string name="ringing">Tocando…</string>
+    <string name="on_another_call">Em outra chamada</string>
+    <string name="chat_with">Conversa com %1$s</string>
+    <string name="in_call_chat_empty">Envie uma mensagem, um emoji ou um GIF enquanto fala.</string>
+    <string name="is_calling">%1$s está ligando</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s visitante hoje</item>
         <item quantity="other">%1$s visitantes hoje</item>

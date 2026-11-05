@@ -1,6 +1,7 @@
 package app.talklive.ui
 
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.automirrored.rounded.Chat
 import androidx.compose.foundation.layout.width
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -107,6 +108,10 @@ fun CallScreen(
     onAddFriend: () -> Unit = {},
     reactions: kotlinx.coroutines.flow.Flow<app.talklive.call.FloatingReaction> = kotlinx.coroutines.flow.emptyFlow(),
     onReact: (String) -> Unit = {},
+    chat: List<app.talklive.social.ChatMessage> = emptyList(),
+    onSendChat: (String) -> Unit = {},
+    onSendGif: (app.talklive.social.Gif) -> Unit = {},
+    onTyping: () -> Unit = {},
     icebreaker: () -> app.talklive.data.Icebreaker? = { null },
     onGames: (() -> Unit)? = null,
     onNext: () -> Unit,
@@ -120,6 +125,13 @@ fun CallScreen(
 ) {
     var reporting by remember { mutableStateOf(false) }
     var showPartner by remember { mutableStateOf(false) }
+    var showChat by remember { mutableStateOf(false) }
+    // Messages from them since the chat was last open: a red dot on the chat button.
+    var seenTheirs by remember { mutableStateOf(0) }
+    val theirs = chat.count { !it.mine }
+    if (theirs < seenTheirs) seenTheirs = 0 // new person, fresh chat
+    if (showChat) seenTheirs = theirs
+    val unread = theirs - seenTheirs
     val phase = state.phase
     // Nobody is shown until the call is actually live.
     val partner = (phase as? CallPhase.Connected)?.partner
@@ -245,6 +257,13 @@ fun CallScreen(
                     stringResource(R.string.add_friend), active = friendStatus != FriendStatus.None,
                     enabled = live && friendStatus == FriendStatus.None, onClick = onAddFriend,
                 )
+                Box {
+                    app.talklive.ui.call.BarButton(Icons.AutoMirrored.Rounded.Chat, stringResource(R.string.message_hint), active = unread > 0, onClick = { showChat = true })
+                    if (unread > 0) Box(
+                        Modifier.align(Alignment.TopEnd).size(18.dp).clip(CircleShape).background(Danger),
+                        contentAlignment = Alignment.Center,
+                    ) { Text(if (unread > 9) "9+" else unread.toString(), color = Color.White, fontSize = 10.sp, lineHeight = 12.sp) }
+                }
                 app.talklive.ui.call.BarButton(Icons.Rounded.Flag, stringResource(R.string.report), tint = Danger, enabled = partner != null, onClick = { reporting = true })
             }
         }
@@ -264,6 +283,12 @@ fun CallScreen(
     FloatingReactions(reactions)
     }
 
+    if (showChat && partner != null) app.talklive.ui.call.InCallChat(
+        name = partner.username.ifBlank { stringResource(R.string.stranger) },
+        messages = chat, partnerTyping = state.partnerTyping,
+        onSend = onSendChat, onSendGif = onSendGif, onTyping = onTyping,
+    ) { showChat = false }
+    LaunchedEffect(partner?.clientId) { if (partner == null) showChat = false }
     if (showPartner && partner != null) PartnerSheet(partner, friendStatus, onAddFriend, onReport = { reporting = true }) { showPartner = false }
 
     if (reporting) {

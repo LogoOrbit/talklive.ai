@@ -492,5 +492,10 @@
 "auto_connect_desc": "কল শেষ হলে সরাসরি পরের জনের কাছে যান",
 "speaker_default": "স্পিকারে শুরু করুন",
 "speaker_default_desc": "বন্ধ থাকলে: কল ইয়ারপিসে শুরু হয়, ফোন কলের মতো",
-"filters_interests_hint_free": "ফ্রি: সর্বোচ্চ %1$dটি আগ্রহ। Plus: ১০টি পর্যন্ত।"
+"filters_interests_hint_free": "ফ্রি: সর্বোচ্চ %1$dটি আগ্রহ। Plus: ১০টি পর্যন্ত।",
+"ringing": "রিং হচ্ছে…",
+"on_another_call": "অন্য কলে আছেন",
+"chat_with": "%1$s-এর সাথে চ্যাট",
+"in_call_chat_empty": "কথা বলার সময় বার্তা, ইমোজি বা GIF পাঠান।",
+"is_calling": "%1$s কল করছেন"
 }

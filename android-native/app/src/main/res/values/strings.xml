@@ -499,4 +499,9 @@
     <string name="speaker_default">Start on speaker</string>
     <string name="speaker_default_desc">Off: calls start on the earpiece, like a phone call</string>
     <string name="filters_interests_hint_free">Free: up to %1$d interests. Plus: up to 10.</string>
+    <string name="ringing">Ringing…</string>
+    <string name="on_another_call">On another call</string>
+    <string name="chat_with">Chat with %1$s</string>
+    <string name="in_call_chat_empty">Send a message, an emoji or a GIF while you talk.</string>
+    <string name="is_calling">%1$s is calling</string>
 </resources>

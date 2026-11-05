@@ -492,5 +492,10 @@
 "auto_connect_desc": "Langsung ke orang berikutnya saat panggilan selesai",
 "speaker_default": "Mulai dengan speaker",
 "speaker_default_desc": "Mati: panggilan dimulai di earpiece, seperti telepon",
-"filters_interests_hint_free": "Gratis: hingga %1$d minat. Plus: hingga 10."
+"filters_interests_hint_free": "Gratis: hingga %1$d minat. Plus: hingga 10.",
+"ringing": "Berdering…",
+"on_another_call": "Sedang dalam panggilan lain",
+"chat_with": "Obrolan dengan %1$s",
+"in_call_chat_empty": "Kirim pesan, emoji, atau GIF sambil mengobrol.",
+"is_calling": "%1$s menelepon"
 }

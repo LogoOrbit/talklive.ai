@@ -493,6 +493,11 @@
     <string name="speaker_default">Mit Lautsprecher starten</string>
     <string name="speaker_default_desc">Aus: Anrufe starten an der Hörmuschel, wie ein Telefonat</string>
     <string name="filters_interests_hint_free">Kostenlos: bis zu %1$d Interessen. Plus: bis zu 10.</string>
+    <string name="ringing">Klingelt…</string>
+    <string name="on_another_call">In einem anderen Anruf</string>
+    <string name="chat_with">Chat mit %1$s</string>
+    <string name="in_call_chat_empty">Schick beim Reden eine Nachricht, ein Emoji oder ein GIF.</string>
+    <string name="is_calling">%1$s ruft an</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s Besucher heute</item>
         <item quantity="other">%1$s Besucher heute</item>

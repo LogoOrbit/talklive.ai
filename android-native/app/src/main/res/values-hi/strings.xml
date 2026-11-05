@@ -493,6 +493,11 @@
     <string name="speaker_default">स्पीकर पर शुरू करें</string>
     <string name="speaker_default_desc">बंद: कॉल फ़ोन कॉल की तरह ईयरपीस पर शुरू होगी</string>
     <string name="filters_interests_hint_free">फ़्री: %1$d रुचियाँ तक। Plus: 10 तक।</string>
+    <string name="ringing">घंटी बज रही है…</string>
+    <string name="on_another_call">दूसरी कॉल पर हैं</string>
+    <string name="chat_with">%1$s से चैट</string>
+    <string name="in_call_chat_empty">बात करते हुए संदेश, इमोजी या GIF भेजें।</string>
+    <string name="is_calling">%1$s कॉल कर रहे हैं</string>
     <plurals name="visitors_today">
         <item quantity="one">आज %1$s विज़िटर</item>
         <item quantity="other">आज %1$s विज़िटर</item>

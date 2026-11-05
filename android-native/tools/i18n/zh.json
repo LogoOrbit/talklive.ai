@@ -491,5 +491,10 @@
 "auto_connect_desc": "通话结束后直接连接下一位",
 "speaker_default": "默认使用扬声器",
 "speaker_default_desc": "关闭：像打电话一样从听筒开始",
-"filters_interests_hint_free": "免费：最多 %1$d 个兴趣。Plus：最多 10 个。"
+"filters_interests_hint_free": "免费：最多 %1$d 个兴趣。Plus：最多 10 个。",
+"ringing": "正在响铃…",
+"on_another_call": "正在通话中",
+"chat_with": "与 %1$s 聊天",
+"in_call_chat_empty": "通话时也能发消息、表情或 GIF。",
+"is_calling": "%1$s 来电"
 }

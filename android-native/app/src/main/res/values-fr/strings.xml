@@ -493,6 +493,11 @@
     <string name="speaker_default">Démarrer sur haut-parleur</string>
     <string name="speaker_default_desc">Désactivé : les appels démarrent sur l\'écouteur</string>
     <string name="filters_interests_hint_free">Gratuit : jusqu\'à %1$d centres d\'intérêt. Plus : jusqu\'à 10.</string>
+    <string name="ringing">Ça sonne…</string>
+    <string name="on_another_call">Déjà en appel</string>
+    <string name="chat_with">Discussion avec %1$s</string>
+    <string name="in_call_chat_empty">Envoyez un message, un emoji ou un GIF pendant l\'appel.</string>
+    <string name="is_calling">%1$s vous appelle</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s visiteur aujourd\'hui</item>
         <item quantity="other">%1$s visiteurs aujourd\'hui</item>

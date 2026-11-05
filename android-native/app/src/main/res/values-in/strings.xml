@@ -493,6 +493,11 @@
     <string name="speaker_default">Mulai dengan speaker</string>
     <string name="speaker_default_desc">Mati: panggilan dimulai di earpiece, seperti telepon</string>
     <string name="filters_interests_hint_free">Gratis: hingga %1$d minat. Plus: hingga 10.</string>
+    <string name="ringing">Berdering…</string>
+    <string name="on_another_call">Sedang dalam panggilan lain</string>
+    <string name="chat_with">Obrolan dengan %1$s</string>
+    <string name="in_call_chat_empty">Kirim pesan, emoji, atau GIF sambil mengobrol.</string>
+    <string name="is_calling">%1$s menelepon</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s pengunjung hari ini</item>
         <item quantity="other">%1$s pengunjung hari ini</item>

@@ -406,6 +406,10 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                     onAddFriend = { partnerId?.let { social.sendRequest(it) } },
                     reactions = vm.reactions,
                     onReact = vm::react,
+                    chat = chatMessages,
+                    onSendChat = { vm.sendChat(it) },
+                    onSendGif = vm::sendGif,
+                    onTyping = vm::typing,
                     icebreaker = { vm.icebreakers(1).firstOrNull() },
                     onGames = { showGames = true },
                     onNext = onNext,
@@ -590,6 +594,22 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
             dismissButton = { TextButton(onClick = { micDenied = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
+
+    // Mid-call: another friend calling or messaging shows for two seconds, quietly.
+    var miniNote by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        social.messageEvents.collect { (who, text) ->
+            if (inCall) { miniNote = "💬 $who: $text"; kotlinx.coroutines.delay(2000); miniNote = null }
+        }
+    }
+    LaunchedEffect(incoming, inCall) {
+        val inc = incoming
+        if (inCall && inc != null) { miniNote = "📞 " + context.getString(R.string.is_calling, inc.username); kotlinx.coroutines.delay(2000); miniNote = null }
+    }
+    androidx.compose.foundation.layout.Box(
+        androidx.compose.ui.Modifier.fillMaxSize().statusBarsPadding().padding(top = 6.dp),
+        contentAlignment = androidx.compose.ui.Alignment.TopCenter,
+    ) { app.talklive.ui.call.MiniNote(miniNote) }
 
     // This account is open on another device and this phone stepped aside.
     val elsewhere by vm.elsewhere.collectAsStateWithLifecycle()

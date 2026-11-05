@@ -121,7 +121,7 @@ class LocalNotifier @Inject constructor(
         nm.notify(tag, 0, n)
     }
 
-    /** A friend is calling: ring with Accept and Decline, full screen on a locked phone. */
+    /** A friend is calling: a notification with Accept and Decline (never full screen). */
     private fun ring(fromClientId: String, name: String) = runCatching {
         val accept = PendingIntent.getActivity(
             context, 1,
@@ -142,7 +142,6 @@ class LocalNotifier @Inject constructor(
             .setOngoing(true)
             .setTimeoutAfter(45_000)
             .setContentIntent(open(null))
-            .setFullScreenIntent(open(null), true)
             .addAction(0, context.getString(R.string.decline), decline)
             .addAction(0, context.getString(R.string.accept), accept)
             .build()

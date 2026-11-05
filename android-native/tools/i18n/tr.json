@@ -492,5 +492,10 @@
 "auto_connect_desc": "Arama bitince doğrudan sonraki kişiye geç",
 "speaker_default": "Hoparlörle başlat",
 "speaker_default_desc": "Kapalı: aramalar telefon gibi ahizeden başlar",
-"filters_interests_hint_free": "Ücretsiz: en fazla %1$d ilgi alanı. Plus: 10'a kadar."
+"filters_interests_hint_free": "Ücretsiz: en fazla %1$d ilgi alanı. Plus: 10'a kadar.",
+"ringing": "Çalıyor…",
+"on_another_call": "Başka bir aramada",
+"chat_with": "%1$s ile sohbet",
+"in_call_chat_empty": "Konuşurken mesaj, emoji ya da GIF gönder.",
+"is_calling": "%1$s arıyor"
 }

@@ -492,5 +492,10 @@
 "auto_connect_desc": "Nach einem Anruf direkt zur nächsten Person",
 "speaker_default": "Mit Lautsprecher starten",
 "speaker_default_desc": "Aus: Anrufe starten an der Hörmuschel, wie ein Telefonat",
-"filters_interests_hint_free": "Kostenlos: bis zu %1$d Interessen. Plus: bis zu 10."
+"filters_interests_hint_free": "Kostenlos: bis zu %1$d Interessen. Plus: bis zu 10.",
+"ringing": "Klingelt…",
+"on_another_call": "In einem anderen Anruf",
+"chat_with": "Chat mit %1$s",
+"in_call_chat_empty": "Schick beim Reden eine Nachricht, ein Emoji oder ein GIF.",
+"is_calling": "%1$s ruft an"
 }

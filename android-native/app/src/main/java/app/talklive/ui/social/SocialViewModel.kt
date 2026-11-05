@@ -42,6 +42,7 @@ class SocialViewModel @Inject constructor(
     fun setArchived(id: String, on: Boolean) = repo.setArchived(id, on)
     val myFriendId = repo.myFriendId
     val incoming = repo.incoming
+    val messageEvents = repo.messageEvents
     val outgoing = repo.outgoing
     val toasts: kotlinx.coroutines.flow.SharedFlow<app.talklive.data.UiText> = repo.toasts
 

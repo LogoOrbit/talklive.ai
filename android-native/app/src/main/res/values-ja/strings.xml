@@ -493,6 +493,11 @@
     <string name="speaker_default">スピーカーで開始</string>
     <string name="speaker_default_desc">オフ：電話のように受話口で開始</string>
     <string name="filters_interests_hint_free">無料：興味は%1$d件まで。Plus：10件まで。</string>
+    <string name="ringing">呼び出し中…</string>
+    <string name="on_another_call">別の通話中</string>
+    <string name="chat_with">%1$sとのチャット</string>
+    <string name="in_call_chat_empty">話しながらメッセージや絵文字、GIFを送れます。</string>
+    <string name="is_calling">%1$sから着信</string>
     <plurals name="visitors_today">
         <item quantity="other">今日の訪問者 %1$s人</item>
     </plurals>

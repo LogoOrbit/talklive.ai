@@ -72,7 +72,13 @@ fun OutgoingCallScreen(call: OutgoingCall, onCancel: () -> Unit) {
     CallCard(
         animal = call.person.animal,
         name = call.person.displayName,
-        status = stringResource(R.string.calling),
+        status = stringResource(
+            when (call.status) {
+                "ringing" -> R.string.ringing // the app is open on their phone
+                "busy" -> R.string.on_another_call
+                else -> R.string.calling // a notification on their phone
+            },
+        ),
     ) { RoundAction(Icons.Rounded.CallEnd, stringResource(R.string.cancel), Danger, onCancel) }
 }
 

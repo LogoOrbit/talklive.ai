@@ -493,6 +493,11 @@
     <string name="speaker_default">স্পিকারে শুরু করুন</string>
     <string name="speaker_default_desc">বন্ধ থাকলে: কল ইয়ারপিসে শুরু হয়, ফোন কলের মতো</string>
     <string name="filters_interests_hint_free">ফ্রি: সর্বোচ্চ %1$dটি আগ্রহ। Plus: ১০টি পর্যন্ত।</string>
+    <string name="ringing">রিং হচ্ছে…</string>
+    <string name="on_another_call">অন্য কলে আছেন</string>
+    <string name="chat_with">%1$s-এর সাথে চ্যাট</string>
+    <string name="in_call_chat_empty">কথা বলার সময় বার্তা, ইমোজি বা GIF পাঠান।</string>
+    <string name="is_calling">%1$s কল করছেন</string>
     <plurals name="visitors_today">
         <item quantity="one">আজ %1$s জন ভিজিটর</item>
         <item quantity="other">আজ %1$s জন ভিজিটর</item>

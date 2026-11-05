@@ -491,5 +491,10 @@
 "auto_connect_desc": "通話が終わったらすぐ次の人へ",
 "speaker_default": "スピーカーで開始",
 "speaker_default_desc": "オフ：電話のように受話口で開始",
-"filters_interests_hint_free": "無料：興味は%1$d件まで。Plus：10件まで。"
+"filters_interests_hint_free": "無料：興味は%1$d件まで。Plus：10件まで。",
+"ringing": "呼び出し中…",
+"on_another_call": "別の通話中",
+"chat_with": "%1$sとのチャット",
+"in_call_chat_empty": "話しながらメッセージや絵文字、GIFを送れます。",
+"is_calling": "%1$sから着信"
 }

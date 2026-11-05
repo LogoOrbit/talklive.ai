@@ -75,6 +75,9 @@ class SocialRepository @Inject constructor(
     private val _outgoing = MutableStateFlow<OutgoingCall?>(null)
     val outgoing: StateFlow<OutgoingCall?> = _outgoing
 
+    private val _messageEvents = kotlinx.coroutines.flow.MutableSharedFlow<Pair<String, String>>(extraBufferCapacity = 16)
+    /** (sender name, preview) for every friend message as it arrives. */
+    val messageEvents: kotlinx.coroutines.flow.SharedFlow<Pair<String, String>> = _messageEvents
     private val _gates = MutableStateFlow<Map<String, String>>(emptyMap())
     /** The server's latest word on whether a non-friend can be messaged (open, one, accept, request, waiting). */
     val gates: StateFlow<Map<String, String>> = _gates
@@ -194,7 +197,12 @@ class SocialRepository @Inject constructor(
         }
         socket.on("call-back-request-result") { a ->
             val o = a.firstOrNull() as? JSONObject ?: return@on
-            if (o.optBoolean("ok")) return@on
+            if (o.optBoolean("ok")) {
+                // Ringing on their screen, a notification in their background, or busy.
+                val status = when { o.optBoolean("busy") -> "busy"; o.optBoolean("inApp", true) -> "ringing"; else -> "calling" }
+                _outgoing.update { it?.copy(status = status) }
+                return@on
+            }
             _outgoing.value = null
             _toasts.tryEmit(
                 when (o.optString("reason")) {
@@ -442,7 +450,7 @@ class SocialRepository @Inject constructor(
     // --- Friend calls ------------------------------------------------------
 
     fun call(person: Person) {
-        _outgoing.value = OutgoingCall(person)
+        _outgoing.value = OutgoingCall(person, status = "calling")
         socket.emit("call-back-request", JSONObject().put("targetClientId", person.clientId))
     }
 
@@ -515,6 +523,8 @@ class SocialRepository @Inject constructor(
         updateThread(from) { list -> if (list.any { it.id == msg.id }) list else list + msg }
         _typing.update { it - from }
         bumpLast(from, LastMessage(false, msg.text, msg.gifUrl != null, msg.voiceMs != null, msg.ts, false))
+        val who = person(from)?.displayName ?: o.optString("username").ifBlank { "Someone" }
+        _messageEvents.tryEmit(who to when { msg.gifUrl != null -> "GIF"; msg.voiceMs != null -> "🎤"; else -> msg.text.take(40) })
         if (from == openChat) markRead(from) else _unread.update { it + (from to ((it[from] ?: 0) + 1)) }
     }
 

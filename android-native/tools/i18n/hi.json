@@ -492,5 +492,10 @@
 "auto_connect_desc": "कॉल खत्म होते ही अगले व्यक्ति से जुड़ें",
 "speaker_default": "स्पीकर पर शुरू करें",
 "speaker_default_desc": "बंद: कॉल फ़ोन कॉल की तरह ईयरपीस पर शुरू होगी",
-"filters_interests_hint_free": "फ़्री: %1$d रुचियाँ तक। Plus: 10 तक।"
+"filters_interests_hint_free": "फ़्री: %1$d रुचियाँ तक। Plus: 10 तक।",
+"ringing": "घंटी बज रही है…",
+"on_another_call": "दूसरी कॉल पर हैं",
+"chat_with": "%1$s से चैट",
+"in_call_chat_empty": "बात करते हुए संदेश, इमोजी या GIF भेजें।",
+"is_calling": "%1$s कॉल कर रहे हैं"
 }

@@ -492,5 +492,10 @@
 "auto_connect_desc": "Passer directement à la personne suivante après un appel",
 "speaker_default": "Démarrer sur haut-parleur",
 "speaker_default_desc": "Désactivé : les appels démarrent sur l'écouteur",
-"filters_interests_hint_free": "Gratuit : jusqu'à %1$d centres d'intérêt. Plus : jusqu'à 10."
+"filters_interests_hint_free": "Gratuit : jusqu'à %1$d centres d'intérêt. Plus : jusqu'à 10.",
+"ringing": "Ça sonne…",
+"on_another_call": "Déjà en appel",
+"chat_with": "Discussion avec %1$s",
+"in_call_chat_empty": "Envoyez un message, un emoji ou un GIF pendant l'appel.",
+"is_calling": "%1$s vous appelle"
 }

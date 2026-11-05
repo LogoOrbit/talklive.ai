@@ -7367,7 +7367,15 @@ io.on('connection', (socket) => {
       countryCode: me.country,
     });
 
-    socket.emit('call-back-request-result', { ok: true, pending: true });
+    // Tells the caller what the other phone is doing: on another call, open
+    // (ringing on screen) or in the background (a notification only).
+    const targetProfile = profiles.get(targetSocketId);
+    socket.emit('call-back-request-result', {
+      ok: true,
+      pending: true,
+      busy: partners.has(targetSocketId),
+      inApp: !(targetProfile && targetProfile.hidden),
+    });
   });
 
   // Queue a call-back request for an offline peer ("send request for later").
