@@ -492,6 +492,7 @@
     <string name="auto_connect_desc">통화가 끝나면 바로 다음 사람과 연결</string>
     <string name="speaker_default">스피커로 시작</string>
     <string name="speaker_default_desc">끄면 전화처럼 수화 스피커로 시작</string>
+    <string name="filters_interests_hint_free">무료: 관심사 최대 %1$d개. Plus: 10개까지.</string>
     <plurals name="visitors_today">
         <item quantity="other">오늘 방문자 %1$s명</item>
     </plurals>

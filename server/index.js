@@ -389,6 +389,7 @@ const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 // everyone.
 const FREE_LIMITS = {
   countries: 2, // max countries per preferred/not-preferred list
+  interests: 2, // interest tags used for matching (Plus: up to 10)
 };
 // Premium registry lives in the persistent store (Postgres/file) so grants
 // survive restarts and deploys. Grants come from three places now: a Stripe
@@ -5591,7 +5592,7 @@ io.on('connection', (socket) => {
       excludeCountries: sanitizeCountryList(data.excludeCountries),
       randomFallbackActive: false,
       mode: 'talk',
-      interests: cleanInterests(data.interests),
+      interests: cleanInterests(data.interests).slice(0, premium ? 10 : FREE_LIMITS.interests),
       // `m1`-`f5` are the gendered busts; `a:<animal>` is a spirit-animal
       // avatar, validated against the same list the picker is built from so a
       // client cannot store an animal that does not exist.

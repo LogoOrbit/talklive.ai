@@ -808,6 +808,7 @@
   "premiumComingSoon": "프리미엄은 판매하지 않으며, TalkLive의 모든 기능은 무료예요.",
   "premiumGenderLocked": "성별 필터는 프리미엄 기능입니다.",
   "premiumCountryLimit": "무료 플랜은 목록당 최대 {n}개 국가까지 가능합니다.",
+  "premiumInterestLimit": "무료 플랜은 관심사를 최대 {n}개까지. Plus는 10개까지.",
   "friendOnlineToast": "{country}의 {name} 님이 온라인이에요",
   "friendOnlineToastNoCountry": "{name} 님이 온라인이에요",
   "micPromptTitle": "마이크 접근 허용",

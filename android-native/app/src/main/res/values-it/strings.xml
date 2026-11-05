@@ -492,6 +492,7 @@
     <string name="auto_connect_desc">Passa subito alla persona successiva a fine chiamata</string>
     <string name="speaker_default">Inizia in vivavoce</string>
     <string name="speaker_default_desc">Disattivato: le chiamate partono dall\'auricolare</string>
+    <string name="filters_interests_hint_free">Gratis: fino a %1$d interessi. Plus: fino a 10.</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s visitatore oggi</item>
         <item quantity="other">%1$s visitatori oggi</item>

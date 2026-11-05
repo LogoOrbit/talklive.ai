@@ -498,4 +498,5 @@
     <string name="auto_connect_desc">Go straight to the next person when a call ends</string>
     <string name="speaker_default">Start on speaker</string>
     <string name="speaker_default_desc">Off: calls start on the earpiece, like a phone call</string>
+    <string name="filters_interests_hint_free">Free: up to %1$d interests. Plus: up to 10.</string>
 </resources>

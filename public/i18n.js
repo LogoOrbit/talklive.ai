@@ -1019,6 +1019,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "premiumComingSoon": "Premium is not on sale, and everything on TalkLive is free.",
     "premiumGenderLocked": "The gender filter is a Premium feature.",
     "premiumCountryLimit": "The free plan allows up to {n} countries per list.",
+    "premiumInterestLimit": "The free plan allows up to {n} interests. Plus allows up to 10.",
     "friendOnlineToast": "{name} from {country} is online",
     "friendOnlineToastNoCountry": "{name} is online",
     "micPromptTitle": "Allow microphone access",

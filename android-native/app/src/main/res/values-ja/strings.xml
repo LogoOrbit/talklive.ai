@@ -492,6 +492,7 @@
     <string name="auto_connect_desc">通話が終わったらすぐ次の人へ</string>
     <string name="speaker_default">スピーカーで開始</string>
     <string name="speaker_default_desc">オフ：電話のように受話口で開始</string>
+    <string name="filters_interests_hint_free">無料：興味は%1$d件まで。Plus：10件まで。</string>
     <plurals name="visitors_today">
         <item quantity="other">今日の訪問者 %1$s人</item>
     </plurals>

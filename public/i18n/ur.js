@@ -808,6 +808,7 @@
   "premiumComingSoon": "پریمیم فروخت نہیں ہو رہا، اور TalkLive پر سب کچھ مفت ہے۔",
   "premiumGenderLocked": "جنس کا فلٹر ایک پریمیم فیچر ہے۔",
   "premiumCountryLimit": "مفت پلان میں ہر فہرست میں زیادہ سے زیادہ {n} ممالک شامل کیے جا سکتے ہیں۔",
+  "premiumInterestLimit": "مفت پلان میں {n} دلچسپیوں تک۔ Plus میں 10 تک۔",
   "friendOnlineToast": "{country} سے {name} آن لائن ہیں",
   "friendOnlineToastNoCountry": "{name} آن لائن ہیں",
   "micPromptTitle": "مائیکروفون تک رسائی کی اجازت دیں",

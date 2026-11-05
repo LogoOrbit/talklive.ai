@@ -491,5 +491,6 @@
 "section_calls": "Chiamate",
 "auto_connect_desc": "Passa subito alla persona successiva a fine chiamata",
 "speaker_default": "Inizia in vivavoce",
-"speaker_default_desc": "Disattivato: le chiamate partono dall'auricolare"
+"speaker_default_desc": "Disattivato: le chiamate partono dall'auricolare",
+"filters_interests_hint_free": "Gratis: fino a %1$d interessi. Plus: fino a 10."
 }

@@ -808,6 +808,7 @@
   "premiumComingSoon": "高级版暂不出售，TalkLive 的一切都免费。",
   "premiumGenderLocked": "性别筛选是高级版功能。",
   "premiumCountryLimit": "免费版每个列表最多可选 {n} 个国家。",
+  "premiumInterestLimit": "免费版最多可选 {n} 个兴趣，Plus 最多 10 个。",
   "friendOnlineToast": "来自{country}的 {name} 上线了",
   "friendOnlineToastNoCountry": "{name} 上线了",
   "micPromptTitle": "允许使用麦克风",

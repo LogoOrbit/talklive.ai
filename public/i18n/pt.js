@@ -808,6 +808,7 @@
   "premiumComingSoon": "O Premium não está à venda, e tudo no TalkLive é grátis.",
   "premiumGenderLocked": "O filtro de gênero é um recurso Premium.",
   "premiumCountryLimit": "O plano gratuito permite até {n} países por lista.",
+  "premiumInterestLimit": "O plano gratuito permite até {n} interesses. O Plus permite até 10.",
   "friendOnlineToast": "{name} de {country} está online",
   "friendOnlineToastNoCountry": "{name} está online",
   "micPromptTitle": "Permitir acesso ao microfone",

@@ -492,6 +492,7 @@
     <string name="auto_connect_desc">انتقل مباشرة إلى الشخص التالي عند انتهاء المكالمة</string>
     <string name="speaker_default">البدء بمكبر الصوت</string>
     <string name="speaker_default_desc">عند الإيقاف: تبدأ المكالمات بالسماعة الداخلية مثل الهاتف</string>
+    <string name="filters_interests_hint_free">مجانًا: حتى %1$d اهتمامات. Plus: حتى 10.</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s زائر اليوم</item>
         <item quantity="other">%1$s زائر اليوم</item>

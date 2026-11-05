@@ -492,6 +492,7 @@
     <string name="auto_connect_desc">कॉल खत्म होते ही अगले व्यक्ति से जुड़ें</string>
     <string name="speaker_default">स्पीकर पर शुरू करें</string>
     <string name="speaker_default_desc">बंद: कॉल फ़ोन कॉल की तरह ईयरपीस पर शुरू होगी</string>
+    <string name="filters_interests_hint_free">फ़्री: %1$d रुचियाँ तक। Plus: 10 तक।</string>
     <plurals name="visitors_today">
         <item quantity="one">आज %1$s विज़िटर</item>
         <item quantity="other">आज %1$s विज़िटर</item>

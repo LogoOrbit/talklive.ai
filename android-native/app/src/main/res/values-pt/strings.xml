@@ -492,6 +492,7 @@
     <string name="auto_connect_desc">Vá direto para a próxima pessoa quando a chamada acabar</string>
     <string name="speaker_default">Começar no viva-voz</string>
     <string name="speaker_default_desc">Desligado: as chamadas começam no fone, como uma ligação</string>
+    <string name="filters_interests_hint_free">Grátis: até %1$d interesses. Plus: até 10.</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s visitante hoje</item>
         <item quantity="other">%1$s visitantes hoje</item>

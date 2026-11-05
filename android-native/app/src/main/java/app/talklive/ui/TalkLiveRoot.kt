@@ -247,6 +247,10 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
 
     val inCall = state.phase !is CallPhase.Idle
     val onlinePeople by vm.onlinePeople.collectAsStateWithLifecycle()
+    var filtersBeforeFindIn by remember { mutableStateOf<app.talklive.engage.Filters?>(null) }
+    LaunchedEffect(inCall) {
+        if (!inCall) filtersBeforeFindIn?.let { engageVm.setFilters(it); filtersBeforeFindIn = null }
+    }
     val game by vm.game.collectAsStateWithLifecycle()
     var showGames by remember { mutableStateOf(false) }
     // A game that starts opens the board on both phones.
@@ -338,7 +342,10 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                         onPlus = { showPlus = "home" },
                         online = onlinePeople,
                         onFindIn = { code ->
-                            // Like the website: look for someone in that country now.
+                            // Look for someone in that country for this search only;
+                            // the person's own filters come back when it ends (it
+                            // used to be saved as a filter, which looked automatic).
+                            if (filtersBeforeFindIn == null) filtersBeforeFindIn = filters
                             engageVm.setFilters(filters.copy(includeCountries = listOf(code), excludeCountries = filters.excludeCountries - code))
                             scope.launch { snackbar.say(context.getString(R.string.finding_in, app.talklive.ui.engage.countryName(code))) }
                             onStart()

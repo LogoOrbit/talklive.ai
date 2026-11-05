@@ -808,6 +808,7 @@
   "premiumComingSoon": "Premium не продаётся, а всё в TalkLive бесплатно.",
   "premiumGenderLocked": "Фильтр по полу - это функция Премиум.",
   "premiumCountryLimit": "Бесплатный план позволяет до {n} стран в списке.",
+  "premiumInterestLimit": "Бесплатный план позволяет до {n} интересов. С Plus — до 10.",
   "friendOnlineToast": "{name} ({country}) в сети",
   "friendOnlineToastNoCountry": "{name} в сети",
   "micPromptTitle": "Разрешите доступ к микрофону",

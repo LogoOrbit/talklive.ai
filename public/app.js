@@ -1252,6 +1252,12 @@ function renderInterestTags() {
 function addInterestFromInput() {
   const value = interestInput.value.trim();
   if (!value) return;
+  // Free: 2 interest tags (the server keeps only that many); Plus: up to 10.
+  const interestCap = isPremiumUser ? 10 : (freeLimits.interests || 2);
+  if (!selectedInterests.has(value) && selectedInterests.size >= interestCap) {
+    if (!isPremiumUser) showPremiumUpsell(t('premiumInterestLimit', { n: interestCap }));
+    return;
+  }
   selectedInterests.add(value);
   interestInput.value = '';
   renderInterestTags();
@@ -11395,7 +11401,7 @@ refreshNetStatus();
 // (who upgrade via /pricing) get everything unlocked. The server enforces
 // all limits - this state only drives the UI.
 let isPremiumUser = false;
-let freeLimits = { countries: 2 };
+let freeLimits = { countries: 2, interests: 2 };
 
 // Now that the free limits and the premium flag exist, the filters panel can
 // say what it is set to. From here on every change refreshes it (see the note

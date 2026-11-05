@@ -490,5 +490,6 @@
 "section_calls": "通话",
 "auto_connect_desc": "通话结束后直接连接下一位",
 "speaker_default": "默认使用扬声器",
-"speaker_default_desc": "关闭：像打电话一样从听筒开始"
+"speaker_default_desc": "关闭：像打电话一样从听筒开始",
+"filters_interests_hint_free": "免费：最多 %1$d 个兴趣。Plus：最多 10 个。"
 }

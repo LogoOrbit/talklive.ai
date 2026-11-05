@@ -492,6 +492,7 @@
     <string name="auto_connect_desc">Langsung ke orang berikutnya saat panggilan selesai</string>
     <string name="speaker_default">Mulai dengan speaker</string>
     <string name="speaker_default_desc">Mati: panggilan dimulai di earpiece, seperti telepon</string>
+    <string name="filters_interests_hint_free">Gratis: hingga %1$d minat. Plus: hingga 10.</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s pengunjung hari ini</item>
         <item quantity="other">%1$s pengunjung hari ini</item>

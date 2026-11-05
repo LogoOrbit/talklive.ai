@@ -492,6 +492,7 @@
     <string name="auto_connect_desc">Arama bitince doğrudan sonraki kişiye geç</string>
     <string name="speaker_default">Hoparlörle başlat</string>
     <string name="speaker_default_desc">Kapalı: aramalar telefon gibi ahizeden başlar</string>
+    <string name="filters_interests_hint_free">Ücretsiz: en fazla %1$d ilgi alanı. Plus: 10\'a kadar.</string>
     <plurals name="visitors_today">
         <item quantity="one">Bugün %1$s ziyaretçi</item>
         <item quantity="other">Bugün %1$s ziyaretçi</item>

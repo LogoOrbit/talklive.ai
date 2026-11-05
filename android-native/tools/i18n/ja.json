@@ -490,5 +490,6 @@
 "section_calls": "通話",
 "auto_connect_desc": "通話が終わったらすぐ次の人へ",
 "speaker_default": "スピーカーで開始",
-"speaker_default_desc": "オフ：電話のように受話口で開始"
+"speaker_default_desc": "オフ：電話のように受話口で開始",
+"filters_interests_hint_free": "無料：興味は%1$d件まで。Plus：10件まで。"
 }

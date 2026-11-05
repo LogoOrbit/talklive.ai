@@ -491,5 +491,6 @@
 "section_calls": "Chamadas",
 "auto_connect_desc": "Vá direto para a próxima pessoa quando a chamada acabar",
 "speaker_default": "Começar no viva-voz",
-"speaker_default_desc": "Desligado: as chamadas começam no fone, como uma ligação"
+"speaker_default_desc": "Desligado: as chamadas começam no fone, como uma ligação",
+"filters_interests_hint_free": "Grátis: até %1$d interesses. Plus: até 10."
 }

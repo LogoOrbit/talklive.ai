@@ -492,6 +492,7 @@
     <string name="auto_connect_desc">Сразу переходить к следующему собеседнику</string>
     <string name="speaker_default">Начинать с динамика</string>
     <string name="speaker_default_desc">Выкл.: звонок начинается в разговорном динамике</string>
+    <string name="filters_interests_hint_free">Бесплатно: до %1$d интересов. Plus: до 10.</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s посетитель сегодня</item>
         <item quantity="other">%1$s посетителя сегодня</item>

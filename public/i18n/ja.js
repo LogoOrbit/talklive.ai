@@ -808,6 +808,7 @@
   "premiumComingSoon": "プレミアムは販売していません。TalkLiveはすべて無料です。",
   "premiumGenderLocked": "性別フィルターはプレミアム機能です。",
   "premiumCountryLimit": "無料プランでは各リストに最大{n}か国まで登録できます。",
+  "premiumInterestLimit": "無料プランは興味は{n}件まで。Plusなら10件まで。",
   "friendOnlineToast": "{country}の{name}がオンラインになりました",
   "friendOnlineToastNoCountry": "{name}がオンラインになりました",
   "micPromptTitle": "マイクへのアクセスを許可",

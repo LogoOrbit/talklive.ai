@@ -491,5 +491,6 @@
 "section_calls": "Aramalar",
 "auto_connect_desc": "Arama bitince doğrudan sonraki kişiye geç",
 "speaker_default": "Hoparlörle başlat",
-"speaker_default_desc": "Kapalı: aramalar telefon gibi ahizeden başlar"
+"speaker_default_desc": "Kapalı: aramalar telefon gibi ahizeden başlar",
+"filters_interests_hint_free": "Ücretsiz: en fazla %1$d ilgi alanı. Plus: 10'a kadar."
 }

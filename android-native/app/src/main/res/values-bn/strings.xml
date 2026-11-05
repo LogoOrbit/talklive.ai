@@ -492,6 +492,7 @@
     <string name="auto_connect_desc">কল শেষ হলে সরাসরি পরের জনের কাছে যান</string>
     <string name="speaker_default">স্পিকারে শুরু করুন</string>
     <string name="speaker_default_desc">বন্ধ থাকলে: কল ইয়ারপিসে শুরু হয়, ফোন কলের মতো</string>
+    <string name="filters_interests_hint_free">ফ্রি: সর্বোচ্চ %1$dটি আগ্রহ। Plus: ১০টি পর্যন্ত।</string>
     <plurals name="visitors_today">
         <item quantity="one">আজ %1$s জন ভিজিটর</item>
         <item quantity="other">আজ %1$s জন ভিজিটর</item>

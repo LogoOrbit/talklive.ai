@@ -808,6 +808,7 @@
   "premiumComingSoon": "Premium satışta değil ve TalkLive'daki her şey ücretsiz.",
   "premiumGenderLocked": "Cinsiyet filtresi bir Premium özelliğidir.",
   "premiumCountryLimit": "Ücretsiz plan liste başına en fazla {n} ülkeye izin verir.",
+  "premiumInterestLimit": "Ücretsiz plan en fazla {n} ilgi alanına izin verir. Plus ile 10.",
   "friendOnlineToast": "{name} ({country}) çevrimiçi",
   "friendOnlineToastNoCountry": "{name} çevrimiçi",
   "micPromptTitle": "Mikrofon erişimine izin ver",

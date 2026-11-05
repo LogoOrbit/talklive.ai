@@ -491,5 +491,6 @@
 "section_calls": "Appels",
 "auto_connect_desc": "Passer directement à la personne suivante après un appel",
 "speaker_default": "Démarrer sur haut-parleur",
-"speaker_default_desc": "Désactivé : les appels démarrent sur l'écouteur"
+"speaker_default_desc": "Désactivé : les appels démarrent sur l'écouteur",
+"filters_interests_hint_free": "Gratuit : jusqu'à %1$d centres d'intérêt. Plus : jusqu'à 10."
 }

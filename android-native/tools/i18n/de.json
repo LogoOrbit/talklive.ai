@@ -491,5 +491,6 @@
 "section_calls": "Anrufe",
 "auto_connect_desc": "Nach einem Anruf direkt zur nächsten Person",
 "speaker_default": "Mit Lautsprecher starten",
-"speaker_default_desc": "Aus: Anrufe starten an der Hörmuschel, wie ein Telefonat"
+"speaker_default_desc": "Aus: Anrufe starten an der Hörmuschel, wie ein Telefonat",
+"filters_interests_hint_free": "Kostenlos: bis zu %1$d Interessen. Plus: bis zu 10."
 }

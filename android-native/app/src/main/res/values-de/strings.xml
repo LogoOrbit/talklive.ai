@@ -492,6 +492,7 @@
     <string name="auto_connect_desc">Nach einem Anruf direkt zur nächsten Person</string>
     <string name="speaker_default">Mit Lautsprecher starten</string>
     <string name="speaker_default_desc">Aus: Anrufe starten an der Hörmuschel, wie ein Telefonat</string>
+    <string name="filters_interests_hint_free">Kostenlos: bis zu %1$d Interessen. Plus: bis zu 10.</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s Besucher heute</item>
         <item quantity="other">%1$s Besucher heute</item>

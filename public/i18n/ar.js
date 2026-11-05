@@ -808,6 +808,7 @@
   "premiumComingSoon": "Premium غير معروض للبيع، وكل شيء على TalkLive مجاني.",
   "premiumGenderLocked": "فلتر الجنس ميزة بريميوم.",
   "premiumCountryLimit": "الخطة المجانية تسمح بحد أقصى {n} دول لكل قائمة.",
+  "premiumInterestLimit": "تسمح الخطة المجانية بما يصل إلى {n} اهتمامات. يتيح Plus حتى 10.",
   "friendOnlineToast": "{name} من {country} متصل الآن",
   "friendOnlineToastNoCountry": "{name} متصل الآن",
   "micPromptTitle": "السماح بالوصول إلى الميكروفون",

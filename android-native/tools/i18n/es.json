@@ -491,5 +491,6 @@
 "section_calls": "Llamadas",
 "auto_connect_desc": "Pasa directo a la siguiente persona al terminar",
 "speaker_default": "Empezar con altavoz",
-"speaker_default_desc": "Desactivado: las llamadas empiezan en el auricular"
+"speaker_default_desc": "Desactivado: las llamadas empiezan en el auricular",
+"filters_interests_hint_free": "Gratis: hasta %1$d intereses. Plus: hasta 10."
 }

@@ -808,6 +808,7 @@
   "premiumComingSoon": "প্রিমিয়াম বিক্রি হচ্ছে না, এবং TalkLive-এ সবকিছু বিনামূল্যে।",
   "premiumGenderLocked": "লিঙ্গ ফিল্টার একটি প্রিমিয়াম ফিচার।",
   "premiumCountryLimit": "ফ্রি প্ল্যানে প্রতি তালিকায় সর্বোচ্চ {n}টি দেশ রাখা যায়।",
+  "premiumInterestLimit": "ফ্রি প্ল্যানে সর্বোচ্চ {n}টি আগ্রহ। Plus-এ ১০টি পর্যন্ত।",
   "friendOnlineToast": "{country} থেকে {name} অনলাইনে",
   "friendOnlineToastNoCountry": "{name} অনলাইনে",
   "micPromptTitle": "মাইক্রোফোন অ্যাক্সেস দিন",

@@ -491,5 +491,6 @@
 "section_calls": "کالز",
 "auto_connect_desc": "کال ختم ہونے پر سیدھا اگلے شخص سے جڑیں",
 "speaker_default": "اسپیکر پر شروع کریں",
-"speaker_default_desc": "بند: کال فون کی طرح ایئرپیس پر شروع ہوگی"
+"speaker_default_desc": "بند: کال فون کی طرح ایئرپیس پر شروع ہوگی",
+"filters_interests_hint_free": "مفت: %1$d دلچسپیوں تک۔ Plus: 10 تک۔"
 }

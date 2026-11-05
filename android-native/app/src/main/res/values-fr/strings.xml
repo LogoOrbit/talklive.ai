@@ -492,6 +492,7 @@
     <string name="auto_connect_desc">Passer directement à la personne suivante après un appel</string>
     <string name="speaker_default">Démarrer sur haut-parleur</string>
     <string name="speaker_default_desc">Désactivé : les appels démarrent sur l\'écouteur</string>
+    <string name="filters_interests_hint_free">Gratuit : jusqu\'à %1$d centres d\'intérêt. Plus : jusqu\'à 10.</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s visiteur aujourd\'hui</item>
         <item quantity="other">%1$s visiteurs aujourd\'hui</item>

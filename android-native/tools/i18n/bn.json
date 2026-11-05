@@ -491,5 +491,6 @@
 "section_calls": "কল",
 "auto_connect_desc": "কল শেষ হলে সরাসরি পরের জনের কাছে যান",
 "speaker_default": "স্পিকারে শুরু করুন",
-"speaker_default_desc": "বন্ধ থাকলে: কল ইয়ারপিসে শুরু হয়, ফোন কলের মতো"
+"speaker_default_desc": "বন্ধ থাকলে: কল ইয়ারপিসে শুরু হয়, ফোন কলের মতো",
+"filters_interests_hint_free": "ফ্রি: সর্বোচ্চ %1$dটি আগ্রহ। Plus: ১০টি পর্যন্ত।"
 }

@@ -808,6 +808,7 @@
   "premiumComingSoon": "پریمیوم فروخته نمی‌شود و همه‌چیز در TalkLive رایگان است.",
   "premiumGenderLocked": "فیلتر جنسیت یک قابلیت پریمیوم است.",
   "premiumCountryLimit": "طرح رایگان حداکثر {n} کشور در هر فهرست را مجاز می‌کند.",
+  "premiumInterestLimit": "طرح رایگان تا {n} علاقه‌مندی را مجاز می‌کند. Plus تا ۱۰.",
   "friendOnlineToast": "{name} از {country} آنلاین است",
   "friendOnlineToastNoCountry": "{name} آنلاین است",
   "micPromptTitle": "اجازه دسترسی به میکروفون",

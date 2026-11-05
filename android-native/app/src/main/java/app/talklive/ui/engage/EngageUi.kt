@@ -311,6 +311,13 @@ fun FiltersSheet(current: Filters, premium: Boolean, onApply: (Filters) -> Unit,
     val freeCountries = 2 // the website's free limit per list (server FREE_LIMITS)
     var f by remember { mutableStateOf(current) }
     var newInterest by remember { mutableStateOf("") }
+    // Free: 2 interest tags (the server keeps only that many); Plus: up to 10.
+    val interestCap = if (premium) 10 else 2
+    fun addInterest(v: String) {
+        if (v.isBlank() || v in f.interests) return
+        if (f.interests.size >= interestCap) { if (!premium) onPlus(); return }
+        f = f.copy(interests = f.interests + v)
+    }
     var countryQuery by remember { mutableStateOf("") }
     var avoidMode by remember { mutableStateOf(current.includeCountries.isEmpty() && current.excludeCountries.isNotEmpty()) }
     var pickingCountries by remember { mutableStateOf(false) }
@@ -322,17 +329,17 @@ fun FiltersSheet(current: Filters, premium: Boolean, onApply: (Filters) -> Unit,
                 Text(stringResource(R.string.filters_body), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                 // 1. Interests
-                FilterCard("🎯", stringResource(R.string.interests), stringResource(R.string.filters_interests_hint), onClear = if (f.interests.isNotEmpty()) ({ f = f.copy(interests = emptyList()) }) else null) {
+                FilterCard("🎯", stringResource(R.string.interests), if (premium) stringResource(R.string.filters_interests_hint) else stringResource(R.string.filters_interests_hint_free, interestCap), onClear = if (f.interests.isNotEmpty()) ({ f = f.copy(interests = emptyList()) }) else null) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.animateContentSize()) {
                         f.interests.forEach { i -> SelectedChip(i) { f = f.copy(interests = f.interests - i) } }
                         SUGGESTED_INTERESTS.filter { it !in f.interests }.take(3).forEach { i ->
-                            SuggestChip("+ $i") { f = f.copy(interests = (f.interests + i).take(10)) }
+                            SuggestChip("+ $i") { addInterest(i) }
                         }
                     }
                     Spacer(Modifier.height(10.dp))
                     InlineField(newInterest, { newInterest = it.take(24) }, stringResource(R.string.add_interest)) {
                         val v = newInterest.trim().lowercase()
-                        if (v.isNotBlank()) f = f.copy(interests = (f.interests + v).distinct().take(10))
+                        addInterest(v)
                         newInterest = ""
                     }
                 }

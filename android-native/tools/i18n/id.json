@@ -491,5 +491,6 @@
 "section_calls": "Panggilan",
 "auto_connect_desc": "Langsung ke orang berikutnya saat panggilan selesai",
 "speaker_default": "Mulai dengan speaker",
-"speaker_default_desc": "Mati: panggilan dimulai di earpiece, seperti telepon"
+"speaker_default_desc": "Mati: panggilan dimulai di earpiece, seperti telepon",
+"filters_interests_hint_free": "Gratis: hingga %1$d minat. Plus: hingga 10."
 }

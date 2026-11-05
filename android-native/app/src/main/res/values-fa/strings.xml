@@ -492,6 +492,7 @@
     <string name="auto_connect_desc">پس از پایان تماس مستقیم به نفر بعدی بروید</string>
     <string name="speaker_default">شروع با بلندگو</string>
     <string name="speaker_default_desc">خاموش: تماس‌ها مثل تلفن با گوشی شروع می‌شوند</string>
+    <string name="filters_interests_hint_free">رایگان: تا %1$d علاقه‌مندی. Plus: تا ۱۰.</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s بازدیدکننده امروز</item>
         <item quantity="other">%1$s بازدیدکننده امروز</item>

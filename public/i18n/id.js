@@ -808,6 +808,7 @@
   "premiumComingSoon": "Premium tidak dijual, dan semua di TalkLive gratis.",
   "premiumGenderLocked": "Filter gender adalah fitur Premium.",
   "premiumCountryLimit": "Paket gratis memungkinkan hingga {n} negara per daftar.",
+  "premiumInterestLimit": "Paket gratis memungkinkan hingga {n} minat. Plus hingga 10.",
   "friendOnlineToast": "{name} dari {country} sedang online",
   "friendOnlineToastNoCountry": "{name} sedang online",
   "micPromptTitle": "Izinkan akses mikrofon",

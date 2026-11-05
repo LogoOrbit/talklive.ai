@@ -493,5 +493,6 @@
 "section_calls": "Звонки",
 "auto_connect_desc": "Сразу переходить к следующему собеседнику",
 "speaker_default": "Начинать с динамика",
-"speaker_default_desc": "Выкл.: звонок начинается в разговорном динамике"
+"speaker_default_desc": "Выкл.: звонок начинается в разговорном динамике",
+"filters_interests_hint_free": "Бесплатно: до %1$d интересов. Plus: до 10."
 }
