@@ -115,7 +115,7 @@ fun OnboardingFlow(vm: AuthViewModel, start: AuthRoute = AuthRoute.Choose, onClo
                 onLogin = { go(AuthRoute.Login) },
                 onClose = onClose,
             )
-            AuthRoute.Signup -> SignupScreen(vm, onExit = { go(AuthRoute.Choose) })
+            AuthRoute.Signup -> SignupScreen(vm, onExit = { go(AuthRoute.Choose) }, onLogin = { go(AuthRoute.Login) })
             AuthRoute.Login -> LoginScreen(
                 vm,
                 onBack = { go(AuthRoute.Choose) },
@@ -304,7 +304,7 @@ private fun FormScaffold(
 }
 
 @Composable
-internal fun SignupScreen(vm: AuthViewModel, onExit: () -> Unit) {
+internal fun SignupScreen(vm: AuthViewModel, onExit: () -> Unit, onLogin: () -> Unit = {}) {
     FormScaffold(
         onBack = { if (!vm.back()) onExit() },
         progress = (vm.step.ordinal + 1) / 3f,
@@ -323,6 +323,12 @@ internal fun SignupScreen(vm: AuthViewModel, onExit: () -> Unit) {
                     SignupStep.Email -> EmailStep(vm)
                     SignupStep.Account -> AccountStep(vm)
                     SignupStep.Code -> CodeStep(vm)
+                }
+                // That email already has an account: it can only log in.
+                if (vm.error?.contains("email is already", ignoreCase = true) == true) {
+                    androidx.compose.material3.TextButton(onClick = onLogin, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                        Text(stringResource(R.string.log_in_instead))
+                    }
                 }
             }
         }

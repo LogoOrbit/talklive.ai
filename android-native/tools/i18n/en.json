@@ -503,5 +503,14 @@
 "is_calling": "%1$s is calling",
 "plus_perk_themes": "Ocean and Sunset themes",
 "plus_perk_themes_body": "Two extra looks for the whole app. Light and Dark stay free.",
-"mark_read": "Mark as read"
+"mark_read": "Mark as read",
+"log_in_instead": "Log in instead",
+"talked_on_call": "Talked on call (%1$d)",
+"chatted_by_text": "Chatted by text",
+"problem_title": "Report a problem",
+"problem_body": "Tell us what went wrong and what you were doing. Your phone model is added so we can fix it faster.",
+"problem_thanks": "Thanks! We got your report.",
+"friend_id_rules": "Letters, then 1 to 4 numbers. Friends find you with it.",
+"id_letters": "Letters",
+"id_numbers": "Numbers"
 }

@@ -499,5 +499,14 @@
 "is_calling": "%1$s 来电",
 "plus_perk_themes": "海洋和日落主题",
 "plus_perk_themes_body": "为整个应用新增两种外观。浅色和深色仍然免费。",
-"mark_read": "标为已读"
+"mark_read": "标为已读",
+"log_in_instead": "改为登录",
+"talked_on_call": "语音聊过 (%1$d)",
+"chatted_by_text": "文字聊过",
+"problem_title": "报告问题",
+"problem_body": "告诉我们出了什么问题以及你当时在做什么。会附上手机型号，方便尽快修复。",
+"problem_thanks": "谢谢！我们已收到你的报告。",
+"friend_id_rules": "字母加 1 到 4 位数字。好友用它找到你。",
+"id_letters": "字母",
+"id_numbers": "数字"
 }

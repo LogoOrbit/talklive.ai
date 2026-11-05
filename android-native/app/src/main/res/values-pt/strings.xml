@@ -501,6 +501,15 @@
     <string name="plus_perk_themes">Temas Oceano e Pôr do sol</string>
     <string name="plus_perk_themes_body">Dois visuais extras para o app todo. Claro e Escuro continuam grátis.</string>
     <string name="mark_read">Marcar como lida</string>
+    <string name="log_in_instead">Entrar em vez disso</string>
+    <string name="talked_on_call">Conversou por chamada (%1$d)</string>
+    <string name="chatted_by_text">Conversou por texto</string>
+    <string name="problem_title">Relatar um problema</string>
+    <string name="problem_body">Conte o que deu errado e o que você estava fazendo. O modelo do seu celular é enviado para corrigirmos mais rápido.</string>
+    <string name="problem_thanks">Obrigado! Recebemos seu relato.</string>
+    <string name="friend_id_rules">Letras e depois de 1 a 4 números. Seus amigos encontram você com ele.</string>
+    <string name="id_letters">Letras</string>
+    <string name="id_numbers">Números</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s visitante hoje</item>
         <item quantity="other">%1$s visitantes hoje</item>

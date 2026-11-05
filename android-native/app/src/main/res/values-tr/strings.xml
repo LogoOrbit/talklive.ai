@@ -501,6 +501,15 @@
     <string name="plus_perk_themes">Okyanus ve Gün batımı temaları</string>
     <string name="plus_perk_themes_body">Tüm uygulama için iki ek görünüm. Açık ve Koyu ücretsiz kalır.</string>
     <string name="mark_read">Okundu olarak işaretle</string>
+    <string name="log_in_instead">Bunun yerine giriş yap</string>
+    <string name="talked_on_call">Aramada konuşulanlar (%1$d)</string>
+    <string name="chatted_by_text">Yazışılanlar</string>
+    <string name="problem_title">Sorun bildir</string>
+    <string name="problem_body">Neyin ters gittiğini ve ne yaptığını anlat. Daha hızlı düzeltmek için telefon modelin eklenir.</string>
+    <string name="problem_thanks">Teşekkürler! Bildirimini aldık.</string>
+    <string name="friend_id_rules">Harfler, ardından 1-4 rakam. Arkadaşların seni bununla bulur.</string>
+    <string name="id_letters">Harfler</string>
+    <string name="id_numbers">Rakamlar</string>
     <plurals name="visitors_today">
         <item quantity="one">Bugün %1$s ziyaretçi</item>
         <item quantity="other">Bugün %1$s ziyaretçi</item>

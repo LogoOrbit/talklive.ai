@@ -50,7 +50,7 @@ class EngageViewModel @Inject constructor(private val repo: EngageRepository, pr
     fun requestReferral() = repo.requestReferral()
     fun setFilters(f: Filters) = repo.setFilters(f)
     suspend fun countryCounts() = repo.countryCounts()
-    fun sendFeedback(text: String) = repo.sendFeedback(text)
+    fun sendFeedback(text: String, problem: Boolean = false) = repo.sendFeedback(text, problem)
 
     /** Search as you type, after a short pause. */
     fun search(q: String) {

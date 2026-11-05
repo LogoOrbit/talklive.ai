@@ -217,7 +217,9 @@ async function waitUp() {
     ok('an account can choose its ID (stored lowercase)', chosen.ok && chosen.friendId === 'alphawolf#0042', JSON.stringify(chosen));
     ok('the new ID finds them', (await search(c.sock, 'ALPHAWOLF#0042')).ok);
     ok('the old ID no longer does', (await search(c.sock, accountId)).ok === false);
-    ok('bad formats are explained', (await setId(aAfter.sock, 'a#1')).ok === false);
+    // 1-16 letters, then # and 1-4 numbers: too many numbers, no letters, or no numbers are refused.
+    ok('bad formats are explained', (await setId(aAfter.sock, 'alpha#12345')).ok === false
+      && (await setId(aAfter.sock, '#12')).ok === false && (await setId(aAfter.sock, 'alpha#')).ok === false);
     ok('numbers or symbols in the name are refused', (await setId(aAfter.sock, 'alpha_1#0042')).ok === false && (await setId(aAfter.sock, 'al.pha#0042')).ok === false);
     ok('letters in the tag are refused', (await setId(aAfter.sock, 'alpha#00a2')).ok === false);
     const bAcc = await signUp(c.sock, srv, 'fidcharlie', 'secret123');

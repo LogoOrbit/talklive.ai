@@ -711,6 +711,7 @@ internal fun PersonSheet(person: Person, isFriend: Boolean, onCall: () -> Unit, 
             PersonAvatar(person, 112.dp)
             Spacer(Modifier.height(14.dp))
             Text(person.displayName, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground)
+            app.talklive.ui.components.CopyIdChip(person.friendId, Modifier.padding(top = 8.dp))
             if (person.nickname != null && person.nickname != person.username) {
                 Text(person.username, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }

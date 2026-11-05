@@ -501,6 +501,15 @@
     <string name="plus_perk_themes">オーシャン・サンセットテーマ</string>
     <string name="plus_perk_themes_body">アプリ全体に2つの新しい見た目。ライトとダークは無料のまま。</string>
     <string name="mark_read">既読にする</string>
+    <string name="log_in_instead">ログインする</string>
+    <string name="talked_on_call">通話した人 (%1$d)</string>
+    <string name="chatted_by_text">テキストで話した人</string>
+    <string name="problem_title">問題を報告</string>
+    <string name="problem_body">何が起きたか、何をしていたかを教えてください。早く直すため端末の機種も送られます。</string>
+    <string name="problem_thanks">ありがとうございます！報告を受け取りました。</string>
+    <string name="friend_id_rules">英字のあとに1〜4桁の数字。友達はこれであなたを探せます。</string>
+    <string name="id_letters">英字</string>
+    <string name="id_numbers">数字</string>
     <plurals name="visitors_today">
         <item quantity="other">今日の訪問者 %1$s人</item>
     </plurals>

@@ -501,6 +501,15 @@
     <string name="plus_perk_themes">پوسته‌های اقیانوس و غروب</string>
     <string name="plus_perk_themes_body">دو ظاهر اضافه برای کل برنامه. روشن و تیره رایگان می‌مانند.</string>
     <string name="mark_read">علامت خوانده شده</string>
+    <string name="log_in_instead">به‌جای آن وارد شوید</string>
+    <string name="talked_on_call">تماس صوتی (%1$d)</string>
+    <string name="chatted_by_text">گفتگوی متنی</string>
+    <string name="problem_title">گزارش مشکل</string>
+    <string name="problem_body">بگویید چه مشکلی پیش آمد و چه می‌کردید. مدل گوشی شما اضافه می‌شود تا سریع‌تر رفع شود.</string>
+    <string name="problem_thanks">ممنون! گزارش شما رسید.</string>
+    <string name="friend_id_rules">حروف، سپس ۱ تا ۴ عدد. دوستان با آن پیدایتان می‌کنند.</string>
+    <string name="id_letters">حروف</string>
+    <string name="id_numbers">اعداد</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s بازدیدکننده امروز</item>
         <item quantity="other">%1$s بازدیدکننده امروز</item>

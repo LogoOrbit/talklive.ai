@@ -35,6 +35,9 @@ data class Person(
     /** Whether a message can be sent: "open"/"one" yes; "accept", "waiting", "request" not yet. */
     val dm: String = "open",
     val ts: Long = 0,
+    /** For people met at random: "talk" (a voice call) or "chat" (text). */
+    val mode: String = "chat",
+    val durationSeconds: Int = 0,
 ) {
     val displayName: String get() = nickname?.takeIf { it.isNotBlank() } ?: username.ifBlank { "Stranger" }
     val canMessage: Boolean get() = dm == "open" || dm == "one"
@@ -53,6 +56,8 @@ data class Person(
             pinned = o.optBoolean("pinned"),
             dm = o.optString("dm", "open"),
             ts = o.optLong("ts"),
+            mode = o.optString("mode", "chat"),
+            durationSeconds = o.optInt("durationSeconds"),
         )
     }
 }

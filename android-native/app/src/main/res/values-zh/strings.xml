@@ -501,6 +501,15 @@
     <string name="plus_perk_themes">海洋和日落主题</string>
     <string name="plus_perk_themes_body">为整个应用新增两种外观。浅色和深色仍然免费。</string>
     <string name="mark_read">标为已读</string>
+    <string name="log_in_instead">改为登录</string>
+    <string name="talked_on_call">语音聊过 (%1$d)</string>
+    <string name="chatted_by_text">文字聊过</string>
+    <string name="problem_title">报告问题</string>
+    <string name="problem_body">告诉我们出了什么问题以及你当时在做什么。会附上手机型号，方便尽快修复。</string>
+    <string name="problem_thanks">谢谢！我们已收到你的报告。</string>
+    <string name="friend_id_rules">字母加 1 到 4 位数字。好友用它找到你。</string>
+    <string name="id_letters">字母</string>
+    <string name="id_numbers">数字</string>
     <plurals name="visitors_today">
         <item quantity="other">今日访客 %1$s 人</item>
     </plurals>

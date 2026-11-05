@@ -501,6 +501,15 @@
     <string name="plus_perk_themes">ओशन और सनसेट थीम</string>
     <string name="plus_perk_themes_body">पूरे ऐप के लिए दो और लुक। लाइट और डार्क मुफ़्त रहते हैं।</string>
     <string name="mark_read">पढ़ा हुआ मार्क करें</string>
+    <string name="log_in_instead">इसके बजाय लॉग इन करें</string>
+    <string name="talked_on_call">कॉल पर बात की (%1$d)</string>
+    <string name="chatted_by_text">टेक्स्ट पर चैट</string>
+    <string name="problem_title">समस्या बताएँ</string>
+    <string name="problem_body">बताएँ क्या गड़बड़ हुई और आप क्या कर रहे थे। जल्दी ठीक करने के लिए फ़ोन मॉडल जोड़ा जाता है।</string>
+    <string name="problem_thanks">धन्यवाद! आपकी रिपोर्ट मिल गई।</string>
+    <string name="friend_id_rules">अक्षर, फिर 1 से 4 अंक। दोस्त इससे आपको ढूँढते हैं।</string>
+    <string name="id_letters">अक्षर</string>
+    <string name="id_numbers">अंक</string>
     <plurals name="visitors_today">
         <item quantity="one">आज %1$s विज़िटर</item>
         <item quantity="other">आज %1$s विज़िटर</item>

@@ -20,6 +20,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -156,6 +158,14 @@ class CallManager @Inject constructor(
                 session?.setMuted(lost || _state.value.muted)
                 socket.emit("mic-state", lost || _state.value.muted)
             }
+        }
+        // On the earpiece, the screen turns off at your ear (proximity sensor),
+        // like a phone call; on speaker, or when the call ends, it stays on.
+        scope.launch {
+            _state.map { st ->
+                st.mode == CallMode.Talk && !st.speakerOn &&
+                    (st.phase is CallPhase.Connected || st.phase is CallPhase.Connecting)
+            }.distinctUntilChanged().collect { earpiece -> setProximity(earpiece) }
         }
         // Plugging in or pairing a headset moves the call to it.
         scope.launch {
@@ -604,6 +614,21 @@ class CallManager @Inject constructor(
             .put("relay", relay)
     }
     private var quality = QualitySummary()
+
+    private val proximity: android.os.PowerManager.WakeLock? by lazy {
+        runCatching {
+            val pm = context.getSystemService(android.content.Context.POWER_SERVICE) as android.os.PowerManager
+            if (pm.isWakeLockLevelSupported(android.os.PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK))
+                pm.newWakeLock(android.os.PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK, "talklive:earpiece").apply { setReferenceCounted(false) }
+            else null
+        }.getOrNull()
+    }
+
+    private fun setProximity(on: Boolean) = runCatching {
+        val lock = proximity ?: return@runCatching
+        if (on && !lock.isHeld) lock.acquire(4 * 60 * 60 * 1000L)
+        if (!on && lock.isHeld) lock.release(android.os.PowerManager.RELEASE_FLAG_WAIT_FOR_NO_PROXIMITY)
+    }
 
     private fun teardown() {
         quality.json()?.let { socket.emit("call-quality", it) }

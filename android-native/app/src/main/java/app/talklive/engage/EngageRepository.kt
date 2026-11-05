@@ -243,9 +243,16 @@ class EngageRepository(
             .sortedBy { if (it.title.lowercase().startsWith(lower)) 0 else 1 }
     }
 
-    fun sendFeedback(text: String) {
+    /** Feedback, or (problem = true) a problem report the owner is alerted to, with phone details. */
+    fun sendFeedback(text: String, problem: Boolean = false) {
         val body = text.trim().take(1000)
-        if (body.isNotEmpty()) socket.emit("feedback", JSONObject().put("text", body))
+        if (body.isEmpty()) return
+        val o = JSONObject().put("text", body)
+        if (problem) o.put("source", "problem").put(
+            "device",
+            "${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL} · Android ${android.os.Build.VERSION.RELEASE} · app ${app.talklive.BuildConfig.VERSION_NAME}",
+        )
+        socket.emit("feedback", o)
     }
 
     suspend fun countryCounts(): Map<String, Int> = socket.countryCounts()

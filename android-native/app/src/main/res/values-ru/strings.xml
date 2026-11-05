@@ -501,6 +501,15 @@
     <string name="plus_perk_themes">Темы «Океан» и «Закат»</string>
     <string name="plus_perk_themes_body">Два дополнительных оформления. Светлая и тёмная темы остаются бесплатными.</string>
     <string name="mark_read">Прочитано</string>
+    <string name="log_in_instead">Войти</string>
+    <string name="talked_on_call">Звонки (%1$d)</string>
+    <string name="chatted_by_text">Текстовые чаты</string>
+    <string name="problem_title">Сообщить о проблеме</string>
+    <string name="problem_body">Расскажите, что пошло не так и что вы делали. Модель телефона добавится автоматически, чтобы быстрее исправить.</string>
+    <string name="problem_thanks">Спасибо! Мы получили ваше сообщение.</string>
+    <string name="friend_id_rules">Буквы, затем от 1 до 4 цифр. По нему вас найдут друзья.</string>
+    <string name="id_letters">Буквы</string>
+    <string name="id_numbers">Цифры</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s посетитель сегодня</item>
         <item quantity="other">%1$s посетителя сегодня</item>

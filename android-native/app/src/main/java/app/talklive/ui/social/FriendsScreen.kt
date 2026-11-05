@@ -133,11 +133,30 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
                     RequestCard(p, onAccept = { vm.respond(p.clientId, true) }, onDecline = { vm.respond(p.clientId, false) })
                 }
             }
-            if (met.isNotEmpty()) {
-                item { SectionLabel(stringResource(R.string.met_today)) }
+            // Who you met at random, split by how: voice calls (call them back)
+            // and text chats, so each is easy to find again.
+            val talked = met.filter { it.mode == "talk" }.take(10)
+            val chatted = met.filter { it.mode != "talk" }
+            if (talked.isNotEmpty()) {
+                item(key = "h-talked") { SectionLabel(stringResource(R.string.talked_on_call, talked.size)) }
+                items(talked, key = { "t" + it.clientId }) { p ->
+                    FriendRow(
+                        p,
+                        modifier = Modifier.animateItem().combinedClickable(
+                            onClick = { profileOf = p },
+                            onLongClick = { haptics.performHapticFeedback(HapticFeedbackType.LongPress); vm.removeFromHistory(p.clientId) },
+                        ),
+                        onCall = { vm.call(p) },
+                        onChat = { onOpenChat(p.clientId) },
+                        onProfile = { profileOf = p },
+                    )
+                }
+            }
+            if (chatted.isNotEmpty()) {
+                item { SectionLabel(stringResource(R.string.chatted_by_text)) }
                 item {
                     LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(met, key = { "m" + it.clientId }) { p ->
+                        items(chatted, key = { "m" + it.clientId }) { p ->
                             MetCard(
                                 p, pending = p.clientId in sent,
                                 onAdd = { if (p.clientId in sent) vm.cancelRequest(p.clientId) else vm.sendRequest(p.clientId) },

@@ -76,7 +76,7 @@ fun PartnerSheet(
             Modifier.fillMaxWidth().verticalScroll(androidx.compose.foundation.rememberScrollState()).navigationBarsPadding().padding(horizontal = 24.dp).padding(bottom = 24.dp),
             horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
         ) {
-            app.talklive.ui.animals.AnimalAvatar(p.animal, p.username, 112.dp)
+            app.talklive.ui.components.PlusRing(p.premium, 112.dp) { app.talklive.ui.animals.AnimalAvatar(p.animal, p.username, 112.dp) }
             androidx.compose.foundation.layout.Spacer(Modifier.height(14.dp))
             androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 androidx.compose.material3.Text(p.username, style = androidx.compose.material3.MaterialTheme.typography.headlineSmall, color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground)
@@ -85,6 +85,7 @@ fun PartnerSheet(
             app.talklive.ui.animals.animalById(p.animal)?.let {
                 androidx.compose.material3.Text(it.name + if (it.trait.isNotBlank()) " · ${it.trait}" else "", style = androidx.compose.material3.MaterialTheme.typography.bodyMedium, color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            app.talklive.ui.components.CopyIdChip(p.friendId, Modifier.padding(top = 10.dp))
             androidx.compose.foundation.layout.Spacer(Modifier.height(16.dp))
             // Facts, as tidy rows.
             androidx.compose.material3.Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp), color = androidx.compose.material3.MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {

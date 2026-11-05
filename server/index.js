@@ -3580,6 +3580,18 @@ async function findOrCreateGoogleAccount(idToken) {
   // Google again. Skipped if another account already claims the address.
   const googleEmail = normalizeEmail(payload.email);
   let username = googleAccounts.get(googleId);
+  // Google verified this address. If an account already uses it, sign in to
+  // that account (and link Google to it) instead of making a second one.
+  if (!username && googleEmail) {
+    const owner = store.findUsernameByEmail(googleEmail);
+    const ownerAccount = owner && accounts.get(owner);
+    if (ownerAccount && !ownerAccount.googleId) {
+      ownerAccount.googleId = googleId;
+      googleAccounts.set(googleId, owner);
+      persistAccount(owner);
+      username = owner;
+    }
+  }
   const created = !username;
 
   if (!username && store.siteModes().signupsPaused) {
@@ -4181,6 +4193,8 @@ function publicProfile(p) {
     lang: p.lang || null,
     // Premium badge next to the name.
     premium: !!p.premium,
+    // Their public friend ID, so it can be copied from their profile in one tap.
+    friendId: publicIdOf(p.clientId) || null,
     // Their top 3 films & shows, shown on the live chat and call screens.
     films: store.getFavFilms(p.clientId).slice(0, FILM_MAX),
   };
@@ -4588,12 +4602,12 @@ function normalizeFriendId(raw) {
 // accounts, shown on every profile, searchable, and changeable by its owner
 // to any ID nobody else has. (The older 8-character codes still find the same
 // account, so links already shared keep working.)
-const HANDLE_RE = /^([a-z0-9_.]{3,20})#(\d{4})$/;
-// The shape every ID now has, like a Riot ID: 3-16 letters, then # and four
+const HANDLE_RE = /^([a-z0-9_.]{1,20})#(\d{1,4})$/;
+// The shape every ID now has, like a Riot ID: 1-16 letters, then # and 1-4
 // numbers ("anakin#1101"). HANDLE_RE above stays wider only so an ID someone
 // shared before this rule still looks up; accountHandle() replaces it.
-const ID_RE = /^[a-z]{3,16}#\d{4}$/;
-const ID_NAME_RE = /^[a-z]{3,16}$/;
+const ID_RE = /^[a-z]{1,16}#\d{1,4}$/;
+const ID_NAME_RE = /^[a-z]{1,16}$/;
 function normalizeHandle(raw) {
   if (typeof raw !== 'string') return null;
   const v = raw.trim().replace(/^@/, '').replace(/\s+/g, '').toLowerCase();
@@ -6169,7 +6183,7 @@ io.on('connection', (socket) => {
     // Which surface it was sent from - Settings, or the landing screen's
     // "still under development" notice. Both land in the same dashboard list;
     // the tag is what makes "what do first-time visitors say" answerable.
-    const source = payload.source === 'dev-notice' ? 'dev-notice' : 'settings';
+    const source = payload.source === 'dev-notice' ? 'dev-notice' : payload.source === 'problem' ? 'problem' : 'settings';
     console.log(`[feedback:${source}] from ${who}: ${text}`);
     store.recordFeature('feedback');
     // clientId/account are what let the owner reply from the dashboard.
@@ -6177,8 +6191,29 @@ io.on('connection', (socket) => {
       username: p ? p.username : 'Unknown', country: p ? p.countryName : '', city: p ? p.city : '', text, source,
       clientId: p ? p.clientId : null, account: socketAuth.get(socket.id) || null,
     });
-    // No email alert for user feedback, same as user reports above: it is
-    // recorded and reviewable in the owner dashboard at /owner instead.
+    // Ordinary feedback has no alert (it is reviewed in /owner). A problem
+    // report does: a push to the owner's phone and an email, at most one per
+    // person every two minutes.
+    if (source === 'problem') {
+      const now = Date.now();
+      if (now - (socket.data.lastProblemAt || 0) < 120000) return;
+      socket.data.lastProblemAt = now;
+      const device = typeof payload.device === 'string' ? payload.device.slice(0, 200) : '';
+      push.send('owner:support', {
+        topic: 'problem:' + (p ? p.clientId : socket.id),
+        title: `Problem report from ${p ? p.username : 'someone'}`,
+        body: text.slice(0, 120),
+        url: '/owner#feedback',
+        tag: 'problem',
+      }).catch(() => {});
+      if (mail.configured()) {
+        mail.sendMail({
+          to: CONTACT_TO,
+          subject: `[Problem report] ${p ? p.username : 'Unknown'}`,
+          text: `From: ${who}${socketAuth.get(socket.id) ? ` (account: ${socketAuth.get(socket.id)})` : ' (guest)'}\nDevice: ${device || 'unknown'}\n\n${text}\n\nDashboard: ${OWNER_URL || ''}#feedback`,
+        }).catch(() => {});
+      }
+    }
   });
 
   // Client-side JS errors reported by the browser for the Errors dashboard tab.
@@ -6503,7 +6538,7 @@ io.on('connection', (socket) => {
       if (!next) return reply({ ok: false, taken: true, error: 'That name is very popular. Pick your own 4 numbers, like anakin#1101.' });
     }
     if (!next) {
-      return reply({ ok: false, error: 'Use 3-16 letters, then # and 4 numbers - like anakin#1101.' });
+      return reply({ ok: false, error: 'Use 1-16 letters, then # and 1-4 numbers - like anakin#1101.' });
     }
     const current = accountHandle(usernameLower);
     if (next === current) return reply({ ok: true, friendId: current, unchanged: true });

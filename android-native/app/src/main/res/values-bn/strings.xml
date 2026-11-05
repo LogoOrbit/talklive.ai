@@ -501,6 +501,15 @@
     <string name="plus_perk_themes">ওশান ও সানসেট থিম</string>
     <string name="plus_perk_themes_body">পুরো অ্যাপের জন্য আরও দুটি লুক। লাইট ও ডার্ক ফ্রি থাকে।</string>
     <string name="mark_read">পড়া হয়েছে</string>
+    <string name="log_in_instead">বরং লগ ইন করুন</string>
+    <string name="talked_on_call">কলে কথা হয়েছে (%1$d)</string>
+    <string name="chatted_by_text">টেক্সটে চ্যাট</string>
+    <string name="problem_title">সমস্যা জানান</string>
+    <string name="problem_body">কী সমস্যা হয়েছে আর আপনি কী করছিলেন জানান। দ্রুত ঠিক করতে আপনার ফোনের মডেল যোগ হবে।</string>
+    <string name="problem_thanks">ধন্যবাদ! আপনার রিপোর্ট পেয়েছি।</string>
+    <string name="friend_id_rules">অক্ষর, তারপর ১ থেকে ৪টি সংখ্যা। বন্ধুরা এটা দিয়ে আপনাকে খুঁজবে।</string>
+    <string name="id_letters">অক্ষর</string>
+    <string name="id_numbers">সংখ্যা</string>
     <plurals name="visitors_today">
         <item quantity="one">আজ %1$s জন ভিজিটর</item>
         <item quantity="other">আজ %1$s জন ভিজিটর</item>

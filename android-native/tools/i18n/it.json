@@ -500,5 +500,14 @@
 "is_calling": "%1$s ti sta chiamando",
 "plus_perk_themes": "Temi Oceano e Tramonto",
 "plus_perk_themes_body": "Due look in più per tutta l'app. Chiaro e Scuro restano gratis.",
-"mark_read": "Segna come letto"
+"mark_read": "Segna come letto",
+"log_in_instead": "Accedi invece",
+"talked_on_call": "Chiamate vocali (%1$d)",
+"chatted_by_text": "Chat di testo",
+"problem_title": "Segnala un problema",
+"problem_body": "Dicci cosa non ha funzionato e cosa stavi facendo. Aggiungiamo il modello del telefono per risolvere prima.",
+"problem_thanks": "Grazie! Abbiamo ricevuto la segnalazione.",
+"friend_id_rules": "Lettere, poi da 1 a 4 numeri. Gli amici ti trovano così.",
+"id_letters": "Lettere",
+"id_numbers": "Numeri"
 }

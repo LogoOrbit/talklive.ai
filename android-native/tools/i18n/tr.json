@@ -500,5 +500,14 @@
 "is_calling": "%1$s arıyor",
 "plus_perk_themes": "Okyanus ve Gün batımı temaları",
 "plus_perk_themes_body": "Tüm uygulama için iki ek görünüm. Açık ve Koyu ücretsiz kalır.",
-"mark_read": "Okundu olarak işaretle"
+"mark_read": "Okundu olarak işaretle",
+"log_in_instead": "Bunun yerine giriş yap",
+"talked_on_call": "Aramada konuşulanlar (%1$d)",
+"chatted_by_text": "Yazışılanlar",
+"problem_title": "Sorun bildir",
+"problem_body": "Neyin ters gittiğini ve ne yaptığını anlat. Daha hızlı düzeltmek için telefon modelin eklenir.",
+"problem_thanks": "Teşekkürler! Bildirimini aldık.",
+"friend_id_rules": "Harfler, ardından 1-4 rakam. Arkadaşların seni bununla bulur.",
+"id_letters": "Harfler",
+"id_numbers": "Rakamlar"
 }

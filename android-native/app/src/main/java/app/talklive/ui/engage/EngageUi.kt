@@ -692,12 +692,12 @@ fun InviteSheet(vm: EngageViewModel, onDismiss: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FeedbackSheet(onSend: (String) -> Unit, onDismiss: () -> Unit) {
+fun FeedbackSheet(onSend: (String) -> Unit, problem: Boolean = false, onDismiss: () -> Unit) {
     var text by rememberSaveable { mutableStateOf("") }
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().imePadding().padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
-            Text(stringResource(R.string.feedback_title), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
-            Text(stringResource(R.string.feedback_body), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(if (problem) R.string.problem_title else R.string.feedback_title), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
+            Text(stringResource(if (problem) R.string.problem_body else R.string.feedback_body), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(12.dp))
             OutlinedTextField(text, { text = it.take(1000) }, Modifier.fillMaxWidth().heightIn(min = 140.dp), placeholder = { Text(stringResource(R.string.feedback_hint)) }, shape = MaterialTheme.shapes.medium)
             Spacer(Modifier.height(16.dp))

@@ -500,5 +500,14 @@
 "is_calling": "%1$s está ligando",
 "plus_perk_themes": "Temas Oceano e Pôr do sol",
 "plus_perk_themes_body": "Dois visuais extras para o app todo. Claro e Escuro continuam grátis.",
-"mark_read": "Marcar como lida"
+"mark_read": "Marcar como lida",
+"log_in_instead": "Entrar em vez disso",
+"talked_on_call": "Conversou por chamada (%1$d)",
+"chatted_by_text": "Conversou por texto",
+"problem_title": "Relatar um problema",
+"problem_body": "Conte o que deu errado e o que você estava fazendo. O modelo do seu celular é enviado para corrigirmos mais rápido.",
+"problem_thanks": "Obrigado! Recebemos seu relato.",
+"friend_id_rules": "Letras e depois de 1 a 4 números. Seus amigos encontram você com ele.",
+"id_letters": "Letras",
+"id_numbers": "Números"
 }

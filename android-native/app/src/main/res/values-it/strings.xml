@@ -501,6 +501,15 @@
     <string name="plus_perk_themes">Temi Oceano e Tramonto</string>
     <string name="plus_perk_themes_body">Due look in più per tutta l\'app. Chiaro e Scuro restano gratis.</string>
     <string name="mark_read">Segna come letto</string>
+    <string name="log_in_instead">Accedi invece</string>
+    <string name="talked_on_call">Chiamate vocali (%1$d)</string>
+    <string name="chatted_by_text">Chat di testo</string>
+    <string name="problem_title">Segnala un problema</string>
+    <string name="problem_body">Dicci cosa non ha funzionato e cosa stavi facendo. Aggiungiamo il modello del telefono per risolvere prima.</string>
+    <string name="problem_thanks">Grazie! Abbiamo ricevuto la segnalazione.</string>
+    <string name="friend_id_rules">Lettere, poi da 1 a 4 numeri. Gli amici ti trovano così.</string>
+    <string name="id_letters">Lettere</string>
+    <string name="id_numbers">Numeri</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s visitatore oggi</item>
         <item quantity="other">%1$s visitatori oggi</item>

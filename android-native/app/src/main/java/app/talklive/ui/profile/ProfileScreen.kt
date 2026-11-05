@@ -46,6 +46,7 @@ import androidx.compose.material.icons.rounded.Feedback
 import androidx.compose.material.icons.rounded.SupportAgent
 import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.ContactMail
+import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.AllInclusive
 import androidx.compose.material.icons.rounded.DoneAll
@@ -82,6 +83,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -134,7 +136,10 @@ fun ProfileScreen(
             Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface) {
                 Column(Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(contentAlignment = Alignment.BottomEnd) {
-                        AnimalAvatar(animal, account?.nickname, 104.dp, Modifier.clip(CircleShape).clickable { vm.open(ProfileSheet.Edit) })
+                        val headerPremium by engageVm.premium.collectAsStateWithLifecycle()
+                        app.talklive.ui.components.PlusRing(headerPremium.active, 104.dp) {
+                            AnimalAvatar(animal, account?.nickname, 104.dp, Modifier.clip(CircleShape).clickable { vm.open(ProfileSheet.Edit) })
+                        }
                         Box(
                             Modifier.size(32.dp).clip(CircleShape).background(BrandGradient)
                                 .clickable { vm.open(ProfileSheet.Edit) },
@@ -229,6 +234,7 @@ fun ProfileScreen(
                 "likes" -> app.talklive.ui.engage.LikesSheet(engageVm, onPlus = { youSheet = "plus" }) { youSheet = null }
                 "invite" -> app.talklive.ui.engage.InviteSheet(engageVm) { youSheet = null }
                 "feedback" -> app.talklive.ui.engage.FeedbackSheet(onSend = { engageVm.sendFeedback(it); vm.saved = context.getString(R.string.feedback_thanks) }) { youSheet = null }
+                "problem" -> app.talklive.ui.engage.FeedbackSheet(problem = true, onSend = { engageVm.sendFeedback(it, problem = true); vm.saved = context.getString(R.string.problem_thanks) }) { youSheet = null }
                 "support" -> androidx.compose.ui.window.Dialog(
                     onDismissRequest = { youSheet = null },
                     properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
@@ -313,6 +319,7 @@ fun ProfileScreen(
 
             Section(stringResource(R.string.section_safety)) {
                 SettingRow(Icons.Rounded.SupportAgent, stringResource(R.string.support_title), stringResource(R.string.support_row)) { youSheet = "support" }
+                SettingRow(Icons.Rounded.BugReport, stringResource(R.string.problem_title), null) { youSheet = "problem" }
                 SettingRow(Icons.Rounded.Feedback, stringResource(R.string.feedback_title), null) { youSheet = "feedback" }
                 SettingRow(Icons.Rounded.Shield, stringResource(R.string.safety_tips), null) { open("safety") }
                 SettingRow(Icons.Rounded.Groups, stringResource(R.string.community_guidelines), null) { open("community-guidelines") }
@@ -536,12 +543,35 @@ private fun ProfileSheetHost(sheet: ProfileSheet, vm: ProfileViewModel, animal: 
                 }
                 ProfileSheet.FriendId -> {
                     val current by vm.myFriendId.collectAsStateWithLifecycle()
-                    var handle by rememberSaveable { mutableStateOf(current.orEmpty()) }
-                    SheetTitle(stringResource(R.string.your_friend_id), stringResource(R.string.friend_id_body))
-                    TalkTextField(handle, { handle = it.take(21) }, stringResource(R.string.your_friend_id), imeAction = ImeAction.Done, onIme = { vm.saveFriendId(handle) })
+                    // Two boxes with a fixed # between them: letters, then numbers on
+                    // the number pad. The # cannot be deleted, so nothing gets stuck.
+                    var idName by rememberSaveable { mutableStateOf(current.orEmpty().substringBefore('#').filter { it in 'a'..'z' }.take(16)) }
+                    var idTag by rememberSaveable { mutableStateOf(current.orEmpty().substringAfter('#', "").filter { it.isDigit() }.take(4)) }
+                    val tagFocus = remember { androidx.compose.ui.focus.FocusRequester() }
+                    val handle = "$idName#$idTag"
+                    val idOk = idName.isNotEmpty() && idTag.isNotEmpty()
+                    SheetTitle(stringResource(R.string.your_friend_id), stringResource(R.string.friend_id_rules))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        androidx.compose.material3.OutlinedTextField(
+                            idName,
+                            { v -> idName = v.lowercase().filter { it in 'a'..'z' }.take(16); if (v.any { it.isDigit() || it == '#' }) runCatching { tagFocus.requestFocus() } },
+                            label = { Text(stringResource(R.string.id_letters)) },
+                            singleLine = true, shape = RoundedCornerShape(16.dp), modifier = Modifier.weight(1f),
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Text, imeAction = ImeAction.Next, autoCorrectEnabled = false),
+                            keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { runCatching { tagFocus.requestFocus() } }),
+                        )
+                        Text("#", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 8.dp))
+                        androidx.compose.material3.OutlinedTextField(
+                            idTag, { v -> idTag = v.filter { it.isDigit() }.take(4) },
+                            label = { Text(stringResource(R.string.id_numbers)) },
+                            singleLine = true, shape = RoundedCornerShape(16.dp), modifier = Modifier.width(110.dp).focusRequester(tagFocus),
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword, imeAction = ImeAction.Done),
+                            keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { if (idOk) vm.saveFriendId(handle) }),
+                        )
+                    }
                     ErrorBanner(vm.error)
                     Spacer(Modifier.height(16.dp))
-                    PrimaryButton(stringResource(R.string.save), onClick = { vm.saveFriendId(handle) }, enabled = handle.length >= 3, loading = vm.busy)
+                    PrimaryButton(stringResource(R.string.save), onClick = { vm.saveFriendId(handle) }, enabled = idOk, loading = vm.busy)
                 }
                 ProfileSheet.Delete -> {
                     var secret by rememberSaveable { mutableStateOf("") }

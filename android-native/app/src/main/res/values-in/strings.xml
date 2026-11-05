@@ -501,6 +501,15 @@
     <string name="plus_perk_themes">Tema Samudra dan Senja</string>
     <string name="plus_perk_themes_body">Dua tampilan tambahan untuk seluruh aplikasi. Terang dan Gelap tetap gratis.</string>
     <string name="mark_read">Tandai dibaca</string>
+    <string name="log_in_instead">Masuk saja</string>
+    <string name="talked_on_call">Mengobrol lewat panggilan (%1$d)</string>
+    <string name="chatted_by_text">Mengobrol lewat teks</string>
+    <string name="problem_title">Laporkan masalah</string>
+    <string name="problem_body">Ceritakan apa yang salah dan apa yang sedang kamu lakukan. Model ponselmu ditambahkan agar cepat diperbaiki.</string>
+    <string name="problem_thanks">Terima kasih! Laporanmu sudah kami terima.</string>
+    <string name="friend_id_rules">Huruf, lalu 1 sampai 4 angka. Teman menemukanmu dengannya.</string>
+    <string name="id_letters">Huruf</string>
+    <string name="id_numbers">Angka</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s pengunjung hari ini</item>
         <item quantity="other">%1$s pengunjung hari ini</item>

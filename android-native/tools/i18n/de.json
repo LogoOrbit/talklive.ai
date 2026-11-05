@@ -500,5 +500,14 @@
 "is_calling": "%1$s ruft an",
 "plus_perk_themes": "Themes Ozean und Sonnenuntergang",
 "plus_perk_themes_body": "Zwei zusätzliche Looks für die ganze App. Hell und Dunkel bleiben gratis.",
-"mark_read": "Als gelesen markieren"
+"mark_read": "Als gelesen markieren",
+"log_in_instead": "Stattdessen anmelden",
+"talked_on_call": "Telefoniert (%1$d)",
+"chatted_by_text": "Per Text gechattet",
+"problem_title": "Problem melden",
+"problem_body": "Was ist schiefgelaufen und was hast du gemacht? Dein Handymodell wird mitgeschickt, damit wir es schneller beheben.",
+"problem_thanks": "Danke! Deine Meldung ist angekommen.",
+"friend_id_rules": "Buchstaben, dann 1 bis 4 Zahlen. Freunde finden dich damit.",
+"id_letters": "Buchstaben",
+"id_numbers": "Zahlen"
 }

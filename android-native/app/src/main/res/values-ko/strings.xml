@@ -501,6 +501,15 @@
     <string name="plus_perk_themes">오션·선셋 테마</string>
     <string name="plus_perk_themes_body">앱 전체에 두 가지 추가 테마. 라이트와 다크는 계속 무료예요.</string>
     <string name="mark_read">읽음으로 표시</string>
+    <string name="log_in_instead">대신 로그인</string>
+    <string name="talked_on_call">통화한 사람 (%1$d)</string>
+    <string name="chatted_by_text">텍스트로 대화</string>
+    <string name="problem_title">문제 신고</string>
+    <string name="problem_body">무엇이 잘못됐는지, 무엇을 하던 중이었는지 알려 주세요. 빨리 고칠 수 있게 휴대폰 모델이 함께 전송돼요.</string>
+    <string name="problem_thanks">고마워요! 신고를 받았어요.</string>
+    <string name="friend_id_rules">영문자 뒤에 숫자 1~4개. 친구가 이걸로 찾아요.</string>
+    <string name="id_letters">영문자</string>
+    <string name="id_numbers">숫자</string>
     <plurals name="visitors_today">
         <item quantity="other">오늘 방문자 %1$s명</item>
     </plurals>

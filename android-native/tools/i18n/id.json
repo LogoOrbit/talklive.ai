@@ -500,5 +500,14 @@
 "is_calling": "%1$s menelepon",
 "plus_perk_themes": "Tema Samudra dan Senja",
 "plus_perk_themes_body": "Dua tampilan tambahan untuk seluruh aplikasi. Terang dan Gelap tetap gratis.",
-"mark_read": "Tandai dibaca"
+"mark_read": "Tandai dibaca",
+"log_in_instead": "Masuk saja",
+"talked_on_call": "Mengobrol lewat panggilan (%1$d)",
+"chatted_by_text": "Mengobrol lewat teks",
+"problem_title": "Laporkan masalah",
+"problem_body": "Ceritakan apa yang salah dan apa yang sedang kamu lakukan. Model ponselmu ditambahkan agar cepat diperbaiki.",
+"problem_thanks": "Terima kasih! Laporanmu sudah kami terima.",
+"friend_id_rules": "Huruf, lalu 1 sampai 4 angka. Teman menemukanmu dengannya.",
+"id_letters": "Huruf",
+"id_numbers": "Angka"
 }

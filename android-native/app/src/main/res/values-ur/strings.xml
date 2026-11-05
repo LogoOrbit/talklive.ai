@@ -501,6 +501,15 @@
     <string name="plus_perk_themes">اوشن اور سن سیٹ تھیمز</string>
     <string name="plus_perk_themes_body">پوری ایپ کے لیے دو اضافی تھیمز۔ لائٹ اور ڈارک مفت رہیں گے۔</string>
     <string name="mark_read">پڑھا ہوا نشان لگائیں</string>
+    <string name="log_in_instead">اس کے بجائے لاگ ان کریں</string>
+    <string name="talked_on_call">کال پر بات کی (%1$d)</string>
+    <string name="chatted_by_text">ٹیکسٹ پر چیٹ</string>
+    <string name="problem_title">مسئلہ رپورٹ کریں</string>
+    <string name="problem_body">بتائیں کیا خرابی ہوئی اور آپ کیا کر رہے تھے۔ جلد ٹھیک کرنے کے لیے فون کا ماڈل شامل کیا جاتا ہے۔</string>
+    <string name="problem_thanks">شکریہ! آپ کی رپورٹ مل گئی۔</string>
+    <string name="friend_id_rules">حروف، پھر 1 سے 4 نمبر۔ دوست اس سے آپ کو ڈھونڈتے ہیں۔</string>
+    <string name="id_letters">حروف</string>
+    <string name="id_numbers">نمبر</string>
     <plurals name="visitors_today">
         <item quantity="one">آج %1$s وزیٹر</item>
         <item quantity="other">آج %1$s وزیٹرز</item>

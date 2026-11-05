@@ -500,5 +500,14 @@
 "is_calling": "%1$s vous appelle",
 "plus_perk_themes": "Thèmes Océan et Coucher de soleil",
 "plus_perk_themes_body": "Deux looks en plus pour toute l'app. Clair et Sombre restent gratuits.",
-"mark_read": "Marquer comme lu"
+"mark_read": "Marquer comme lu",
+"log_in_instead": "Se connecter plutôt",
+"talked_on_call": "Appels vocaux (%1$d)",
+"chatted_by_text": "Discussions écrites",
+"problem_title": "Signaler un problème",
+"problem_body": "Dites-nous ce qui n'a pas marché et ce que vous faisiez. Le modèle de votre téléphone est ajouté pour corriger plus vite.",
+"problem_thanks": "Merci ! Nous avons reçu votre signalement.",
+"friend_id_rules": "Des lettres, puis 1 à 4 chiffres. Vos amis vous trouvent avec.",
+"id_letters": "Lettres",
+"id_numbers": "Chiffres"
 }

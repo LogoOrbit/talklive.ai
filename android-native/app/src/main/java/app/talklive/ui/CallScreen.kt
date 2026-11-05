@@ -186,7 +186,9 @@ fun CallScreen(
             } else {
                 Box(Modifier.clip(CircleShape).clickable { showPartner = true }) {
                     app.talklive.ui.call.SpectrumRing(bands = bands, active = live, size = 260.dp, inner = 150.dp) {
-                        SpeakingAvatar(partner, active = live, level = remoteLevel)
+                        app.talklive.ui.components.PlusRing(partner.premium, 150.dp) {
+                            SpeakingAvatar(partner, active = live, level = remoteLevel)
+                        }
                     }
                 }
             }

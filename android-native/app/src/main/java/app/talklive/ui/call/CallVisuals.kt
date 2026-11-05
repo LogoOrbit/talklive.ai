@@ -231,7 +231,8 @@ fun MainCallButton(
         confirm -> MainMode.Confirm
         else -> MainMode.Live
     }
-    val width by animateDpAsState(if (mode == MainMode.Live) 132.dp else 200.dp, spring(dampingRatio = 0.62f, stiffness = 380f), label = "w")
+    // One size in every state (searching, live, confirm): only colour and label change.
+    val width = 200.dp
     val color by animateColorAsState(
         when (mode) { MainMode.Searching -> accents.a; MainMode.Connecting -> Color(0xFFF5A623); else -> Danger },
         tween(350), label = "c",

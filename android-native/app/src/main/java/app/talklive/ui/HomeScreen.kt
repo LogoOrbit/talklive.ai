@@ -105,7 +105,9 @@ fun HomeScreen(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            AnimalAvatar(animal, name, 36.dp, Modifier.clip(CircleShape).clickable(onClick = onProfile))
+            app.talklive.ui.components.PlusRing(premium, 36.dp) {
+                AnimalAvatar(animal, name, 36.dp, Modifier.clip(CircleShape).clickable(onClick = onProfile))
+            }
         }
 
         // The orb takes whatever height is left and shrinks to fit it, so on a
