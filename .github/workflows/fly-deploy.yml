@@ -6,6 +6,13 @@ on:
   push:
     branches:
       - main
+    # Changes that never reach the server do not restart it: each restart moves
+    # the whole store through the database, and its disk budget is limited.
+    paths-ignore:
+      - 'android-native/**'
+      - 'android/**'
+      - '.github/workflows/android*.yml'
+      - '**/*.md'
   # Lets a deploy be re-run from the Actions tab without an empty commit, e.g.
   # after rotating a secret or when a build failed on a transient Fly error.
   workflow_dispatch:

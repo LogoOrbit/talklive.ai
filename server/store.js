@@ -512,7 +512,7 @@ const pgLive = () => !!pgPool && !pgUnreachable;
 // History inside the database. Free Supabase projects have no restorable
 // backups of their own, so without this the Postgres copy is a single
 // version with no past. Kept on the same cadence as the volume snapshots.
-const PG_HISTORY_EVERY_MS = 6 * 60 * 60 * 1000;
+const PG_HISTORY_EVERY_MS = 24 * 60 * 60 * 1000; // a full copy each time, so once a day
 const PG_HISTORY_BUDGET_BYTES = 150 * 1024 * 1024; // of a 500MB free database
 let lastPgHistoryAt = 0;
 
@@ -820,6 +820,12 @@ async function connectPg(atBoot) {
   if (pgMeta && hasAnything(local) && pgMeta.lineage && pgMeta.lineage === lineageOf(local)
       && revOf(local) > (Number(pgMeta.rev) || 0)) {
     verdict = 'push-local';
+  } else if (atBoot && pgMeta && hasAnything(local) && pgMeta.lineage && pgMeta.lineage === lineageOf(local)
+      && revOf(local) === (Number(pgMeta.rev) || 0) && pgMeta.chatsTable) {
+    // The usual restart: shutdown saved to both, so they hold the same version.
+    // Nothing needs to move - downloading the whole document (and every friend
+    // chat) on each deploy was a large share of the database's disk budget.
+    verdict = 'in-sync';
   } else {
     const res = await pgPool.query('SELECT doc FROM owner_store WHERE id = 1');
     giveUpIfAbandoned();
@@ -868,6 +874,9 @@ async function connectPg(atBoot) {
       '· friend chats:', counts.chats,
       '· logged-in sessions:', counts.sessions);
     console.log('[store] ------------------------------------------------------------');
+  } else if (verdict === 'in-sync') {
+    applyParsed(local);
+    confirmedRev = revOf(data);
   } else if (verdict === 'conflict') {
     await pgHistory('conflict', local);
     giveUpIfAbandoned();
@@ -879,7 +888,14 @@ async function connectPg(atBoot) {
 
   // The table matches what was just loaded, but the first save cannot tell
   // which rows those are, so it compares nothing and writes them all.
-  if (verdict !== 'push-local') pgChatsSent = null;
+  if (verdict === 'in-sync') {
+    // Same version on both sides, so the table already holds exactly these chats.
+    pgChatsSent = new Map();
+    for (const [pair, msgs] of Object.entries((data.social || {}).friendChats || {})) {
+      const json = JSON.stringify(msgs);
+      if (json !== undefined) pgChatsSent.set(pair, json);
+    }
+  } else if (verdict !== 'push-local') pgChatsSent = null;
   pgConfirmedRev = confirmedRev || revOf(data);
   pgUnreachable = false;
   runningOnMirror = false;
@@ -890,7 +906,7 @@ async function connectPg(atBoot) {
   // the push above was in flight; the next save sends those up.
   writeMirror();
   if (revOf(data) !== pgConfirmedRev) save();
-  if (!(!atBoot && verdict !== 'push-local')) syncTranscripts();
+  if (!(!atBoot && verdict !== 'push-local' && verdict !== 'in-sync')) syncTranscripts();
   console.log('[store] using Postgres backend (DATABASE_URL) -', backendStatus.host,
     '- mirrored to', DATA_FILE);
 
@@ -900,7 +916,7 @@ async function connectPg(atBoot) {
   // replaced 775 people's friends with the 4 made during the outage. Every
   // in-memory view is built at boot, so boot again: exit non-zero and Fly
   // restarts the machine, which then loads the database copy everywhere.
-  if (!atBoot && verdict !== 'push-local') {
+  if (!atBoot && verdict !== 'push-local' && verdict !== 'in-sync') {
     restarting = true;
     if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
     if (pgTimer) { clearTimeout(pgTimer); pgTimer = null; }
@@ -1196,7 +1212,11 @@ async function pgWriteStore(guard) {
 // bill. Every change still lands on the volume within seconds, shutdown still
 // sends a final save, and boot pushes a newer volume copy up, so this only
 // matters if the volume itself is destroyed.
-const PG_SAVE_EVERY_MS = Math.max(0, Number(process.env.PG_SAVE_EVERY_MS) || 15 * 60 * 1000);
+//
+// 2 hours, not 15 minutes (November 2026): each save rewrites the whole
+// document plus its WAL, and the free database's disk I/O budget ran out. The
+// volume is the live copy; the database is the off-machine backup.
+const PG_SAVE_EVERY_MS = Math.max(0, Number(process.env.PG_SAVE_EVERY_MS) || 2 * 60 * 60 * 1000);
 let lastPgSaveAt = 0;
 let pgTimer = null;
 function persistPgThrottled() {
