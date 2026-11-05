@@ -136,6 +136,9 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
     var recording by remember { mutableStateOf(false) }
     var recordMs by remember { mutableStateOf(0L) }
     var askVoice by remember { mutableStateOf(false) }
+    // "ask" (before requesting), "send" (before the first message), "accept" (asked by them).
+    var voiceSheet by remember { mutableStateOf<String?>(null) }
+    val vnPrefs = run { val c = androidx.compose.ui.platform.LocalContext.current; remember { c.getSharedPreferences("consent", android.content.Context.MODE_PRIVATE) } }
     LaunchedEffect(recording) {
         while (recording) {
             recordMs = recorder.elapsedMs
@@ -264,7 +267,7 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                     Spacer(Modifier.width(10.dp))
                     Text(stringResource(R.string.voice_asked, person.displayName), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.weight(1f))
                     androidx.compose.material3.TextButton(onClick = { vm.respondVoice(clientId, false) }) { Text(stringResource(R.string.not_now)) }
-                    androidx.compose.material3.TextButton(onClick = { vm.respondVoice(clientId, true) }) { Text(stringResource(R.string.allow)) }
+                    androidx.compose.material3.TextButton(onClick = { voiceSheet = "accept" }) { Text(stringResource(R.string.allow)) }
                 }
             }
             AnimatedVisibility(editing != null, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
@@ -296,10 +299,11 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
             }
             val micTap = {
                 when (voiceState) {
-                    "on" -> startRecording()
+                    // First voice message ever on this phone: the safety rules first.
+                    "on" -> if (vnPrefs.getBoolean("policy_ok", false)) startRecording() else voiceSheet = "send"
                     "sent" -> askVoice = true
-                    "received" -> vm.respondVoice(clientId, true)
-                    else -> askVoice = true
+                    "received" -> voiceSheet = "accept"
+                    else -> voiceSheet = "ask"
                 }
             }
             if (recording) {
@@ -365,6 +369,29 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                 }
             }
         }
+    }
+
+    voiceSheet?.let { kind ->
+        VoicePolicySheet(
+            name = person.displayName,
+            receiving = kind == "accept",
+            confirmLabel = when (kind) {
+                "ask" -> stringResource(R.string.vn_agree_and_ask, person.displayName)
+                "accept" -> stringResource(R.string.allow)
+                else -> stringResource(R.string.ok)
+            },
+            onConfirm = {
+                vnPrefs.edit().putBoolean("policy_ok", true).apply()
+                voiceSheet = null
+                when (kind) {
+                    "ask" -> vm.requestVoice(clientId)
+                    "accept" -> vm.respondVoice(clientId, true)
+                    else -> startRecording()
+                }
+            },
+            onDecline = { if (kind == "accept") vm.respondVoice(clientId, false); voiceSheet = null },
+            onDismiss = { voiceSheet = null },
+        )
     }
 
     if (askVoice) {
@@ -760,6 +787,87 @@ internal fun PersonSheet(
                 if (onMessage != null) androidx.compose.material3.OutlinedButton(onClick = { onDismiss(); onMessage() }, modifier = Modifier.weight(1f).height(56.dp), shape = CircleShape) {
                     Text(stringResource(R.string.message))
                 }
+            }
+        }
+    }
+}
+
+/**
+ * Voice messages, the website's rules: the sender reads what is allowed before
+ * asking (and before their first message); the receiver is warned before saying
+ * yes. Both tick a box first.
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun VoicePolicySheet(
+    name: String,
+    receiving: Boolean,
+    confirmLabel: String,
+    onConfirm: () -> Unit,
+    onDecline: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var agreed by remember { mutableStateOf(false) }
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.background,
+    ) {
+        Column(
+            Modifier.fillMaxWidth().verticalScroll(androidx.compose.foundation.rememberScrollState())
+                .navigationBarsPadding().padding(horizontal = 24.dp).padding(bottom = 16.dp),
+        ) {
+            Box(Modifier.size(52.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
+                Icon(Icons.Rounded.Mic, null, tint = MaterialTheme.colorScheme.primary)
+            }
+            Spacer(Modifier.height(12.dp))
+            Text(
+                if (receiving) stringResource(R.string.vn_accept_title, name) else stringResource(R.string.vn_policy_title),
+                style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground,
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                if (receiving) stringResource(R.string.vn_accept_intro, name) else stringResource(R.string.vn_policy_intro),
+                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(14.dp))
+            val points = if (receiving) listOf(
+                "🤝" to stringResource(R.string.vn_accept_trust),
+                "💸" to stringResource(R.string.vn_accept_scams),
+                "🔁" to stringResource(R.string.vn_policy_replay),
+                "🛡️" to stringResource(R.string.vn_policy_moderation),
+                "🔕" to stringResource(R.string.vn_accept_turn_off, name),
+            ) else listOf(
+                "🤝" to stringResource(R.string.vn_policy_consent),
+                "🚫" to stringResource(R.string.vn_policy_rules),
+                "🔒" to stringResource(R.string.vn_policy_private),
+                "🔁" to stringResource(R.string.vn_policy_replay),
+                "🛡️" to stringResource(R.string.vn_policy_moderation),
+                "🚩" to stringResource(R.string.vn_policy_report),
+            )
+            points.forEach { (emoji, text) ->
+                Row(Modifier.padding(vertical = 6.dp)) {
+                    Text(emoji, modifier = Modifier.width(30.dp))
+                    Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onBackground)
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surface)
+                    .clickable { agreed = !agreed }.padding(horizontal = 6.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                androidx.compose.material3.Checkbox(checked = agreed, onCheckedChange = { agreed = it })
+                Text(
+                    stringResource(if (receiving) R.string.vn_accept_agree else R.string.vn_policy_agree),
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            Spacer(Modifier.height(16.dp))
+            app.talklive.ui.components.PrimaryButton(confirmLabel, onClick = onConfirm, enabled = agreed)
+            Spacer(Modifier.height(4.dp))
+            androidx.compose.material3.TextButton(onClick = onDecline, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(if (receiving) R.string.not_now else R.string.cancel))
             }
         }
     }

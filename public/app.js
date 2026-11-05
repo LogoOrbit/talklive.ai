@@ -1350,6 +1350,20 @@ function applyTheme(theme) {
   if (typeof renderGoogleButtons === 'function') renderGoogleButtons();
 }
 
+// Ocean and Sunset are Plus themes (Light and Dark are free). One capture-phase
+// guard covers every theme control on the page: the settings pills, the
+// drawer chips and the quick-settings panel.
+const PLUS_THEMES = ['ocean', 'sunset'];
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-theme-pick], #qsTheme .pill, .tl-theme-opt, [data-setting="theme"] .pill');
+  if (!el || isPremiumUser) return;
+  const theme = el.dataset.themePick || el.dataset.value;
+  if (!PLUS_THEMES.includes(theme)) return;
+  e.stopPropagation();
+  e.preventDefault();
+  showPremiumUpsell(t('premiumThemeLocked'), 'themes');
+}, true);
+
 themeGroup.addEventListener('click', (e) => {
   if (e.target.closest('.pill')) applyTheme(themeGroup.dataset.value);
 });
@@ -11416,13 +11430,18 @@ socket.on('premium-status', ({ premium, limits } = {}) => {
   if (limits) {
     freeLimits = {
       countries: limits.countries || 2,
+      interests: limits.interests || 2,
     };
   }
   // Deferred: signing in can re-register under the account's profile, and the
   // first answer (the guest's, free) is followed a moment later by the real
   // one. Trimming on the first would throw away a Plus member's filters.
   clearTimeout(dropLockedFiltersTimer);
-  if (!isPremiumUser) dropLockedFiltersTimer = setTimeout(dropLockedFilters, 4000);
+  if (!isPremiumUser) dropLockedFiltersTimer = setTimeout(() => {
+    dropLockedFilters();
+    // A Plus theme left over from an ended subscription goes back to Dark.
+    if (!isPremiumUser && PLUS_THEMES.includes(currentTheme)) { applyTheme('dark'); syncDrawerTheme(); }
+  }, 4000);
   updatePremiumUi();
 });
 let dropLockedFiltersTimer = null;
@@ -11451,6 +11470,7 @@ function dropLockedFilters() {
 function updatePremiumUi() {
   // "👑 Premium" locks/hints show only on the free tier.
   document.querySelectorAll('.premium-lock').forEach((el) => el.classList.toggle('hidden', isPremiumUser));
+  document.documentElement.classList.toggle('tl-free', !isPremiumUser);
   if (filtersReady) syncFilterReadout();
 }
 updatePremiumUi();
@@ -11458,7 +11478,7 @@ updatePremiumUi();
 // The Premium dialog: what limit was hit, what Premium adds (the perk that was
 // reached for is lit up), and the launch alert - Premium is not on sale yet.
 const premiumUpsellModal = document.getElementById('premiumUpsellModal');
-const UPSELL_TITLES = { gender: 'upsellGenderTitle', likes: 'upsellLikesTitle', undo: 'upsellUndoTitle' };
+const UPSELL_TITLES = { gender: 'upsellGenderTitle', likes: 'upsellLikesTitle', undo: 'upsellUndoTitle', themes: 'upsellThemesTitle' };
 function showPremiumUpsell(message, perk = 'countries') {
   document.getElementById('puTitle').textContent = t(UPSELL_TITLES[perk] || 'upsellCountriesTitle');
   document.getElementById('puReason').textContent = message;

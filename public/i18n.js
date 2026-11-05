@@ -837,6 +837,8 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "upsellPerkUndo": "Undo a skip",
     "upsellComingSoon": "Coming soon",
     "upsellCountriesTitle": "Want more countries?",
+    "upsellThemesTitle": "Get the Plus themes",
+    "upsellPerkThemes": "Ocean and Sunset themes",
     "upsellGenderTitle": "Choose who you talk to",
     "upsellPerkCountries": "Unlimited countries & regions",
     "upsellPerkGender": "Match with men or women",
@@ -1019,6 +1021,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "premiumComingSoon": "Premium is not on sale, and everything on TalkLive is free.",
     "premiumGenderLocked": "The gender filter is a Premium feature.",
     "premiumCountryLimit": "The free plan allows up to {n} countries per list.",
+    "premiumThemeLocked": "Ocean and Sunset themes come with Plus. Light and Dark are free.",
     "premiumInterestLimit": "The free plan allows up to {n} interests. Plus allows up to 10.",
     "friendOnlineToast": "{name} from {country} is online",
     "friendOnlineToastNoCountry": "{name} is online",
@@ -1186,7 +1189,7 @@ function applyI18n() {
 // Non-English dictionaries load on demand from /i18n/<lang>.js. Until the file
 // arrives t() falls back to English, then the UI re-translates once it lands.
 // Keep in step with the preload snippet in the <head> of index.html/chat.html.
-const I18N_VERSION = '20261030invite';
+const I18N_VERSION = '20261105themes';
 const i18nLoading = {};
 window.__i18nLangLoaded = function (lang) {
   delete i18nLoading[lang];

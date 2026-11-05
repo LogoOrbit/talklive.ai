@@ -51,6 +51,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -239,30 +240,57 @@ internal fun ChooseScreen(vm: AuthViewModel, onSignup: () -> Unit, onLogin: () -
             }
         }
         Spacer(Modifier.weight(1f))
+        // 18+ and the rules, confirmed once on this device before anyone talks
+        // to a stranger (adding an account later skips it: already agreed).
+        val prefs = remember { context.getSharedPreferences("consent", android.content.Context.MODE_PRIVATE) }
+        var agreed by remember { mutableStateOf(onClose != null || prefs.getBoolean("adult_terms", false)) }
+        var nudge by remember { mutableStateOf(0) }
+        fun gate(go: () -> Unit) {
+            if (agreed) { prefs.edit().putBoolean("adult_terms", true).apply(); go() } else nudge++
+        }
+        if (onClose == null) {
+            val shake = remember { androidx.compose.animation.core.Animatable(0f) }
+            LaunchedEffect(nudge) {
+                if (nudge == 0) return@LaunchedEffect
+                for (x in listOf(12f, -10f, 8f, -6f, 3f, 0f)) shake.animateTo(x, androidx.compose.animation.core.tween(45))
+            }
+            Row(
+                Modifier.fillMaxWidth().graphicsLayer { translationX = shake.value * density }
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
+                    .background(if (nudge > 0 && !agreed) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surface)
+                    .clickable { agreed = !agreed }
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                androidx.compose.material3.Checkbox(checked = agreed, onCheckedChange = { agreed = it })
+                Text(
+                    stringResource(R.string.adult_consent),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (nudge > 0 && !agreed) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            Spacer(Modifier.height(14.dp))
+        }
         SecondaryButton(
             text = stringResource(R.string.continue_google),
-            onClick = { vm.google(context) },
+            onClick = { gate { vm.google(context) } },
             loading = vm.googleBusy,
             leading = { Image(painterResource(R.drawable.ic_google), null, Modifier.size(20.dp)) },
         )
         Spacer(Modifier.height(12.dp))
-        PrimaryButton(text = stringResource(R.string.signup_email), onClick = onSignup, icon = Icons.Rounded.Mail)
+        PrimaryButton(text = stringResource(R.string.signup_email), onClick = { gate(onSignup) }, icon = Icons.Rounded.Mail)
         ErrorBanner(vm.error)
         Spacer(Modifier.height(16.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.have_account), color = MaterialTheme.colorScheme.onSurfaceVariant)
-            TextButton(onClick = onLogin) { Text(stringResource(R.string.log_in)) }
+            TextButton(onClick = { gate(onLogin) }) { Text(stringResource(R.string.log_in)) }
         }
         if (onClose == null) {
-            TextButton(onClick = vm::continueAsGuest) {
+            TextButton(onClick = { gate(vm::continueAsGuest) }) {
                 Text(stringResource(R.string.continue_guest), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         Spacer(Modifier.height(4.dp))
-        Text(
-            stringResource(R.string.terms_note), style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center,
-        )
         // The rules are one tap away before anyone talks to a stranger.
         Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             listOf(R.string.terms to "terms", R.string.privacy_policy to "privacy", R.string.community_guidelines to "community-guidelines").forEach { (label, page) ->

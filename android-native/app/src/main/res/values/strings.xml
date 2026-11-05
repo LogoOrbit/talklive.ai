@@ -518,4 +518,22 @@
     <string name="id_numbers">Numbers</string>
     <string name="plus_you_title">Your profile with Plus</string>
     <string name="plus_you_body">A turning gold ring and a Plus badge on your picture, in calls and on your profile.</string>
+    <string name="vn_policy_title">Voice messages: stay safe</string>
+    <string name="vn_policy_intro">Before you send your first voice message, please read how it works and what\'s allowed.</string>
+    <string name="vn_policy_consent">Voice messages only work between friends, and only after the other person agrees to receive them.</string>
+    <string name="vn_policy_rules">No harassment, hate, threats, sexual content or anything involving minors. Breaking these rules gets accounts banned.</string>
+    <string name="vn_policy_private">Never share personal details: your address, phone number, passwords, school or workplace.</string>
+    <string name="vn_policy_replay">Your voice is personal. The other person can replay your message and could record it, so only send what you\'d be comfortable with others hearing.</string>
+    <string name="vn_policy_moderation">To keep TalkLive friendly, voice messages are automatically transcribed and may be reviewed by our moderators.</string>
+    <string name="vn_policy_report">If anything makes you uncomfortable, block or report the person from their profile.</string>
+    <string name="vn_policy_agree">I\'ve read this and agree to the voice message policy</string>
+    <string name="vn_accept_title">Voice messages from %1$s?</string>
+    <string name="vn_accept_intro">%1$s wants to send you voice messages. Please read this before you decide.</string>
+    <string name="vn_accept_trust">Only accept if you know and trust this person. You don\'t owe anyone a yes.</string>
+    <string name="vn_accept_scams">Never send money, codes, photos or personal details because someone asks for them in a voice message.</string>
+    <string name="vn_accept_turn_off">You can turn voice messages off at any time. Removing or blocking %1$s turns them off too.</string>
+    <string name="vn_accept_agree">I understand the risks and agree to the voice message policy</string>
+    <string name="calling_short">Calling…</string>
+    <string name="adult_consent">I\'m 18 or older. I agree to the Terms, Privacy Policy and Community Guidelines, and I\'m responsible for what I say and share.</string>
+    <string name="vn_agree_and_ask">Agree &amp; ask %1$s</string>
 </resources>

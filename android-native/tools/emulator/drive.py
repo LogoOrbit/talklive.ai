@@ -117,6 +117,10 @@ time.sleep(6)
 
 # 1. First screen: one welcome screen with the ways in.
 step("Welcome screen", wait_for(r"continue as guest", 40))
+# Guest without ticking 18+ must not get through; then tick it and continue.
+tap(r"continue as guest"); time.sleep(1)
+step("18+ box required before continuing", find(r"continue as guest") is not None and find(r"18 or older") is not None)
+tap(r"18 or older", 5)
 tap(r"continue as guest")
 
 # 2. Setup: avatar, then about you.

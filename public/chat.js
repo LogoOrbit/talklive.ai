@@ -863,8 +863,28 @@
     register(); // the preference is part of the profile, so push it now
   });
 
+  // Ocean and Sunset are Plus themes; the guard covers the settings panel too.
+  var PLUS_THEMES = ['ocean', 'sunset'];
+  var themeRevertTimer = null;
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-theme-pick], #qsTheme .pill, .tl-theme-opt');
+    if (!el || isPremiumUser) return;
+    var theme = el.dataset.themePick || el.dataset.value;
+    if (PLUS_THEMES.indexOf(theme) === -1) return;
+    e.stopPropagation();
+    e.preventDefault();
+    var msg = typeof t === 'function' ? t('premiumThemeLocked') : 'Ocean and Sunset themes come with Plus.';
+    if ($('reportNote')) flashSearchNote(msg); else alert(msg);
+  }, true);
   socket.on('premium-status', function (data) {
     isPremiumUser = !!(data && data.premium);
+    document.documentElement.classList.toggle('tl-free', !isPremiumUser);
+    clearTimeout(themeRevertTimer);
+    if (!isPremiumUser) themeRevertTimer = setTimeout(function () {
+      if (isPremiumUser || PLUS_THEMES.indexOf(localStorage.getItem('talklive_theme')) === -1) return;
+      localStorage.setItem('talklive_theme', 'dark');
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }, 4000);
     // The bolt badges mark what the free tier cannot use, so they go away
     // once it can.
     document.querySelectorAll('.premium-lock').forEach(function (el) {

@@ -223,15 +223,29 @@ class SocialRepository @Inject constructor(
     // --- Friends -----------------------------------------------------------
 
     fun sendRequest(targetClientId: String, friendId: String? = null) = scope.launch {
+        // Shown as "Requested" straight away (undone below if the server says
+        // no), so the button reacts on the tap instead of after a round trip.
+        val optimistic = friendId == null && targetClientId !in _sent.value
+        if (friendId == null && !optimistic) return@launch
+        if (optimistic) _sent.update { it + targetClientId }
         val res = request(
             "friend-request",
             JSONObject().put("targetClientId", targetClientId).apply { friendId?.let { put("friendId", it) } },
             "friend-request-result",
         )
-        if (res == null) { _toasts.tryEmit(UiText.Res(R.string.t_request_failed)); return@launch }
+        if (res == null) {
+            if (optimistic) _sent.update { it - targetClientId }
+            _toasts.tryEmit(UiText.Res(R.string.t_request_failed)); return@launch
+        }
         when {
-            !res.optBoolean("ok") -> _toasts.tryEmit(res.optString("error").takeIf { it.isNotBlank() }?.let { UiText.Raw(it) } ?: UiText.Res(R.string.t_request_failed))
-            res.optBoolean("accepted") || res.optBoolean("alreadyFriends") -> _toasts.tryEmit(UiText.Res(R.string.t_now_friends))
+            !res.optBoolean("ok") -> {
+                if (optimistic) _sent.update { it - targetClientId }
+                _toasts.tryEmit(res.optString("error").takeIf { it.isNotBlank() }?.let { UiText.Raw(it) } ?: UiText.Res(R.string.t_request_failed))
+            }
+            res.optBoolean("accepted") || res.optBoolean("alreadyFriends") -> {
+                if (optimistic) _sent.update { it - targetClientId }
+                _toasts.tryEmit(UiText.Res(R.string.t_now_friends))
+            }
             else -> {
                 _sent.update { it + targetClientId }
                 _gates.update { g -> if (g[targetClientId] == "request" || g[targetClientId] == null) g + (targetClientId to "one") else g }

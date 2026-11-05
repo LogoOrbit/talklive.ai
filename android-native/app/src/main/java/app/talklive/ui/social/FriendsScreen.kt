@@ -148,22 +148,24 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
             val chatted = met.filter { it.mode != "talk" }
             if (talked.isNotEmpty()) {
                 item(key = "h-talked") { SectionLabel(stringResource(R.string.talked_on_call, talked.size)) }
-                items(talked, key = { "t" + it.clientId }) { p ->
-                    FriendRow(
-                        p,
-                        modifier = Modifier.animateItem().combinedClickable(
-                            onClick = { profileOf = p },
-                            onLongClick = { haptics.performHapticFeedback(HapticFeedbackType.LongPress); vm.removeFromHistory(p.clientId) },
-                        ),
-                        onCall = { vm.call(p) },
-                        onChat = { onOpenChat(p.clientId) },
-                        onProfile = { profileOf = p },
-                    )
+                item(key = "row-talked") {
+                    LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(talked, key = { "t" + it.clientId }) { p ->
+                            MetCard(
+                                p, pending = p.clientId in sent,
+                                onAdd = { if (p.clientId in sent) vm.cancelRequest(p.clientId) else vm.sendRequest(p.clientId) },
+                                onRemove = { vm.removeFromHistory(p.clientId) },
+                                onOpen = { profileOf = p },
+                                onCall = { vm.call(p) },
+                                isFriend = friends.any { it.clientId == p.clientId },
+                            )
+                        }
+                    }
                 }
             }
             if (chatted.isNotEmpty()) {
-                item { SectionLabel(stringResource(R.string.chatted_by_text)) }
-                item {
+                item(key = "h-chatted") { SectionLabel(stringResource(R.string.chatted_by_text)) }
+                item(key = "row-chatted") {
                     LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         items(chatted, key = { "m" + it.clientId }) { p ->
                             MetCard(
@@ -171,6 +173,7 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
                                 onAdd = { if (p.clientId in sent) vm.cancelRequest(p.clientId) else vm.sendRequest(p.clientId) },
                                 onRemove = { vm.removeFromHistory(p.clientId) },
                                 onOpen = { onOpenChat(p.clientId) },
+                                isFriend = friends.any { it.clientId == p.clientId },
                             )
                         }
                     }
@@ -240,30 +243,46 @@ private fun RequestCard(p: Person, onAccept: () -> Unit, onDecline: () -> Unit) 
 }
 
 @Composable
-private fun MetCard(p: Person, pending: Boolean, onAdd: () -> Unit, onOpen: () -> Unit, onRemove: () -> Unit = {}) {
+private fun MetCard(
+    p: Person, pending: Boolean, onAdd: () -> Unit, onOpen: () -> Unit, onRemove: () -> Unit = {},
+    /** People met on a call get a call-back button next to Add. */
+    onCall: (() -> Unit)? = null,
+    isFriend: Boolean = false,
+) {
     var menu by remember { mutableStateOf(false) }
     androidx.compose.material3.DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
         androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.remove_from_list)) }, onClick = { menu = false; onRemove() })
     }
     // Tap opens the chat; long-press offers to remove them from the list.
-    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface, modifier = Modifier.width(112.dp).clip(MaterialTheme.shapes.large).combinedClickable(onClick = onOpen, onLongClick = { menu = true })) {
+    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface, modifier = Modifier.width(124.dp).clip(MaterialTheme.shapes.large).combinedClickable(onClick = onOpen, onLongClick = { menu = true })) {
         Column(Modifier.padding(vertical = 14.dp, horizontal = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             PersonAvatar(p, 56.dp)
             Spacer(Modifier.height(8.dp))
             Text(p.displayName, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(flag(p.countryCode) ?: " ", style = MaterialTheme.typography.labelMedium)
             Spacer(Modifier.height(8.dp))
-            Box(
-                Modifier.clip(CircleShape)
-                    .background(if (pending) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primaryContainer)
-                    .combinedClickableCompat(onAdd)
-                    .padding(horizontal = 14.dp, vertical = 6.dp),
-            ) {
-                Text(
-                    stringResource(if (pending) R.string.requested else R.string.add),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (pending) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
-                )
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (onCall != null) {
+                    Box(
+                        Modifier.size(32.dp).clip(CircleShape).background(BrandGradient).combinedClickableCompat(onCall),
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(Icons.Rounded.Call, stringResource(R.string.call), tint = Color.White, modifier = Modifier.size(16.dp)) }
+                }
+                if (!isFriend) {
+                    Box(
+                        Modifier.height(32.dp).clip(CircleShape)
+                            .background(if (pending) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primaryContainer)
+                            .combinedClickableCompat(onAdd)
+                            .padding(horizontal = 12.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            stringResource(if (pending) R.string.requested else R.string.add),
+                            style = MaterialTheme.typography.labelMedium, maxLines = 1,
+                            color = if (pending) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
             }
         }
     }

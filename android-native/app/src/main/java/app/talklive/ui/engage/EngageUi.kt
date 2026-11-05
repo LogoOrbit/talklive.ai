@@ -426,7 +426,7 @@ private fun CountryPicker(
     loadCounts: suspend () -> Map<String, Int> = { emptyMap() },
 ) {
     var picked by remember { mutableStateOf(selected) }
-    // Who is online where, so busy countries come first (like the website).
+    // Busy countries first (no numbers shown).
     var counts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     LaunchedEffect(Unit) { counts = loadCounts() }
     var query by remember { mutableStateOf("") }
@@ -460,9 +460,6 @@ private fun CountryPicker(
                             Text(flag(cc) ?: "🏳️", fontSize = 22.sp)
                             Spacer(Modifier.width(14.dp))
                             Text(name, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
-                            counts[cc]?.takeIf { it > 0 }?.let { n ->
-                                Text(stringResource(R.string.n_online, n), style = MaterialTheme.typography.labelMedium, color = app.talklive.ui.theme.Success, modifier = Modifier.padding(end = 12.dp))
-                            }
                             Box(
                                 Modifier.size(24.dp).clip(CircleShape)
                                     .background(if (on) app.talklive.ui.components.BrandGradient else androidx.compose.ui.graphics.SolidColor(Color.Transparent))

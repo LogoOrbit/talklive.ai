@@ -14,6 +14,8 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,9 +37,6 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -225,16 +224,92 @@ fun Composer(
         }
 
         AnimatedVisibility(panel != Panel.None, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
-            Box(Modifier.fillMaxWidth().height(if (panel == Panel.Actions) 210.dp else 300.dp)) {
-                when (panel) {
-                    Panel.Actions -> ActionTray(actions) { panel = Panel.None }
-                    Panel.Emoji -> EmojiPanel { e -> onDraft((draft + e).take(1000)) }
-                    Panel.Gif -> if (gifApi != null) GifPanel(gifApi) { g -> onGif?.invoke(g); panel = Panel.None }
-                    Panel.None -> Unit
+            if (panel == Panel.Actions) {
+                Box(Modifier.fillMaxWidth().height(210.dp)) { ActionTray(actions) { panel = Panel.None } }
+            } else {
+                // Emoji and GIFs: drag the handle (or the grid) up for a full-screen
+                // picker, down to shrink it again or close it.
+                StretchPanel(onClose = { panel = Panel.None }, key = panel) {
+                    when (panel) {
+                        Panel.Emoji -> EmojiPanel { e -> onDraft((draft + e).take(1000)) }
+                        Panel.Gif -> if (gifApi != null) GifPanel(gifApi) { g -> onGif?.invoke(g); panel = Panel.None }
+                        else -> Unit
+                    }
                 }
             }
         }
         Spacer(Modifier.navigationBarsPadding())
+    }
+}
+
+/**
+ * A picker panel that starts at keyboard height and grows to nearly the whole
+ * screen when dragged up, by its handle or by scrolling the grid past its top
+ * edge, like a messaging app's emoji and GIF sheet.
+ */
+@Composable
+private fun StretchPanel(onClose: () -> Unit, key: Any, content: @Composable () -> Unit) {
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val screen = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
+    val minPx = with(density) { 300.dp.toPx() }
+    val maxPx = with(density) { (screen * 0.82f).toPx() }.coerceAtLeast(minPx)
+    val height = remember(key) { androidx.compose.animation.core.Animatable(minPx) }
+    val scope = rememberCoroutineScope()
+    fun settle(velocity: Float = 0f) = scope.launch {
+        val h = height.value
+        val target = when {
+            velocity < -800f -> maxPx
+            velocity > 800f -> if (h < minPx * 0.98f) 0f else minPx
+            h < minPx * 0.6f -> 0f
+            h > (minPx + maxPx) / 2 -> maxPx
+            else -> minPx
+        }
+        if (target == 0f) onClose() else height.animateTo(target, spring(dampingRatio = 0.85f, stiffness = 500f))
+    }
+    val nested = remember(key) {
+        object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
+            // Finger moving up: grow the panel before the grid scrolls.
+            override fun onPreScroll(available: androidx.compose.ui.geometry.Offset, source: androidx.compose.ui.input.nestedscroll.NestedScrollSource): androidx.compose.ui.geometry.Offset {
+                if (available.y < 0 && height.value < maxPx) {
+                    val grow = minOf(-available.y, maxPx - height.value)
+                    scope.launch { height.snapTo(height.value + grow) }
+                    return androidx.compose.ui.geometry.Offset(0f, -grow)
+                }
+                return androidx.compose.ui.geometry.Offset.Zero
+            }
+            // Finger moving down with the grid already at its top: shrink.
+            override fun onPostScroll(consumed: androidx.compose.ui.geometry.Offset, available: androidx.compose.ui.geometry.Offset, source: androidx.compose.ui.input.nestedscroll.NestedScrollSource): androidx.compose.ui.geometry.Offset {
+                if (available.y > 0 && source == androidx.compose.ui.input.nestedscroll.NestedScrollSource.UserInput) {
+                    scope.launch { height.snapTo((height.value - available.y).coerceAtLeast(0f)) }
+                    return androidx.compose.ui.geometry.Offset(0f, available.y)
+                }
+                return androidx.compose.ui.geometry.Offset.Zero
+            }
+            override suspend fun onPreFling(available: androidx.compose.ui.unit.Velocity): androidx.compose.ui.unit.Velocity {
+                val h = height.value
+                if (h != minPx && h != maxPx) { settle(available.y); return available }
+                return androidx.compose.ui.unit.Velocity.Zero
+            }
+        }
+    }
+    Column(
+        Modifier.fillMaxWidth().height(with(density) { height.value.toDp() })
+            .nestedScroll(nested),
+    ) {
+        Box(
+            Modifier.fillMaxWidth().height(22.dp)
+                .draggable(
+                    orientation = androidx.compose.foundation.gestures.Orientation.Vertical,
+                    state = androidx.compose.foundation.gestures.rememberDraggableState { d ->
+                        scope.launch { height.snapTo((height.value - d).coerceIn(0f, maxPx)) }
+                    },
+                    onDragStopped = { v -> settle(v) },
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(Modifier.size(width = 40.dp, height = 4.dp).clip(CircleShape).background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)))
+        }
+        Box(Modifier.weight(1f).fillMaxWidth()) { content() }
     }
 }
 
@@ -363,19 +438,22 @@ private fun GifPanel(api: GifApi, onPick: (Gif) -> Unit) {
         }
         val list = results
         when {
-            list == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(28.dp)) }
-            list.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(stringResource(R.string.gif_none), color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            else -> LazyVerticalStaggeredGrid(
-                columns = StaggeredGridCells.Fixed(2),
+            list == null -> Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(28.dp)) }
+            list.isEmpty() -> Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Text(stringResource(R.string.gif_none), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            else -> LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
                 contentPadding = PaddingValues(8.dp),
-                verticalItemSpacing = 6.dp,
+                verticalArrangement = Arrangement.spacedBy(6.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.weight(1f).fillMaxWidth(),
             ) {
-                items(list, key = { it.url }) { g ->
+                // Same-size tiles: nothing jumps while previews load, so the
+                // grid scrolls smoothly.
+                items(list, key = { it.url }, contentType = { "gif" }) { g ->
                     AsyncImage(
-                        model = g.preview, contentDescription = g.alt, contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxWidth().aspectRatio(if (g.w > 0 && g.h > 0) g.w.toFloat() / g.h else 1.4f)
+                        model = coil.request.ImageRequest.Builder(LocalContext.current).data(g.preview).crossfade(120).build(),
+                        contentDescription = g.alt, contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxWidth().aspectRatio(1.3f)
                             .clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { onPick(g) },
                     )
                 }

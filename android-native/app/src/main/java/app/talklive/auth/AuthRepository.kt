@@ -185,7 +185,7 @@ class AuthRepository(
     }
 
     private suspend fun callRaw(event: String, payload: JSONObject, result: String): Pair<AuthResult, JSONObject> {
-        if (!socket.connected.value) return AuthResult.Error("No connection. Check your internet and try again.") to JSONObject()
+        if (!socket.awaitConnected()) return AuthResult.Error("No connection. Check your internet and try again.") to JSONObject()
         val res = try {
             socket.request(event, payload, result)
         } catch (_: TimeoutCancellationException) {

@@ -154,32 +154,34 @@ fun TextChatScreen(
                                 maxLines = 1, overflow = TextOverflow.Ellipsis,
                             )
                             if (p != null) {
-                                // While they are away or typing, show that, then their country/time again.
+                                // While they are away or typing, show that, else just where they are.
                                 Text(
                                     when {
                                         state.partnerTyping -> stringResource(R.string.typing)
                                         state.partnerAway -> stringResource(R.string.partner_away)
-                                        else -> partnerLine(p)
+                                        else -> listOfNotNull(app.talklive.ui.social.flag(p.countryCode), p.country).joinToString(" ").ifBlank { partnerLine(p) }
                                     },
                                     style = MaterialTheme.typography.labelMedium,
                                     color = if (state.partnerTyping) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    // Long lines glide sideways instead of being cut off.
-                                    modifier = Modifier.basicMarquee(iterations = Int.MAX_VALUE, initialDelayMillis = 1500),
+                                    maxLines = 1, overflow = TextOverflow.Ellipsis,
                                 )
                             }
                         }
                     }
                 }
-                // Only "Next" lives up here; everything else is in the composer's + tray.
-                Spacer(Modifier.width(10.dp))
+                // Call (spins while it rings on their side) and Next; the rest is in the + tray.
+                if (onSwitchToVoice != null) {
+                    Spacer(Modifier.width(6.dp))
+                    VoiceInviteButton(ringing = state.voiceInviteSent, onClick = onSwitchToVoice)
+                }
+                Spacer(Modifier.width(8.dp))
                 Row(
-                    Modifier.clip(CircleShape).background(BrandGradient).clickable(onClick = onNext).padding(start = 16.dp, end = 12.dp, top = 9.dp, bottom = 9.dp),
+                    Modifier.height(40.dp).clip(CircleShape).background(BrandGradient).clickable(onClick = onNext).padding(start = 14.dp, end = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(stringResource(R.string.next), color = Color.White, style = MaterialTheme.typography.labelLarge)
-                    Spacer(Modifier.width(4.dp))
-                    Icon(Icons.Rounded.SkipNext, null, tint = Color.White, modifier = Modifier.size(20.dp))
+                    Text(stringResource(R.string.next), color = Color.White, style = MaterialTheme.typography.labelLarge, maxLines = 1)
+                    Spacer(Modifier.width(2.dp))
+                    Icon(Icons.Rounded.SkipNext, null, tint = Color.White, modifier = Modifier.size(18.dp))
                 }
                 Spacer(Modifier.width(4.dp))
             }
@@ -273,7 +275,7 @@ fun TextChatScreen(
                     done = friendStatus == FriendStatus.Requested,
                     onClick = { if (friendStatus == FriendStatus.None) onAddFriend() else onRequestPending() },
                 ))
-                if (onSwitchToVoice != null) add(ChatAction(Icons.Rounded.Call, stringResource(R.string.voice_call_short), enabled = !state.voiceInviteSent, onClick = onSwitchToVoice))
+                if (onSwitchToVoice != null) add(ChatAction(Icons.Rounded.Call, stringResource(if (state.voiceInviteSent) R.string.calling_short else R.string.voice_call_short), enabled = !state.voiceInviteSent, onClick = onSwitchToVoice))
                 if (onGames != null) add(ChatAction(Icons.Rounded.SportsEsports, stringResource(R.string.games_short), onClick = onGames))
                 add(ChatAction(Icons.Rounded.Lightbulb, stringResource(R.string.idea_short), onClick = { icebreakers(1).firstOrNull()?.let { draft = it.text } }))
                 add(ChatAction(Icons.Rounded.Flag, stringResource(R.string.report), tint = Danger, onClick = { reporting = true }))
@@ -366,8 +368,16 @@ private fun NewMatchCard(p: Partner) {
     Column(Modifier.fillMaxWidth().padding(vertical = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         AnimalAvatar(p.animal, p.username, 80.dp)
         Spacer(Modifier.height(10.dp))
-        Text(stringResource(R.string.now_chatting_with, p.username), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
-        Text(partnerLine(p), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            stringResource(R.string.now_chatting_with, p.username),
+            style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.padding(horizontal = 24.dp),
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            partnerLine(p), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.padding(horizontal = 24.dp),
+        )
         if (p.interests.isNotEmpty()) {
             Spacer(Modifier.height(10.dp))
             InterestChips(p.interests)
@@ -375,3 +385,17 @@ private fun NewMatchCard(p: Partner) {
     }
 }
 
+
+/** Voice call from a text chat: a round button that shows a turning ring until they answer. */
+@Composable
+private fun VoiceInviteButton(ringing: Boolean, onClick: () -> Unit) {
+    Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+        Box(
+            Modifier.size(40.dp).clip(CircleShape)
+                .background(if (ringing) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
+                .clickable(enabled = !ringing, onClick = onClick),
+            contentAlignment = Alignment.Center,
+        ) { Icon(Icons.Rounded.Call, stringResource(if (ringing) R.string.calling_short else R.string.voice_call_short), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp)) }
+        if (ringing) androidx.compose.material3.CircularProgressIndicator(Modifier.size(40.dp), strokeWidth = 2.5.dp, color = MaterialTheme.colorScheme.primary)
+    }
+}

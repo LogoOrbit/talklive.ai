@@ -436,7 +436,6 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
             dismissButton = { TextButton(onClick = { vm.answerVoiceInvite(false) }) { Text(stringResource(R.string.not_now)) } },
         )
     }
-    LaunchedEffect(state.voiceInviteSent) { if (state.voiceInviteSent) snackbar.say(context.getString(R.string.voice_invite_sent)) }
     LaunchedEffect(state.voiceInviteDeclined) {
         if (state.voiceInviteDeclined) { snackbar.say(context.getString(R.string.voice_invite_declined)); vm.clearVoiceInviteDeclined() }
     }

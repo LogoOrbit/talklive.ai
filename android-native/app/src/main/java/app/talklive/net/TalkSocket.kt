@@ -9,6 +9,7 @@ import io.socket.emitter.Emitter
 import io.socket.engineio.client.transports.WebSocket
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -36,7 +37,11 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
     private val socket: Socket = IO.socket(
         app.talklive.net.ServerConfig.url,
         IO.Options.builder()
-            .setTransports(arrayOf(WebSocket.NAME))
+            // Plain HTTPS first, then upgrade to a WebSocket: some Wi-Fi
+            // routers and ISPs block or break WebSockets, and the app then
+            // looked offline on Wi-Fi while it worked on mobile data.
+            .setTransports(arrayOf(io.socket.engineio.client.transports.Polling.NAME, WebSocket.NAME))
+            .setUpgrade(true)
             .setReconnection(true)
             .setReconnectionDelay(1_000)
             .setReconnectionDelayMax(10_000)
@@ -239,6 +244,13 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
 
     fun connect() {
         if (!socket.connected()) socket.connect()
+    }
+
+    /** Connects if needed and waits up to [ms] for it; true once connected. */
+    suspend fun awaitConnected(ms: Long = 10_000): Boolean {
+        if (_connected.value) return true
+        reconnectNow()
+        return kotlinx.coroutines.withTimeoutOrNull(ms) { _connected.first { it } } == true
     }
 
     /** Back in the foreground or back online: connect now instead of waiting out the retry backoff. */

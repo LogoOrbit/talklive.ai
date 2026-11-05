@@ -3486,3 +3486,9 @@ button.tl-engage-news { width: 100%; color: var(--text); font: inherit; font-siz
   cursor: pointer;
 }
 .tl-engage-dialog:focus { outline: none; }
+
+/* Plus-only themes (Ocean, Sunset) carry a small diamond on the free tier. */
+.tl-free [data-theme-pick="ocean"]::after, .tl-free [data-theme-pick="sunset"]::after,
+.tl-free .tl-theme-opt[data-value="ocean"]::after, .tl-free .tl-theme-opt[data-value="sunset"]::after {
+  content: " 💎"; font-size: 0.85em;
+}
