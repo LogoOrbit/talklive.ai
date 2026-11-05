@@ -468,5 +468,9 @@
 "finding_in": "Cerco qualcuno in %1$s",
 "n_online": "%1$d online",
 "contact_save": "Salva i contatti che condivido",
-"contact_save_desc": "Email, numeri e profili social che scrivi in chat vengono salvati nel tuo profilo. Disattivato di default; disattivarlo li elimina."
+"contact_save_desc": "Email, numeri e profili social che scrivi in chat vengono salvati nel tuo profilo. Disattivato di default; disattivarlo li elimina.",
+"read_receipts": "Conferme di lettura",
+"read_receipts_desc": "Mostra quando hai letto i loro messaggi",
+"vibration": "Vibrazione",
+"vibration_desc": "Vibra quando ti colleghi con qualcuno"
 }

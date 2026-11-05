@@ -468,5 +468,9 @@
 "finding_in": "%1$s ülkesinden biri aranıyor",
 "n_online": "%1$d çevrimiçi",
 "contact_save": "Paylaştığım iletişim bilgilerini kaydet",
-"contact_save_desc": "Sohbetlerde yazdığın e-posta, numara ve sosyal medya adları profiline kaydedilir. Varsayılan olarak kapalı; kapatınca silinir."
+"contact_save_desc": "Sohbetlerde yazdığın e-posta, numara ve sosyal medya adları profiline kaydedilir. Varsayılan olarak kapalı; kapatınca silinir.",
+"read_receipts": "Okundu bilgisi",
+"read_receipts_desc": "Mesajlarını okuduğunda karşı tarafa göster",
+"vibration": "Titreşim",
+"vibration_desc": "Biriyle bağlanınca titret"
 }

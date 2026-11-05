@@ -468,5 +468,9 @@
 "finding_in": "Mencari seseorang di %1$s",
 "n_online": "%1$d online",
 "contact_save": "Simpan info kontak yang saya bagikan",
-"contact_save_desc": "Email, nomor, dan akun sosial yang kamu ketik di obrolan disimpan di profilmu. Mati secara bawaan; mematikannya akan menghapusnya."
+"contact_save_desc": "Email, nomor, dan akun sosial yang kamu ketik di obrolan disimpan di profilmu. Mati secara bawaan; mematikannya akan menghapusnya.",
+"read_receipts": "Tanda dibaca",
+"read_receipts_desc": "Tunjukkan kapan kamu membaca pesan mereka",
+"vibration": "Getar",
+"vibration_desc": "Bergetar saat terhubung dengan seseorang"
 }

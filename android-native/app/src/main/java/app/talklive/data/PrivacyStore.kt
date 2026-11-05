@@ -24,6 +24,11 @@ class PrivacyStore(context: Context, name: String) {
     private val _acceptCalls = MutableStateFlow(prefs.getBoolean("accept_calls", true))
     val acceptCalls: StateFlow<Boolean> = _acceptCalls
 
+    private val _readReceipts = MutableStateFlow(prefs.getBoolean("read_receipts", true))
+    /** Read receipts: whether people see "Seen" when you have read their messages. */
+    val readReceipts: StateFlow<Boolean> = _readReceipts
+    fun setReadReceipts(v: Boolean) { prefs.edit().putBoolean("read_receipts", v).apply(); _readReceipts.value = v }
+
     fun setHideStatus(v: Boolean) { prefs.edit().putBoolean("hide_status", v).apply(); _hideStatus.value = v }
     fun setAcceptCalls(v: Boolean) { prefs.edit().putBoolean("accept_calls", v).apply(); _acceptCalls.value = v }
 }

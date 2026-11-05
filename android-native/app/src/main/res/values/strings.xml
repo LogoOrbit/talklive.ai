@@ -475,4 +475,8 @@
     <string name="n_online">%1$d online</string>
     <string name="contact_save">Save contact info I share</string>
     <string name="contact_save_desc">Emails, numbers and social handles you type in chats are saved to your profile. Off by default; turning it off deletes them.</string>
+    <string name="read_receipts">Read receipts</string>
+    <string name="read_receipts_desc">Show people when you\'ve read their messages</string>
+    <string name="vibration">Vibration</string>
+    <string name="vibration_desc">Buzz when you connect with someone</string>
 </resources>

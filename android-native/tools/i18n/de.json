@@ -468,5 +468,9 @@
 "finding_in": "Suche jemanden in %1$s",
 "n_online": "%1$d online",
 "contact_save": "Geteilte Kontaktdaten speichern",
-"contact_save_desc": "E-Mails, Nummern und Social-Media-Namen aus deinen Chats werden in deinem Profil gespeichert. Standardmäßig aus; Ausschalten löscht sie."
+"contact_save_desc": "E-Mails, Nummern und Social-Media-Namen aus deinen Chats werden in deinem Profil gespeichert. Standardmäßig aus; Ausschalten löscht sie.",
+"read_receipts": "Lesebestätigungen",
+"read_receipts_desc": "Zeigen, wann du Nachrichten gelesen hast",
+"vibration": "Vibration",
+"vibration_desc": "Kurz vibrieren, wenn du verbunden wirst"
 }

@@ -469,6 +469,10 @@
     <string name="n_online">%1$d en ligne</string>
     <string name="contact_save">Enregistrer les coordonnées que je partage</string>
     <string name="contact_save_desc">Les e-mails, numéros et pseudos que vous écrivez dans les chats sont enregistrés sur votre profil. Désactivé par défaut ; le désactiver les supprime.</string>
+    <string name="read_receipts">Confirmations de lecture</string>
+    <string name="read_receipts_desc">Montrer quand vous avez lu leurs messages</string>
+    <string name="vibration">Vibration</string>
+    <string name="vibration_desc">Vibrer quand vous êtes mis en relation</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s visiteur aujourd\'hui</item>
         <item quantity="other">%1$s visiteurs aujourd\'hui</item>

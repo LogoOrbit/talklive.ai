@@ -33,6 +33,7 @@ class SoundDirector @Inject constructor(
 
     /** A barely-there tap so you feel the moment someone connects. */
     private fun tick() = runCatching {
+        if (!sounds.vibration.value) return@runCatching
         val v = context.getSystemService(android.os.Vibrator::class.java) ?: return@runCatching
         if (!v.hasVibrator()) return@runCatching
         if (android.os.Build.VERSION.SDK_INT >= 29) v.vibrate(android.os.VibrationEffect.createPredefined(android.os.VibrationEffect.EFFECT_TICK))

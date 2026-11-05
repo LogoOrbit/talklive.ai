@@ -469,6 +469,10 @@
     <string name="n_online">%1$d آنلاین</string>
     <string name="contact_save">ذخیره اطلاعات تماسی که به اشتراک می‌گذارم</string>
     <string name="contact_save_desc">ایمیل‌ها، شماره‌ها و شناسه‌های شبکه‌های اجتماعی که در گفتگو می‌نویسید در نمایه ذخیره می‌شوند. به‌طور پیش‌فرض خاموش؛ خاموش کردن آن‌ها را پاک می‌کند.</string>
+    <string name="read_receipts">رسید خواندن</string>
+    <string name="read_receipts_desc">به دیگران نشان دهید پیامشان را کی خواندید</string>
+    <string name="vibration">لرزش</string>
+    <string name="vibration_desc">لرزش هنگام وصل شدن به کسی</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s بازدیدکننده امروز</item>
         <item quantity="other">%1$s بازدیدکننده امروز</item>

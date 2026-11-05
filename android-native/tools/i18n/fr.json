@@ -468,5 +468,9 @@
 "finding_in": "Recherche de quelqu'un en %1$s",
 "n_online": "%1$d en ligne",
 "contact_save": "Enregistrer les coordonnées que je partage",
-"contact_save_desc": "Les e-mails, numéros et pseudos que vous écrivez dans les chats sont enregistrés sur votre profil. Désactivé par défaut ; le désactiver les supprime."
+"contact_save_desc": "Les e-mails, numéros et pseudos que vous écrivez dans les chats sont enregistrés sur votre profil. Désactivé par défaut ; le désactiver les supprime.",
+"read_receipts": "Confirmations de lecture",
+"read_receipts_desc": "Montrer quand vous avez lu leurs messages",
+"vibration": "Vibration",
+"vibration_desc": "Vibrer quand vous êtes mis en relation"
 }

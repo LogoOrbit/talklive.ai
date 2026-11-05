@@ -469,6 +469,10 @@
     <string name="n_online">%1$d অনলাইনে</string>
     <string name="contact_save">আমার শেয়ার করা যোগাযোগের তথ্য সংরক্ষণ করুন</string>
     <string name="contact_save_desc">চ্যাটে লেখা ইমেল, নম্বর ও সোশ্যাল হ্যান্ডেল আপনার প্রোফাইলে সংরক্ষিত হয়। ডিফল্টে বন্ধ; বন্ধ করলে মুছে যায়।</string>
+    <string name="read_receipts">পড়ার রসিদ</string>
+    <string name="read_receipts_desc">কেউ জানুক কখন আপনি তাদের বার্তা পড়েছেন</string>
+    <string name="vibration">কম্পন</string>
+    <string name="vibration_desc">কারও সাথে যুক্ত হলে কম্পন</string>
     <plurals name="visitors_today">
         <item quantity="one">আজ %1$s জন ভিজিটর</item>
         <item quantity="other">আজ %1$s জন ভিজিটর</item>

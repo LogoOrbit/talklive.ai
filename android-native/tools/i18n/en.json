@@ -471,5 +471,9 @@
 "finding_in": "Looking for someone in %1$s",
 "n_online": "%1$d online",
 "contact_save": "Save contact info I share",
-"contact_save_desc": "Emails, numbers and social handles you type in chats are saved to your profile. Off by default; turning it off deletes them."
+"contact_save_desc": "Emails, numbers and social handles you type in chats are saved to your profile. Off by default; turning it off deletes them.",
+"read_receipts": "Read receipts",
+"read_receipts_desc": "Show people when you've read their messages",
+"vibration": "Vibration",
+"vibration_desc": "Buzz when you connect with someone"
 }

@@ -467,5 +467,9 @@
 "finding_in": "%1$s에서 찾는 중",
 "n_online": "%1$d명 접속 중",
 "contact_save": "내가 공유한 연락처 저장",
-"contact_save_desc": "채팅에 입력한 이메일, 번호, SNS 계정이 프로필에 저장돼요. 기본은 꺼짐이며, 끄면 삭제돼요."
+"contact_save_desc": "채팅에 입력한 이메일, 번호, SNS 계정이 프로필에 저장돼요. 기본은 꺼짐이며, 끄면 삭제돼요.",
+"read_receipts": "읽음 표시",
+"read_receipts_desc": "메시지를 읽었는지 상대에게 표시",
+"vibration": "진동",
+"vibration_desc": "누군가와 연결되면 진동"
 }

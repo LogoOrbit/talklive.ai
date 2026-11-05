@@ -469,6 +469,10 @@
     <string name="n_online">%1$d 人在线</string>
     <string name="contact_save">保存我分享的联系方式</string>
     <string name="contact_save_desc">你在聊天中输入的邮箱、号码和社交账号会保存到你的资料。默认关闭；关闭后会删除。</string>
+    <string name="read_receipts">已读回执</string>
+    <string name="read_receipts_desc">让对方知道你已读消息</string>
+    <string name="vibration">振动</string>
+    <string name="vibration_desc">连接成功时振动</string>
     <plurals name="visitors_today">
         <item quantity="other">今日访客 %1$s 人</item>
     </plurals>

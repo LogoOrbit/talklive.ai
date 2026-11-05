@@ -46,6 +46,8 @@ import androidx.compose.material.icons.rounded.Feedback
 import androidx.compose.material.icons.rounded.SupportAgent
 import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.ContactMail
+import androidx.compose.material.icons.rounded.DoneAll
+import androidx.compose.material.icons.rounded.Vibration
 import androidx.compose.material.icons.rounded.Call
 import androidx.compose.material.icons.rounded.Tag
 import androidx.compose.material.icons.rounded.Visibility
@@ -268,6 +270,10 @@ fun ProfileScreen(
                 SettingRow(Icons.Rounded.Call, stringResource(R.string.allow_calls), stringResource(R.string.allow_calls_desc), onClick = { vm.setAcceptCalls(!acceptCalls) }, trailing = {
                     Switch(checked = acceptCalls, onCheckedChange = { vm.setAcceptCalls(it) }, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary))
                 })
+                val readReceipts by vm.readReceipts.collectAsStateWithLifecycle()
+                SettingRow(Icons.Rounded.DoneAll, stringResource(R.string.read_receipts), stringResource(R.string.read_receipts_desc), onClick = { vm.setReadReceipts(!readReceipts) }, trailing = {
+                    Switch(checked = readReceipts, onCheckedChange = { vm.setReadReceipts(it) }, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary))
+                })
                 val contactConsent by vm.contactConsent.collectAsStateWithLifecycle()
                 SettingRow(Icons.Rounded.ContactMail, stringResource(R.string.contact_save), stringResource(R.string.contact_save_desc), onClick = { vm.setContactConsent(!contactConsent) }, trailing = {
                     Switch(checked = contactConsent, onCheckedChange = { vm.setContactConsent(it) }, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary))
@@ -283,6 +289,10 @@ fun ProfileScreen(
                 val soundsOn by vm.sounds.collectAsStateWithLifecycle()
                 SettingRow(Icons.Rounded.VolumeUp, stringResource(R.string.sounds), stringResource(R.string.sounds_desc), onClick = { vm.setSounds(!soundsOn) }, trailing = {
                     Switch(checked = soundsOn, onCheckedChange = vm::setSounds, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary))
+                })
+                val vibrationOn by vm.vibration.collectAsStateWithLifecycle()
+                SettingRow(Icons.Rounded.Vibration, stringResource(R.string.vibration), stringResource(R.string.vibration_desc), onClick = { vm.setVibration(!vibrationOn) }, trailing = {
+                    Switch(checked = vibrationOn, onCheckedChange = vm::setVibration, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary))
                 })
             }
 

@@ -34,6 +34,10 @@ class Sounds @Inject constructor(@ApplicationContext context: Context) {
     private val _enabled = MutableStateFlow(prefs.getBoolean("sounds", true))
     val enabled: StateFlow<Boolean> = _enabled
     fun setEnabled(on: Boolean) { prefs.edit().putBoolean("sounds", on).apply(); _enabled.value = on }
+    private val _vibration = MutableStateFlow(prefs.getBoolean("vibration", true))
+    /** Buzz when you connect or get a message. */
+    val vibration: StateFlow<Boolean> = _vibration
+    fun setVibration(on: Boolean) { prefs.edit().putBoolean("vibration", on).apply(); _vibration.value = on }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val cache = HashMap<Fx, ShortArray>()

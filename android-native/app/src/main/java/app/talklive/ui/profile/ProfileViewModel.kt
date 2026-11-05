@@ -75,6 +75,10 @@ class ProfileViewModel @Inject constructor(
 
     fun toggleTheme() = themeStore.toggle()
     val sounds = soundFx.enabled
+    val vibration = soundFx.vibration
+    fun setVibration(on: Boolean) = soundFx.setVibration(on)
+    val readReceipts = privacy.readReceipts
+    fun setReadReceipts(on: Boolean) = privacy.setReadReceipts(on)
     fun setSounds(on: Boolean) { soundFx.setEnabled(on); if (on) soundFx.play(app.talklive.sound.Sounds.Fx.Message) }
     fun signOut() = auth.logout()
     fun deleteAccount(secret: String) = run("Account deleted") { auth.deleteAccount(secret) }

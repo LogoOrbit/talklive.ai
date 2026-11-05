@@ -469,6 +469,10 @@
     <string name="n_online">%1$d çevrimiçi</string>
     <string name="contact_save">Paylaştığım iletişim bilgilerini kaydet</string>
     <string name="contact_save_desc">Sohbetlerde yazdığın e-posta, numara ve sosyal medya adları profiline kaydedilir. Varsayılan olarak kapalı; kapatınca silinir.</string>
+    <string name="read_receipts">Okundu bilgisi</string>
+    <string name="read_receipts_desc">Mesajlarını okuduğunda karşı tarafa göster</string>
+    <string name="vibration">Titreşim</string>
+    <string name="vibration_desc">Biriyle bağlanınca titret</string>
     <plurals name="visitors_today">
         <item quantity="one">Bugün %1$s ziyaretçi</item>
         <item quantity="other">Bugün %1$s ziyaretçi</item>

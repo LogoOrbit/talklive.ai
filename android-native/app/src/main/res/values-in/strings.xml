@@ -469,6 +469,10 @@
     <string name="n_online">%1$d online</string>
     <string name="contact_save">Simpan info kontak yang saya bagikan</string>
     <string name="contact_save_desc">Email, nomor, dan akun sosial yang kamu ketik di obrolan disimpan di profilmu. Mati secara bawaan; mematikannya akan menghapusnya.</string>
+    <string name="read_receipts">Tanda dibaca</string>
+    <string name="read_receipts_desc">Tunjukkan kapan kamu membaca pesan mereka</string>
+    <string name="vibration">Getar</string>
+    <string name="vibration_desc">Bergetar saat terhubung dengan seseorang</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s pengunjung hari ini</item>
         <item quantity="other">%1$s pengunjung hari ini</item>

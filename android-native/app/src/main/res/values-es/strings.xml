@@ -469,6 +469,10 @@
     <string name="n_online">%1$d en línea</string>
     <string name="contact_save">Guardar los datos de contacto que comparto</string>
     <string name="contact_save_desc">Los correos, números y usuarios de redes que escribes en los chats se guardan en tu perfil. Desactivado por defecto; al desactivarlo se borran.</string>
+    <string name="read_receipts">Confirmaciones de lectura</string>
+    <string name="read_receipts_desc">Muestra cuándo has leído sus mensajes</string>
+    <string name="vibration">Vibración</string>
+    <string name="vibration_desc">Vibrar al conectar con alguien</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s visitante hoy</item>
         <item quantity="other">%1$s visitantes hoy</item>

@@ -469,6 +469,10 @@
     <string name="n_online">%1$d명 접속 중</string>
     <string name="contact_save">내가 공유한 연락처 저장</string>
     <string name="contact_save_desc">채팅에 입력한 이메일, 번호, SNS 계정이 프로필에 저장돼요. 기본은 꺼짐이며, 끄면 삭제돼요.</string>
+    <string name="read_receipts">읽음 표시</string>
+    <string name="read_receipts_desc">메시지를 읽었는지 상대에게 표시</string>
+    <string name="vibration">진동</string>
+    <string name="vibration_desc">누군가와 연결되면 진동</string>
     <plurals name="visitors_today">
         <item quantity="other">오늘 방문자 %1$s명</item>
     </plurals>

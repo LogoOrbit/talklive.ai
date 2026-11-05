@@ -468,5 +468,9 @@
 "finding_in": "Buscando a alguien en %1$s",
 "n_online": "%1$d en línea",
 "contact_save": "Guardar los datos de contacto que comparto",
-"contact_save_desc": "Los correos, números y usuarios de redes que escribes en los chats se guardan en tu perfil. Desactivado por defecto; al desactivarlo se borran."
+"contact_save_desc": "Los correos, números y usuarios de redes que escribes en los chats se guardan en tu perfil. Desactivado por defecto; al desactivarlo se borran.",
+"read_receipts": "Confirmaciones de lectura",
+"read_receipts_desc": "Muestra cuándo has leído sus mensajes",
+"vibration": "Vibración",
+"vibration_desc": "Vibrar al conectar con alguien"
 }

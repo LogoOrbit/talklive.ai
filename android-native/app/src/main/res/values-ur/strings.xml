@@ -469,6 +469,10 @@
     <string name="n_online">%1$d آن لائن</string>
     <string name="contact_save">میری شیئر کردہ رابطے کی معلومات محفوظ کریں</string>
     <string name="contact_save_desc">چیٹ میں لکھے گئے ای میل، نمبر اور سوشل ہینڈل آپ کی پروفائل میں محفوظ ہوتے ہیں۔ پہلے سے بند؛ بند کرنے پر حذف ہو جاتے ہیں۔</string>
+    <string name="read_receipts">پڑھنے کی رسید</string>
+    <string name="read_receipts_desc">لوگوں کو دکھائیں کہ آپ نے ان کے پیغام کب پڑھے</string>
+    <string name="vibration">وائبریشن</string>
+    <string name="vibration_desc">کسی سے جڑنے پر وائبریٹ کریں</string>
     <plurals name="visitors_today">
         <item quantity="one">آج %1$s وزیٹر</item>
         <item quantity="other">آج %1$s وزیٹرز</item>

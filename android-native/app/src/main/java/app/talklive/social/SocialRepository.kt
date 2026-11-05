@@ -34,6 +34,7 @@ import javax.inject.Singleton
 class SocialRepository @Inject constructor(
     private val socket: TalkSocket,
     private val identity: IdentityStore,
+    private val privacy: app.talklive.data.PrivacyStore? = null,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default.limitedParallelism(1))
 
@@ -432,7 +433,8 @@ class SocialRepository @Inject constructor(
     fun markRead(clientId: String) = scope.launch {
         _unread.update { it - clientId }
         socket.emit("mark-messages-read", JSONObject().put("friendClientId", clientId))
-        socket.emit("chat-seen", JSONObject().put("friendClientId", clientId))
+        // With read receipts off the badge still clears, but nobody sees "Seen".
+        if (privacy?.readReceipts?.value != false) socket.emit("chat-seen", JSONObject().put("friendClientId", clientId))
     }
 
     // --- Friend calls ------------------------------------------------------

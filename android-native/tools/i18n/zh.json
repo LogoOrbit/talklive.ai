@@ -467,5 +467,9 @@
 "finding_in": "正在寻找来自%1$s的人",
 "n_online": "%1$d 人在线",
 "contact_save": "保存我分享的联系方式",
-"contact_save_desc": "你在聊天中输入的邮箱、号码和社交账号会保存到你的资料。默认关闭；关闭后会删除。"
+"contact_save_desc": "你在聊天中输入的邮箱、号码和社交账号会保存到你的资料。默认关闭；关闭后会删除。",
+"read_receipts": "已读回执",
+"read_receipts_desc": "让对方知道你已读消息",
+"vibration": "振动",
+"vibration_desc": "连接成功时振动"
 }
