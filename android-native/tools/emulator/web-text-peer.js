@@ -10,6 +10,7 @@ const [base = 'http://localhost:5000', out = 'emulator-out', seconds = '480'] = 
 fs.mkdirSync(out, { recursive: true });
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
+const t00 = Date.now();
 (async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
   const ctx = await browser.newContext({
@@ -23,6 +24,8 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     localStorage.setItem('talklive_gender_asked', 'yes');
   });
   const page = await ctx.newPage();
+  const events = [];
+  page.on('console', (m) => events.push(Math.round((Date.now() - t00) / 1000) + 's ' + m.type() + ': ' + m.text().slice(0, 200)));
   await page.goto(base + '/chat', { waitUntil: 'domcontentloaded' });
   await wait(3000);
   await page.click('#startBtn').catch(() => {});
@@ -43,6 +46,10 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
       await page.screenshot({ path: path.join(out, 'web-text-chat.png') }).catch(() => {});
     }
     state.t = Math.round((Date.now() - t0) / 1000);
+    const st = await page.evaluate(() => (document.querySelector('#chatStatus, .chat-status, #status') || {}).textContent || '').catch(() => '');
+    if (st && st !== state.lastStatus) { (state.status = state.status || []).push(state.t + 's ' + st.trim().slice(0, 120)); state.lastStatus = st; }
+    state.events = events.slice(-60);
+    if (state.t % 20 === 0) await page.screenshot({ path: path.join(out, 'web-text-' + state.t + '.png') }).catch(() => {});
     fs.writeFileSync(path.join(out, 'web-text-peer.json'), JSON.stringify(state, null, 2));
     await wait(1000);
   }

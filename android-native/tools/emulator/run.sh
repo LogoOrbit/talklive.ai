@@ -15,13 +15,14 @@ node "$GITHUB_WORKSPACE/android-native/tools/emulator/web-peer.js" http://localh
 # And one on the text chat page, for the text-chat part.
 node "$GITHUB_WORKSPACE/android-native/tools/emulator/web-text-peer.js" http://localhost:5000 "$OUT" 480 > "$OUT/web-text-peer.log" 2>&1 &
 # A video of the whole run (the emulator caps one file at 3 minutes).
-adb shell screenrecord --time-limit 180 --bit-rate 4000000 /sdcard/run.mp4 &
+( for i in 1 2 3 4; do adb shell screenrecord --time-limit 180 --bit-rate 4000000 /sdcard/run$i.mp4; done ) &
 REC=$!
 sleep 3
 python3 "$GITHUB_WORKSPACE/android-native/tools/emulator/drive.py" "$OUT"
 STATUS=$?
 sleep 2
-kill $REC 2>/dev/null; sleep 3
-adb pull /sdcard/run.mp4 "$OUT/run.mp4" || true
+kill $REC 2>/dev/null; adb shell pkill -INT screenrecord 2>/dev/null; sleep 3
+for i in 1 2 3 4; do adb pull /sdcard/run$i.mp4 "$OUT/run$i.mp4" 2>/dev/null || true; done
 adb logcat -d -s CallManager:* TalkSocket:* AndroidRuntime:* org.webrtc.Logging:* > "$OUT/logcat.txt" || true
+adb logcat -d -v time > "$OUT/logcat-full.txt" || true
 exit $STATUS
