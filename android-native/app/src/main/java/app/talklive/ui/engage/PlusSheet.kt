@@ -241,8 +241,29 @@ fun PlusContent(
                     )
                     !signedIn -> Text(stringResource(R.string.plus_sign_in), style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.7f), textAlign = TextAlign.Center)
                     state is BillingState.Loading -> CircularProgressIndicator(Modifier.size(28.dp), color = Gold2)
-                    state is BillingState.Unavailable -> Surface(shape = RoundedCornerShape(18.dp), color = Color.White.copy(alpha = 0.06f)) {
-                        Text(stringResource(R.string.plus_unavailable), style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.75f), textAlign = TextAlign.Center, modifier = Modifier.padding(16.dp))
+                    // Google Play has nothing to sell on this phone yet (not installed from
+                    // Play, or the products are not live): show the prices anyway, so
+                    // people know what Plus and the passes cost.
+                    state is BillingState.Unavailable -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Surface(shape = RoundedCornerShape(22.dp), color = Gold2.copy(alpha = 0.10f), border = BorderStroke(2.dp, Gold2), modifier = Modifier.fillMaxWidth()) {
+                            Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text("TalkLive Plus", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                                    Text(stringResource(R.string.plus_monthly), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.65f))
+                                }
+                                Text(stringResource(R.string.plus_price_month, "$10"), style = MaterialTheme.typography.titleMedium.copy(brush = GoldBrush), fontWeight = FontWeight.Black)
+                            }
+                        }
+                        Text(stringResource(R.string.pass_heading), style = MaterialTheme.typography.titleSmall, color = Color.White.copy(alpha = 0.8f), modifier = Modifier.fillMaxWidth().padding(top = 10.dp), textAlign = TextAlign.Center)
+                        Text(stringResource(R.string.pass_sub), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.55f), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                            listOf(app.talklive.billing.PlusPass("pass_1d", 1, "$2", 0), app.talklive.billing.PlusPass("pass_7d", 7, "$5", 0), app.talklive.billing.PlusPass("pass_15d", 15, "$7", 0)).forEachIndexed { i, pass ->
+                                PassCard(pass, badge = when (i) { 1 -> stringResource(R.string.pass_popular); 2 -> stringResource(R.string.pass_best); else -> null }, selected = false, modifier = Modifier.weight(1f)) {}
+                            }
+                        }
+                        Surface(shape = RoundedCornerShape(18.dp), color = Color.White.copy(alpha = 0.06f)) {
+                            Text(stringResource(R.string.plus_unavailable), style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.75f), textAlign = TextAlign.Center, modifier = Modifier.padding(16.dp))
+                        }
                     }
                     state is BillingState.Ready -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         state.plans.asReversed().forEach { plan -> PlanCard(plan, state.plans, plan == picked && pickedPass == null) { picked = plan; pickedPass = null } }

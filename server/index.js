@@ -2120,8 +2120,11 @@ socketAuth.set = function set(socketId, usernameLower) {
     if (account.ageGroup) profile.ageGroup = account.ageGroup;
     else if (profile.ageGroup && profile.ageGroup !== 'unspecified') { account.ageGroup = profile.ageGroup; persistAccount(usernameLower); }
   }
-  if (profile && account && account.animal) profile.animal = account.animal;
-  else if (profile && account && profile.animal) { account.animal = profile.animal; persistAccount(usernameLower); }
+  if (profile && account && account.animal) {
+    // A character face lives in the avatar slot; an animal in the animal slot.
+    if (sanitizeAnimal(account.animal)) profile.animal = account.animal;
+    else if (sanitizeFace(account.animal)) { profile.animal = null; profile.avatar = account.animal; }
+  } else if (profile && account && profile.animal) { account.animal = profile.animal; persistAccount(usernameLower); }
   return result;
 };
 const googleAccounts = new Map(); // Google "sub" id -> username (lowercase)
@@ -4236,6 +4239,15 @@ function sanitizeAnimal(value) {
   return typeof value === 'string' && ANIMAL_IDS.has(value) ? value : null;
 }
 
+// The face an account keeps: a spirit animal ("owl") or a movie-character
+// avatar ("c:wizard"). The app sends either in `animal`; only animals used
+// to be saved, so a character was replaced by the last saved animal on the
+// next launch.
+function sanitizeFace(value) {
+  if (sanitizeAnimal(value)) return value;
+  return typeof value === 'string' && value.slice(0, 2) === 'c:' && CHARACTER_IDS.has(value.slice(2)) ? value : null;
+}
+
 // Deliberately excludes gender (and avatar, which is gendered): nothing shown
 // during a call should reveal the stranger's gender - it should only become
 // apparent through conversation. The spirit animal is safe to include: it is
@@ -5657,7 +5669,7 @@ io.on('connection', (socket) => {
     const authedAccount = socketAuth.get(socket.id) ? accounts.get(socketAuth.get(socket.id)) : null;
     const chosenName = (authedAccount && Nick.clean(authedAccount.nickname)) || Nick.clean(data.nickname);
     // A signed-in person's avatar is saved with the account, so it follows them.
-    const sentAnimal = sanitizeAnimal(data.animal);
+    const sentAnimal = sanitizeFace(data.animal);
     const sentGender = audience.normGender(data.gender);
     const sentAge = audience.normAge(data.ageGroup);
     if (authedAccount && ((sentGender !== 'unspecified' && authedAccount.gender !== sentGender)
@@ -5702,7 +5714,8 @@ io.on('connection', (socket) => {
       // `m1`-`f5` are the gendered busts; `a:<animal>` is a spirit-animal
       // avatar, validated against the same list the picker is built from so a
       // client cannot store an animal that does not exist.
-      avatar: sanitizeAvatar(data.avatar),
+      // The app sends a character face in `animal` ("c:wizard"); show it as the avatar.
+      avatar: sanitizeAvatar(data.avatar) || (String(data.animal || "").startsWith("c:") ? sanitizeFace(data.animal) : null),
       animal: sanitizeAnimal(data.animal),
       // Which page this socket lives on. /chat is text only, and call-backs
       // must not ring or force-pair it (see canTakeCall).
