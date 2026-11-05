@@ -11,10 +11,17 @@ plugins {
 
 // Push needs Firebase's config (google-services.json, from the Firebase
 // console). Without it the app builds and runs, just without push. The file
-// must list both app.talklive and app.talklive.debug.
+// lists app.talklive (the Play app); app.talklive.debug is optional - without
+// it, test builds simply have no push.
 val firebaseConfig = file("google-services.json")
-if (firebaseConfig.exists() && firebaseConfig.readText().contains("\"app.talklive.debug\"")) {
+val firebaseText = if (firebaseConfig.exists()) firebaseConfig.readText() else ""
+if (firebaseText.contains("\"app.talklive\"")) {
     apply(plugin = "com.google.gms.google-services")
+    if (!firebaseText.contains("\"app.talklive.debug\"")) {
+        tasks.configureEach {
+            if (name.startsWith("process") && name.contains("Debug") && name.endsWith("GoogleServices")) enabled = false
+        }
+    }
 }
 
 android {
