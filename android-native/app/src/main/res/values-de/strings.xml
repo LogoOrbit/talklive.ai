@@ -498,6 +498,9 @@
     <string name="chat_with">Chat mit %1$s</string>
     <string name="in_call_chat_empty">Schick beim Reden eine Nachricht, ein Emoji oder ein GIF.</string>
     <string name="is_calling">%1$s ruft an</string>
+    <string name="plus_perk_themes">Themes Ozean und Sonnenuntergang</string>
+    <string name="plus_perk_themes_body">Zwei zusätzliche Looks für die ganze App. Hell und Dunkel bleiben gratis.</string>
+    <string name="mark_read">Als gelesen markieren</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s Besucher heute</item>
         <item quantity="other">%1$s Besucher heute</item>

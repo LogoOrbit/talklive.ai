@@ -497,5 +497,8 @@
 "on_another_call": "অন্য কলে আছেন",
 "chat_with": "%1$s-এর সাথে চ্যাট",
 "in_call_chat_empty": "কথা বলার সময় বার্তা, ইমোজি বা GIF পাঠান।",
-"is_calling": "%1$s কল করছেন"
+"is_calling": "%1$s কল করছেন",
+"plus_perk_themes": "ওশান ও সানসেট থিম",
+"plus_perk_themes_body": "পুরো অ্যাপের জন্য আরও দুটি লুক। লাইট ও ডার্ক ফ্রি থাকে।",
+"mark_read": "পড়া হয়েছে"
 }

@@ -498,6 +498,9 @@
     <string name="chat_with">与 %1$s 聊天</string>
     <string name="in_call_chat_empty">通话时也能发消息、表情或 GIF。</string>
     <string name="is_calling">%1$s 来电</string>
+    <string name="plus_perk_themes">海洋和日落主题</string>
+    <string name="plus_perk_themes_body">为整个应用新增两种外观。浅色和深色仍然免费。</string>
+    <string name="mark_read">标为已读</string>
     <plurals name="visitors_today">
         <item quantity="other">今日访客 %1$s 人</item>
     </plurals>

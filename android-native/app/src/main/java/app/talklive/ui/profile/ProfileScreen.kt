@@ -46,6 +46,7 @@ import androidx.compose.material.icons.rounded.Feedback
 import androidx.compose.material.icons.rounded.SupportAgent
 import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.ContactMail
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.AllInclusive
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Vibration
@@ -299,7 +300,7 @@ fun ProfileScreen(
 
             Section(stringResource(R.string.section_appearance)) {
                 val current by vm.theme.collectAsStateWithLifecycle()
-                ThemePicker(current, vm::setTheme)
+                ThemePicker(current, premium.active, onLocked = { youSheet = "plus" }, onPick = vm::setTheme)
                 val soundsOn by vm.sounds.collectAsStateWithLifecycle()
                 SettingRow(Icons.Rounded.VolumeUp, stringResource(R.string.sounds), stringResource(R.string.sounds_desc), onClick = { vm.setSounds(!soundsOn) }, trailing = {
                     Switch(checked = soundsOn, onCheckedChange = vm::setSounds, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary))
@@ -376,7 +377,7 @@ private fun Section(title: String, content: @Composable () -> Unit) {
 
 /** The website's four themes as tappable swatches. */
 @Composable
-private fun ThemePicker(current: app.talklive.ui.theme.AppTheme, onPick: (app.talklive.ui.theme.AppTheme) -> Unit) {
+private fun ThemePicker(current: app.talklive.ui.theme.AppTheme, premium: Boolean, onLocked: () -> Unit, onPick: (app.talklive.ui.theme.AppTheme) -> Unit) {
     Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         app.talklive.ui.theme.AppTheme.entries.forEach { t ->
             val a = app.talklive.ui.theme.accentsFor(t)
@@ -387,14 +388,20 @@ private fun ThemePicker(current: app.talklive.ui.theme.AppTheme, onPick: (app.ta
                 else -> androidx.compose.ui.graphics.Color(0xFF0B0F1A)
             }
             val selected = t == current
+            // Light and Dark are free; Ocean and Sunset come with Plus.
+            val locked = !premium && t != app.talklive.ui.theme.AppTheme.Dark && t != app.talklive.ui.theme.AppTheme.Light
             val border by androidx.compose.animation.animateColorAsState(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant, label = "theme")
             Column(
                 Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).border(if (selected) 2.dp else 1.dp, border, RoundedCornerShape(16.dp))
-                    .clickable { onPick(t) }.padding(8.dp),
+                    .clickable { if (locked) onLocked() else onPick(t) }.padding(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Box(Modifier.fillMaxWidth().height(44.dp).clip(RoundedCornerShape(10.dp)).background(bg), contentAlignment = Alignment.Center) {
                     Box(Modifier.size(22.dp).clip(CircleShape).background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(a.a, a.b))))
+                    if (locked) Box(
+                        Modifier.align(Alignment.TopEnd).padding(4.dp).size(18.dp).clip(CircleShape).background(androidx.compose.ui.graphics.Color(0xFFF2C14E)),
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(Icons.Rounded.Lock, null, tint = androidx.compose.ui.graphics.Color(0xFF2B1D00), modifier = Modifier.size(11.dp)) }
                 }
                 Spacer(Modifier.height(6.dp))
                 Text(

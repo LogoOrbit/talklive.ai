@@ -498,6 +498,9 @@
     <string name="chat_with">%1$s-এর সাথে চ্যাট</string>
     <string name="in_call_chat_empty">কথা বলার সময় বার্তা, ইমোজি বা GIF পাঠান।</string>
     <string name="is_calling">%1$s কল করছেন</string>
+    <string name="plus_perk_themes">ওশান ও সানসেট থিম</string>
+    <string name="plus_perk_themes_body">পুরো অ্যাপের জন্য আরও দুটি লুক। লাইট ও ডার্ক ফ্রি থাকে।</string>
+    <string name="mark_read">পড়া হয়েছে</string>
     <plurals name="visitors_today">
         <item quantity="one">আজ %1$s জন ভিজিটর</item>
         <item quantity="other">আজ %1$s জন ভিজিটর</item>

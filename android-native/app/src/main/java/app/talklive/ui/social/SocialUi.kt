@@ -39,8 +39,8 @@ fun shortTime(ts: Long): String {
     if (ts <= 0) return ""
     val diff = System.currentTimeMillis() - ts
     return when {
-        diff < 3_600_000 -> DateUtils.getRelativeTimeSpanString(ts, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS, DateUtils.FORMAT_ABBREV_RELATIVE).toString()
-        DateUtils.isToday(ts) -> SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(ts))
+        // Like WhatsApp: the clock time for today, short and the same width.
+        DateUtils.isToday(ts) || diff < 60_000 -> SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(ts))
         DateUtils.isToday(ts + DateUtils.DAY_IN_MILLIS) -> DateUtils.getRelativeTimeSpanString(ts, System.currentTimeMillis(), DateUtils.DAY_IN_MILLIS).toString()
         diff < 6 * DateUtils.DAY_IN_MILLIS -> SimpleDateFormat("EEE", Locale.getDefault()).format(Date(ts))
         else -> SimpleDateFormat("d MMM", Locale.getDefault()).format(Date(ts))

@@ -498,6 +498,9 @@
     <string name="chat_with">%1$s님과 채팅</string>
     <string name="in_call_chat_empty">통화하면서 메시지, 이모지, GIF를 보내 보세요.</string>
     <string name="is_calling">%1$s님의 전화</string>
+    <string name="plus_perk_themes">오션·선셋 테마</string>
+    <string name="plus_perk_themes_body">앱 전체에 두 가지 추가 테마. 라이트와 다크는 계속 무료예요.</string>
+    <string name="mark_read">읽음으로 표시</string>
     <plurals name="visitors_today">
         <item quantity="other">오늘 방문자 %1$s명</item>
     </plurals>

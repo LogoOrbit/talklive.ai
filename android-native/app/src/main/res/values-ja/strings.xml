@@ -498,6 +498,9 @@
     <string name="chat_with">%1$sとのチャット</string>
     <string name="in_call_chat_empty">話しながらメッセージや絵文字、GIFを送れます。</string>
     <string name="is_calling">%1$sから着信</string>
+    <string name="plus_perk_themes">オーシャン・サンセットテーマ</string>
+    <string name="plus_perk_themes_body">アプリ全体に2つの新しい見た目。ライトとダークは無料のまま。</string>
+    <string name="mark_read">既読にする</string>
     <plurals name="visitors_today">
         <item quantity="other">今日の訪問者 %1$s人</item>
     </plurals>

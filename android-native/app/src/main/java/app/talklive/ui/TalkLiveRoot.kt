@@ -598,8 +598,9 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     // Mid-call: another friend calling or messaging shows for two seconds, quietly.
     var miniNote by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) {
-        social.messageEvents.collect { (who, text) ->
-            if (inCall) { miniNote = "💬 $who: $text"; kotlinx.coroutines.delay(2000); miniNote = null }
+        social.messageEvents.collect { (id, who, text) ->
+            // Like a messenger: a quick note unless that chat is already open (or muted).
+            if (openChat != id && id !in social.muted.value) { miniNote = "💬 $who: $text"; kotlinx.coroutines.delay(2000); miniNote = null }
         }
     }
     LaunchedEffect(incoming, inCall) {

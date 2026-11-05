@@ -498,6 +498,9 @@
     <string name="chat_with">Obrolan dengan %1$s</string>
     <string name="in_call_chat_empty">Kirim pesan, emoji, atau GIF sambil mengobrol.</string>
     <string name="is_calling">%1$s menelepon</string>
+    <string name="plus_perk_themes">Tema Samudra dan Senja</string>
+    <string name="plus_perk_themes_body">Dua tampilan tambahan untuk seluruh aplikasi. Terang dan Gelap tetap gratis.</string>
+    <string name="mark_read">Tandai dibaca</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s pengunjung hari ini</item>
         <item quantity="other">%1$s pengunjung hari ini</item>

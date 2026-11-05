@@ -496,5 +496,8 @@
 "on_another_call": "正在通话中",
 "chat_with": "与 %1$s 聊天",
 "in_call_chat_empty": "通话时也能发消息、表情或 GIF。",
-"is_calling": "%1$s 来电"
+"is_calling": "%1$s 来电",
+"plus_perk_themes": "海洋和日落主题",
+"plus_perk_themes_body": "为整个应用新增两种外观。浅色和深色仍然免费。",
+"mark_read": "标为已读"
 }

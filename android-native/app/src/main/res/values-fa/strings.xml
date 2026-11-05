@@ -498,6 +498,9 @@
     <string name="chat_with">گفتگو با %1$s</string>
     <string name="in_call_chat_empty">در حین صحبت پیام، ایموجی یا گیف بفرستید.</string>
     <string name="is_calling">%1$s تماس می‌گیرد</string>
+    <string name="plus_perk_themes">پوسته‌های اقیانوس و غروب</string>
+    <string name="plus_perk_themes_body">دو ظاهر اضافه برای کل برنامه. روشن و تیره رایگان می‌مانند.</string>
+    <string name="mark_read">علامت خوانده شده</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s بازدیدکننده امروز</item>
         <item quantity="other">%1$s بازدیدکننده امروز</item>

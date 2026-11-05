@@ -75,9 +75,9 @@ class SocialRepository @Inject constructor(
     private val _outgoing = MutableStateFlow<OutgoingCall?>(null)
     val outgoing: StateFlow<OutgoingCall?> = _outgoing
 
-    private val _messageEvents = kotlinx.coroutines.flow.MutableSharedFlow<Pair<String, String>>(extraBufferCapacity = 16)
-    /** (sender name, preview) for every friend message as it arrives. */
-    val messageEvents: kotlinx.coroutines.flow.SharedFlow<Pair<String, String>> = _messageEvents
+    private val _messageEvents = kotlinx.coroutines.flow.MutableSharedFlow<Triple<String, String, String>>(extraBufferCapacity = 16)
+    /** (sender id, sender name, preview) for every friend message as it arrives. */
+    val messageEvents: kotlinx.coroutines.flow.SharedFlow<Triple<String, String, String>> = _messageEvents
     private val _gates = MutableStateFlow<Map<String, String>>(emptyMap())
     /** The server's latest word on whether a non-friend can be messaged (open, one, accept, request, waiting). */
     val gates: StateFlow<Map<String, String>> = _gates
@@ -524,7 +524,7 @@ class SocialRepository @Inject constructor(
         _typing.update { it - from }
         bumpLast(from, LastMessage(false, msg.text, msg.gifUrl != null, msg.voiceMs != null, msg.ts, false))
         val who = person(from)?.displayName ?: o.optString("username").ifBlank { "Someone" }
-        _messageEvents.tryEmit(who to when { msg.gifUrl != null -> "GIF"; msg.voiceMs != null -> "🎤"; else -> msg.text.take(40) })
+        _messageEvents.tryEmit(Triple(from, who, when { msg.gifUrl != null -> "GIF"; msg.voiceMs != null -> "🎤"; else -> msg.text.take(40) }))
         if (from == openChat) markRead(from) else _unread.update { it + (from to ((it[from] ?: 0) + 1)) }
     }
 

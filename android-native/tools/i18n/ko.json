@@ -496,5 +496,8 @@
 "on_another_call": "다른 통화 중",
 "chat_with": "%1$s님과 채팅",
 "in_call_chat_empty": "통화하면서 메시지, 이모지, GIF를 보내 보세요.",
-"is_calling": "%1$s님의 전화"
+"is_calling": "%1$s님의 전화",
+"plus_perk_themes": "오션·선셋 테마",
+"plus_perk_themes_body": "앱 전체에 두 가지 추가 테마. 라이트와 다크는 계속 무료예요.",
+"mark_read": "읽음으로 표시"
 }

@@ -10,6 +10,7 @@ import androidx.compose.material.icons.rounded.Unarchive
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Block
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -56,6 +57,7 @@ fun ChatsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalkin
     var showArchived by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
     var menuFor by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Conversation?>(null) }
     var confirm by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Pair<String, Conversation>?>(null) }
+    var renaming by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Conversation?>(null) }
     val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
     val active = conversations.filter { it.person.clientId !in archived }
     val stored = conversations.filter { it.person.clientId in archived }
@@ -124,6 +126,7 @@ fun ChatsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalkin
                 item(if (isArchived) Icons.Rounded.Unarchive else Icons.Rounded.Archive, stringResource(if (isArchived) R.string.unarchive else R.string.archive)) {
                     vm.setArchived(id, !isArchived); menuFor = null
                 }
+                if (c.isFriend) item(Icons.Rounded.Edit, stringResource(R.string.rename)) { renaming = c; menuFor = null }
                 item(if (c.muted) Icons.Rounded.Notifications else Icons.Rounded.NotificationsOff, stringResource(if (c.muted) R.string.unmute_chat else R.string.mute_chat)) {
                     vm.setMuted(id, !c.muted); menuFor = null
                 }
@@ -131,6 +134,17 @@ fun ChatsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalkin
                 item(Icons.Rounded.Block, stringResource(R.string.block), app.talklive.ui.theme.Danger) { confirm = "block" to c; menuFor = null }
             }
         }
+    }
+
+    renaming?.let { c ->
+        var name by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(c.person.displayName) }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { renaming = null },
+            title = { Text(stringResource(R.string.rename)) },
+            text = { androidx.compose.material3.OutlinedTextField(name, { name = it.take(32) }, singleLine = true) },
+            confirmButton = { androidx.compose.material3.TextButton(onClick = { vm.rename(c.person.clientId, name.trim()); renaming = null }) { Text(stringResource(R.string.save)) } },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { renaming = null }) { Text(stringResource(R.string.cancel)) } },
+        )
     }
 
     confirm?.let { (what, c) ->
@@ -166,13 +180,13 @@ private fun ConversationRow(c: Conversation, modifier: Modifier, onLongClick: ()
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     p.displayName, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false),
+                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f),
                 )
                 if (c.muted) {
                     Spacer(Modifier.width(6.dp))
                     Icon(Icons.Rounded.NotificationsOff, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Spacer(Modifier.weight(1f))
+                Spacer(Modifier.width(8.dp))
                 Text(
                     shortTime(last?.ts ?: 0), style = MaterialTheme.typography.labelMedium,
                     color = if (bold) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,

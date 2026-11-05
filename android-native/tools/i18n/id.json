@@ -497,5 +497,8 @@
 "on_another_call": "Sedang dalam panggilan lain",
 "chat_with": "Obrolan dengan %1$s",
 "in_call_chat_empty": "Kirim pesan, emoji, atau GIF sambil mengobrol.",
-"is_calling": "%1$s menelepon"
+"is_calling": "%1$s menelepon",
+"plus_perk_themes": "Tema Samudra dan Senja",
+"plus_perk_themes_body": "Dua tampilan tambahan untuk seluruh aplikasi. Terang dan Gelap tetap gratis.",
+"mark_read": "Tandai dibaca"
 }

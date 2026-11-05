@@ -498,6 +498,9 @@
     <string name="chat_with">Чат с %1$s</string>
     <string name="in_call_chat_empty">Отправьте сообщение, эмодзи или GIF прямо во время звонка.</string>
     <string name="is_calling">Звонит %1$s</string>
+    <string name="plus_perk_themes">Темы «Океан» и «Закат»</string>
+    <string name="plus_perk_themes_body">Два дополнительных оформления. Светлая и тёмная темы остаются бесплатными.</string>
+    <string name="mark_read">Прочитано</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s посетитель сегодня</item>
         <item quantity="other">%1$s посетителя сегодня</item>

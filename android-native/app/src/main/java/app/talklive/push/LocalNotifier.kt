@@ -71,15 +71,21 @@ class LocalNotifier @Inject constructor(
                 seen?.let { before ->
                     val fresh = all.filter { it.second.id !in before && !it.second.mine }
                     // A whole history arriving at once is not news.
-                    if (background() && fresh.size in 1..5) fresh.groupBy { it.first }.forEach { (who, msgs) ->
-                        val name = social.friends.value.firstOrNull { it.clientId == who }?.displayName
-                            ?: social.history.value.firstOrNull { it.clientId == who }?.displayName ?: "TalkLive"
-                        val m = msgs.last().second
-                        val text = when { m.gifUrl != null -> "GIF"; m.voiceMs != null -> context.getString(R.string.voice_message_short); else -> m.text }
-                        post("msg:$who", name, text, "chat:$who")
+                    if (fresh.size in 1..20) fresh.groupBy { it.first }.forEach { (who, msgs) ->
+                        // Like a messenger: nothing while that chat is on screen, nothing for muted chats.
+                        if (!background() && social.openChat == who) return@forEach
+                        if (who in social.muted.value) return@forEach
+                        msgs.forEach { (_, m) -> pending.getOrPut(who) { mutableListOf() }.add(Line(textOf(m), m.ts, false)) }
+                        if (background()) showConversation(who)
                     }
                 }
                 seen = ids
+            }
+        }
+        // Read on any device (or opened here): the notification goes, like WhatsApp.
+        scope.launch {
+            social.unread.collect { unread ->
+                pending.keys.filter { (unread[it] ?: 0) == 0 }.forEach { clearConversation(it) }
             }
         }
         scope.launch {
@@ -99,6 +105,83 @@ class LocalNotifier @Inject constructor(
                 if (inc == null) { nm.cancel(TAG_RING, 0); return@collect }
                 ring(inc.fromClientId, inc.username)
             }
+        }
+    }
+
+    private data class Line(val text: String, val ts: Long, val mine: Boolean)
+    /** Unread lines per chat, shown together in one notification per person. */
+    private val pending = java.util.concurrent.ConcurrentHashMap<String, MutableList<Line>>()
+
+    private fun textOf(m: app.talklive.social.ChatMessage) = when {
+        m.gifUrl != null -> "GIF"
+        m.voiceMs != null -> context.getString(R.string.voice_message_short)
+        else -> m.text
+    }
+
+    private fun nameOf(who: String) = social.friends.value.firstOrNull { it.clientId == who }?.displayName
+        ?: social.history.value.firstOrNull { it.clientId == who }?.displayName ?: "TalkLive"
+
+    fun clearConversation(who: String) {
+        pending.remove(who)
+        nm.cancel("msg:$who", 0)
+        if (pending.isEmpty()) nm.cancel(TAG_SUMMARY, 0)
+    }
+
+    /** After replying from the notification: show "You" under their messages, then settle. */
+    fun addMyReply(who: String, text: String) {
+        pending.getOrPut(who) { mutableListOf() }.add(Line(text, System.currentTimeMillis(), true))
+        showConversation(who, silent = true)
+    }
+
+    private fun showConversation(who: String, silent: Boolean = false) = runCatching {
+        val lines = pending[who] ?: return@runCatching
+        val name = nameOf(who)
+        val me = androidx.core.app.Person.Builder().setName(context.getString(R.string.you)).build()
+        val them = androidx.core.app.Person.Builder().setName(name).setKey(who).build()
+        val style = NotificationCompat.MessagingStyle(me)
+        lines.takeLast(8).forEach { l -> style.addMessage(l.text, l.ts, if (l.mine) me else them) }
+        val reply = androidx.core.app.RemoteInput.Builder(KEY_REPLY).setLabel(context.getString(R.string.reply)).build()
+        val replyIntent = PendingIntent.getBroadcast(
+            context, ("r$who").hashCode(),
+            Intent(context, MessageActionReceiver::class.java).setAction(ACTION_REPLY).putExtra(EXTRA_WHO, who),
+            PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val readIntent = PendingIntent.getBroadcast(
+            context, ("m$who").hashCode(),
+            Intent(context, MessageActionReceiver::class.java).setAction(ACTION_READ).putExtra(EXTRA_WHO, who),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val n = NotificationCompat.Builder(context, TalkLiveApplication.CHANNEL_MESSAGES)
+            .setSmallIcon(R.drawable.ic_stat_talklive)
+            .setColor(0xFF6C5CE7.toInt())
+            .setStyle(style)
+            .setContentIntent(open("chat:$who"))
+            .setAutoCancel(true)
+            .setOnlyAlertOnce(silent)
+            .setSilent(silent)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setGroup(GROUP_MESSAGES)
+            .setNumber(lines.count { !it.mine })
+            .addAction(
+                NotificationCompat.Action.Builder(0, context.getString(R.string.reply), replyIntent)
+                    .addRemoteInput(reply).setAllowGeneratedReplies(true)
+                    .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY).build(),
+            )
+            .addAction(
+                NotificationCompat.Action.Builder(0, context.getString(R.string.mark_read), readIntent)
+                    .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_MARK_AS_READ).setShowsUserInterface(false).build(),
+            )
+            .build()
+        nm.notify("msg:$who", 0, n)
+        // Several chats: one group, like other messengers.
+        if (pending.size > 1) {
+            val summary = NotificationCompat.Builder(context, TalkLiveApplication.CHANNEL_MESSAGES)
+                .setSmallIcon(R.drawable.ic_stat_talklive)
+                .setColor(0xFF6C5CE7.toInt())
+                .setGroup(GROUP_MESSAGES).setGroupSummary(true).setAutoCancel(true).setSilent(true)
+                .setStyle(NotificationCompat.InboxStyle().also { st -> pending.keys.forEach { st.addLine(nameOf(it)) } })
+                .build()
+            nm.notify(TAG_SUMMARY, 0, summary)
         }
     }
 
@@ -150,6 +233,12 @@ class LocalNotifier @Inject constructor(
 
     companion object {
         const val TAG_RING = "ring"
+        const val TAG_SUMMARY = "msg-summary"
+        const val GROUP_MESSAGES = "app.talklive.MESSAGES"
+        const val KEY_REPLY = "reply"
+        const val EXTRA_WHO = "who"
+        const val ACTION_REPLY = "app.talklive.REPLY"
+        const val ACTION_READ = "app.talklive.MARK_READ"
         const val ACTION_ACCEPT = "app.talklive.ACCEPT_CALL"
         const val ACTION_DECLINE = "app.talklive.DECLINE_CALL"
         const val EXTRA_OPEN = "open"
@@ -164,6 +253,27 @@ class CallActionReceiver : BroadcastReceiver() {
         if (intent.action == LocalNotifier.ACTION_DECLINE) {
             social.answer(false)
             NotificationManagerCompat.from(context).cancel(LocalNotifier.TAG_RING, 0)
+        }
+    }
+}
+
+/** Reply and Mark as read, straight from a message notification. */
+@AndroidEntryPoint
+class MessageActionReceiver : BroadcastReceiver() {
+    @Inject lateinit var social: SocialRepository
+    @Inject lateinit var notifier: LocalNotifier
+    override fun onReceive(context: Context, intent: Intent) {
+        val who = intent.getStringExtra(LocalNotifier.EXTRA_WHO) ?: return
+        when (intent.action) {
+            LocalNotifier.ACTION_REPLY -> {
+                val text = androidx.core.app.RemoteInput.getResultsFromIntent(intent)?.getCharSequence(LocalNotifier.KEY_REPLY)?.toString()?.trim()
+                if (!text.isNullOrBlank()) {
+                    social.send(who, text)
+                    social.markRead(who)
+                    notifier.addMyReply(who, text)
+                }
+            }
+            LocalNotifier.ACTION_READ -> { social.markRead(who); notifier.clearConversation(who) }
         }
     }
 }

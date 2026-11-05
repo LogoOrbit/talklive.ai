@@ -498,6 +498,9 @@
     <string name="chat_with">%1$s ile sohbet</string>
     <string name="in_call_chat_empty">Konuşurken mesaj, emoji ya da GIF gönder.</string>
     <string name="is_calling">%1$s arıyor</string>
+    <string name="plus_perk_themes">Okyanus ve Gün batımı temaları</string>
+    <string name="plus_perk_themes_body">Tüm uygulama için iki ek görünüm. Açık ve Koyu ücretsiz kalır.</string>
+    <string name="mark_read">Okundu olarak işaretle</string>
     <plurals name="visitors_today">
         <item quantity="one">Bugün %1$s ziyaretçi</item>
         <item quantity="other">Bugün %1$s ziyaretçi</item>

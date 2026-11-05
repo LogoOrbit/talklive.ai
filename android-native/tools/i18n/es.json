@@ -497,5 +497,8 @@
 "on_another_call": "En otra llamada",
 "chat_with": "Chat con %1$s",
 "in_call_chat_empty": "Envía un mensaje, un emoji o un GIF mientras hablas.",
-"is_calling": "%1$s te llama"
+"is_calling": "%1$s te llama",
+"plus_perk_themes": "Temas Océano y Atardecer",
+"plus_perk_themes_body": "Dos estilos más para toda la app. Claro y Oscuro siguen gratis.",
+"mark_read": "Marcar como leído"
 }

@@ -47,6 +47,7 @@ import androidx.compose.material.icons.rounded.FilterAlt
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Undo
 import androidx.compose.material.icons.rounded.Verified
+import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -151,6 +152,7 @@ private val PERKS = listOf(
     Perk(Icons.Rounded.Undo, R.string.plus_perk_undo, R.string.plus_perk_undo_body),
     Perk(Icons.Rounded.Bolt, R.string.plus_perk_queue, R.string.plus_perk_queue_body),
     Perk(Icons.Rounded.LocalFireDepartment, R.string.plus_perk_streak, R.string.plus_perk_streak_body),
+    Perk(Icons.Rounded.Palette, R.string.plus_perk_themes, R.string.plus_perk_themes_body),
     Perk(Icons.Rounded.Verified, R.string.plus_perk_badge, R.string.plus_perk_badge_body),
 )
 
@@ -368,6 +370,17 @@ private fun PerkPreview(page: Int) {
             Text("🔥", fontSize = 40.sp)
             Text(" 12", style = MaterialTheme.typography.headlineMedium.copy(brush = GoldBrush), fontWeight = FontWeight.Black)
         }
+        // Ocean and Sunset: the two Plus themes, as little screens.
+        5 -> Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            listOf(
+                Triple(Color(0xFF03151F), Color(0xFF06B6D4), Color(0xFF3B82F6)),
+                Triple(Color(0xFF1A0B14), Color(0xFFF97316), Color(0xFFEC4899)),
+            ).forEach { (bg, a, b) ->
+                Box(Modifier.size(width = 64.dp, height = 104.dp).clip(RoundedCornerShape(14.dp)).background(bg), contentAlignment = Alignment.Center) {
+                    Box(Modifier.size(30.dp).clip(CircleShape).background(Brush.linearGradient(listOf(a, b))))
+                }
+            }
+        }
         else -> Row(verticalAlignment = Alignment.CenterVertically) {
             app.talklive.ui.animals.AnimalAvatar("lion", null, 56.dp)
             Spacer(Modifier.width(12.dp))
@@ -389,6 +402,7 @@ private fun CompareTable(modifier: Modifier = Modifier) {
         R.string.plus_perk_undo to false,
         R.string.plus_perk_queue to false,
         R.string.plus_perk_streak to false,
+        R.string.plus_perk_themes to false,
     )
     Surface(shape = RoundedCornerShape(24.dp), color = Color.White.copy(alpha = 0.05f), modifier = modifier.fillMaxWidth()) {
         Column(Modifier.padding(vertical = 8.dp)) {

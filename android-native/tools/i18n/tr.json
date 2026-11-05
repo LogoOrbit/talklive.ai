@@ -497,5 +497,8 @@
 "on_another_call": "Başka bir aramada",
 "chat_with": "%1$s ile sohbet",
 "in_call_chat_empty": "Konuşurken mesaj, emoji ya da GIF gönder.",
-"is_calling": "%1$s arıyor"
+"is_calling": "%1$s arıyor",
+"plus_perk_themes": "Okyanus ve Gün batımı temaları",
+"plus_perk_themes_body": "Tüm uygulama için iki ek görünüm. Açık ve Koyu ücretsiz kalır.",
+"mark_read": "Okundu olarak işaretle"
 }
