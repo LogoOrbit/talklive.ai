@@ -475,5 +475,6 @@
 "plus_trial_then_year": "%1$d일 무료, 이후 연 %2$s",
 "plus_trial_then_month": "%1$d일 무료, 이후 월 %2$s",
 "plus_price_year": "연 %1$s",
-"plus_price_month": "월 %1$s"
+"plus_price_month": "월 %1$s",
+"request_sent": "요청 보냄"
 }

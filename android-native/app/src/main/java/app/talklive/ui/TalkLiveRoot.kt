@@ -361,6 +361,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                     onTyping = vm::typing,
                     onReact = vm::reactToMessage,
                     onAddFriend = { partnerId?.let { social.sendRequest(it) } },
+                    onRequestPending = { scope.launch { snackbar.say(context.getString(R.string.waiting_accept, (state.phase as? CallPhase.Connected)?.partner?.username ?: "")) } },
                     onReport = vm::report,
                     onNext = onNext,
                     onEnd = vm::end,

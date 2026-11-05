@@ -476,5 +476,6 @@
 "plus_trial_then_year": "%1$d দিন বিনামূল্যে, তারপর বছরে %2$s",
 "plus_trial_then_month": "%1$d দিন বিনামূল্যে, তারপর মাসে %2$s",
 "plus_price_year": "বছরে %1$s",
-"plus_price_month": "মাসে %1$s"
+"plus_price_month": "মাসে %1$s",
+"request_sent": "অনুরোধ পাঠানো হয়েছে"
 }

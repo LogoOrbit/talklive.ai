@@ -477,6 +477,7 @@
     <string name="plus_trial_then_month">%1$d दिन मुफ़्त, फिर %2$s प्रति माह</string>
     <string name="plus_price_year">%1$s प्रति वर्ष</string>
     <string name="plus_price_month">%1$s प्रति माह</string>
+    <string name="request_sent">अनुरोध भेजा गया</string>
     <plurals name="visitors_today">
         <item quantity="one">आज %1$s विज़िटर</item>
         <item quantity="other">आज %1$s विज़िटर</item>

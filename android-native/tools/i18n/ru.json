@@ -478,5 +478,6 @@
 "plus_trial_then_year": "%1$d дн. бесплатно, затем %2$s в год",
 "plus_trial_then_month": "%1$d дн. бесплатно, затем %2$s в месяц",
 "plus_price_year": "%1$s в год",
-"plus_price_month": "%1$s в месяц"
+"plus_price_month": "%1$s в месяц",
+"request_sent": "Заявка отправлена"
 }

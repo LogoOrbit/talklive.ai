@@ -48,6 +48,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Call
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Flag
 import androidx.compose.material.icons.rounded.HourglassTop
 import androidx.compose.material.icons.rounded.HowToReg
@@ -112,6 +113,7 @@ fun TextChatScreen(
     onTyping: () -> Unit,
     onReact: (String, String) -> Unit,
     onAddFriend: () -> Unit,
+    onRequestPending: () -> Unit = {},
     onReport: (String) -> Unit,
     onNext: () -> Unit,
     onEnd: () -> Unit,
@@ -262,12 +264,14 @@ fun TextChatScreen(
                 }
             }
             val friendLabel = stringResource(
-                when (friendStatus) { FriendStatus.Friends -> R.string.friends_label; FriendStatus.Requested -> R.string.requested; FriendStatus.None -> R.string.add_friend },
+                when (friendStatus) { FriendStatus.Friends -> R.string.friends_label; FriendStatus.Requested -> R.string.request_sent; FriendStatus.None -> R.string.add_friend },
             )
             val actions = buildList {
                 add(ChatAction(
-                    when (friendStatus) { FriendStatus.Friends -> Icons.Rounded.HowToReg; FriendStatus.Requested -> Icons.Rounded.HourglassTop; FriendStatus.None -> Icons.Rounded.PersonAdd },
-                    friendLabel, enabled = friendStatus == FriendStatus.None, onClick = onAddFriend,
+                    when (friendStatus) { FriendStatus.Friends -> Icons.Rounded.HowToReg; FriendStatus.Requested -> Icons.Rounded.Check; FriendStatus.None -> Icons.Rounded.PersonAdd },
+                    friendLabel, enabled = friendStatus != FriendStatus.Friends, keepOpen = true,
+                    done = friendStatus == FriendStatus.Requested,
+                    onClick = { if (friendStatus == FriendStatus.None) onAddFriend() else onRequestPending() },
                 ))
                 if (onSwitchToVoice != null) add(ChatAction(Icons.Rounded.Call, stringResource(R.string.voice_call_short), enabled = !state.voiceInviteSent, onClick = onSwitchToVoice))
                 if (onGames != null) add(ChatAction(Icons.Rounded.SportsEsports, stringResource(R.string.games_short), onClick = onGames))

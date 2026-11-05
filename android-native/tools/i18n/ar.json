@@ -476,5 +476,6 @@
 "plus_trial_then_year": "%1$d أيام مجانًا، ثم %2$s سنويًا",
 "plus_trial_then_month": "%1$d أيام مجانًا، ثم %2$s شهريًا",
 "plus_price_year": "%1$s سنويًا",
-"plus_price_month": "%1$s شهريًا"
+"plus_price_month": "%1$s شهريًا",
+"request_sent": "تم إرسال الطلب"
 }

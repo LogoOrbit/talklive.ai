@@ -43,6 +43,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Male
+import androidx.compose.material.icons.rounded.Female
+import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Lock
@@ -370,11 +373,7 @@ fun FiltersSheet(current: Filters, premium: Boolean, onApply: (Filters) -> Unit,
                     "💜", stringResource(R.string.match_with), if (premium) null else stringResource(R.string.filters_gender_hint),
                     onClear = if (f.prefGender != "any") ({ f = f.copy(prefGender = "any") }) else null,
                 ) {
-                    val opts = listOf("any" to R.string.anyone, "female" to R.string.women, "male" to R.string.men)
-                    Segmented(
-                        opts.map { (g, label) -> stringResource(label) + if (!premium && g != "any") " 🔒" else "" },
-                        opts.indexOfFirst { it.first == f.prefGender }.coerceAtLeast(0),
-                    ) { idx -> val g = opts[idx].first; if (premium || g == "any") f = f.copy(prefGender = g) else onPlus() }
+                    GenderPicker(f.prefGender, premium) { g -> if (premium || g == "any") f = f.copy(prefGender = g) else onPlus() }
                 }
                 Spacer(Modifier.height(12.dp))
             }
@@ -534,6 +533,51 @@ private fun InlineField(value: String, onChange: (String) -> Unit, hint: String,
             )
         }
         if (onDone != null && value.isNotBlank()) IconButton(onClick = onDone) { Icon(Icons.Rounded.Add, null, tint = MaterialTheme.colorScheme.primary) }
+    }
+}
+
+/**
+ * Who to meet, readable without reading: a colour and a symbol for each
+ * (pink female sign for women, blue male sign for men, a group for anyone).
+ */
+@Composable
+private fun GenderPicker(selected: String, premium: Boolean, onPick: (String) -> Unit) {
+    data class Opt(val id: String, val label: Int, val icon: androidx.compose.ui.graphics.vector.ImageVector, val color: Color)
+    val opts = listOf(
+        Opt("any", R.string.anyone, Icons.Rounded.Groups, Color(0xFF8B5CF6)),
+        Opt("female", R.string.women, Icons.Rounded.Female, Color(0xFFEC4899)),
+        Opt("male", R.string.men, Icons.Rounded.Male, Color(0xFF3B82F6)),
+    )
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        opts.forEach { o ->
+            val on = selected == o.id
+            val locked = !premium && o.id != "any"
+            val border by androidx.compose.animation.animateColorAsState(if (on) o.color else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), label = "b")
+            Column(
+                Modifier.weight(1f).clip(RoundedCornerShape(18.dp))
+                    .background(if (on) o.color.copy(alpha = 0.16f) else MaterialTheme.colorScheme.background)
+                    .border(2.dp, border, RoundedCornerShape(18.dp))
+                    .clickable { app.talklive.sound.Tap.soft(); onPick(o.id) }
+                    .padding(vertical = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Box {
+                    Box(Modifier.size(48.dp).clip(CircleShape).background(o.color), contentAlignment = Alignment.Center) {
+                        Icon(o.icon, null, tint = Color.White, modifier = Modifier.size(30.dp))
+                    }
+                    if (locked) Box(
+                        Modifier.align(Alignment.BottomEnd).size(20.dp).clip(CircleShape).background(Color(0xFFF2C14E)),
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(Icons.Rounded.Lock, null, tint = Color(0xFF2B1D00), modifier = Modifier.size(12.dp)) }
+                    if (on) Box(
+                        Modifier.align(Alignment.TopEnd).size(20.dp).clip(CircleShape).background(Color.White),
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(Icons.Rounded.Check, null, tint = o.color, modifier = Modifier.size(14.dp)) }
+                }
+                Spacer(Modifier.height(8.dp))
+                Text(stringResource(o.label), style = MaterialTheme.typography.labelLarge, color = if (on) o.color else MaterialTheme.colorScheme.onSurface)
+            }
+        }
     }
 }
 

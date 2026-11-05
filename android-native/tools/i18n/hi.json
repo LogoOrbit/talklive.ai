@@ -476,5 +476,6 @@
 "plus_trial_then_year": "%1$d दिन मुफ़्त, फिर %2$s प्रति वर्ष",
 "plus_trial_then_month": "%1$d दिन मुफ़्त, फिर %2$s प्रति माह",
 "plus_price_year": "%1$s प्रति वर्ष",
-"plus_price_month": "%1$s प्रति माह"
+"plus_price_month": "%1$s प्रति माह",
+"request_sent": "अनुरोध भेजा गया"
 }

@@ -476,5 +476,6 @@
 "plus_trial_then_year": "%1$d hari gratis, lalu %2$s per tahun",
 "plus_trial_then_month": "%1$d hari gratis, lalu %2$s per bulan",
 "plus_price_year": "%1$s per tahun",
-"plus_price_month": "%1$s per bulan"
+"plus_price_month": "%1$s per bulan",
+"request_sent": "Permintaan terkirim"
 }

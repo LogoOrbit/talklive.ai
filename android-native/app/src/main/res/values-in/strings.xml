@@ -477,6 +477,7 @@
     <string name="plus_trial_then_month">%1$d hari gratis, lalu %2$s per bulan</string>
     <string name="plus_price_year">%1$s per tahun</string>
     <string name="plus_price_month">%1$s per bulan</string>
+    <string name="request_sent">Permintaan terkirim</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s pengunjung hari ini</item>
         <item quantity="other">%1$s pengunjung hari ini</item>

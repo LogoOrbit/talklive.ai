@@ -476,5 +476,6 @@
 "plus_trial_then_year": "%1$d días gratis, luego %2$s al año",
 "plus_trial_then_month": "%1$d días gratis, luego %2$s al mes",
 "plus_price_year": "%1$s al año",
-"plus_price_month": "%1$s al mes"
+"plus_price_month": "%1$s al mes",
+"request_sent": "Solicitud enviada"
 }

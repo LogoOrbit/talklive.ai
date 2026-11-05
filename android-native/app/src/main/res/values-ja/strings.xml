@@ -477,6 +477,7 @@
     <string name="plus_trial_then_month">%1$d日間無料、その後は月額%2$s</string>
     <string name="plus_price_year">年額%1$s</string>
     <string name="plus_price_month">月額%1$s</string>
+    <string name="request_sent">リクエスト送信済み</string>
     <plurals name="visitors_today">
         <item quantity="other">今日の訪問者 %1$s人</item>
     </plurals>

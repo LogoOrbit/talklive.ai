@@ -59,6 +59,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -88,7 +91,17 @@ import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.delay
 
 /** One tile in the "+" tray: a big, labelled button anyone can understand. */
-data class ChatAction(val icon: ImageVector, val label: String, val tint: Color? = null, val enabled: Boolean = true, val onClick: () -> Unit)
+data class ChatAction(
+    val icon: ImageVector,
+    val label: String,
+    val tint: Color? = null,
+    val enabled: Boolean = true,
+    /** Stays open after a tap, so the tile can show what happened (e.g. "Request sent"). */
+    val keepOpen: Boolean = false,
+    /** Done state: green with a check, still tappable for a reminder. */
+    val done: Boolean = false,
+    val onClick: () -> Unit,
+)
 
 private enum class Panel { None, Actions, Emoji, Gif }
 
@@ -233,16 +246,36 @@ private fun ActionTray(actions: List<ChatAction>, close: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(14.dp),
         modifier = Modifier.fillMaxSize(),
     ) {
-        items(actions) { a ->
+        items(actions, key = { it.label + it.icon.name }) { a ->
+            val bounce = remember { androidx.compose.animation.core.Animatable(1f) }
+            val scope = rememberCoroutineScope()
             Column(
-                Modifier.clip(RoundedCornerShape(16.dp)).clickable(enabled = a.enabled) { close(); a.onClick() }.padding(vertical = 6.dp),
+                Modifier.clip(RoundedCornerShape(16.dp)).clickable(enabled = a.enabled) {
+                    app.talklive.sound.Tap.pop()
+                    scope.launch {
+                        bounce.animateTo(0.82f, androidx.compose.animation.core.tween(70))
+                        bounce.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = 0.35f, stiffness = 500f))
+                    }
+                    if (!a.keepOpen) close()
+                    a.onClick()
+                }.padding(vertical = 6.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
+                val bg = when {
+                    a.done -> SolidColor(app.talklive.ui.theme.Success)
+                    !a.enabled -> SolidColor(MaterialTheme.colorScheme.surfaceVariant)
+                    else -> a.tint?.let { SolidColor(it) } ?: BrandGradient
+                }
                 Box(
-                    Modifier.size(56.dp).clip(RoundedCornerShape(18.dp))
-                        .background(if (!a.enabled) SolidColor(MaterialTheme.colorScheme.surfaceVariant) else a.tint?.let { SolidColor(it) } ?: BrandGradient),
+                    Modifier.size(56.dp).graphicsLayer { scaleX = bounce.value; scaleY = bounce.value }.clip(RoundedCornerShape(18.dp)).background(bg),
                     contentAlignment = Alignment.Center,
-                ) { Icon(a.icon, null, tint = if (a.enabled) Color.White else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(26.dp)) }
+                ) {
+                    androidx.compose.animation.AnimatedContent(a.icon, transitionSpec = {
+                        (androidx.compose.animation.scaleIn(initialScale = 0.4f) + androidx.compose.animation.fadeIn()) togetherWith androidx.compose.animation.fadeOut()
+                    }, label = "tile") { icon ->
+                        Icon(icon, null, tint = if (a.enabled) Color.White else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(26.dp))
+                    }
+                }
                 Spacer(Modifier.height(6.dp))
                 Text(
                     a.label, style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center, maxLines = 2,

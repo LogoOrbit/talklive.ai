@@ -483,4 +483,5 @@
     <string name="plus_trial_then_month">%1$d days free, then %2$s a month</string>
     <string name="plus_price_year">%1$s a year</string>
     <string name="plus_price_month">%1$s a month</string>
+    <string name="request_sent">Request sent</string>
 </resources>

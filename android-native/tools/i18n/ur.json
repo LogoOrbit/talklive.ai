@@ -476,5 +476,6 @@
 "plus_trial_then_year": "%1$d دن مفت، پھر %2$s سالانہ",
 "plus_trial_then_month": "%1$d دن مفت، پھر %2$s ماہانہ",
 "plus_price_year": "%1$s سالانہ",
-"plus_price_month": "%1$s ماہانہ"
+"plus_price_month": "%1$s ماہانہ",
+"request_sent": "درخواست بھیج دی گئی"
 }
