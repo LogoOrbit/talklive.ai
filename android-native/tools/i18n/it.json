@@ -529,5 +529,13 @@
 "vn_accept_trust": "Accetta solo se conosci questa persona e ti fidi. Non devi un sì a nessuno.",
 "vn_accept_scams": "Non inviare mai soldi, codici, foto o dati personali perché qualcuno li chiede in un messaggio vocale.",
 "vn_accept_turn_off": "Puoi disattivare i messaggi vocali in qualsiasi momento. Rimuovere o bloccare %1$s li disattiva.",
-"vn_accept_agree": "Capisco i rischi e accetto le regole dei messaggi vocali"
+"vn_accept_agree": "Capisco i rischi e accetto le regole dei messaggi vocali",
+"pass_heading": "Oppure prendi Plus per qualche giorno",
+"pass_sub": "Paghi una volta. Nulla si rinnova.",
+"pass_popular": "Popolare",
+"pass_best": "Più conveniente",
+"pass_buy": "%1$d giorni a %2$s",
+"pass_once": "Pagamento unico. Nessun abbonamento.",
+"pass_days#one": "giorno",
+"pass_days#other": "giorni"
 }

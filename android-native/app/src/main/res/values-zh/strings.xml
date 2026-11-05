@@ -530,7 +530,17 @@
     <string name="vn_accept_scams">不要因为有人在语音消息中索要，就发送钱、验证码、照片或个人信息。</string>
     <string name="vn_accept_turn_off">你可以随时关闭语音消息。移除或屏蔽 %1$s 也会关闭。</string>
     <string name="vn_accept_agree">我了解风险并同意语音消息规则</string>
+    <string name="pass_heading">或者只买几天 Plus</string>
+    <string name="pass_sub">只需付一次，不会自动续订。</string>
+    <string name="pass_popular">热门</string>
+    <string name="pass_best">最划算</string>
+    <string name="pass_buy">%1$d 天 %2$s</string>
+    <string name="pass_once">一次性付款，非订阅。</string>
     <plurals name="visitors_today">
         <item quantity="other">今日访客 %1$s 人</item>
+    </plurals>
+    <plurals name="pass_days">
+        <item quantity="one">天</item>
+        <item quantity="other">天</item>
     </plurals>
 </resources>

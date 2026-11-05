@@ -530,8 +530,18 @@
     <string name="vn_accept_scams">Jangan pernah mengirim uang, kode, foto, atau data pribadi karena diminta lewat pesan suara.</string>
     <string name="vn_accept_turn_off">Kamu bisa mematikan pesan suara kapan saja. Menghapus atau memblokir %1$s juga mematikannya.</string>
     <string name="vn_accept_agree">Saya memahami risikonya dan menyetujui kebijakan pesan suara</string>
+    <string name="pass_heading">Atau dapatkan Plus untuk beberapa hari</string>
+    <string name="pass_sub">Bayar sekali. Tidak diperpanjang otomatis.</string>
+    <string name="pass_popular">Populer</string>
+    <string name="pass_best">Paling hemat</string>
+    <string name="pass_buy">%1$d hari seharga %2$s</string>
+    <string name="pass_once">Pembayaran sekali. Tanpa langganan.</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s pengunjung hari ini</item>
         <item quantity="other">%1$s pengunjung hari ini</item>
+    </plurals>
+    <plurals name="pass_days">
+        <item quantity="one">hari</item>
+        <item quantity="other">hari</item>
     </plurals>
 </resources>

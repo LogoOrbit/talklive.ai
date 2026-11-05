@@ -530,8 +530,18 @@
     <string name="vn_accept_scams">Biri sesli mesajda istedi diye asla para, kod, fotoğraf veya kişisel bilgi gönderme.</string>
     <string name="vn_accept_turn_off">Sesli mesajları istediğin zaman kapatabilirsin. %1$s kişisini silmek veya engellemek de kapatır.</string>
     <string name="vn_accept_agree">Riskleri anlıyorum ve sesli mesaj politikasını kabul ediyorum</string>
+    <string name="pass_heading">Ya da birkaç günlüğüne Plus al</string>
+    <string name="pass_sub">Bir kez öde. Hiçbir şey yenilenmez.</string>
+    <string name="pass_popular">Popüler</string>
+    <string name="pass_best">En avantajlı</string>
+    <string name="pass_buy">%2$s karşılığında %1$d gün</string>
+    <string name="pass_once">Tek seferlik ödeme. Abonelik yok.</string>
     <plurals name="visitors_today">
         <item quantity="one">Bugün %1$s ziyaretçi</item>
         <item quantity="other">Bugün %1$s ziyaretçi</item>
+    </plurals>
+    <plurals name="pass_days">
+        <item quantity="one">gün</item>
+        <item quantity="other">gün</item>
     </plurals>
 </resources>

@@ -530,8 +530,18 @@
     <string name="vn_accept_scams">هرگز به‌خاطر درخواست کسی در پیام صوتی پول، کد، عکس یا اطلاعات شخصی نفرستید.</string>
     <string name="vn_accept_turn_off">هر زمان می‌توانید پیام صوتی را خاموش کنید. حذف یا مسدود کردن %1$s هم آن را خاموش می‌کند.</string>
     <string name="vn_accept_agree">خطرات را می‌فهمم و با قوانین پیام صوتی موافقم</string>
+    <string name="pass_heading">یا Plus را برای چند روز بگیرید</string>
+    <string name="pass_sub">یک بار پرداخت کنید. چیزی تمدید نمی‌شود.</string>
+    <string name="pass_popular">محبوب</string>
+    <string name="pass_best">بهترین ارزش</string>
+    <string name="pass_buy">%1$d روز به قیمت %2$s</string>
+    <string name="pass_once">پرداخت یک‌باره. بدون اشتراک.</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s بازدیدکننده امروز</item>
         <item quantity="other">%1$s بازدیدکننده امروز</item>
+    </plurals>
+    <plurals name="pass_days">
+        <item quantity="one">روز</item>
+        <item quantity="other">روز</item>
     </plurals>
 </resources>

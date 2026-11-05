@@ -110,6 +110,49 @@ function nextPremium(existing, decision, token, now = Date.now()) {
   return { op: 'set', info: { lastEvent: 'play:active', expiresAt, source: 'play', playToken: tokenHash } };
 }
 
+// One-time passes: Plus for a fixed number of days, no renewal. Product IDs
+// as created in Play Console (Monetize > Products > In-app products).
+const PASS_DAYS = { pass_1d: 1, pass_7d: 7, pass_15d: 15 };
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * The next premium record after buying a pass of `days`: added on top of any
+ * active time (Plus, an earlier pass, a referral), so nothing paid for is lost.
+ * A permanent grant stays permanent. Returns { op, info } like nextPremium.
+ */
+function nextPassPremium(existing, days, token, now = Date.now()) {
+  if (!days || days <= 0) return { op: 'skip', reason: 'unknown pass' };
+  const tokenHash = crypto.createHash('sha256').update(String(token)).digest('hex').slice(0, 32);
+  const active = !!existing && !existing.revokedAt && (!existing.expiresAt || existing.expiresAt > now);
+  if (active && !existing.expiresAt) return { op: 'set', info: { lastEvent: 'play:pass' } };
+  const base = active ? existing.expiresAt : now;
+  return {
+    op: 'set',
+    info: {
+      lastEvent: 'play:pass',
+      expiresAt: base + days * DAY_MS,
+      // Marked as a pass: a later subscription renewal keeps the longer date
+      // (nextPremium takes the max for non-'play' sources) and a cancel cannot
+      // take away pass days that were paid for.
+      source: 'play-pass',
+      passToken: tokenHash,
+    },
+  };
+}
+
+/** Summary of a one-time purchase (purchases.products). */
+function summariseProduct(p) {
+  if (!p) return null;
+  return {
+    purchased: Number(p.purchaseState) === 0,
+    pending: Number(p.purchaseState) === 2,
+    consumed: Number(p.consumptionState) === 1,
+    acknowledged: Number(p.acknowledgementState) === 1,
+    accountId: p.obfuscatedExternalAccountId || '',
+    orderId: p.orderId || '',
+  };
+}
+
 /**
  * Google Play Developer API client. `fetchImpl` and `getAccessToken` can be
  * replaced in tests.
@@ -157,6 +200,14 @@ function createPlayBilling({
     async lookup(purchaseToken) {
       return summarise(await call('GET', `purchases/subscriptionsv2/tokens/${encodeURIComponent(purchaseToken)}`));
     },
+    /** A one-time purchase (a pass), summarised. */
+    async lookupProduct(productId, purchaseToken) {
+      return summariseProduct(await call('GET', `purchases/products/${encodeURIComponent(productId)}/tokens/${encodeURIComponent(purchaseToken)}`));
+    },
+    /** Uses up a pass, so it can be bought again (also acknowledges it). */
+    async consume(productId, purchaseToken) {
+      await call('POST', `purchases/products/${encodeURIComponent(productId)}/tokens/${encodeURIComponent(purchaseToken)}:consume`, {});
+    },
     /** Play refunds purchases not acknowledged within 3 days. */
     async acknowledge(productId, purchaseToken) {
       await call('POST', `purchases/subscriptions/${encodeURIComponent(productId)}/tokens/${encodeURIComponent(purchaseToken)}:acknowledge`, {});
@@ -178,4 +229,4 @@ function parseRtdn(body) {
   }
 }
 
-module.exports = { createPlayBilling, summarise, decide, nextPremium, accountIdFor, validToken, parseRtdn, ENTITLED, ENDED };
+module.exports = { createPlayBilling, summarise, summariseProduct, nextPassPremium, PASS_DAYS, decide, nextPremium, accountIdFor, validToken, parseRtdn, ENTITLED, ENDED };

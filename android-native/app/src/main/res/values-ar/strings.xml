@@ -530,6 +530,12 @@
     <string name="vn_accept_scams">لا ترسل أبدًا مالًا أو رموزًا أو صورًا أو بيانات شخصية لأن أحدًا طلبها في رسالة صوتية.</string>
     <string name="vn_accept_turn_off">يمكنك إيقاف الرسائل الصوتية في أي وقت. إزالة %1$s أو حظره يوقفها أيضًا.</string>
     <string name="vn_accept_agree">أفهم المخاطر وأوافق على سياسة الرسائل الصوتية</string>
+    <string name="pass_heading">أو احصل على Plus لبضعة أيام</string>
+    <string name="pass_sub">ادفع مرة واحدة. لا يتجدد شيء.</string>
+    <string name="pass_popular">الأكثر شيوعًا</string>
+    <string name="pass_best">أفضل قيمة</string>
+    <string name="pass_buy">احصل على %1$d يوم مقابل %2$s</string>
+    <string name="pass_once">دفعة واحدة. بدون اشتراك.</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s زائر اليوم</item>
         <item quantity="other">%1$s زائر اليوم</item>
@@ -537,5 +543,13 @@
         <item quantity="two">%1$s زائر اليوم</item>
         <item quantity="few">%1$s زائر اليوم</item>
         <item quantity="many">%1$s زائر اليوم</item>
+    </plurals>
+    <plurals name="pass_days">
+        <item quantity="one">يوم</item>
+        <item quantity="other">أيام</item>
+        <item quantity="zero">أيام</item>
+        <item quantity="two">أيام</item>
+        <item quantity="few">أيام</item>
+        <item quantity="many">أيام</item>
     </plurals>
 </resources>

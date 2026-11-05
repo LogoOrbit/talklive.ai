@@ -530,8 +530,18 @@
     <string name="vn_accept_scams">کوئی وائس میسج میں مانگے تب بھی کبھی پیسے، کوڈ، تصاویر یا ذاتی معلومات نہ بھیجیں۔</string>
     <string name="vn_accept_turn_off">آپ کسی بھی وقت وائس میسجز بند کر سکتے ہیں۔ %1$s کو ہٹانے یا بلاک کرنے سے بھی بند ہو جاتے ہیں۔</string>
     <string name="vn_accept_agree">میں خطرات سمجھتا/سمجھتی ہوں اور وائس میسج پالیسی سے متفق ہوں</string>
+    <string name="pass_heading">یا چند دنوں کے لیے Plus لیں</string>
+    <string name="pass_sub">ایک بار ادائیگی کریں۔ کچھ بھی رینیو نہیں ہوتا۔</string>
+    <string name="pass_popular">مقبول</string>
+    <string name="pass_best">بہترین قیمت</string>
+    <string name="pass_buy">%2$s میں %1$d دن</string>
+    <string name="pass_once">ایک بار کی ادائیگی۔ کوئی سبسکرپشن نہیں۔</string>
     <plurals name="visitors_today">
         <item quantity="one">آج %1$s وزیٹر</item>
         <item quantity="other">آج %1$s وزیٹرز</item>
+    </plurals>
+    <plurals name="pass_days">
+        <item quantity="one">دن</item>
+        <item quantity="other">دن</item>
     </plurals>
 </resources>

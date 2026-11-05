@@ -536,4 +536,14 @@
     <string name="calling_short">Calling…</string>
     <string name="adult_consent">I\'m 18 or older. I agree to the Terms, Privacy Policy and Community Guidelines, and I\'m responsible for what I say and share.</string>
     <string name="vn_agree_and_ask">Agree &amp; ask %1$s</string>
+    <string name="pass_heading">Or get Plus for a few days</string>
+    <string name="pass_sub">Pay once. Nothing renews.</string>
+    <string name="pass_popular">Popular</string>
+    <string name="pass_best">Best value</string>
+    <string name="pass_buy">Get %1$d days for %2$s</string>
+    <string name="pass_once">One-time payment. No subscription.</string>
+    <plurals name="pass_days">
+        <item quantity="one">day</item>
+        <item quantity="other">days</item>
+    </plurals>
 </resources>

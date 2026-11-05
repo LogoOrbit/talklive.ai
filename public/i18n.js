@@ -358,6 +358,9 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "shopTitle": "Shop",
     "shopRowSub": "Match passes",
     "shopFreeNote": "Everything on TalkLive is free. Passes are not on sale yet.",
+    "passAllPlus": "Every Plus feature",
+    "shopAppNote": "Buy passes and Plus in the TalkLive Android app. They work here too when you sign in.",
+    "shopPlusLine": "Or TalkLive Plus: $10 a month",
     "passTitle": "Choose your pass",
     "passName": "{days}-Day Pass",
     "passIncluded": "Included with every pass",
@@ -1189,7 +1192,7 @@ function applyI18n() {
 // Non-English dictionaries load on demand from /i18n/<lang>.js. Until the file
 // arrives t() falls back to English, then the UI re-translates once it lands.
 // Keep in step with the preload snippet in the <head> of index.html/chat.html.
-const I18N_VERSION = '20261105themes';
+const I18N_VERSION = '20261106passes';
 const i18nLoading = {};
 window.__i18nLangLoaded = function (lang) {
   delete i18nLoading[lang];

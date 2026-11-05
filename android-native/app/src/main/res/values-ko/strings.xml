@@ -530,7 +530,17 @@
     <string name="vn_accept_scams">음성 메시지로 요청받더라도 돈, 인증 코드, 사진, 개인 정보는 절대 보내지 마세요.</string>
     <string name="vn_accept_turn_off">음성 메시지는 언제든 끌 수 있어요. %1$s 님을 삭제하거나 차단해도 꺼져요.</string>
     <string name="vn_accept_agree">위험을 이해하며 음성 메시지 정책에 동의합니다</string>
+    <string name="pass_heading">또는 며칠만 Plus 이용하기</string>
+    <string name="pass_sub">한 번만 결제. 자동 갱신 없음.</string>
+    <string name="pass_popular">인기</string>
+    <string name="pass_best">최고 가성비</string>
+    <string name="pass_buy">%1$d일 %2$s</string>
+    <string name="pass_once">1회 결제. 구독 아님.</string>
     <plurals name="visitors_today">
         <item quantity="other">오늘 방문자 %1$s명</item>
+    </plurals>
+    <plurals name="pass_days">
+        <item quantity="one">일</item>
+        <item quantity="other">일</item>
     </plurals>
 </resources>

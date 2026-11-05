@@ -529,5 +529,13 @@
 "vn_accept_trust": "Sadece bu kişiyi tanıyor ve güveniyorsan kabul et. Kimseye evet demek zorunda değilsin.",
 "vn_accept_scams": "Biri sesli mesajda istedi diye asla para, kod, fotoğraf veya kişisel bilgi gönderme.",
 "vn_accept_turn_off": "Sesli mesajları istediğin zaman kapatabilirsin. %1$s kişisini silmek veya engellemek de kapatır.",
-"vn_accept_agree": "Riskleri anlıyorum ve sesli mesaj politikasını kabul ediyorum"
+"vn_accept_agree": "Riskleri anlıyorum ve sesli mesaj politikasını kabul ediyorum",
+"pass_heading": "Ya da birkaç günlüğüne Plus al",
+"pass_sub": "Bir kez öde. Hiçbir şey yenilenmez.",
+"pass_popular": "Popüler",
+"pass_best": "En avantajlı",
+"pass_buy": "%2$s karşılığında %1$d gün",
+"pass_once": "Tek seferlik ödeme. Abonelik yok.",
+"pass_days#one": "gün",
+"pass_days#other": "gün"
 }

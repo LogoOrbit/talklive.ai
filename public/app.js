@@ -2635,18 +2635,15 @@ function renderSettingsProfileRow() {
 }
 
 // --- Shop ------------------------------------------------------------------
-// Match passes are not on sale and nothing here can be bought: TalkLive is
-// free. The screen exists so the shape of it is visible, which is why every
-// tier is selectable but the buy button stays disabled.
-// Match Pass: time-boxed Gender filter + queue priority, one-time payment.
-// Selectable so the shape is visible, never purchasable.
+// Passes: every Plus feature for 1, 7 or 15 days, one-time payment. They are
+// bought in the Android app through Google Play (the same prices as /pricing);
+// the button here opens the pricing page that explains it.
 const SHOP_PASSES = [
-  { id: 'd1', days: 1, price: '$4.99', was: '$6.99', tierKey: 'passTierQuick', tagKey: 'passTagEntry' },
-  { id: 'd7', days: 7, price: '$8.99', was: '$19.99', tierKey: 'passTierHigher', tagKey: 'passTagDeal' },
-  { id: 'd14', days: 14, price: '$14.99', was: '$34.99', tierKey: 'passTierHighest', tagKey: 'passTagPopular' },
-  { id: 'd30', days: 30, price: '$24.99', was: '$59.99', tierKey: 'passTierLongest', tagKey: 'passTagMax' },
+  { id: 'd1', days: 1, price: '$2', tagKey: 'passTagEntry' },
+  { id: 'd7', days: 7, price: '$5', tagKey: 'passTagPopular' },
+  { id: 'd15', days: 15, price: '$7', tagKey: 'passTagMax' },
 ];
-let selectedPassId = 'd1';
+let selectedPassId = 'd7';
 
 function renderPasses() {
   const wrap = document.getElementById('passTiers');
@@ -2664,9 +2661,9 @@ function renderPasses() {
       <span class="pass-radio" aria-hidden="true"></span>
       <span class="pass-row-main">
         <span class="pass-row-title">${escapeHtml(t('passName', { days: p.days }))}<em class="pass-badge">${escapeHtml(t(p.tagKey))}</em></span>
-        <span class="pass-row-sub">${escapeHtml(t(p.tierKey))}</span>
+        <span class="pass-row-sub">${escapeHtml(t('passAllPlus'))}</span>
       </span>
-      <span class="pass-row-price"><s>${escapeHtml(p.was)}</s><strong>${escapeHtml(p.price)}</strong></span>
+      <span class="pass-row-price"><strong>${escapeHtml(p.price)}</strong></span>
     `;
     tier.addEventListener('click', () => {
       selectedPassId = p.id;
@@ -2686,6 +2683,13 @@ function openShop() {
 }
 
 if (settingsShopRow) settingsShopRow.addEventListener('click', openShop);
+{
+  const buy = document.getElementById('passBuyBtn');
+  if (buy) {
+    buy.disabled = false;
+    buy.addEventListener('click', () => { trackGrowthEvent('premium_upsell_click'); location.href = '/pricing'; });
+  }
+}
 if (closeShopBtn) closeShopBtn.addEventListener('click', () => closeModal(shopModal));
 
 // --- Billing ---------------------------------------------------------------

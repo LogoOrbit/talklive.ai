@@ -28,7 +28,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   root.classList.add('i18n-pending');
   setTimeout(function () { root.classList.remove('i18n-pending'); }, 1500);
   var s = document.createElement('script');
-  s.src = '/i18n/' + lang + '.js?v=20261105themes';
+  s.src = '/i18n/' + lang + '.js?v=20261106passes';
   s.async = true;
   s.setAttribute('data-i18n-lang', lang);
   s.onerror = function () { root.classList.remove('i18n-pending'); };
@@ -60,7 +60,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20261105themes" />
+<link rel="stylesheet" href="ui.css?v=20261106passes" />
 <link rel="stylesheet" href="auth.css?v=20260924auth" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
@@ -1504,12 +1504,13 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                  that does something today. Everything below is still a price
                  nobody can pay - the banner says so before the first number
                  is read, and every buy button is disabled. -->
-            <p class="shop-note" data-i18n="shopFreeNote">Everything on TalkLive is free. Passes are not on sale yet.</p>
+            <p class="shop-note" data-i18n="shopAppNote">Buy passes and Plus in the TalkLive Android app. They work here too when you sign in.</p>
             <section class="pass-panel" aria-labelledby="passTitle">
               <div role="heading" aria-level="3" class="ui-h3" id="passTitle" data-i18n="passTitle">Choose your pass</div>
               <div id="passTiers" class="pass-tiers" role="radiogroup" aria-labelledby="passTitle"></div>
               <button type="button" id="passBuyBtn" class="pass-buy" disabled></button>
               <p class="pass-foot" data-i18n="passFoot">One-time payment. No subscription.</p>
+              <p class="pass-foot"><a href="/pricing" data-i18n="shopPlusLine">Or TalkLive Plus: $10 a month</a></p>
             </section>
             <section class="pass-panel" aria-labelledby="passIncTitle">
               <div role="heading" aria-level="3" class="ui-h3" id="passIncTitle" data-i18n="passIncluded">Included with every pass</div>
@@ -2620,7 +2621,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="voice-notes.js?v=20261001mic"></script>
   <script defer src="games.js?v=20261101rr"></script>
   <script defer src="nickname-rules.js?v=20261101nick"></script>
-  <script defer src="app.js?v=20261105themes"></script>
+  <script defer src="app.js?v=20261106passes"></script>
 
 <!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

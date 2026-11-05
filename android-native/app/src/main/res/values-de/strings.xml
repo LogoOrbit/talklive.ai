@@ -530,8 +530,18 @@
     <string name="vn_accept_scams">Sende niemals Geld, Codes, Fotos oder persönliche Daten, nur weil jemand in einer Sprachnachricht danach fragt.</string>
     <string name="vn_accept_turn_off">Du kannst Sprachnachrichten jederzeit ausschalten. Wenn du %1$s entfernst oder blockierst, sind sie auch aus.</string>
     <string name="vn_accept_agree">Ich verstehe die Risiken und stimme den Regeln für Sprachnachrichten zu</string>
+    <string name="pass_heading">Oder hol dir Plus für ein paar Tage</string>
+    <string name="pass_sub">Einmal zahlen. Nichts verlängert sich.</string>
+    <string name="pass_popular">Beliebt</string>
+    <string name="pass_best">Bester Wert</string>
+    <string name="pass_buy">%1$d Tage für %2$s</string>
+    <string name="pass_once">Einmalzahlung. Kein Abo.</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s Besucher heute</item>
         <item quantity="other">%1$s Besucher heute</item>
+    </plurals>
+    <plurals name="pass_days">
+        <item quantity="one">Tag</item>
+        <item quantity="other">Tage</item>
     </plurals>
 </resources>

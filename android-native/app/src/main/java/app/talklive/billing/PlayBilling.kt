@@ -41,11 +41,14 @@ import javax.inject.Singleton
 /** One subscription plan as Play prices it for this person. */
 data class PlusPlan(val basePlanId: String, val price: String, val period: String, val offerToken: String, val trial: String?)
 
+/** A one-time pass: Plus for [days] days, no renewal. */
+data class PlusPass(val productId: String, val days: Int, val price: String, val priceMicros: Long)
+
 sealed interface BillingState {
     data object Loading : BillingState
     /** Play is missing, signed out, or the product is not set up yet. */
     data object Unavailable : BillingState
-    data class Ready(val plans: List<PlusPlan>) : BillingState
+    data class Ready(val plans: List<PlusPlan>, val passes: List<PlusPass> = emptyList()) : BillingState
 }
 
 /**
@@ -75,6 +78,7 @@ class PlayBilling @Inject constructor(
     val busy: StateFlow<Boolean> = _busy
 
     private var details: ProductDetails? = null
+    private var passDetails: Map<String, ProductDetails> = emptyMap()
 
     private val client: BillingClient = BillingClient.newBuilder(context)
         .setListener { result, purchases -> onPurchases(result, purchases) }
@@ -114,7 +118,17 @@ class PlayBilling @Inject constructor(
                 PlusPlan(base, full.formattedPrice, full.billingPeriod, offer.offerToken, trial)
             }
             .sortedBy { periodDays(it.period) }
-        _state.value = if (plans.isEmpty()) BillingState.Unavailable else BillingState.Ready(plans)
+        // The one-time passes (in-app products), cheapest first.
+        val passParams = QueryProductDetailsParams.newBuilder().setProductList(PASS_DAYS.keys.map {
+            QueryProductDetailsParams.Product.newBuilder().setProductId(it).setProductType(BillingClient.ProductType.INAPP).build()
+        }).build()
+        val passList = runCatching { client.queryProductDetails(passParams) }.getOrNull()?.productDetailsList.orEmpty()
+        passDetails = passList.associateBy { it.productId }
+        val passes = passList.mapNotNull { d ->
+            @Suppress("DEPRECATION") val offer = d.oneTimePurchaseOfferDetails ?: return@mapNotNull null
+            PlusPass(d.productId, PASS_DAYS[d.productId] ?: return@mapNotNull null, offer.formattedPrice, offer.priceAmountMicros)
+        }.sortedBy { it.days }
+        _state.value = if (plans.isEmpty() && passes.isEmpty()) BillingState.Unavailable else BillingState.Ready(plans, passes)
         restore(quiet = true)
     }
 
@@ -131,14 +145,30 @@ class PlayBilling @Inject constructor(
         if (r.responseCode != BillingClient.BillingResponseCode.OK) _message.value = PlayMessage.Failed
     }
 
+    /** Opens Google Play's purchase sheet for a one-time pass. */
+    fun buyPass(activity: Activity, pass: PlusPass) {
+        val product = passDetails[pass.productId] ?: return
+        val params = BillingFlowParams.newBuilder()
+            .setProductDetailsParamsList(listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(product).build()))
+            .setObfuscatedAccountId(accountId(identity.clientId))
+            .build()
+        val r = client.launchBillingFlow(activity, params)
+        if (r.responseCode != BillingClient.BillingResponseCode.OK) _message.value = PlayMessage.Failed
+    }
+
     /** Sends every active Plus purchase on this Google account to the server. */
     fun restore(quiet: Boolean = false) = scope.launch {
         if (!connected()) { if (!quiet) _message.value = PlayMessage.Failed; return@launch }
         val owned = runCatching {
             client.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.SUBS).build()).purchasesList
         }.getOrDefault(emptyList()).filter { PRODUCT_ID in it.products && it.purchaseState == Purchase.PurchaseState.PURCHASED }
-        if (owned.isEmpty()) { if (!quiet) _message.value = PlayMessage.NothingToRestore; return@launch }
+        // Passes not yet used up (bought while the server could not be reached).
+        val passes = runCatching {
+            client.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build()).purchasesList
+        }.getOrDefault(emptyList()).filter { p -> p.products.any { it in PASS_DAYS } && p.purchaseState == Purchase.PurchaseState.PURCHASED }
+        if (owned.isEmpty() && passes.isEmpty()) { if (!quiet) _message.value = PlayMessage.NothingToRestore; return@launch }
         owned.forEach { verify(it, quiet) }
+        passes.forEach { verify(it, quiet) }
     }
 
     private fun onPurchases(result: BillingResult, purchases: List<Purchase>?) {
@@ -162,7 +192,7 @@ class PlayBilling @Inject constructor(
                 .put("clientId", identity.clientId)
                 .put("identityToken", identity.identityToken ?: "")
                 .put("purchaseToken", p.purchaseToken)
-                .put("productId", PRODUCT_ID)
+                .put("productId", p.products.firstOrNull { it in PASS_DAYS } ?: PRODUCT_ID)
                 .toString().toRequestBody("application/json".toMediaType())
             val (code, json) = withContext(Dispatchers.IO) {
                 runCatching {
@@ -178,6 +208,7 @@ class PlayBilling @Inject constructor(
                 else -> {
                     // Server not reachable or Play billing not set up there yet. Acknowledge
                     // on the device so Play does not refund it; the next start verifies again.
+                    // (A pass stays unconsumed until the server has granted its days.)
                     acknowledgeLocally(p)
                     if (!quiet) _message.value = PlayMessage.Later
                 }
@@ -198,6 +229,8 @@ class PlayBilling @Inject constructor(
 
     companion object {
         const val PRODUCT_ID = "talklive_plus"
+        /** One-time passes (Play Console > In-app products), as server/play-billing.js PASS_DAYS. */
+        val PASS_DAYS = mapOf("pass_1d" to 1, "pass_7d" to 7, "pass_15d" to 15)
         const val MANAGE_URL = "https://play.google.com/store/account/subscriptions?sku=$PRODUCT_ID&package="
 
         /** The server ties a purchase to its buyer with the same hash (server/play-billing.js accountIdFor). */

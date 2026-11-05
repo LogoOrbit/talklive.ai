@@ -672,6 +672,9 @@ app.post('/billing/play/verify', httpRateLimit('play-verify', 30, 60000), expres
     return res.status(403).json({ error: 'Unrecognised client.' });
   }
   if (!playBilling.validToken(purchaseToken)) return res.status(400).json({ error: 'Invalid purchase.' });
+  if (typeof productId === 'string' && Object.prototype.hasOwnProperty.call(playBilling.PASS_DAYS, productId)) {
+    return verifyPlayPass(req, res, String(clientId), productId, purchaseToken);
+  }
   const key = playTokenKey(purchaseToken);
   const owner = store.data.playPurchases[key];
   if (owner && owner !== clientId) {
@@ -694,6 +697,47 @@ app.post('/billing/play/verify', httpRateLimit('play-verify', 30, 60000), expres
   if (step.op === 'skip' && step.reason !== 'ignored') console.log(`[play] ${clientId}: ${step.reason}`);
   res.json({ premium: isPremium(clientId), expiresAt: store.premiumExpiry(clientId), state: sub ? sub.state : null });
 });
+
+// A one-time pass (1, 7 or 15 days of Plus). Each purchase token is granted
+// once, recorded before the days are added, then consumed so the same pass can
+// be bought again later.
+async function verifyPlayPass(req, res, clientId, productId, purchaseToken) {
+  const key = playTokenKey(purchaseToken);
+  const granted = store.data.playPassGrants || (store.data.playPassGrants = {});
+  if (granted[key] && granted[key].clientId !== clientId) {
+    return res.status(403).json({ error: 'This purchase belongs to another TalkLive profile.' });
+  }
+  let p;
+  try {
+    p = await play.lookupProduct(productId, purchaseToken);
+  } catch (err) {
+    console.error('[play] pass lookup failed:', err.message);
+    return res.status(err.status && err.status < 500 ? 400 : 502).json({ error: 'Could not check this purchase with Google. Try again.' });
+  }
+  if (p && p.accountId && p.accountId !== playBilling.accountIdFor(clientId)) {
+    return res.status(403).json({ error: 'This purchase was made by another TalkLive profile.' });
+  }
+  if (p && p.pending) return res.json({ premium: isPremium(clientId), pending: true });
+  if (!p || !p.purchased) return res.status(400).json({ error: 'This purchase is not complete.' });
+  if (!granted[key]) {
+    const premium = store.data.premium;
+    const existing = Object.prototype.hasOwnProperty.call(premium, clientId) ? premium[clientId] : null;
+    const step = playBilling.nextPassPremium(existing, playBilling.PASS_DAYS[productId], purchaseToken);
+    granted[key] = { clientId, productId, at: Date.now(), orderId: p.orderId };
+    if (step.op === 'set') {
+      store.setPremium(clientId, step.info);
+      if (!existing || existing.revokedAt) store.recordFeature('premium_activated');
+      store.recordFeature('pass_' + productId);
+    }
+    store.persistNow();
+    await Promise.race([store.whenPersisted(), new Promise((r) => setTimeout(r, 8000))]);
+    emitPremiumStatus(clientId);
+  }
+  if (!p.consumed) {
+    try { await play.consume(productId, purchaseToken); } catch (err) { console.error('[play] consume failed:', err.message); }
+  }
+  res.json({ premium: isPremium(clientId), expiresAt: store.premiumExpiry(clientId), pass: productId });
+}
 
 // Real-time Developer Notifications, pushed by Pub/Sub. Each is re-checked
 // with Google; only the token is taken from the message.

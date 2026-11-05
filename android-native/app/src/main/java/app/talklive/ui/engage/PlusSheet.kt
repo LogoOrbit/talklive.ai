@@ -73,6 +73,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -147,6 +148,7 @@ fun PlusSheet(
             myAnimal = myAnimal, myName = myAccount?.nickname,
             onSignIn = onSignIn,
             onBuy = { plan -> context.findActivity()?.let { vm.billing.buy(it, plan) } },
+            onBuyPass = { pass -> context.findActivity()?.let { vm.billing.buyPass(it, pass) } },
             onRestore = { vm.billing.restore() },
             onManage = { openManage(context) },
             onClose = onDismiss,
@@ -181,10 +183,13 @@ fun PlusContent(
     myAnimal: String? = null, myName: String? = null,
     onSignIn: () -> Unit, onBuy: (PlusPlan) -> Unit, onRestore: () -> Unit, onManage: () -> Unit,
     onClose: () -> Unit = {}, onInvite: (() -> Unit)? = null, onFreeOption: Pair<String, () -> Unit>? = null,
+    onBuyPass: (app.talklive.billing.PlusPass) -> Unit = {},
 ) {
     val accents = LocalAccents.current
     val still = app.talklive.ui.theme.LocalReduceMotion.current
+    // One choice at a time: a subscription plan, or a one-time pass.
     var picked by remember(state) { mutableStateOf((state as? BillingState.Ready)?.plans?.lastOrNull()) }
+    var pickedPass by remember(state) { mutableStateOf<app.talklive.billing.PlusPass?>(if ((state as? BillingState.Ready)?.plans.isNullOrEmpty()) (state as? BillingState.Ready)?.passes?.getOrNull(1) else null) }
     Box(Modifier.fillMaxSize().background(PlusBg)) {
         // Aurora: gold and violet light drifting behind everything.
         val drift = if (still) 0.4f else rememberInfiniteTransition(label = "aurora").animateFloat(0f, 1f, infiniteRepeatable(tween(7000, easing = LinearEasing), RepeatMode.Reverse), label = "d").value
@@ -240,7 +245,23 @@ fun PlusContent(
                         Text(stringResource(R.string.plus_unavailable), style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.75f), textAlign = TextAlign.Center, modifier = Modifier.padding(16.dp))
                     }
                     state is BillingState.Ready -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        state.plans.asReversed().forEach { plan -> PlanCard(plan, state.plans, plan == picked) { picked = plan } }
+                        state.plans.asReversed().forEach { plan -> PlanCard(plan, state.plans, plan == picked && pickedPass == null) { picked = plan; pickedPass = null } }
+                        if (state.passes.isNotEmpty()) {
+                            Text(
+                                stringResource(R.string.pass_heading), style = MaterialTheme.typography.titleSmall, color = Color.White.copy(alpha = 0.8f),
+                                modifier = Modifier.fillMaxWidth().padding(top = 10.dp), textAlign = TextAlign.Center,
+                            )
+                            Text(
+                                stringResource(R.string.pass_sub), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.55f),
+                                modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                                state.passes.forEachIndexed { i, pass ->
+                                    PassCard(pass, badge = when (i) { 1 -> stringResource(R.string.pass_popular); 2 -> stringResource(R.string.pass_best); else -> null },
+                                        selected = pass == pickedPass, modifier = Modifier.weight(1f)) { pickedPass = pass }
+                                }
+                            }
+                        }
                     }
                 }
                 if (onInvite != null && !premium.active) {
@@ -271,6 +292,11 @@ fun PlusContent(
             when {
                 premium.active -> GoldButton(stringResource(if (premium.play) R.string.plus_manage else R.string.ok), busy = false, onClick = if (premium.play) onManage else onClose)
                 !signedIn -> GoldButton(stringResource(R.string.sign_in_or_create), busy = false, onClick = onSignIn)
+                canBuy && pickedPass != null -> {
+                    val pass = pickedPass!!
+                    GoldButton(stringResource(R.string.pass_buy, pass.days, pass.price), busy = busy, onClick = { onBuyPass(pass) })
+                    Text(stringResource(R.string.pass_once), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = Color.White, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 10.dp))
+                }
                 canBuy -> {
                     val plan = picked
                     GoldButton(
@@ -555,4 +581,30 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
     is ContextWrapper -> baseContext.findActivity()
     else -> null
+}
+
+/** A one-time pass: days in big type, its price, and a small badge. */
+@Composable
+private fun PassCard(pass: app.talklive.billing.PlusPass, badge: String?, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val border by animateColorAsState(if (selected) Gold2 else Color.White.copy(alpha = 0.12f), label = "pass")
+    Box(modifier) {
+        Surface(
+            onClick = { app.talklive.sound.Tap.pop(); onClick() },
+            shape = RoundedCornerShape(20.dp),
+            color = if (selected) Gold2.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.05f),
+            border = BorderStroke(if (selected) 2.dp else 1.dp, border),
+            modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+        ) {
+            Column(Modifier.padding(vertical = 16.dp, horizontal = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(pass.days.toString(), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black, color = Color.White)
+                Text(pluralStringResource(R.plurals.pass_days, pass.days), style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.7f))
+                Spacer(Modifier.height(8.dp))
+                Text(pass.price, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = if (selected) Gold1 else Color.White)
+            }
+        }
+        if (badge != null) Text(
+            badge, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color(0xFF2B1D00), maxLines = 1,
+            modifier = Modifier.align(Alignment.TopCenter).clip(CircleShape).background(GoldBrush).padding(horizontal = 8.dp, vertical = 2.dp),
+        )
+    }
 }

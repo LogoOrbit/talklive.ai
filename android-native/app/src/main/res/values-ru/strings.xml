@@ -530,10 +530,22 @@
     <string name="vn_accept_scams">Никогда не отправляйте деньги, коды, фото или личные данные, даже если об этом просят в голосовом.</string>
     <string name="vn_accept_turn_off">Голосовые можно выключить в любой момент. Удаление или блокировка %1$s тоже их отключает.</string>
     <string name="vn_accept_agree">Я понимаю риски и принимаю правила голосовых сообщений</string>
+    <string name="pass_heading">Или возьмите Plus на несколько дней</string>
+    <string name="pass_sub">Платите один раз. Ничего не продлевается.</string>
+    <string name="pass_popular">Популярно</string>
+    <string name="pass_best">Выгоднее всего</string>
+    <string name="pass_buy">%1$d дн. за %2$s</string>
+    <string name="pass_once">Разовый платёж. Без подписки.</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s посетитель сегодня</item>
         <item quantity="other">%1$s посетителя сегодня</item>
         <item quantity="few">%1$s посетителя сегодня</item>
         <item quantity="many">%1$s посетителя сегодня</item>
+    </plurals>
+    <plurals name="pass_days">
+        <item quantity="one">день</item>
+        <item quantity="other">дней</item>
+        <item quantity="few">дней</item>
+        <item quantity="many">дней</item>
     </plurals>
 </resources>

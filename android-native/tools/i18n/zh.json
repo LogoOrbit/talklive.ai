@@ -528,5 +528,13 @@
 "vn_accept_trust": "只有在你认识并信任对方时才接受。你没有义务答应任何人。",
 "vn_accept_scams": "不要因为有人在语音消息中索要，就发送钱、验证码、照片或个人信息。",
 "vn_accept_turn_off": "你可以随时关闭语音消息。移除或屏蔽 %1$s 也会关闭。",
-"vn_accept_agree": "我了解风险并同意语音消息规则"
+"vn_accept_agree": "我了解风险并同意语音消息规则",
+"pass_heading": "或者只买几天 Plus",
+"pass_sub": "只需付一次，不会自动续订。",
+"pass_popular": "热门",
+"pass_best": "最划算",
+"pass_buy": "%1$d 天 %2$s",
+"pass_once": "一次性付款，非订阅。",
+"pass_days#one": "天",
+"pass_days#other": "天"
 }

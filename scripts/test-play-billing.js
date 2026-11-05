@@ -98,6 +98,21 @@ const iso = (ms) => new Date(ms).toISOString();
   ok('test notification has no token', n && !n.purchaseToken && n.test);
   ok('garbage is null', p.parseRtdn({ message: { data: '!!!' } }) === null && p.parseRtdn(null) === null);
 
+  // --- One-time passes ---------------------------------------------------------------
+  ok('pass products', p.PASS_DAYS.pass_1d === 1 && p.PASS_DAYS.pass_7d === 7 && p.PASS_DAYS.pass_15d === 15);
+  let ps = p.nextPassPremium(null, 7, 'purchase-token-0123456789', now);
+  ok('pass on nothing: now + 7 days', ps.op === 'set' && ps.info.expiresAt === now + 7 * DAY && ps.info.source === 'play-pass');
+  ps = p.nextPassPremium({ expiresAt: now + 3 * DAY, source: 'play' }, 1, 'purchase-token-0123456789', now);
+  ok('pass stacks on an active subscription', ps.info.expiresAt === now + 4 * DAY && ps.info.source === 'play-pass');
+  ps = p.nextPassPremium({ expiresAt: now - DAY, source: 'play-pass' }, 15, 'purchase-token-0123456789', now);
+  ok('expired time is not counted', ps.info.expiresAt === now + 15 * DAY);
+  ps = p.nextPassPremium({ source: 'manual' }, 7, 'purchase-token-0123456789', now);
+  ok('permanent grant stays permanent', ps.op === 'set' && ps.info.expiresAt === undefined);
+  ok('unknown pass skipped', p.nextPassPremium(null, 0, 'x', now).op === 'skip');
+  const sp = p.summariseProduct({ purchaseState: 0, consumptionState: 0, acknowledgementState: 0, obfuscatedExternalAccountId: 'abc', orderId: 'GPA.1' });
+  ok('product summary', sp.purchased && !sp.consumed && !sp.pending && sp.accountId === 'abc' && sp.orderId === 'GPA.1');
+  ok('pending product', p.summariseProduct({ purchaseState: 2 }).pending);
+
   console.log(failed ? `\n${failed} failed` : '\nall passed');
   process.exit(failed ? 1 : 0);
 })();

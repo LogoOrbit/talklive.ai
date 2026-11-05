@@ -530,8 +530,18 @@
     <string name="vn_accept_scams">कोई वॉइस मैसेज में माँगे तब भी कभी पैसे, कोड, फ़ोटो या निजी जानकारी न भेजें।</string>
     <string name="vn_accept_turn_off">आप कभी भी वॉइस मैसेज बंद कर सकते हैं। %1$s को हटाने या ब्लॉक करने से भी ये बंद हो जाते हैं।</string>
     <string name="vn_accept_agree">मैं जोखिम समझता/समझती हूँ और वॉइस मैसेज नीति से सहमत हूँ</string>
+    <string name="pass_heading">या कुछ दिनों के लिए Plus लें</string>
+    <string name="pass_sub">एक बार भुगतान करें। कुछ भी रिन्यू नहीं होता।</string>
+    <string name="pass_popular">लोकप्रिय</string>
+    <string name="pass_best">सबसे किफ़ायती</string>
+    <string name="pass_buy">%2$s में %1$d दिन पाएं</string>
+    <string name="pass_once">एक बार का भुगतान। कोई सब्सक्रिप्शन नहीं।</string>
     <plurals name="visitors_today">
         <item quantity="one">आज %1$s विज़िटर</item>
         <item quantity="other">आज %1$s विज़िटर</item>
+    </plurals>
+    <plurals name="pass_days">
+        <item quantity="one">दिन</item>
+        <item quantity="other">दिन</item>
     </plurals>
 </resources>

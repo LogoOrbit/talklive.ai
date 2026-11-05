@@ -530,8 +530,18 @@
     <string name="vn_accept_scams">Nunca envíes dinero, códigos, fotos ni datos personales porque alguien te los pida en un mensaje de voz.</string>
     <string name="vn_accept_turn_off">Puedes desactivar los mensajes de voz cuando quieras. Eliminar o bloquear a %1$s también los desactiva.</string>
     <string name="vn_accept_agree">Entiendo los riesgos y acepto la política de mensajes de voz</string>
+    <string name="pass_heading">O consigue Plus por unos días</string>
+    <string name="pass_sub">Pagas una vez. No se renueva nada.</string>
+    <string name="pass_popular">Popular</string>
+    <string name="pass_best">Mejor precio</string>
+    <string name="pass_buy">%1$d días por %2$s</string>
+    <string name="pass_once">Pago único. Sin suscripción.</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s visitante hoy</item>
         <item quantity="other">%1$s visitantes hoy</item>
+    </plurals>
+    <plurals name="pass_days">
+        <item quantity="one">día</item>
+        <item quantity="other">días</item>
     </plurals>
 </resources>

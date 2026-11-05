@@ -528,5 +528,13 @@
 "vn_accept_trust": "잘 알고 믿을 수 있는 사람일 때만 수락하세요. 누구에게도 '예'라고 할 의무는 없어요.",
 "vn_accept_scams": "음성 메시지로 요청받더라도 돈, 인증 코드, 사진, 개인 정보는 절대 보내지 마세요.",
 "vn_accept_turn_off": "음성 메시지는 언제든 끌 수 있어요. %1$s 님을 삭제하거나 차단해도 꺼져요.",
-"vn_accept_agree": "위험을 이해하며 음성 메시지 정책에 동의합니다"
+"vn_accept_agree": "위험을 이해하며 음성 메시지 정책에 동의합니다",
+"pass_heading": "또는 며칠만 Plus 이용하기",
+"pass_sub": "한 번만 결제. 자동 갱신 없음.",
+"pass_popular": "인기",
+"pass_best": "최고 가성비",
+"pass_buy": "%1$d일 %2$s",
+"pass_once": "1회 결제. 구독 아님.",
+"pass_days#one": "일",
+"pass_days#other": "일"
 }

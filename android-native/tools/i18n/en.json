@@ -532,5 +532,13 @@
 "vn_accept_agree": "I understand the risks and agree to the voice message policy",
 "calling_short": "Calling…",
 "adult_consent": "I'm 18 or older. I agree to the Terms, Privacy Policy and Community Guidelines, and I'm responsible for what I say and share.",
-"vn_agree_and_ask": "Agree & ask %1$s"
+"vn_agree_and_ask": "Agree & ask %1$s",
+"pass_heading": "Or get Plus for a few days",
+"pass_sub": "Pay once. Nothing renews.",
+"pass_popular": "Popular",
+"pass_best": "Best value",
+"pass_buy": "Get %1$d days for %2$s",
+"pass_once": "One-time payment. No subscription.",
+"pass_days#one": "day",
+"pass_days#other": "days"
 }
