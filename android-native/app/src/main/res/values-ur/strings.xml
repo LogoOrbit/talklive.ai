@@ -510,6 +510,8 @@
     <string name="friend_id_rules">حروف، پھر 1 سے 4 نمبر۔ دوست اس سے آپ کو ڈھونڈتے ہیں۔</string>
     <string name="id_letters">حروف</string>
     <string name="id_numbers">نمبر</string>
+    <string name="plus_you_title">Plus کے ساتھ آپ کی پروفائل</string>
+    <string name="plus_you_body">آپ کی تصویر پر گھومتی سنہری رنگ اور Plus بیج، کالز میں اور آپ کی پروفائل پر۔</string>
     <plurals name="visitors_today">
         <item quantity="one">آج %1$s وزیٹر</item>
         <item quantity="other">آج %1$s وزیٹرز</item>

@@ -510,6 +510,8 @@
     <string name="friend_id_rules">Harfler, ardından 1-4 rakam. Arkadaşların seni bununla bulur.</string>
     <string name="id_letters">Harfler</string>
     <string name="id_numbers">Rakamlar</string>
+    <string name="plus_you_title">Plus ile profilin</string>
+    <string name="plus_you_body">Fotoğrafında dönen altın bir halka ve Plus rozeti; aramalarda ve profilinde.</string>
     <plurals name="visitors_today">
         <item quantity="one">Bugün %1$s ziyaretçi</item>
         <item quantity="other">Bugün %1$s ziyaretçi</item>

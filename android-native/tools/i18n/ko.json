@@ -508,5 +508,7 @@
 "problem_thanks": "고마워요! 신고를 받았어요.",
 "friend_id_rules": "영문자 뒤에 숫자 1~4개. 친구가 이걸로 찾아요.",
 "id_letters": "영문자",
-"id_numbers": "숫자"
+"id_numbers": "숫자",
+"plus_you_title": "Plus를 쓰면 내 프로필은",
+"plus_you_body": "통화 중과 내 프로필에서 사진에 회전하는 골드 링과 Plus 배지가 표시돼요."
 }

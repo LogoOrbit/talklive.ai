@@ -509,5 +509,7 @@
 "problem_thanks": "Merci ! Nous avons reçu votre signalement.",
 "friend_id_rules": "Des lettres, puis 1 à 4 chiffres. Vos amis vous trouvent avec.",
 "id_letters": "Lettres",
-"id_numbers": "Chiffres"
+"id_numbers": "Chiffres",
+"plus_you_title": "Votre profil avec Plus",
+"plus_you_body": "Un anneau doré qui tourne et un badge Plus sur votre photo, en appel et sur votre profil."
 }

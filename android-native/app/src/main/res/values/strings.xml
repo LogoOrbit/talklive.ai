@@ -516,4 +516,6 @@
     <string name="friend_id_rules">Letters, then 1 to 4 numbers. Friends find you with it.</string>
     <string name="id_letters">Letters</string>
     <string name="id_numbers">Numbers</string>
+    <string name="plus_you_title">Your profile with Plus</string>
+    <string name="plus_you_body">A turning gold ring and a Plus badge on your picture, in calls and on your profile.</string>
 </resources>

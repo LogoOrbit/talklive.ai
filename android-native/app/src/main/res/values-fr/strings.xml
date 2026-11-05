@@ -510,6 +510,8 @@
     <string name="friend_id_rules">Des lettres, puis 1 à 4 chiffres. Vos amis vous trouvent avec.</string>
     <string name="id_letters">Lettres</string>
     <string name="id_numbers">Chiffres</string>
+    <string name="plus_you_title">Votre profil avec Plus</string>
+    <string name="plus_you_body">Un anneau doré qui tourne et un badge Plus sur votre photo, en appel et sur votre profil.</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s visiteur aujourd\'hui</item>
         <item quantity="other">%1$s visiteurs aujourd\'hui</item>

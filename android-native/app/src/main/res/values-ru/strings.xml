@@ -510,6 +510,8 @@
     <string name="friend_id_rules">Буквы, затем от 1 до 4 цифр. По нему вас найдут друзья.</string>
     <string name="id_letters">Буквы</string>
     <string name="id_numbers">Цифры</string>
+    <string name="plus_you_title">Ваш профиль с Plus</string>
+    <string name="plus_you_body">Вращающееся золотое кольцо и значок Plus на вашем фото — в звонках и в профиле.</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s посетитель сегодня</item>
         <item quantity="other">%1$s посетителя сегодня</item>

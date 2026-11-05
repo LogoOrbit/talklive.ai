@@ -218,7 +218,7 @@ class ScreenshotTest {
     private fun plusShot() = @Composable {
         androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             app.talklive.ui.engage.PlusContent(
-                app.talklive.engage.Premium(false, null, false), signedIn = true,
+                app.talklive.engage.Premium(false, null, false), signedIn = true, myAnimal = "fox", myName = "Sam",
                 state = app.talklive.billing.BillingState.Ready(listOf(
                     app.talklive.billing.PlusPlan("monthly", "$4.99", "P1M", "a", null),
                     app.talklive.billing.PlusPlan("yearly", "$35.99", "P1Y", "b", "P7D"),

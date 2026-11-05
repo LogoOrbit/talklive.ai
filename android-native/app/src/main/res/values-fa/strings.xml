@@ -510,6 +510,8 @@
     <string name="friend_id_rules">حروف، سپس ۱ تا ۴ عدد. دوستان با آن پیدایتان می‌کنند.</string>
     <string name="id_letters">حروف</string>
     <string name="id_numbers">اعداد</string>
+    <string name="plus_you_title">نمایه شما با Plus</string>
+    <string name="plus_you_body">حلقه طلایی چرخان و نشان Plus روی تصویر شما، در تماس‌ها و نمایه‌تان.</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s بازدیدکننده امروز</item>
         <item quantity="other">%1$s بازدیدکننده امروز</item>

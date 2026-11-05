@@ -510,6 +510,8 @@
     <string name="friend_id_rules">অক্ষর, তারপর ১ থেকে ৪টি সংখ্যা। বন্ধুরা এটা দিয়ে আপনাকে খুঁজবে।</string>
     <string name="id_letters">অক্ষর</string>
     <string name="id_numbers">সংখ্যা</string>
+    <string name="plus_you_title">Plus সহ আপনার প্রোফাইল</string>
+    <string name="plus_you_body">আপনার ছবিতে ঘুরন্ত সোনালি রিং আর Plus ব্যাজ, কলে ও আপনার প্রোফাইলে।</string>
     <plurals name="visitors_today">
         <item quantity="one">আজ %1$s জন ভিজিটর</item>
         <item quantity="other">আজ %1$s জন ভিজিটর</item>

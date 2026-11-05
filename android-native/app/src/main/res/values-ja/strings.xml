@@ -510,6 +510,8 @@
     <string name="friend_id_rules">英字のあとに1〜4桁の数字。友達はこれであなたを探せます。</string>
     <string name="id_letters">英字</string>
     <string name="id_numbers">数字</string>
+    <string name="plus_you_title">Plusのあなたのプロフィール</string>
+    <string name="plus_you_body">回転するゴールドのリングとPlusバッジが、通話中とプロフィールのあなたの写真に。</string>
     <plurals name="visitors_today">
         <item quantity="other">今日の訪問者 %1$s人</item>
     </plurals>

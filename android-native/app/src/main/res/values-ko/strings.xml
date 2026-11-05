@@ -510,6 +510,8 @@
     <string name="friend_id_rules">영문자 뒤에 숫자 1~4개. 친구가 이걸로 찾아요.</string>
     <string name="id_letters">영문자</string>
     <string name="id_numbers">숫자</string>
+    <string name="plus_you_title">Plus를 쓰면 내 프로필은</string>
+    <string name="plus_you_body">통화 중과 내 프로필에서 사진에 회전하는 골드 링과 Plus 배지가 표시돼요.</string>
     <plurals name="visitors_today">
         <item quantity="other">오늘 방문자 %1$s명</item>
     </plurals>

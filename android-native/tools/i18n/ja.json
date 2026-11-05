@@ -508,5 +508,7 @@
 "problem_thanks": "ありがとうございます！報告を受け取りました。",
 "friend_id_rules": "英字のあとに1〜4桁の数字。友達はこれであなたを探せます。",
 "id_letters": "英字",
-"id_numbers": "数字"
+"id_numbers": "数字",
+"plus_you_title": "Plusのあなたのプロフィール",
+"plus_you_body": "回転するゴールドのリングとPlusバッジが、通話中とプロフィールのあなたの写真に。"
 }

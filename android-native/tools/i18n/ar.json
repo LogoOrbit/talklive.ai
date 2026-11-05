@@ -509,5 +509,7 @@
 "problem_thanks": "شكرًا! استلمنا بلاغك.",
 "friend_id_rules": "حروف ثم من 1 إلى 4 أرقام. يجدك أصدقاؤك به.",
 "id_letters": "حروف",
-"id_numbers": "أرقام"
+"id_numbers": "أرقام",
+"plus_you_title": "ملفك مع Plus",
+"plus_you_body": "حلقة ذهبية دوارة وشارة Plus على صورتك، في المكالمات وعلى ملفك."
 }

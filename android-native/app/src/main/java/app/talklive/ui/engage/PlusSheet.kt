@@ -47,6 +47,7 @@ import androidx.compose.material.icons.rounded.FilterAlt
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Undo
 import androidx.compose.material.icons.rounded.Verified
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material3.CircularProgressIndicator
@@ -94,7 +95,15 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 @HiltViewModel
-class PlusViewModel @Inject constructor(val billing: PlayBilling) : ViewModel()
+class PlusViewModel @Inject constructor(
+    val billing: PlayBilling,
+    identity: app.talklive.data.IdentityStore,
+    auth: app.talklive.auth.AuthRepository,
+) : ViewModel() {
+    /** For the "you with Plus" preview. */
+    val animal = identity.animalFlow
+    val account = auth.account
+}
 
 /**
  * TalkLive Plus, full screen: what it adds, Play's prices for this person,
@@ -131,8 +140,11 @@ fun PlusSheet(
         vm.billing.clearMessage()
     }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
+        val myAnimal by vm.animal.collectAsStateWithLifecycle()
+        val myAccount by vm.account.collectAsStateWithLifecycle()
         PlusContent(
             premium, signedIn, state, busy,
+            myAnimal = myAnimal, myName = myAccount?.nickname,
             onSignIn = onSignIn,
             onBuy = { plan -> context.findActivity()?.let { vm.billing.buy(it, plan) } },
             onRestore = { vm.billing.restore() },
@@ -166,6 +178,7 @@ private val PlusBg = Color(0xFF07090F)
 @Composable
 fun PlusContent(
     premium: Premium, signedIn: Boolean, state: BillingState, busy: Boolean,
+    myAnimal: String? = null, myName: String? = null,
     onSignIn: () -> Unit, onBuy: (PlusPlan) -> Unit, onRestore: () -> Unit, onManage: () -> Unit,
     onClose: () -> Unit = {}, onInvite: (() -> Unit)? = null, onFreeOption: Pair<String, () -> Unit>? = null,
 ) {
@@ -205,6 +218,11 @@ fun PlusContent(
                 modifier = Modifier.padding(horizontal = 28.dp),
             )
             Spacer(Modifier.height(24.dp))
+            // Your own profile, before and after.
+            if (!premium.active) {
+                YouWithPlus(myAnimal, myName)
+                Spacer(Modifier.height(20.dp))
+            }
             FeatureCarousel()
             Spacer(Modifier.height(24.dp))
             CompareTable(Modifier.padding(horizontal = 20.dp))
@@ -296,6 +314,46 @@ private fun GoldButton(text: String, busy: Boolean, onClick: () -> Unit) {
 }
 
 /** Big swipeable cards, each with a small live preview of what Plus does. */
+/**
+ * How your own profile looks with Plus: your avatar today next to the same
+ * avatar with the turning gold ring and the Plus badge, live.
+ */
+@Composable
+private fun YouWithPlus(animal: String?, name: String?) {
+    val shown = name?.takeIf { it.isNotBlank() } ?: stringResource(R.string.you)
+    Surface(
+        shape = RoundedCornerShape(28.dp),
+        color = Color.White.copy(alpha = 0.06f),
+        border = BorderStroke(1.dp, Brush.linearGradient(listOf(Gold1.copy(alpha = 0.7f), Color.White.copy(alpha = 0.05f)))),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+    ) {
+        Column(Modifier.padding(vertical = 18.dp, horizontal = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(stringResource(R.string.plus_you_title), style = MaterialTheme.typography.titleMedium, color = Color.White)
+            Spacer(Modifier.height(14.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxWidth()) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(Modifier.size(84.dp), contentAlignment = Alignment.Center) { app.talklive.ui.animals.AnimalAvatar(animal, name, 64.dp) }
+                    Spacer(Modifier.height(6.dp))
+                    Text(shown, style = MaterialTheme.typography.labelLarge, color = Color.White.copy(alpha = 0.75f), maxLines = 1)
+                    Text(stringResource(R.string.cmp_free), style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.5f))
+                }
+                Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = Gold1, modifier = Modifier.size(26.dp))
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    app.talklive.ui.components.PlusRing(true, 64.dp) { app.talklive.ui.animals.AnimalAvatar(animal, name, 64.dp) }
+                    Spacer(Modifier.height(6.dp))
+                    Text("$shown 💎", style = MaterialTheme.typography.labelLarge, color = Gold1, maxLines = 1, fontWeight = FontWeight.Bold)
+                    Text("PLUS", style = MaterialTheme.typography.labelMedium, color = Gold1, fontWeight = FontWeight.ExtraBold)
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                stringResource(R.string.plus_you_body), style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(alpha = 0.7f), textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
 @Composable
 private fun FeatureCarousel() {
     val pager = androidx.compose.foundation.pager.rememberPagerState { PERKS.size }

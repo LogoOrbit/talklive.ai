@@ -510,6 +510,8 @@
     <string name="friend_id_rules">字母加 1 到 4 位数字。好友用它找到你。</string>
     <string name="id_letters">字母</string>
     <string name="id_numbers">数字</string>
+    <string name="plus_you_title">开通 Plus 后的你</string>
+    <string name="plus_you_body">头像上会有旋转的金色光环和 Plus 徽章，在通话中和你的资料页都能看到。</string>
     <plurals name="visitors_today">
         <item quantity="other">今日访客 %1$s 人</item>
     </plurals>

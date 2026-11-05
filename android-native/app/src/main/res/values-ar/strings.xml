@@ -510,6 +510,8 @@
     <string name="friend_id_rules">حروف ثم من 1 إلى 4 أرقام. يجدك أصدقاؤك به.</string>
     <string name="id_letters">حروف</string>
     <string name="id_numbers">أرقام</string>
+    <string name="plus_you_title">ملفك مع Plus</string>
+    <string name="plus_you_body">حلقة ذهبية دوارة وشارة Plus على صورتك، في المكالمات وعلى ملفك.</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s زائر اليوم</item>
         <item quantity="other">%1$s زائر اليوم</item>

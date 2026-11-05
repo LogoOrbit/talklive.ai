@@ -510,6 +510,8 @@
     <string name="friend_id_rules">Letras e depois de 1 a 4 números. Seus amigos encontram você com ele.</string>
     <string name="id_letters">Letras</string>
     <string name="id_numbers">Números</string>
+    <string name="plus_you_title">Seu perfil com Plus</string>
+    <string name="plus_you_body">Um anel dourado girando e um selo Plus na sua foto, nas chamadas e no seu perfil.</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s visitante hoje</item>
         <item quantity="other">%1$s visitantes hoje</item>
