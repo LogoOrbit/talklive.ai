@@ -100,6 +100,20 @@ class EngageRepository(
     val filters: StateFlow<Filters> = _filters
 
     init {
+        // Signing in brings back the gender and age group saved with the
+        // account, so a new phone never asks again or resets them.
+        for (ev in listOf("login-result", "resume-session-result", "google-auth-result", "reset-password-result", "signup-result")) {
+            socket.on(ev) { args ->
+                val o = args.firstOrNull() as? org.json.JSONObject ?: return@on
+                if (!o.optBoolean("ok")) return@on
+                o.optString("gender").takeIf { it in setOf("male", "female", "other") && it != _myGender.value }?.let { g ->
+                    prefs.edit().putString("my_gender", g).apply(); _myGender.value = g
+                }
+                o.optString("ageGroup").takeIf { it.isNotBlank() && it != "null" && it != "unspecified" && it != _ageGroup.value }?.let { a ->
+                    prefs.edit().putString("age_group", a).apply(); _ageGroup.value = a
+                }
+            }
+        }
         socket.on("engage-state") { a -> (a.firstOrNull() as? JSONObject)?.let { _engage.value = Engage.from(it) } }
         socket.on("engage-update") { a ->
             val o = a.firstOrNull() as? JSONObject ?: return@on

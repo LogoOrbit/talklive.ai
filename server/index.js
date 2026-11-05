@@ -2036,6 +2036,13 @@ socketAuth.set = function set(socketId, usernameLower) {
   const profile = profiles.get(socketId);
   const name = account && Nick.clean(account.nickname);
   if (profile && name) profile.username = name;
+  // Gender and age group follow the account too (only real answers are kept).
+  if (profile && account) {
+    if (account.gender) profile.gender = account.gender;
+    else if (profile.gender && profile.gender !== 'unspecified') { account.gender = profile.gender; persistAccount(usernameLower); }
+    if (account.ageGroup) profile.ageGroup = account.ageGroup;
+    else if (profile.ageGroup && profile.ageGroup !== 'unspecified') { account.ageGroup = profile.ageGroup; persistAccount(usernameLower); }
+  }
   if (profile && account && account.animal) profile.animal = account.animal;
   else if (profile && account && profile.animal) { account.animal = profile.animal; persistAccount(usernameLower); }
   return result;
@@ -2259,6 +2266,8 @@ function hydrateFromStore() {
       salt: acc.salt || null,
       nickname: acc.nickname || '',
       animal: acc.animal || null,
+      gender: acc.gender || null,
+      ageGroup: acc.ageGroup || null,
       googleId: acc.googleId || null,
       email: acc.email || null,
       google: acc.google || null,
@@ -5015,6 +5024,8 @@ io.on('connection', (socket) => {
       username,
       nickname: account.nickname,
       animal: account.animal || null,
+      gender: account.gender || null,
+      ageGroup: account.ageGroup || null,
       email: account.email || '',
       sessionToken: store.createAuthSession((username || '').toLowerCase()),
       // Hands this device the account's profile, so a sign-in on a new phone
@@ -5043,6 +5054,8 @@ io.on('connection', (socket) => {
       username: usernameLower,
       nickname: account.nickname,
       animal: account.animal || null,
+      gender: account.gender || null,
+      ageGroup: account.ageGroup || null,
       email: account.email || '',
       ...linkAccountProfile(usernameLower, socket.id),
     });
@@ -5091,6 +5104,8 @@ io.on('connection', (socket) => {
         username,
         nickname: account.nickname,
         animal: account.animal || null,
+        gender: account.gender || null,
+        ageGroup: account.ageGroup || null,
         email: account.email || '',
         sessionToken: store.createAuthSession(username.toLowerCase()),
         ...linked,
@@ -5402,6 +5417,8 @@ io.on('connection', (socket) => {
         username: usernameLower,
         nickname: account.nickname,
         animal: account.animal || null,
+        gender: account.gender || null,
+        ageGroup: account.ageGroup || null,
         email: account.email || '',
         sessionToken: store.createAuthSession(usernameLower),
       });
@@ -5534,6 +5551,14 @@ io.on('connection', (socket) => {
     const chosenName = (authedAccount && Nick.clean(authedAccount.nickname)) || Nick.clean(data.nickname);
     // A signed-in person's avatar is saved with the account, so it follows them.
     const sentAnimal = sanitizeAnimal(data.animal);
+    const sentGender = audience.normGender(data.gender);
+    const sentAge = audience.normAge(data.ageGroup);
+    if (authedAccount && ((sentGender !== 'unspecified' && authedAccount.gender !== sentGender)
+      || (sentAge !== 'unspecified' && authedAccount.ageGroup !== sentAge))) {
+      if (sentGender !== 'unspecified') authedAccount.gender = sentGender;
+      if (sentAge !== 'unspecified') authedAccount.ageGroup = sentAge;
+      persistAccount(socketAuth.get(socket.id));
+    }
     if (authedAccount && sentAnimal && authedAccount.animal !== sentAnimal) {
       authedAccount.animal = sentAnimal;
       persistAccount(socketAuth.get(socket.id));
@@ -5548,10 +5573,10 @@ io.on('connection', (socket) => {
       city: geo.city,
       // Echoed to other people (online list, owner dashboard) and compared in
       // matching, so only the three values the UI offers are kept.
-      gender: audience.normGender(data.gender),
+      gender: (authedAccount && authedAccount.gender && audience.normGender(data.gender) === 'unspecified') ? authedAccount.gender : audience.normGender(data.gender),
       // Self-reported in Settings, never verified; only used for the owner's
       // aggregate audience analytics.
-      ageGroup: audience.normAge(data.ageGroup),
+      ageGroup: (authedAccount && authedAccount.ageGroup && audience.normAge(data.ageGroup) === 'unspecified') ? authedAccount.ageGroup : audience.normAge(data.ageGroup),
       device: audience.parseUA(socket.handshake.headers['user-agent']).device,
       prefGender: premium && (data.prefGender === 'male' || data.prefGender === 'female') ? data.prefGender : 'any',
       // "Voice-checked only": with a gender preference, match only people whose

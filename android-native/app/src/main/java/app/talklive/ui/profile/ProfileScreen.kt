@@ -458,7 +458,7 @@ private fun SettingRow(
     onClick: () -> Unit,
 ) {
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 60.dp).clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 10.dp),
+        Modifier.fillMaxWidth().heightIn(min = 60.dp).clickable { app.talklive.sound.Tap.soft(); onClick() }.padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Each kind of setting has its own colour, so the list reads at a glance.

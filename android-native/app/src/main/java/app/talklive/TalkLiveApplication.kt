@@ -21,6 +21,7 @@ class TalkLiveApplication : Application(), coil.ImageLoaderFactory {
     @Inject lateinit var engage: app.talklive.engage.EngageRepository
     @Inject lateinit var sounds: app.talklive.sound.SoundDirector
     @Inject lateinit var notifier: app.talklive.push.LocalNotifier
+    @Inject lateinit var fx: app.talklive.sound.Sounds
 
     override fun onCreate() {
         CrashReporter.install(this)
@@ -28,6 +29,8 @@ class TalkLiveApplication : Application(), coil.ImageLoaderFactory {
         CrashReporter.sendPending(this, socket)
         engage.loadFlags()
         sounds.start()
+        app.talklive.sound.Tap.sounds = fx
+        fx.warm()
         notifier.start()
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(

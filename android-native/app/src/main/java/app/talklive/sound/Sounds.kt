@@ -26,7 +26,7 @@ import kotlin.math.sin
  */
 @Singleton
 class Sounds @Inject constructor(@ApplicationContext context: Context) {
-    enum class Fx { Tap, Connect, Hangup, Message, Send, Turn, Move, Win, Invite, FriendAdded }
+    enum class Fx { Tap, Pop, PopSoft, Connect, Hangup, Message, Send, Turn, Move, Win, Invite, FriendAdded }
 
     private data class Tone(val freq: Double, val dur: Double, val wave: Char, val vol: Double, val delay: Double = 0.0)
 
@@ -44,6 +44,7 @@ class Sounds @Inject constructor(@ApplicationContext context: Context) {
 
     private fun tones(fx: Fx): List<Tone> = when (fx) {
         Fx.Tap -> listOf(Tone(520.0, 0.08, 'q', 0.12))
+        Fx.Pop, Fx.PopSoft -> emptyList() // bubbles, rendered by bubble()
         Fx.Connect -> listOf(Tone(660.0, 0.12, 's', 0.18), Tone(880.0, 0.15, 's', 0.18, 0.12))
         Fx.Hangup -> listOf(Tone(320.0, 0.2, 's', 0.18), Tone(220.0, 0.25, 's', 0.18, 0.15))
         Fx.Message -> listOf(Tone(1245.0, 0.06, 't', 0.15), Tone(1661.0, 0.20, 's', 0.15, 0.06))
@@ -55,11 +56,23 @@ class Sounds @Inject constructor(@ApplicationContext context: Context) {
         Fx.FriendAdded -> listOf(Tone(587.0, 0.11, 's', 0.17), Tone(784.0, 0.11, 's', 0.16, 0.10), Tone(1175.0, 0.26, 't', 0.15, 0.20))
     }
 
-    fun play(fx: Fx) {
-        if (!_enabled.value) return
+    /** Renders the tap sounds ahead of time so the first tap is instant. */
+    fun warm() = scope.launch { play(Fx.Pop, silent = true); play(Fx.PopSoft, silent = true) }
+
+    fun play(fx: Fx) = play(fx, silent = false)
+
+    private fun play(fx: Fx, silent: Boolean) {
+        if (!_enabled.value && !silent) return
         scope.launch {
             runCatching {
-                val pcm = cache.getOrPut(fx) { render(tones(fx)) }
+                val pcm = cache.getOrPut(fx) {
+                    when (fx) {
+                        Fx.Pop -> bubble(from = 380.0, to = 1150.0, dur = 0.075, vol = 0.55)
+                        Fx.PopSoft -> bubble(from = 520.0, to = 1350.0, dur = 0.05, vol = 0.38)
+                        else -> render(tones(fx))
+                    }
+                }
+                if (silent) return@runCatching
                 val track = AudioTrack.Builder()
                     .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build())
                     .setAudioFormat(AudioFormat.Builder().setEncoding(AudioFormat.ENCODING_PCM_16BIT).setSampleRate(RATE).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build())
@@ -79,6 +92,27 @@ class Sounds @Inject constructor(@ApplicationContext context: Context) {
 
     companion object {
         const val RATE = 44100
+
+        /**
+         * TalkLive's own tap sound: a sine whose pitch rises quickly, like a
+         * bubble popping, with a short soft tail. Quiet on purpose.
+         */
+        private fun bubble(from: Double, to: Double, dur: Double, vol: Double): ShortArray {
+            val n = (dur * RATE).toInt()
+            val out = ShortArray(n + (0.01 * RATE).toInt())
+            var phase = 0.0
+            for (i in 0 until n) {
+                val t = i.toDouble() / RATE
+                val f = from + (to - from) * (1 - exp(-t / (dur * 0.35)))
+                phase += 2 * PI * f / RATE
+                val attack = minOf(1.0, i / (0.002 * RATE))
+                val env = attack * exp(-5.0 * t / dur)
+                // A little second harmonic gives it body without sounding like a beep.
+                val w = sin(phase) + 0.18 * sin(2 * phase)
+                out[i] = (w / 1.18 * env * vol * 32767).toInt().toShort()
+            }
+            return out
+        }
 
         /** Mixes oscillators with an exponential fade to silence, as the Web Audio graph does. */
         private fun render(tones: List<Tone>): ShortArray {
@@ -104,4 +138,14 @@ class Sounds @Inject constructor(@ApplicationContext context: Context) {
             return ShortArray(out.size) { (out[it] / peak.coerceAtLeast(1f) * 32767 * 0.9f).toInt().toShort() }
         }
     }
+}
+
+/**
+ * The app-wide tap sound, reachable from any composable without plumbing:
+ * buttons, tabs and switches call [pop] or [soft].
+ */
+object Tap {
+    @Volatile var sounds: Sounds? = null
+    fun pop() { sounds?.play(Sounds.Fx.Pop) }
+    fun soft() { sounds?.play(Sounds.Fx.PopSoft) }
 }

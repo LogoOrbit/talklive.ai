@@ -91,7 +91,9 @@ fun TalkLiveRoot(vm: TalkViewModel = hiltViewModel()) {
         targetState = when {
             !onboarded -> RootScreen.Onboarding
             signingIn -> RootScreen.SignIn
-            animal == null -> RootScreen.Animal
+            // Only a new guest picks an avatar here: a signed-in account
+            // already has its own (restored from the server).
+            animal == null && account == null -> RootScreen.Animal
             else -> RootScreen.Main
         },
         transitionSpec = { (fadeIn(tween(300)) + scaleIn(initialScale = 0.96f)) togetherWith fadeOut(tween(200)) },
@@ -103,7 +105,7 @@ fun TalkLiveRoot(vm: TalkViewModel = hiltViewModel()) {
             RootScreen.SignIn -> OnboardingFlow(hiltViewModel<AuthViewModel>(), start = AuthRoute.Choose, onClose = { signingIn = false })
             RootScreen.Animal -> {
                 val engageVm: app.talklive.ui.engage.EngageViewModel = hiltViewModel()
-                app.talklive.ui.onboarding.FirstRunSetup { a, g, age ->
+                app.talklive.ui.onboarding.FirstRunSetup(onBack = { signingIn = true }) { a, g, age ->
                     engageVm.setMyGender(g)
                     engageVm.setAgeGroup(age)
                     vm.setAnimal(a)

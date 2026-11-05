@@ -108,12 +108,16 @@ fun HomeScreen(
             AnimalAvatar(animal, name, 36.dp, Modifier.clip(CircleShape).clickable(onClick = onProfile))
         }
 
-        Spacer(Modifier.weight(1f))
+        // The orb takes whatever height is left and shrinks to fit it, so on a
+        // short phone the buttons below never get squeezed.
         // The orb starts a conversation too: the biggest thing on screen should do something.
-        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            Box(Modifier.clip(CircleShape).clickable(enabled = connected, onClick = onStart)) { MicOrb(mode == app.talklive.call.CallMode.Chat) }
+        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+            val fit = (maxHeight / 230.dp).coerceIn(0.45f, 1f)
+            Box(Modifier.clip(CircleShape).clickable(enabled = connected, onClick = onStart)) {
+                MicOrb(mode == app.talklive.call.CallMode.Chat, fit)
+            }
         }
-        Spacer(Modifier.height(36.dp))
+        Spacer(Modifier.height(12.dp))
         Text(
             stringResource(R.string.tagline),
             style = MaterialTheme.typography.headlineMedium,
@@ -141,11 +145,11 @@ fun HomeScreen(
                 }
             }
         }
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(18.dp))
         val placed = online.filter { it.countryCode != null }
         if (placed.size >= 3) OnlineNow(placed, enabled = connected, onFindIn = onFindIn)
         else HowItWorks(mode == app.talklive.call.CallMode.Chat)
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(22.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f)) { ModeSwitch(mode, onMode) }
             Spacer(Modifier.width(10.dp))
@@ -234,21 +238,21 @@ private fun HowItWorks(text: Boolean) {
 
 /** The breathing mic: soft halo rings behind a gradient disc. */
 @Composable
-private fun MicOrb(text: Boolean = false) {
+private fun MicOrb(text: Boolean = false, fit: Float = 1f) {
     val t = rememberInfiniteTransition(label = "orb")
     val halo by t.animateFloat(0.9f, 1.15f, infiniteRepeatable(tween(1600), RepeatMode.Reverse), label = "halo")
     Box(contentAlignment = Alignment.Center) {
         Box(
-            Modifier.size(220.dp).scale(halo).clip(CircleShape)
+            Modifier.size(220.dp * fit).scale(halo).clip(CircleShape)
                 .background(Brush.radialGradient(listOf(BrandViolet.copy(alpha = 0.18f), BrandTeal.copy(alpha = 0.0f)))),
         )
-        Box(Modifier.size(160.dp).clip(CircleShape).background(BrandViolet.copy(alpha = 0.10f)))
+        Box(Modifier.size(160.dp * fit).clip(CircleShape).background(BrandViolet.copy(alpha = 0.10f)))
         Box(
-            Modifier.size(112.dp).clip(CircleShape).background(BrandGradient),
+            Modifier.size(112.dp * fit).clip(CircleShape).background(BrandGradient),
             contentAlignment = Alignment.Center,
         ) {
             androidx.compose.animation.Crossfade(text, label = "orb-icon") { t ->
-                Icon(if (t) Icons.AutoMirrored.Rounded.Chat else Icons.Rounded.Mic, null, tint = Color.White, modifier = Modifier.size(52.dp))
+                Icon(if (t) Icons.AutoMirrored.Rounded.Chat else Icons.Rounded.Mic, null, tint = Color.White, modifier = Modifier.size(52.dp * fit))
             }
         }
     }
@@ -273,7 +277,7 @@ private fun ModeSwitch(mode: app.talklive.call.CallMode, onMode: (app.talklive.c
                 Row(
                     Modifier.weight(1f).fillMaxHeight().clip(CircleShape).clickable {
                         if (!on) haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                        onMode(m)
+                        app.talklive.sound.Tap.soft(); onMode(m)
                     },
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,

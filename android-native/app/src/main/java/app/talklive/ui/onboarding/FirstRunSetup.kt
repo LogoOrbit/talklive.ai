@@ -69,16 +69,18 @@ import kotlin.math.sin
  * optional), and you're in. Nothing is saved until the last step.
  */
 @Composable
-fun FirstRunSetup(onDone: (animal: String, gender: String, age: String) -> Unit) {
+fun FirstRunSetup(onBack: () -> Unit = {}, onDone: (animal: String, gender: String, age: String) -> Unit) {
     var step by rememberSaveable { mutableIntStateOf(0) }
     var animal by rememberSaveable { mutableStateOf<String?>(null) }
     var gender by rememberSaveable { mutableStateOf("unspecified") }
     var age by rememberSaveable { mutableStateOf("unspecified") }
+    // Back goes to the previous step; from the first one, to the sign-in screen.
+    androidx.activity.compose.BackHandler { if (step > 0) step-- else onBack() }
     Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 24.dp)) {
         Spacer(Modifier.height(16.dp))
         // Progress: three dots, the current one long.
         Row(Modifier.align(Alignment.CenterHorizontally), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            repeat(3) { i ->
+            repeat(2) { i ->
                 val w by animateDpAsState(if (i == step) 26.dp else 8.dp, spring(dampingRatio = 0.6f), label = "dot")
                 Box(Modifier.width(w).height(8.dp).clip(CircleShape).background(if (i <= step) BrandGradient else androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.surfaceVariant)))
             }
@@ -99,8 +101,7 @@ fun FirstRunSetup(onDone: (animal: String, gender: String, age: String) -> Unit)
                     PrimaryButton(stringResource(R.string.continue_), onClick = { step = 1 }, enabled = animal != null)
                     TextButton(onClick = { animal = Animals.random().id }, modifier = Modifier.align(Alignment.CenterHorizontally)) { Text("🎲  " + stringResource(R.string.surprise_me)) }
                 }
-                1 -> AboutYou(gender, age, onGender = { gender = it }, onAge = { age = it }, onNext = { step = 2 })
-                else -> AllSet(animal) { onDone(animal ?: Animals.first().id, gender, age) }
+                else -> AboutYou(gender, age, onGender = { gender = it }, onAge = { age = it }, onNext = { onDone(animal ?: Animals.first().id, gender, age) })
             }
         }
     }
@@ -137,7 +138,7 @@ private fun AboutYou(gender: String, age: String, onGender: (String) -> Unit, on
         }
         Spacer(Modifier.weight(1f))
         Text(stringResource(R.string.setup_about_privacy), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp))
-        PrimaryButton(stringResource(R.string.continue_), onClick = onNext)
+        PrimaryButton(stringResource(R.string.setup_go), onClick = onNext)
         Spacer(Modifier.height(12.dp))
     }
 }
@@ -155,39 +156,5 @@ private fun BigChoice(emoji: String, label: String, selected: Boolean, modifier:
         Text(emoji, fontSize = 32.sp)
         Spacer(Modifier.height(6.dp))
         Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.Center, maxLines = 2)
-    }
-}
-
-/** The "boom, done" moment: your avatar pops in with a burst of sparks. */
-@Composable
-private fun AllSet(animal: String?, onGo: () -> Unit) {
-    val pop = remember { Animatable(0f) }
-    val burst = remember { Animatable(0f) }
-    LaunchedEffect(Unit) {
-        pop.animateTo(1f, spring(dampingRatio = 0.45f, stiffness = 260f))
-    }
-    LaunchedEffect(Unit) { burst.animateTo(1f, tween(900)) }
-    Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(240.dp)) {
-            val colors = listOf(Color(0xFF6C5CE7), Color(0xFF00D4FF), Color(0xFFF2C14E), Color(0xFFEC4899), Color(0xFF22C55E))
-            repeat(14) { i ->
-                val a = i * (2 * Math.PI / 14)
-                val r = 110f * burst.value
-                Box(
-                    Modifier.graphicsLayer { translationX = (cos(a) * r).toFloat() * density; translationY = (sin(a) * r).toFloat() * density; alpha = 1f - burst.value }
-                        .size(10.dp).clip(CircleShape).background(colors[i % colors.size]),
-                )
-            }
-            Box(Modifier.graphicsLayer { scaleX = pop.value; scaleY = pop.value }) { AnimalAvatar(animal, null, 150.dp) }
-        }
-        Spacer(Modifier.height(20.dp))
-        Text(stringResource(R.string.setup_done_title), style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onBackground, textAlign = TextAlign.Center)
-        Text(
-            stringResource(R.string.setup_done_body, animalById(animal)?.name ?: ""),
-            style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 6.dp, start = 12.dp, end = 12.dp),
-        )
-        Spacer(Modifier.height(36.dp))
-        PrimaryButton(stringResource(R.string.setup_go), onClick = onGo)
     }
 }

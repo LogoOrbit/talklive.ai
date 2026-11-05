@@ -285,7 +285,7 @@ private fun GoldButton(text: String, busy: Boolean, onClick: () -> Unit) {
             .drawBehind {
                 if (shine > -1f) drawRect(Brush.linearGradient(listOf(Color.Transparent, Color.White.copy(alpha = 0.45f), Color.Transparent), start = Offset(size.width * shine - 80f, 0f), end = Offset(size.width * shine + 80f, size.height)))
             }
-            .clickable(enabled = !busy, onClick = onClick),
+            .clickable(enabled = !busy) { app.talklive.sound.Tap.pop(); onClick() },
         contentAlignment = Alignment.Center,
     ) {
         if (busy) CircularProgressIndicator(Modifier.size(24.dp), color = Color(0xFF3A2A06), strokeWidth = 2.5.dp)

@@ -254,6 +254,7 @@ fun MainCallButton(
             }
             .clickable(source, indication = null) {
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                app.talklive.sound.Tap.pop()
                 when (mode) {
                     MainMode.Searching, MainMode.Connecting -> onEnd()
                     MainMode.Live -> confirm = true
@@ -308,7 +309,7 @@ fun BarButton(icon: ImageVector, label: String, active: Boolean = false, enabled
                     else -> Brush.linearGradient(listOf(Color.White.copy(alpha = 0.06f), Color.White.copy(alpha = 0.06f)))
                 },
             )
-            .clickable(source, indication = null, enabled = enabled) { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); onClick() },
+            .clickable(source, indication = null, enabled = enabled) { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); app.talklive.sound.Tap.soft(); onClick() },
         contentAlignment = Alignment.Center,
     ) {
         Icon(

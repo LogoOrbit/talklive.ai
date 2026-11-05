@@ -97,6 +97,7 @@ fun PrimaryButton(
     Surface(
         onClick = {
             haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            app.talklive.sound.Tap.pop()
             onClick()
         },
         enabled = enabled && !loading,
@@ -131,7 +132,7 @@ fun SecondaryButton(
 ) {
     val source = remember { MutableInteractionSource() }
     Surface(
-        onClick = onClick,
+        onClick = { app.talklive.sound.Tap.pop(); onClick() },
         enabled = !loading,
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surface,

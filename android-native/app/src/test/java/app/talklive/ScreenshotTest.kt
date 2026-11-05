@@ -69,6 +69,12 @@ class ScreenshotTest {
     }
     @Test fun login() = shot("06_login") { LoginScreen(vm(), {}, {}) }
     @Test fun home() = shot("07_home") { HomeScreen(true, 3412, "fox", "Sam", false, {}, {}, {}) }
+    // A short phone, with room taken by the bottom bar: buttons keep their size.
+    @Config(qualifiers = "w360dp-h560dp-xxhdpi")
+    @Test fun homeShort() = shot("07c_home_short", dark = true) {
+        val P = { n: String, c: String, a: String -> app.talklive.net.OnlinePerson(n, c, null, a, emptyList(), false) }
+        HomeScreen(true, 3412, "fox", "Sam", true, {}, {}, {}, online = listOf(P("Aardvark", "US", "wolf"), P("段造台", "CN", "wolf"), P("zxz", "CN", "dolphin"), P("Daisy", "US", "deer"), P("Mateo", "AR", "fox")))
+    }
     @Test fun homeDark() = shot("07b_home_dark", dark = true) {
         val P = { n: String, c: String, cn: String, a: String, i: List<String>, w: Boolean -> app.talklive.net.OnlinePerson(n, c, cn, a, i, w) }
         HomeScreen(true, 3412, "fox", "Sam", true, {}, {}, {}, online = listOf(

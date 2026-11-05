@@ -211,7 +211,10 @@ class AuthRepository(
             .apply()
         _account.value = acc
         // The avatar saved with the account follows it to this device.
-        res.optString("animal").takeIf { it.isNotBlank() && it != "null" && it != identity.animal }?.let { identity.animal = it }
+        val saved = res.optString("animal").takeIf { it.isNotBlank() && it != "null" }
+        if (saved != null) { if (saved != identity.animal) identity.animal = saved }
+        // An older account with no avatar saved: give it one instead of asking.
+        else if (identity.animal == null) identity.animal = app.talklive.ui.animals.Animals.random().id
         finishOnboarding()
         adoptProfile(res)
         syncNickname()

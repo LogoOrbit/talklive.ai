@@ -66,7 +66,7 @@ fun TabBar(selected: MainTab, onSelect: (MainTab) -> Unit, badges: Map<MainTab, 
             NavigationBarItem(
                 selected = on,
                 onClick = {
-                    if (!on) haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    if (!on) { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); app.talklive.sound.Tap.soft() }
                     onSelect(tab)
                 },
                 icon = {

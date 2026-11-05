@@ -82,7 +82,7 @@ enum class AuthRoute { Welcome, Choose, Signup, Login, Reset }
 
 /** Welcome slides, then sign-in choices, then email sign-up or log-in. */
 @Composable
-fun OnboardingFlow(vm: AuthViewModel, start: AuthRoute = AuthRoute.Welcome, onClose: (() -> Unit)? = null) {
+fun OnboardingFlow(vm: AuthViewModel, start: AuthRoute = AuthRoute.Choose, onClose: (() -> Unit)? = null) {
     var route by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(start) }
 
     fun go(r: AuthRoute) { vm.clearError(); route = r }
@@ -210,14 +210,33 @@ internal fun ChooseScreen(vm: AuthViewModel, onSignup: () -> Unit, onLogin: () -
             }
         }
         Spacer(Modifier.weight(1f))
-        Image(painterResource(R.drawable.logo), null, Modifier.size(96.dp))
-        Spacer(Modifier.height(24.dp))
-        Text(stringResource(R.string.choose_title), style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onBackground)
-        Spacer(Modifier.height(8.dp))
+        Image(painterResource(R.drawable.logo), null, Modifier.size(72.dp))
+        Spacer(Modifier.height(20.dp))
         Text(
-            stringResource(R.string.choose_body), style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center,
+            stringResource(if (onClose == null) R.string.tagline else R.string.choose_title),
+            style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onBackground, textAlign = TextAlign.Center,
         )
+        Spacer(Modifier.height(24.dp))
+        // What TalkLive is, in three lines, on the same screen as the way in
+        // (it used to take three swipes before this screen).
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            listOf(
+                Triple(Icons.Rounded.Mic, R.string.welcome_1_title, R.string.welcome_1_body),
+                Triple(Icons.Rounded.Public, R.string.welcome_2_title, R.string.welcome_2_body),
+                Triple(Icons.Rounded.Shield, R.string.welcome_3_title, R.string.welcome_3_body),
+            ).forEach { (icon, title, body) ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(44.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
+                        Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+                    }
+                    Spacer(Modifier.width(14.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(title), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onBackground)
+                        Text(stringResource(body), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
         Spacer(Modifier.weight(1f))
         SecondaryButton(
             text = stringResource(R.string.continue_google),
