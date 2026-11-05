@@ -83,6 +83,14 @@ def wait_for(pattern, timeout=30):
         time.sleep(1.5)
     return False
 
+def scroll_to(pattern, swipes=10):
+    """Scrolls down until something matching pattern is on screen."""
+    for _ in range(swipes):
+        if find(pattern) is not None:
+            return True
+        adb("shell", "input", "swipe", "540", "1600", "540", "900", "300"); time.sleep(0.8)
+    return find(pattern) is not None
+
 def screen_text():
     seen = []
     for nd in nodes():
@@ -222,12 +230,12 @@ tap(r"^profile$", 8)
 for _ in range(3):
     adb("shell", "input", "swipe", "540", "1700", "540", "700", "300"); time.sleep(0.8)
 step("Settings: Calls, Privacy, Appearance", find(r"start on speaker|read receipts|vibration") is not None)
-ok = tap(r"^ocean$", 6)
-step("Ocean theme is Plus-only (opens Plus)", ok and wait_for(r"your profile with plus|start free trial|subscribe|talklive plus", 8))
-adb("shell", "input", "keyevent", "4"); time.sleep(1)
-for _ in range(4):
-    adb("shell", "input", "swipe", "540", "1700", "540", "700", "300"); time.sleep(0.8)
-ok = tap(r"report a problem", 6)
+ok = scroll_to(r"^ocean$") and tap(r"^ocean$", 6)
+plus = ok and wait_for(r"your profile with plus|start free trial|subscribe|talklive plus", 8)
+step("Ocean theme is Plus-only (opens Plus)", plus)
+if plus:
+    adb("shell", "input", "keyevent", "4"); time.sleep(1)
+ok = scroll_to(r"report a problem") and tap(r"report a problem", 6)
 if ok:
     adb("shell", "input", "text", "test%sreport%sfrom%sthe%semulator"); time.sleep(1)
     step("Report a problem sheet", True)
