@@ -204,7 +204,10 @@ if tap(r"^text$", 6):
         shot("text_sent")
         print(f"     text chat: field tapped={typed} send tapped={sent}; on screen: " + " | ".join(screen_text()), flush=True)
         step("Reply from the website arrives in the app", wait_for(r"hello from the website", 25))
-        adb("shell", "input", "keyevent", "4"); time.sleep(1)
+        # Leave with the X: it must ask first (keyboard closed beforehand).
+        adb("shell", "input", "keyevent", "111"); time.sleep(0.8)
+        tap(r"^end$", 5)
+        step("X asks before leaving the chat", wait_for(r"leave this chat|^leave$", 6))
         tap(r"^leave$", 5); time.sleep(2)
     else:
         # Not matched: stop the search so later steps start from Home.
