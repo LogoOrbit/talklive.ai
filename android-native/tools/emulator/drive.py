@@ -27,12 +27,27 @@ def nodes():
         xml = adb("shell", "cat", "/sdcard/ui.xml").stdout
         try:
             found = list(ET.fromstring(xml[xml.find("<"):]).iter("node"))
+            if found and clear_system_dialogs(found):
+                continue
             if found:
                 return found
         except Exception:
             pass
         time.sleep(0.7)
     return []
+
+def clear_system_dialogs(found):
+    # Android's own "X isn't responding" dialog (a slow launcher on a cold
+    # emulator) covers the app; close it like a person would.
+    for nd in found:
+        if re.search(r"isn.t responding", nd.get("text") or "", re.I):
+            for b in found:
+                if re.fullmatch(r"(close app|wait|ok)", (b.get("text") or "").strip(), re.I):
+                    x, y = center(b)
+                    adb("shell", "input", "tap", str(x), str(y))
+                    time.sleep(1.5)
+                    return True
+    return False
 
 def label(nd):
     return (nd.get("text") or "") + " | " + (nd.get("content-desc") or "")
@@ -93,6 +108,10 @@ def web_state():
 # --- Start fresh ---------------------------------------------------------
 for perm in ["RECORD_AUDIO", "POST_NOTIFICATIONS", "BLUETOOTH_CONNECT"]:
     adb("shell", "pm", "grant", PKG, f"android.permission.{perm}")
+# Let a cold emulator settle (its launcher is slow right after boot), then
+# clear anything it put on screen before starting the app.
+time.sleep(15)
+nodes()
 adb("shell", "am", "start", "-n", f"{PKG}/app.talklive.MainActivity")
 time.sleep(6)
 
