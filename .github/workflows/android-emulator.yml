@@ -1,0 +1,78 @@
+name: Android emulator test
+
+# The app on a real Android emulator (Pixel, Android 14) against a local
+# server, with the website in headless Chrome as the other person. It goes
+# through onboarding, a real voice call, chat during the call, the tabs, the
+# Plus page and filters, and saves a screenshot per step, a screen recording,
+# report.md and logs as the "emulator-run" artifact.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['android-native/**', 'server/**', 'public/app.js', '.github/workflows/android-emulator.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable KVM (hardware acceleration for the emulator)
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install server dependencies and the test browser
+        run: |
+          npm ci
+          npm i --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      # The emulator reaches the host machine at 10.0.2.2.
+      - name: Build the test app against the local server
+        working-directory: android-native
+        run: ./gradlew --no-daemon assembleDebug -PserverUrl=http://10.0.2.2:5000
+
+      - name: Start the local server
+        run: |
+          mkdir -p "$RUNNER_TEMP/data"
+          PORT=5000 DATA_DIR="$RUNNER_TEMP/data" NODE_ENV=development GIPHY_API_KEY= nohup node server/index.js > "$RUNNER_TEMP/server.log" 2>&1 &
+          for i in $(seq 1 40); do curl -sf http://localhost:5000/ > /dev/null && break; sleep 1; done
+
+      - name: Run the app on the emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
+          script: bash android-native/tools/emulator/run.sh
+
+      - name: Collect the server log
+        if: always()
+        run: mkdir -p emulator-out && cp "$RUNNER_TEMP/server.log" emulator-out/ || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: emulator-run
+          path: emulator-out
+          retention-days: 14
