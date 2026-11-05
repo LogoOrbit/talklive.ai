@@ -32,11 +32,12 @@ jobs:
           node-version: 22
           cache: npm
 
+      # The runner already has Google Chrome; Playwright drives it (no browser download).
       - name: Install server dependencies and the test browser
         run: |
           npm ci
           npm i --no-save playwright@1.49.1
-          npx playwright install --with-deps chromium
+          echo "CHROMIUM_PATH=$(command -v google-chrome || command -v chromium || true)" >> "$GITHUB_ENV"
 
       - uses: actions/setup-java@v4
         with:

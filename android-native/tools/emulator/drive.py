@@ -115,6 +115,9 @@ if connected_app:
         adb("shell", "input", "keyevent", "4")  # back: close keyboard
         adb("shell", "input", "keyevent", "4")  # back: close sheet
         time.sleep(1)
+    # Add friend during the call (the website user gets the request).
+    ok = tap(r"^add friend$", 5)
+    step("Add friend during call", ok, "website user should receive a friend request")
     # 6. Speaker / earpiece toggle.
     tap(r"^speaker$", 5)
     step("Speaker toggled", True)
@@ -140,11 +143,35 @@ ok = tap(r"talklive plus", 10)
 step("Plus page", ok and wait_for(r"your profile with plus|start free trial|subscribe", 10))
 adb("shell", "input", "keyevent", "4"); time.sleep(1)
 
+# Settings in Profile: the switches, the Calls section, themes, ID, problem report.
+tap(r"^profile$", 8)
+for _ in range(3):
+    adb("shell", "input", "swipe", "540", "1700", "540", "700", "300"); time.sleep(0.8)
+step("Settings: Calls, Privacy, Appearance", find(r"start on speaker|read receipts|vibration") is not None)
+ok = tap(r"^ocean$", 6)
+step("Ocean theme is Plus-only (opens Plus)", ok and wait_for(r"your profile with plus|start free trial|subscribe|talklive plus", 8))
+adb("shell", "input", "keyevent", "4"); time.sleep(1)
+for _ in range(4):
+    adb("shell", "input", "swipe", "540", "1700", "540", "700", "300"); time.sleep(0.8)
+ok = tap(r"report a problem", 6)
+if ok:
+    adb("shell", "input", "text", "test%sreport%sfrom%sthe%semulator"); time.sleep(1)
+    step("Report a problem sheet", True)
+    tap(r"^send$", 5)
+    step("Problem report sent", wait_for(r"we got your report", 6))
+else:
+    step("Report a problem sheet", False)
+
 # 10. Filters from Home.
 tap(r"^talk$", 8)
 ok = tap(r"match filters", 8)
 step("Filters", ok and wait_for(r"match filters|interests", 8))
 adb("shell", "input", "keyevent", "4")
+
+# Back on Home: once shows a hint, twice leaves the app.
+tap(r"^talk$", 8)
+adb("shell", "input", "keyevent", "4"); time.sleep(0.6)
+step("Back once on Home shows the exit hint", wait_for(r"press back again", 3))
 
 # --- Report ---------------------------------------------------------------
 passed = sum(1 for s in steps if s[1])
