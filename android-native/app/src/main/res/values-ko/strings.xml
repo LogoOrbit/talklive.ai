@@ -473,6 +473,10 @@
     <string name="read_receipts_desc">메시지를 읽었는지 상대에게 표시</string>
     <string name="vibration">진동</string>
     <string name="vibration_desc">누군가와 연결되면 진동</string>
+    <string name="plus_trial_then_year">%1$d일 무료, 이후 연 %2$s</string>
+    <string name="plus_trial_then_month">%1$d일 무료, 이후 월 %2$s</string>
+    <string name="plus_price_year">연 %1$s</string>
+    <string name="plus_price_month">월 %1$s</string>
     <plurals name="visitors_today">
         <item quantity="other">오늘 방문자 %1$s명</item>
     </plurals>

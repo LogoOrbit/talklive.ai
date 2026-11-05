@@ -473,6 +473,10 @@
     <string name="read_receipts_desc">به دیگران نشان دهید پیامشان را کی خواندید</string>
     <string name="vibration">لرزش</string>
     <string name="vibration_desc">لرزش هنگام وصل شدن به کسی</string>
+    <string name="plus_trial_then_year">%1$d روز رایگان، سپس سالانه %2$s</string>
+    <string name="plus_trial_then_month">%1$d روز رایگان، سپس ماهانه %2$s</string>
+    <string name="plus_price_year">سالانه %1$s</string>
+    <string name="plus_price_month">ماهانه %1$s</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s بازدیدکننده امروز</item>
         <item quantity="other">%1$s بازدیدکننده امروز</item>

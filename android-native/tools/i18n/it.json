@@ -472,5 +472,9 @@
 "read_receipts": "Conferme di lettura",
 "read_receipts_desc": "Mostra quando hai letto i loro messaggi",
 "vibration": "Vibrazione",
-"vibration_desc": "Vibra quando ti colleghi con qualcuno"
+"vibration_desc": "Vibra quando ti colleghi con qualcuno",
+"plus_trial_then_year": "%1$d giorni gratis, poi %2$s all'anno",
+"plus_trial_then_month": "%1$d giorni gratis, poi %2$s al mese",
+"plus_price_year": "%1$s all'anno",
+"plus_price_month": "%1$s al mese"
 }

@@ -471,5 +471,9 @@
 "read_receipts": "已读回执",
 "read_receipts_desc": "让对方知道你已读消息",
 "vibration": "振动",
-"vibration_desc": "连接成功时振动"
+"vibration_desc": "连接成功时振动",
+"plus_trial_then_year": "免费 %1$d 天，之后每年 %2$s",
+"plus_trial_then_month": "免费 %1$d 天，之后每月 %2$s",
+"plus_price_year": "每年 %1$s",
+"plus_price_month": "每月 %1$s"
 }

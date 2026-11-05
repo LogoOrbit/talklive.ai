@@ -472,5 +472,9 @@
 "read_receipts": "رسید خواندن",
 "read_receipts_desc": "به دیگران نشان دهید پیامشان را کی خواندید",
 "vibration": "لرزش",
-"vibration_desc": "لرزش هنگام وصل شدن به کسی"
+"vibration_desc": "لرزش هنگام وصل شدن به کسی",
+"plus_trial_then_year": "%1$d روز رایگان، سپس سالانه %2$s",
+"plus_trial_then_month": "%1$d روز رایگان، سپس ماهانه %2$s",
+"plus_price_year": "سالانه %1$s",
+"plus_price_month": "ماهانه %1$s"
 }

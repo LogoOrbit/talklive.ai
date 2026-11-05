@@ -474,5 +474,9 @@
 "read_receipts": "Отчёты о прочтении",
 "read_receipts_desc": "Показывать, что вы прочитали сообщения",
 "vibration": "Вибрация",
-"vibration_desc": "Вибрировать при соединении"
+"vibration_desc": "Вибрировать при соединении",
+"plus_trial_then_year": "%1$d дн. бесплатно, затем %2$s в год",
+"plus_trial_then_month": "%1$d дн. бесплатно, затем %2$s в месяц",
+"plus_price_year": "%1$s в год",
+"plus_price_month": "%1$s в месяц"
 }

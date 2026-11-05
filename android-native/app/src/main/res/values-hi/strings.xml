@@ -473,6 +473,10 @@
     <string name="read_receipts_desc">लोगों को दिखाएँ कि आपने उनके संदेश कब पढ़े</string>
     <string name="vibration">कंपन</string>
     <string name="vibration_desc">किसी से जुड़ने पर कंपन</string>
+    <string name="plus_trial_then_year">%1$d दिन मुफ़्त, फिर %2$s प्रति वर्ष</string>
+    <string name="plus_trial_then_month">%1$d दिन मुफ़्त, फिर %2$s प्रति माह</string>
+    <string name="plus_price_year">%1$s प्रति वर्ष</string>
+    <string name="plus_price_month">%1$s प्रति माह</string>
     <plurals name="visitors_today">
         <item quantity="one">आज %1$s विज़िटर</item>
         <item quantity="other">आज %1$s विज़िटर</item>

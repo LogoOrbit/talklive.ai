@@ -471,5 +471,9 @@
 "read_receipts": "既読表示",
 "read_receipts_desc": "メッセージを読んだことを相手に表示",
 "vibration": "バイブレーション",
-"vibration_desc": "つながったときに振動"
+"vibration_desc": "つながったときに振動",
+"plus_trial_then_year": "%1$d日間無料、その後は年額%2$s",
+"plus_trial_then_month": "%1$d日間無料、その後は月額%2$s",
+"plus_price_year": "年額%1$s",
+"plus_price_month": "月額%1$s"
 }

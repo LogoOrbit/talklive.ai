@@ -473,6 +473,10 @@
     <string name="read_receipts_desc">Tunjukkan kapan kamu membaca pesan mereka</string>
     <string name="vibration">Getar</string>
     <string name="vibration_desc">Bergetar saat terhubung dengan seseorang</string>
+    <string name="plus_trial_then_year">%1$d hari gratis, lalu %2$s per tahun</string>
+    <string name="plus_trial_then_month">%1$d hari gratis, lalu %2$s per bulan</string>
+    <string name="plus_price_year">%1$s per tahun</string>
+    <string name="plus_price_month">%1$s per bulan</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s pengunjung hari ini</item>
         <item quantity="other">%1$s pengunjung hari ini</item>

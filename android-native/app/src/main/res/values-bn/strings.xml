@@ -473,6 +473,10 @@
     <string name="read_receipts_desc">কেউ জানুক কখন আপনি তাদের বার্তা পড়েছেন</string>
     <string name="vibration">কম্পন</string>
     <string name="vibration_desc">কারও সাথে যুক্ত হলে কম্পন</string>
+    <string name="plus_trial_then_year">%1$d দিন বিনামূল্যে, তারপর বছরে %2$s</string>
+    <string name="plus_trial_then_month">%1$d দিন বিনামূল্যে, তারপর মাসে %2$s</string>
+    <string name="plus_price_year">বছরে %1$s</string>
+    <string name="plus_price_month">মাসে %1$s</string>
     <plurals name="visitors_today">
         <item quantity="one">আজ %1$s জন ভিজিটর</item>
         <item quantity="other">আজ %1$s জন ভিজিটর</item>

@@ -473,6 +473,10 @@
     <string name="read_receipts_desc">Mesajlarını okuduğunda karşı tarafa göster</string>
     <string name="vibration">Titreşim</string>
     <string name="vibration_desc">Biriyle bağlanınca titret</string>
+    <string name="plus_trial_then_year">%1$d gün ücretsiz, sonra yıllık %2$s</string>
+    <string name="plus_trial_then_month">%1$d gün ücretsiz, sonra aylık %2$s</string>
+    <string name="plus_price_year">Yıllık %1$s</string>
+    <string name="plus_price_month">Aylık %1$s</string>
     <plurals name="visitors_today">
         <item quantity="one">Bugün %1$s ziyaretçi</item>
         <item quantity="other">Bugün %1$s ziyaretçi</item>

@@ -472,5 +472,9 @@
 "read_receipts": "Lesebestätigungen",
 "read_receipts_desc": "Zeigen, wann du Nachrichten gelesen hast",
 "vibration": "Vibration",
-"vibration_desc": "Kurz vibrieren, wenn du verbunden wirst"
+"vibration_desc": "Kurz vibrieren, wenn du verbunden wirst",
+"plus_trial_then_year": "%1$d Tage gratis, danach %2$s pro Jahr",
+"plus_trial_then_month": "%1$d Tage gratis, danach %2$s pro Monat",
+"plus_price_year": "%1$s pro Jahr",
+"plus_price_month": "%1$s pro Monat"
 }

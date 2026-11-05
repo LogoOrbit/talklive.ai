@@ -472,5 +472,9 @@
 "read_receipts": "পড়ার রসিদ",
 "read_receipts_desc": "কেউ জানুক কখন আপনি তাদের বার্তা পড়েছেন",
 "vibration": "কম্পন",
-"vibration_desc": "কারও সাথে যুক্ত হলে কম্পন"
+"vibration_desc": "কারও সাথে যুক্ত হলে কম্পন",
+"plus_trial_then_year": "%1$d দিন বিনামূল্যে, তারপর বছরে %2$s",
+"plus_trial_then_month": "%1$d দিন বিনামূল্যে, তারপর মাসে %2$s",
+"plus_price_year": "বছরে %1$s",
+"plus_price_month": "মাসে %1$s"
 }

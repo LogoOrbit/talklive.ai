@@ -473,6 +473,10 @@
     <string name="read_receipts_desc">Показывать, что вы прочитали сообщения</string>
     <string name="vibration">Вибрация</string>
     <string name="vibration_desc">Вибрировать при соединении</string>
+    <string name="plus_trial_then_year">%1$d дн. бесплатно, затем %2$s в год</string>
+    <string name="plus_trial_then_month">%1$d дн. бесплатно, затем %2$s в месяц</string>
+    <string name="plus_price_year">%1$s в год</string>
+    <string name="plus_price_month">%1$s в месяц</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s посетитель сегодня</item>
         <item quantity="other">%1$s посетителя сегодня</item>

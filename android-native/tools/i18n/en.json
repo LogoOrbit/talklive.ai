@@ -475,5 +475,9 @@
 "read_receipts": "Read receipts",
 "read_receipts_desc": "Show people when you've read their messages",
 "vibration": "Vibration",
-"vibration_desc": "Buzz when you connect with someone"
+"vibration_desc": "Buzz when you connect with someone",
+"plus_trial_then_year": "%1$d days free, then %2$s a year",
+"plus_trial_then_month": "%1$d days free, then %2$s a month",
+"plus_price_year": "%1$s a year",
+"plus_price_month": "%1$s a month"
 }

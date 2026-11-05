@@ -257,6 +257,16 @@ fun PlusContent(
                         when { plan == null -> stringResource(R.string.plus_subscribe); plan.trial != null -> stringResource(R.string.plus_start_trial); else -> stringResource(R.string.plus_subscribe_price, plan.price) },
                         busy = busy, onClick = { plan?.let(onBuy) },
                     )
+                    // What it costs and when, right by the button (Google Play requires
+                    // it for trials, and people decide faster when it is plain).
+                    plan?.let { pl ->
+                        val yearly = PlayBilling.periodDays(pl.period) >= 360
+                        val line = when {
+                            pl.trial != null -> stringResource(if (yearly) R.string.plus_trial_then_year else R.string.plus_trial_then_month, PlayBilling.periodDays(pl.trial), pl.price)
+                            else -> stringResource(if (yearly) R.string.plus_price_year else R.string.plus_price_month, pl.price)
+                        }
+                        Text(line, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = Color.White, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 10.dp))
+                    }
                     Text(stringResource(R.string.plus_terms), style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.55f), textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
                 }
             }

@@ -473,6 +473,10 @@
     <string name="read_receipts_desc">让对方知道你已读消息</string>
     <string name="vibration">振动</string>
     <string name="vibration_desc">连接成功时振动</string>
+    <string name="plus_trial_then_year">免费 %1$d 天，之后每年 %2$s</string>
+    <string name="plus_trial_then_month">免费 %1$d 天，之后每月 %2$s</string>
+    <string name="plus_price_year">每年 %1$s</string>
+    <string name="plus_price_month">每月 %1$s</string>
     <plurals name="visitors_today">
         <item quantity="other">今日访客 %1$s 人</item>
     </plurals>

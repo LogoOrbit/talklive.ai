@@ -311,7 +311,9 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                         engage = engage,
                         filtersActive = filters.activeCount,
                         onStreak = { showStreak = true },
-                        onFilters = { if (premium.active) showFilters = true else showPlus = "filters" },
+                        // Everyone can filter by interests and 2 countries (as on the website);
+                        // gender and more countries open Plus from inside the sheet.
+                        onFilters = { showFilters = true },
                         premium = premium.active,
                         onPlus = { showPlus = "home" },
                         online = onlinePeople,

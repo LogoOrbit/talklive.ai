@@ -473,6 +473,10 @@
     <string name="read_receipts_desc">Mostra quando hai letto i loro messaggi</string>
     <string name="vibration">Vibrazione</string>
     <string name="vibration_desc">Vibra quando ti colleghi con qualcuno</string>
+    <string name="plus_trial_then_year">%1$d giorni gratis, poi %2$s all\'anno</string>
+    <string name="plus_trial_then_month">%1$d giorni gratis, poi %2$s al mese</string>
+    <string name="plus_price_year">%1$s all\'anno</string>
+    <string name="plus_price_month">%1$s al mese</string>
     <plurals name="visitors_today">
         <item quantity="one">%1$s visitatore oggi</item>
         <item quantity="other">%1$s visitatori oggi</item>
