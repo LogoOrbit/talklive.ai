@@ -61,9 +61,20 @@ def wait_for(pattern, timeout=30):
         time.sleep(1.5)
     return False
 
+def screen_text():
+    seen = []
+    for nd in nodes():
+        t = (nd.get("text") or nd.get("content-desc") or "").strip()
+        if t and t not in seen:
+            seen.append(t)
+    return seen[:30]
+
 def step(name, ok, note=""):
     steps.append((name, ok, shot(re.sub(r"\W+", "_", name.lower()).strip("_")), note))
     print(("PASS " if ok else "FAIL ") + name + (f" ({note})" if note else ""), flush=True)
+    if not ok:
+        # What was on screen, so a failure can be read straight from the log.
+        print("     on screen: " + " | ".join(screen_text()), flush=True)
 
 def web_state():
     try:
@@ -94,7 +105,7 @@ step("Home", wait_for(r"start talking", 25))
 # 4. A real voice call with the website user.
 tap(r"start talking")
 time.sleep(3)
-step("Searching", wait_for(r"finding someone|looking around|still looking|almost there|stop", 15))
+step("Searching (or already matched)", wait_for(r"finding someone|looking around|still looking|almost there|stop|^\d{1,2}:\d{2}$", 15))
 connected_app, connected_web = False, False
 end = time.time() + 90
 while time.time() < end and not (connected_app and connected_web):
