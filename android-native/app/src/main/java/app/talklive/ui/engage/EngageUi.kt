@@ -694,7 +694,8 @@ fun InviteSheet(vm: EngageViewModel, onDismiss: () -> Unit) {
 @Composable
 fun FeedbackSheet(onSend: (String) -> Unit, problem: Boolean = false, onDismiss: () -> Unit) {
     var text by rememberSaveable { mutableStateOf("") }
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.background) {
+    // Opens fully, so Send is never hidden below the screen or the keyboard.
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().imePadding().padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
             Text(stringResource(if (problem) R.string.problem_title else R.string.feedback_title), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
             Text(stringResource(if (problem) R.string.problem_body else R.string.feedback_body), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

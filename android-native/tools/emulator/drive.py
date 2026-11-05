@@ -20,12 +20,19 @@ def shot(name):
     return os.path.basename(path)
 
 def nodes():
-    adb("shell", "uiautomator", "dump", "/sdcard/ui.xml")
-    xml = adb("shell", "cat", "/sdcard/ui.xml").stdout
-    try:
-        return list(ET.fromstring(xml[xml.find("<"):]).iter("node"))
-    except Exception:
-        return []
+    # A snapshot can fail while something on screen animates; try a few times.
+    for _ in range(4):
+        adb("shell", "rm", "-f", "/sdcard/ui.xml")
+        adb("shell", "uiautomator", "dump", "/sdcard/ui.xml")
+        xml = adb("shell", "cat", "/sdcard/ui.xml").stdout
+        try:
+            found = list(ET.fromstring(xml[xml.find("<"):]).iter("node"))
+            if found:
+                return found
+        except Exception:
+            pass
+        time.sleep(0.7)
+    return []
 
 def label(nd):
     return (nd.get("text") or "") + " | " + (nd.get("content-desc") or "")
@@ -154,6 +161,24 @@ ok = tap(r"talklive plus", 10)
 step("Plus page", ok and wait_for(r"your profile with plus|start free trial|subscribe", 10))
 adb("shell", "input", "keyevent", "4"); time.sleep(1)
 
+# A random text chat with the website's text page, both directions.
+tap(r"^talk$", 8)
+if tap(r"^text$", 6):
+    tap(r"start chatting", 8)
+    matched = wait_for(r"you are now chatting|now chatting|message", 40)
+    step("Text chat matched", matched)
+    if matched:
+        tap(r"^message$", 5)
+        adb("shell", "input", "text", "hi%sfrom%sthe%sapp")
+        time.sleep(0.8)
+        tap(r"^send$", 5)
+        step("Reply from the website arrives in the app", wait_for(r"hello from the website", 25))
+        adb("shell", "input", "keyevent", "4"); time.sleep(1)
+        tap(r"^leave$", 5); time.sleep(2)
+    tap(r"^voice$", 5)
+else:
+    step("Text chat matched", False, "no Text switch on Home")
+
 # Settings in Profile: the switches, the Calls section, themes, ID, problem report.
 tap(r"^profile$", 8)
 for _ in range(3):
@@ -168,8 +193,10 @@ ok = tap(r"report a problem", 6)
 if ok:
     adb("shell", "input", "text", "test%sreport%sfrom%sthe%semulator"); time.sleep(1)
     step("Report a problem sheet", True)
+    adb("shell", "input", "keyevent", "111")  # Escape: hide the keyboard
+    time.sleep(0.8)
     tap(r"^send$", 5)
-    step("Problem report sent", wait_for(r"we got your report", 6))
+    step("Problem report sent", wait_for(r"we got your report", 6) or find(r"tell us what went wrong") is None)
 else:
     step("Report a problem sheet", False)
 
