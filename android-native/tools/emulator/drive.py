@@ -123,13 +123,25 @@ nodes()
 adb("shell", "am", "start", "-n", f"{PKG}/app.talklive.MainActivity")
 time.sleep(6)
 
-# 1. First screen: one welcome screen with the ways in.
-step("Welcome screen", wait_for(r"continue as guest", 40))
-# Guest without ticking 18+ must not get through; then tick it and continue.
-tap(r"continue as guest"); time.sleep(1)
-step("18+ box required before continuing", find(r"continue as guest") is not None and find(r"18 or older") is not None)
-tap(r"18 or older", 5)
+# 1. First launch: three intro swipes, then the ways in.
+step("Intro swipes", wait_for(r"talk to someone new in one tap", 40))
+tap(r"^continue$"); tap(r"^continue$")
+step("Intro last slide", wait_for(r"you stay in control", 10))
+tap(r"get started")
+step("Welcome screen", wait_for(r"continue as guest", 20))
+# Nothing gets through before the Terms and Privacy Policy are read in the app.
 tap(r"continue as guest")
+step("Terms open before anything else", wait_for(r"before you start", 15))
+def read_to_end():
+    for _ in range(40):
+        if find(r"next: read the other one|i.m 18\+ and i agree") is not None:
+            return True
+        adb("shell", "input", "swipe", "540", "1500", "540", "300", "120"); time.sleep(0.4)
+    return False
+read_to_end()
+tap(r"next: read the other one", 5)
+step("Both documents read", read_to_end())
+tap(r"i.m 18\+ and i agree")
 
 # 2. Setup: avatar, then about you.
 step("Pick an avatar", wait_for(r"surprise me", 20))
