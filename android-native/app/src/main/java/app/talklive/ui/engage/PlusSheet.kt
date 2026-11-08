@@ -540,7 +540,7 @@ private fun CompareTable(modifier: Modifier = Modifier) {
         Triple(R.string.cmp_faces, no, yes),
         Triple(R.string.cmp_countries, no, yes),
         Triple(R.string.plus_perk_likes, no, yes),
-        Triple(R.string.cmp_friends, "30", "∞"),
+        Triple(R.string.cmp_friends, "15", "∞"),
         Triple(R.string.cmp_history, "3", "∞"),
         Triple(R.string.cmp_films, "1", "3"),
         Triple(R.string.cmp_freezes, no, yes),

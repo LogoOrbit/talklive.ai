@@ -2645,9 +2645,9 @@ function hasChatHistory(a, b) {
   return !!(lb && lb.some((e) => e.clientId === a));
 }
 
-// Free profiles keep up to 30 friends (people already past it keep them all);
+// Free profiles keep up to 15 friends (people already past it keep them all);
 // Plus has no limit.
-const FREE_FRIEND_CAP = 30;
+const FREE_FRIEND_CAP = 15;
 function friendCapFull(clientId) {
   return !isPremium(clientId) && (friends.get(clientId) || new Map()).size >= FREE_FRIEND_CAP;
 }
