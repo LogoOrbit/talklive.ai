@@ -2645,6 +2645,15 @@ function hasChatHistory(a, b) {
   return !!(lb && lb.some((e) => e.clientId === a));
 }
 
+// Free profiles keep up to 30 friends (people already past it keep them all);
+// Plus has no limit.
+const FREE_FRIEND_CAP = 30;
+function friendCapFull(clientId) {
+  return !isPremium(clientId) && (friends.get(clientId) || new Map()).size >= FREE_FRIEND_CAP;
+}
+const FRIEND_CAP_MINE = { ok: false, plusLimit: 'friends', error: `Free accounts can have up to ${FREE_FRIEND_CAP} friends. Get TalkLive Plus for unlimited friends.` };
+const FRIEND_CAP_THEIRS = { ok: false, error: 'They have reached their friend limit right now. Try again later.' };
+
 function addFriendPair(clientIdA, infoA, clientIdB, infoB) {
   if (!friends.has(clientIdA)) friends.set(clientIdA, new Map());
   if (!friends.has(clientIdB)) friends.set(clientIdB, new Map());
@@ -2950,6 +2959,7 @@ function liveAvatarFor(clientId, fallback) {
   return shownAvatar(profile) || fallback || null;
 }
 
+const FREE_HISTORY = 3;
 function syncClientState(socket, clientId) {
   const friendList = Array.from((friends.get(clientId) || new Map()).entries()).map(([fid, info]) => ({
     clientId: fid,
@@ -2960,18 +2970,22 @@ function syncClientState(socket, clientId) {
     // only masks the per-friend indicator, never the global online count.
     ...presenceOf(fid),
     last: lastMessageBetween(clientId, fid),
+    premium: isPremium(fid),
   }));
   const requestList = Array.from((friendRequests.get(clientId) || new Map()).entries()).map(([fid, info]) => ({
     clientId: fid,
     ...info,
     friendId: publicIdOf(fid),
     dm: 'accept',
+    premium: isPremium(fid),
   }));
   // Recent random-chat partners (newest first), each carrying a live online
   // flag so the history panel can show who's around to message back right now.
-  const historyList = Array.from(chatHistory.get(clientId) || [])
-    .slice()
-    .reverse()
+  // Free profiles see their last 3 people; Plus sees the whole history.
+  const fullHistory = Array.from(chatHistory.get(clientId) || []).slice().reverse();
+  const historyLimit = isPremium(clientId) ? fullHistory.length : FREE_HISTORY;
+  const historyList = fullHistory
+    .slice(0, historyLimit)
     .map((e) => ({
       clientId: e.clientId,
       username: e.username,
@@ -2985,6 +2999,7 @@ function syncClientState(socket, clientId) {
       ...presenceOf(e.clientId),
       last: lastMessageBetween(clientId, e.clientId),
       dm: dmGate(clientId, e.clientId),
+      premium: isPremium(e.clientId),
     }));
   // Who this user has asked and not heard back from, so a profile can say
   // "Pending" instead of offering to send the same request twice.
@@ -3019,6 +3034,9 @@ function syncClientState(socket, clientId) {
     sentRequests: sentList,
     notifications: notifications.get(clientId) || [],
     chatHistory: historyList,
+    // How many older people are kept but only shown with Plus.
+    historyHidden: Math.max(0, fullHistory.length - historyList.length),
+    friendCap: isPremium(clientId) ? null : FREE_FRIEND_CAP,
     blocked: blockedList,
     muted: Array.from(mutedChats.get(clientId) || []),
   });
@@ -3784,9 +3802,13 @@ function placeFromHints(timezone, acceptLanguage) {
 // The picture friends and recent people see. Most people never pick an
 // avatar, but everyone who calls has a spirit animal - without this fallback
 // their friends saw a blank silhouette for someone they knew as "the Fox".
+// Legendary faces only Plus members can wear (android AnimalUi PLUS_FACES).
+const PLUS_FACES = new Set(['a:unicorn', 'a:dragon', 'a:eagle', 'a:shark', 'c:king', 'c:queen', 'c:knight', 'c:astronaut']);
 function shownAvatar(p) {
   if (!p) return null;
-  return p.avatar || (p.animal ? `a:${p.animal}` : null);
+  const face = p.avatar || (p.animal ? `a:${p.animal}` : null);
+  if (face && PLUS_FACES.has(face) && !isPremium(p.clientId)) return null;
+  return face;
 }
 
 function sanitizeAvatar(value) {
@@ -4123,9 +4145,9 @@ function emitToClient(clientId, event, payload) {
 }
 function recordEngageCall(profile, country, seconds) {
   if (!profile || !profile.clientId || seconds < Engage.GOOD_CALL_SECONDS) return;
-  const { rec, bump, stamp } = Engage.noteCall(store.engageGet(profile.clientId), { country, seconds, tz: profile.timezone });
+  const { rec, bump, stamp } = Engage.noteCall(store.engageGet(profile.clientId), { country, seconds, tz: profile.timezone, plus: isPremium(profile.clientId) });
   store.engageSet(profile.clientId, rec);
-  emitToClient(profile.clientId, 'engage-update', { state: Engage.view(rec, { tz: profile.timezone }), bump, stamp });
+  emitToClient(profile.clientId, 'engage-update', { state: Engage.view(rec, { tz: profile.timezone, plus: isPremium(profile.clientId) }), bump, stamp });
 }
 
 // Re-send premium state to every live socket belonging to a clientId. Used
@@ -5809,7 +5831,7 @@ io.on('connection', (socket) => {
       plans: billing.plans(),
     });
     socket.emit('identity-token', { clientId, token: issuedIdentityToken });
-    socket.emit('engage-state', Engage.view(store.engageGet(clientId), { tz: profiles.get(socket.id).timezone }));
+    socket.emit('engage-state', Engage.view(store.engageGet(clientId), { tz: profiles.get(socket.id).timezone, plus: isPremium(clientId) }));
     // Unacknowledged owner warnings. Checked again shortly after, because a
     // signed-in person's account is attached by its own event, which can land
     // after 'join'; the page ignores a warning it is already showing.
@@ -6041,11 +6063,11 @@ io.on('connection', (socket) => {
     const reply = typeof ack === 'function' ? ack : () => {};
     if (!me) return reply({ ok: false });
     if (!isPremium(me.clientId)) return reply({ ok: false, reason: 'premium' });
-    const { rec, ok, count } = Engage.restore(store.engageGet(me.clientId), { tz: me.timezone });
+    const { rec, ok, count } = Engage.restore(store.engageGet(me.clientId), { tz: me.timezone, plus: isPremium(me.clientId) });
     if (!ok) return reply({ ok: false, reason: 'not-restorable' });
     store.engageSet(me.clientId, rec);
     store.recordFeature('streak_restore');
-    emitToClient(me.clientId, 'engage-update', { state: Engage.view(rec, { tz: me.timezone }) });
+    emitToClient(me.clientId, 'engage-update', { state: Engage.view(rec, { tz: me.timezone, plus: isPremium(me.clientId) }) });
     reply({ ok: true, count });
   });
 
@@ -6053,13 +6075,13 @@ io.on('connection', (socket) => {
     const me = profiles.get(socket.id);
     if (!me) return;
     const current = Engage.normalise(store.engageGet(me.clientId));
-    if (current.merged) return socket.emit('engage-state', Engage.view(current, { tz: me.timezone }));
+    if (current.merged) return socket.emit('engage-state', Engage.view(current, { tz: me.timezone, plus: isPremium(me.clientId) }));
     const rec = Engage.merge(current, local, { tz: me.timezone });
     // Only a browser that actually had something spends the one carry-over.
     const had = (local.passport && local.passport.length) || (local.streak && local.streak.count);
     if (had) rec.merged = true;
     store.engageSet(me.clientId, rec);
-    socket.emit('engage-state', Engage.view(rec, { tz: me.timezone }));
+    socket.emit('engage-state', Engage.view(rec, { tz: me.timezone, plus: isPremium(me.clientId) }));
   });
 
   // People who hearted you. Premium sees who; everyone else sees how many.
@@ -6717,6 +6739,8 @@ io.on('connection', (socket) => {
     if (isFriend(me.clientId, targetClientId)) {
       return socket.emit('friend-request-result', { ok: true, alreadyFriends: true });
     }
+    if (friendCapFull(me.clientId)) return socket.emit('friend-request-result', FRIEND_CAP_MINE);
+    if (friendCapFull(targetClientId)) return socket.emit('friend-request-result', FRIEND_CAP_THEIRS);
     const temporary = !socketAuth.get(socket.id);
     const myInfo = { username: me.username, countryCode: me.country, temporary, avatar: shownAvatar(me) };
 
@@ -6818,6 +6842,9 @@ io.on('connection', (socket) => {
       return;
     }
 
+    // Full: the request stays in the inbox, so it can be accepted after Plus.
+    if (accept && friendCapFull(me.clientId)) return socket.emit('friend-request-result', FRIEND_CAP_MINE);
+    if (accept && friendCapFull(fromClientId)) return socket.emit('friend-request-result', FRIEND_CAP_THEIRS);
     const outboxEntry = (sentRequests.get(fromClientId) || new Map()).get(me.clientId);
     clearRequestPair(fromClientId, me.clientId);
     if (notificationId) removeNotification(me.clientId, notificationId);

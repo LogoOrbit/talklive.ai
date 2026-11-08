@@ -116,6 +116,8 @@ fun ProfileScreen(
     val dark by vm.dark.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
+    var youSheet by remember { mutableStateOf<String?>(null) }
+    val plusNow by engageVm.premium.collectAsStateWithLifecycle()
     LaunchedEffect(vm.saved) {
         vm.saved?.let { snackbar.showSnackbar(it); vm.saved = null }
     }
@@ -174,7 +176,6 @@ fun ProfileScreen(
             val engage by engageVm.engage.collectAsStateWithLifecycle()
             val films by engageVm.films.collectAsStateWithLifecycle()
             val premium by engageVm.premium.collectAsStateWithLifecycle()
-            var youSheet by remember { mutableStateOf<String?>(null) }
             // Plus, as a card of its own rather than one more row.
             Spacer(Modifier.height(20.dp))
             Box(
@@ -366,7 +367,7 @@ fun ProfileScreen(
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
     }
 
-    vm.sheet?.let { sheet -> ProfileSheetHost(sheet, vm, animal, onSignIn) }
+    vm.sheet?.let { sheet -> ProfileSheetHost(sheet, vm, animal, onSignIn, premium = plusNow.active, onPlus = { vm.close(); youSheet = "plus" }) }
 }
 
 @Composable
@@ -510,7 +511,7 @@ private fun SettingRow(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ProfileSheetHost(sheet: ProfileSheet, vm: ProfileViewModel, animal: String?, onSignIn: () -> Unit = {}) {
+private fun ProfileSheetHost(sheet: ProfileSheet, vm: ProfileViewModel, animal: String?, onSignIn: () -> Unit = {}, premium: Boolean = false, onPlus: () -> Unit = {}) {
     val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val account by vm.account.collectAsStateWithLifecycle()
     ModalBottomSheet(onDismissRequest = vm::close, sheetState = state, containerColor = MaterialTheme.colorScheme.background) {
@@ -522,6 +523,8 @@ private fun ProfileSheetHost(sheet: ProfileSheet, vm: ProfileViewModel, animal: 
                     AnimalGrid(
                         selected = pick,
                         onSelect = { pick = it },
+                        premium = premium,
+                        onLocked = onPlus,
                         modifier = Modifier.fillMaxWidth().height(380.dp),
                         contentPadding = PaddingValues(vertical = 8.dp),
                     )

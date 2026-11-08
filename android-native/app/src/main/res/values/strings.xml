@@ -554,4 +554,10 @@
     <string name="terms_agree">I\'m 18+ and I agree</string>
     <string name="terms_keep_reading">Scroll to the end to continue</string>
     <string name="terms_next">Next: read the other one</string>
+    <string name="history_locked">%1$d more people you met. See them all with Plus.</string>
+    <string name="likes_someone_from">Someone from %1$s liked you</string>
+    <string name="likes_and_more">and %1$d more</string>
+    <string name="likes_see_who">💎 See who liked you</string>
+    <string name="streak_freezes_left">%1$d streak freezes left this month. Miss a day and your streak stays.</string>
+    <string name="streak_freezes_plus">Plus gives you 2 streak freezes a month, so a missed day never breaks your streak.</string>
 </resources>

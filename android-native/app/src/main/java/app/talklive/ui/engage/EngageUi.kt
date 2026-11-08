@@ -126,6 +126,23 @@ fun StreakSheet(engage: Engage, onDismiss: () -> Unit, premium: Boolean = false,
                     )
                 }
             }
+            // Streak freezes: 2 a month with Plus; free users see what they would get.
+            Spacer(Modifier.height(14.dp))
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+                    .background(app.talklive.ui.components.PlusGold.copy(alpha = 0.10f))
+                    .then(if (premium) Modifier else Modifier.clickable(onClick = onPlus))
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("🧊", style = MaterialTheme.typography.titleLarge)
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    if (premium) stringResource(R.string.streak_freezes_left, engage.streak.freezesLeft ?: 2) else stringResource(R.string.streak_freezes_plus),
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f),
+                )
+                if (!premium) Text("Plus", color = app.talklive.ui.components.PlusGold, style = MaterialTheme.typography.labelLarge)
+            }
             // A streak that just broke: Plus brings it back.
             if (engage.streak.count == 0 && engage.streak.lostCount >= 2 && engage.streak.restorable) {
                 Spacer(Modifier.height(16.dp))
@@ -653,14 +670,35 @@ fun LikesSheet(vm: EngageViewModel, onPlus: (() -> Unit)? = null, onDismiss: () 
                 likes == null -> CircularProgressIndicator(Modifier.size(28.dp))
                 likes.count == 0 -> Text(stringResource(R.string.likes_empty), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 likes.locked -> {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.Lock, null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(10.dp))
-                        Text(stringResource(R.string.likes_locked, likes.countries.mapNotNull { flag(it) }.joinToString(" ")), color = MaterialTheme.colorScheme.onBackground)
+                    // A teaser: who liked them is hidden, but they are real
+                    // people, one row each, with where they are from.
+                    val shown = likes.countries.take(5).ifEmpty { listOf<String?>(null) }
+                    shown.forEachIndexed { i, cc ->
+                        Row(Modifier.fillMaxWidth().padding(vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                Modifier.size(44.dp).clip(CircleShape)
+                                    .background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(app.talklive.ui.components.PlusGold.copy(alpha = 0.55f), MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)))),
+                                contentAlignment = Alignment.Center,
+                            ) { Text("?", style = MaterialTheme.typography.titleMedium, color = Color.White) }
+                            Spacer(Modifier.width(12.dp))
+                            Column(Modifier.weight(1f)) {
+                                Box(Modifier.width((90 + (i * 23) % 50).dp).height(12.dp).clip(RoundedCornerShape(6.dp)).background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)))
+                                Spacer(Modifier.height(6.dp))
+                                Text(
+                                    stringResource(R.string.likes_someone_from, cc?.let { c -> listOfNotNull(flag(c), countryName(c)).joinToString(" ") } ?: "🌍"),
+                                    style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            Icon(Icons.Rounded.Lock, null, tint = app.talklive.ui.components.PlusGold, modifier = Modifier.size(18.dp))
+                        }
                     }
+                    if (likes.count > shown.size) Text(
+                        stringResource(R.string.likes_and_more, likes.count - shown.size),
+                        style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp),
+                    )
                     if (onPlus != null) {
                         Spacer(Modifier.height(14.dp))
-                        PrimaryButton(stringResource(R.string.plus_get), onClick = onPlus)
+                        PrimaryButton(stringResource(R.string.likes_see_who), onClick = onPlus)
                     }
                 }
                 else -> likes.list.forEach { l ->

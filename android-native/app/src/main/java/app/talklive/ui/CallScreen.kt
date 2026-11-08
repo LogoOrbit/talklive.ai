@@ -394,7 +394,11 @@ private fun SpeakingAvatar(partner: Partner, active: Boolean, level: () -> Float
 
 @Composable
 private fun PartnerInfo(p: Partner) {
-    Title(p.username.ifBlank { stringResource(R.string.stranger) })
+    app.talklive.ui.components.PlusName(
+        p.username.ifBlank { stringResource(R.string.stranger) }, p.premium,
+        MaterialTheme.typography.headlineSmall, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+    )
+    if (p.premium) { Spacer(Modifier.height(6.dp)); app.talklive.ui.components.PlusTag() }
     Spacer(Modifier.height(8.dp))
     Subtitle(partnerLine(p).ifBlank { animalById(p.animal)?.name.orEmpty() })
 }

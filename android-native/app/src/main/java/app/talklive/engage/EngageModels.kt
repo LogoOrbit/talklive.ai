@@ -4,7 +4,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /** [lostCount]: a streak that just broke; [restorable]: Plus can bring it back now. */
-data class Streak(val count: Int, val best: Int, val doneToday: Boolean, val lostCount: Int = 0, val restorable: Boolean = false)
+data class Streak(val count: Int, val best: Int, val doneToday: Boolean, val lostCount: Int = 0, val restorable: Boolean = false, val freezesLeft: Int? = null)
 data class Week(val calls: Int, val countries: Int, val longestSeconds: Int)
 
 /** Daily streak, country passport and this week's stats (server/engage.js). */
@@ -15,7 +15,7 @@ data class Engage(val streak: Streak, val passport: List<String>, val week: Week
             val w = o.optJSONObject("week") ?: JSONObject()
             val p = o.optJSONArray("passport") ?: JSONArray()
             return Engage(
-                Streak(s.optInt("count"), s.optInt("best"), s.optBoolean("doneToday"), s.optJSONObject("lost")?.optInt("count") ?: 0, s.optJSONObject("lost")?.optBoolean("restorable") == true),
+                Streak(s.optInt("count"), s.optInt("best"), s.optBoolean("doneToday"), s.optJSONObject("lost")?.optInt("count") ?: 0, s.optJSONObject("lost")?.optBoolean("restorable") == true, if (s.isNull("freezesLeft") || !s.has("freezesLeft")) null else s.optInt("freezesLeft")),
                 (0 until p.length()).map { p.optString(it) }.filter { it.length == 2 },
                 Week(w.optInt("calls"), w.optInt("countries"), w.optInt("longest")),
             )

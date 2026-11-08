@@ -53,6 +53,10 @@ class SocialRepository @Inject constructor(
     /** People met on calls in the last day, newest first. */
     val history: StateFlow<List<Person>> = _history
 
+    private val _historyHidden = MutableStateFlow(0)
+    /** Older people met, kept on the server but only listed with Plus. */
+    val historyHidden: StateFlow<Int> = _historyHidden
+
     private val _unread = MutableStateFlow<Map<String, Int>>(emptyMap())
     val unread: StateFlow<Map<String, Int>> = _unread
 
@@ -510,6 +514,7 @@ class SocialRepository @Inject constructor(
         _requests.value = o.optJSONArray("friendRequests").people()
         _sent.value = o.optJSONArray("sentRequests").people().map { it.clientId }.toSet()
         _history.value = o.optJSONArray("chatHistory").people()
+        _historyHidden.value = o.optInt("historyHidden")
         _muted.value = o.optJSONArray("muted").strings().toSet()
         val counts = mutableMapOf<String, Int>()
         o.optJSONArray("notifications")?.let { arr ->

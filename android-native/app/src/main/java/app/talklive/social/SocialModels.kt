@@ -38,6 +38,8 @@ data class Person(
     /** For people met at random: "talk" (a voice call) or "chat" (text). */
     val mode: String = "chat",
     val durationSeconds: Int = 0,
+    /** A Plus member: their name shows in gold. */
+    val premium: Boolean = false,
 ) {
     val displayName: String get() = nickname?.takeIf { it.isNotBlank() } ?: username.ifBlank { "Stranger" }
     val canMessage: Boolean get() = dm == "open" || dm == "one"
@@ -58,6 +60,7 @@ data class Person(
             ts = o.optLong("ts"),
             mode = o.optString("mode", "chat"),
             durationSeconds = o.optInt("durationSeconds"),
+            premium = o.optBoolean("premium"),
         )
     }
 }

@@ -111,7 +111,7 @@ fun ChatsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalkin
                 Row(Modifier.padding(horizontal = 24.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     PersonAvatar(c.person, 44.dp)
                     Spacer(Modifier.width(12.dp))
-                    Text(c.person.displayName, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
+                    app.talklive.ui.components.PlusName(c.person.displayName, c.person.premium, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
                 }
                 @Composable
                 fun item(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, color: Color = MaterialTheme.colorScheme.onSurface, onClick: () -> Unit) =

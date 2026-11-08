@@ -180,7 +180,7 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                 PersonAvatar(person, 40.dp)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(person.displayName, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    app.talklive.ui.components.PlusName(person.displayName, person.premium, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(
                         if (typing) stringResource(R.string.typing) else presence(person),
                         style = MaterialTheme.typography.labelMedium,
@@ -699,7 +699,7 @@ private fun EmptyChat(p: Person) {
     Column(Modifier.fillMaxWidth().padding(vertical = 48.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         PersonAvatar(p, 88.dp, showOnline = false)
         Spacer(Modifier.height(12.dp))
-        Text(p.displayName, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
+        app.talklive.ui.components.PlusName(p.displayName, p.premium, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
         Text(stringResource(R.string.say_hi), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
@@ -750,7 +750,7 @@ internal fun PersonSheet(
         ) {
             PersonAvatar(person, 112.dp)
             Spacer(Modifier.height(14.dp))
-            Text(person.displayName, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground)
+            app.talklive.ui.components.PlusName(person.displayName, person.premium, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground)
             app.talklive.ui.components.CopyIdChip(person.friendId, Modifier.padding(top = 8.dp))
             if (person.nickname != null && person.nickname != person.username) {
                 Text(person.username, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

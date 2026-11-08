@@ -148,11 +148,14 @@ fun TextChatScreen(
                         AnimalAvatar(p?.animal ?: myAnimal, p?.username, 40.dp)
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(
-                                p?.username ?: stringResource(R.string.searching_chat),
-                                style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 1, overflow = TextOverflow.Ellipsis,
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                app.talklive.ui.components.PlusName(
+                                    p?.username ?: stringResource(R.string.searching_chat), p?.premium == true,
+                                    MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.weight(1f, fill = false),
+                                )
+                                if (p?.premium == true) { Spacer(Modifier.width(6.dp)); app.talklive.ui.components.PlusTag() }
+                            }
                             if (p != null) {
                                 // While they are away or typing, show that, else just where they are.
                                 Text(

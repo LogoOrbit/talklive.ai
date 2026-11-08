@@ -8,6 +8,9 @@ import android.content.Intent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -92,7 +95,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalking: () -> Unit) {
+fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalking: () -> Unit, onPlus: () -> Unit = {}) {
     var profileOf by remember { mutableStateOf<Person?>(null) }
     profileOf?.let { p ->
         val friendsNow by vm.friends.collectAsStateWithLifecycle()
@@ -107,6 +110,7 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
     val friends by vm.friends.collectAsStateWithLifecycle()
     val requests by vm.requests.collectAsStateWithLifecycle()
     val history by vm.history.collectAsStateWithLifecycle()
+    val historyHidden by vm.historyHidden.collectAsStateWithLifecycle()
     val sent by vm.sent.collectAsStateWithLifecycle()
     var adding by rememberSaveable { mutableStateOf(false) }
     var showActivity by rememberSaveable { mutableStateOf(false) }
@@ -179,6 +183,25 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
                     }
                 }
             }
+            // Free profiles list their last 3 people; the rest wait for Plus.
+            if (historyHidden > 0) item(key = "h-locked") {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(app.talklive.ui.components.PlusGold.copy(alpha = 0.10f))
+                        .border(1.dp, app.talklive.ui.components.PlusGold.copy(alpha = 0.45f), RoundedCornerShape(16.dp))
+                        .clickable(onClick = onPlus).padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("🔒", fontSize = 18.sp)
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        stringResource(R.string.history_locked, historyHidden),
+                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f),
+                    )
+                    Text("Plus", color = app.talklive.ui.components.PlusGold, style = MaterialTheme.typography.labelLarge)
+                }
+            }
             // Online first, then offline, each under its own heading.
             listOf(
                 R.string.friends_online to sorted.filter { it.online },
@@ -223,7 +246,7 @@ private fun RequestCard(p: Person, onAccept: () -> Unit, onDecline: () -> Unit) 
             PersonAvatar(p, 48.dp)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(p.displayName, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                app.talklive.ui.components.PlusName(p.displayName, p.premium, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
                     listOfNotNull(flag(p.countryCode), stringResource(R.string.wants_to_be_friends)).joinToString(" "),
                     style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1,
@@ -258,7 +281,7 @@ private fun MetCard(
         Column(Modifier.padding(vertical = 14.dp, horizontal = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             PersonAvatar(p, 56.dp)
             Spacer(Modifier.height(8.dp))
-            Text(p.displayName, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            app.talklive.ui.components.PlusName(p.displayName, p.premium, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(flag(p.countryCode) ?: " ", style = MaterialTheme.typography.labelMedium)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -295,7 +318,7 @@ private fun FriendRow(p: Person, modifier: Modifier, onCall: () -> Unit, onChat:
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(p.displayName, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                app.talklive.ui.components.PlusName(p.displayName, p.premium, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (p.pinned) {
                     Spacer(Modifier.width(6.dp))
                     Icon(Icons.Rounded.PushPin, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
@@ -406,7 +429,7 @@ private fun FriendActionsSheet(vm: SocialViewModel, p: Person, onDismiss: () -> 
                 PersonAvatar(p, 52.dp)
                 Spacer(Modifier.width(14.dp))
                 Column {
-                    Text(p.displayName, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
+                    app.talklive.ui.components.PlusName(p.displayName, p.premium, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
                     Text(listOfNotNull(flag(p.countryCode), p.friendId).joinToString(" "), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }

@@ -86,6 +86,9 @@ fun AnimalAvatar(animalId: String?, name: String?, size: Dp, modifier: Modifier 
     }
 }
 
+/** Legendary faces only Plus members can wear (server/index.js PLUS_FACES, as a: / c: ids). */
+val PLUS_FACES = setOf("unicorn", "dragon", "eagle", "shark", "c:king", "c:queen", "c:knight", "c:astronaut")
+
 /** Grid of every animal; the chosen one lifts and gets its colour ring. */
 @Composable
 fun AnimalGrid(
@@ -93,6 +96,8 @@ fun AnimalGrid(
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp),
+    premium: Boolean = false,
+    onLocked: () -> Unit = {},
 ) {
     val haptics = LocalHapticFeedback.current
     // Two families, two tabs, so the characters are never hidden below the animals.
@@ -120,7 +125,7 @@ fun AnimalGrid(
     ) {
         // Spirit animals, then the website's movie characters.
         run {
-            val list = if (tab == 0) Animals else Characters
+            val list = (if (tab == 0) Animals else Characters).sortedByDescending { it.id in PLUS_FACES }
             items(list, key = { it.id }) { a ->
             val on = a.id == selected
             val scale by animateFloatAsState(if (on) 1.06f else 1f, spring(dampingRatio = 0.5f, stiffness = 500f), label = "s")
@@ -129,14 +134,18 @@ fun AnimalGrid(
                 Modifier.scale(scale).clip(RoundedCornerShape(20.dp))
                     .background(if (on) a.color.copy(alpha = 0.14f) else MaterialTheme.colorScheme.surface)
                     .border(2.dp, ring, RoundedCornerShape(20.dp))
+                    .then(if (a.id in PLUS_FACES) Modifier.border(1.5.dp, app.talklive.ui.components.PlusGold.copy(alpha = 0.7f), RoundedCornerShape(20.dp)) else Modifier)
                     .clickable(remember { MutableInteractionSource() }, indication = null) {
                         haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        onSelect(a.id)
+                        if (a.id in PLUS_FACES && !premium) onLocked() else onSelect(a.id)
                     }
                     .padding(vertical = 10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Image(painterResource(a.icon), a.name, Modifier.fillMaxWidth(0.72f).aspectRatio(1f))
+                Box {
+                    Image(painterResource(a.icon), a.name, Modifier.fillMaxWidth(0.72f).aspectRatio(1f))
+                    if (a.id in PLUS_FACES) Text(if (premium) "💎" else "🔒", fontSize = 13.sp, modifier = Modifier.align(Alignment.TopEnd))
+                }
                 Text(
                     a.name,
                     style = MaterialTheme.typography.labelMedium,

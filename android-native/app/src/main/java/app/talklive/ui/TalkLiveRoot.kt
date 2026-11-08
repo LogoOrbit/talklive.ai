@@ -356,7 +356,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                         },
                     )
                     MainTab.Chats -> ChatsScreen(social, onOpenChat = { openChat = it }, onStartTalking = { tab = MainTab.Talk })
-                    MainTab.Friends -> FriendsScreen(social, onOpenChat = { openChat = it }, onStartTalking = { tab = MainTab.Talk })
+                    MainTab.Friends -> FriendsScreen(social, onOpenChat = { openChat = it }, onStartTalking = { tab = MainTab.Talk }, onPlus = { showPlus = "history" })
                     MainTab.Profile -> ProfileScreen(onSignIn = onSignIn)
                 }
             }
@@ -426,6 +426,8 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                     onAutoConnect = vm::setAutoConnect,
                     bands = { voiceBands },
                 )
+                val connectedPartner = (state.phase as? CallPhase.Connected)?.partner
+                app.talklive.ui.components.PlusEntrance(connectedPartner?.clientId, connectedPartner?.premium == true)
                 app.talklive.ui.call.FilmMatchBanner(filmMatch, Modifier.align(Alignment.TopCenter))
             }
         }

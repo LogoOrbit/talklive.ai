@@ -34,6 +34,7 @@ class SocialViewModel @Inject constructor(
     val requests = repo.requests
     val sent = repo.sent
     val history = repo.history
+    val historyHidden = repo.historyHidden
     val unread = repo.unread
     val typing = repo.typing
     val threads = repo.threads

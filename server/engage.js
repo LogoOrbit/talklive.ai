@@ -62,6 +62,26 @@ function weekOf(key) {
   return keyOfDayNum(n - ((weekday + 6) % 7));
 }
 
+// Missed days a streak survives: one a week for everyone, plus 2 a month for
+// Plus members (a month is the calendar month of the day it is used).
+const PLUS_FREEZES = 2;
+function plusFreezesLeft(s, today, plus) {
+  if (!plus) return 0;
+  const month = today.slice(0, 7);
+  const used = s.plusFreezes && s.plusFreezes.month === month ? s.plusFreezes.used : 0;
+  return Math.max(0, PLUS_FREEZES - used);
+}
+function coverage(s, today, plus) {
+  const gap = s.last ? dayNum(today) - dayNum(s.last) : 0;
+  const missed = Math.max(0, gap - 1);
+  if (missed === 0) return { alive: true, weekly: 0, plus: 0 };
+  const weekly = s.freezeWeek !== weekOf(today) ? 1 : 0;
+  const plusLeft = plusFreezesLeft(s, today, plus);
+  if (missed > weekly + plusLeft) return { alive: false, weekly: 0, plus: 0 };
+  const useWeekly = Math.min(weekly, missed);
+  return { alive: true, weekly: useWeekly, plus: missed - useWeekly };
+}
+
 const validCountry = (c) => typeof c === 'string' && /^[A-Z]{2}$/.test(c) && c !== 'XX';
 
 // Last week's numbers become the recap once a new week starts.
@@ -76,7 +96,7 @@ function rollWeek(rec, today) {
 }
 
 // A call ended. Returns what changed, for the "🔥 5-day streak" toast.
-function noteCall(input, { country, seconds, now = Date.now(), tz } = {}) {
+function noteCall(input, { country, seconds, now = Date.now(), tz, plus = false } = {}) {
   const rec = normalise(input);
   const result = { rec, bump: null, stamp: null };
   if (!(seconds >= GOOD_CALL_SECONDS)) return result;
@@ -85,14 +105,22 @@ function noteCall(input, { country, seconds, now = Date.now(), tz } = {}) {
 
   const s = rec.streak;
   if (s.last !== today) {
-    const gap = s.last ? dayNum(today) - dayNum(s.last) : 0;
+    const c = s.last ? coverage(s, today, plus) : { alive: false };
     let saved = false;
-    if (gap === 1) s.count += 1;
-    else if (gap === 2 && s.freezeWeek !== weekOf(today)) { s.count += 1; s.freezeWeek = weekOf(today); saved = true; }
-    else s.count = 1;
+    let frozen = 0;
+    if (c.alive) {
+      s.count += 1;
+      if (c.weekly) { s.freezeWeek = weekOf(today); saved = true; }
+      if (c.plus) {
+        const month = today.slice(0, 7);
+        const used = s.plusFreezes && s.plusFreezes.month === month ? s.plusFreezes.used : 0;
+        s.plusFreezes = { month, used: used + c.plus };
+        saved = true; frozen = c.plus;
+      }
+    } else s.count = 1;
     s.best = Math.max(s.best || 0, s.count);
     s.last = today;
-    result.bump = { count: s.count, saved };
+    result.bump = { count: s.count, saved, frozen };
   }
 
   if (validCountry(country) && !rec.passport.includes(country) && rec.passport.length < PASSPORT_MAX) {
@@ -110,19 +138,20 @@ function noteCall(input, { country, seconds, now = Date.now(), tz } = {}) {
 // days that ended in the last 30. It carries on as if the last call was
 // yesterday, so today's call keeps it going.
 const RESTORE_WINDOW_DAYS = 30;
-function restoreState(s, today) {
+function restoreState(s, today, plus = false) {
   if (!s.last || !(s.count >= 2)) return null;
   const gap = dayNum(today) - dayNum(s.last);
-  const broken = gap > 2 || (gap === 2 && s.freezeWeek === weekOf(today));
+  // Broken = still broken after a call today (today itself is not missed yet).
+  const broken = gap > 1 && !coverage(s, today, plus).alive;
   if (!broken) return null;
   const recent = s.restoredAt && dayNum(today) - dayNum(s.restoredAt) < RESTORE_WINDOW_DAYS;
   return { count: s.count, restorable: gap <= RESTORE_WINDOW_DAYS && !recent };
 }
 
-function restore(input, { now = Date.now(), tz } = {}) {
+function restore(input, { now = Date.now(), tz, plus = false } = {}) {
   const rec = normalise(input);
   const today = dayKey(now, tz);
-  const st = restoreState(rec.streak, today);
+  const st = restoreState(rec.streak, today, plus);
   if (!st || !st.restorable) return { rec, ok: false };
   rec.streak.last = keyOfDayNum(dayNum(today) - 1);
   rec.streak.restoredAt = today;
@@ -130,7 +159,7 @@ function restore(input, { now = Date.now(), tz } = {}) {
 }
 
 // What the page shows. A streak that can no longer be kept reads as 0.
-function view(input, { now = Date.now(), tz } = {}) {
+function view(input, { now = Date.now(), tz, plus = false } = {}) {
   const rec = normalise(input);
   const today = dayKey(now, tz);
   rollWeek(rec, today);
@@ -138,10 +167,14 @@ function view(input, { now = Date.now(), tz } = {}) {
   let count = s.count;
   if (s.last) {
     const gap = dayNum(today) - dayNum(s.last);
-    if (gap > 2 || (gap === 2 && s.freezeWeek === weekOf(today))) count = 0;
+    if (gap > 1 && !coverage(s, today, plus).alive) count = 0;
   }
   return {
-    streak: { count, best: s.best, doneToday: s.last === today, lost: restoreState(s, today) },
+    streak: {
+      count, best: s.best, doneToday: s.last === today, lost: restoreState(s, today, plus),
+      // Plus: missed days left this month that will not break the streak.
+      freezesLeft: plus ? plusFreezesLeft(s, today, true) : null,
+    },
     passport: rec.passport.slice(),
     week: { calls: rec.week.calls, countries: rec.week.countries.length, longest: rec.week.longest },
     prevWeek: rec.prevWeek,
