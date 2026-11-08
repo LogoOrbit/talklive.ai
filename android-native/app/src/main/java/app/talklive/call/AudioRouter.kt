@@ -51,19 +51,50 @@ class AudioRouter @Inject constructor(@ApplicationContext context: Context) {
         override fun onAudioDevicesRemoved(removed: Array<out AudioDeviceInfo>) { _headset.value = hasHeadset() }
     }
 
+    // Android's "in a call" audio mode is only switched on while someone is
+    // actually on the line. Searching used to switch it on, and apps that
+    // watch for calls (banking apps block sign-in during one) reacted the
+    // moment Tap to talk was pressed.
+    @Volatile private var live = false
+    @Volatile private var speakerOn = false
+
+    /** A call is being set up: watch for headsets. The audio mode waits for [setLive]. */
     fun start(speaker: Boolean) {
+        speakerOn = speaker
         if (!active) {
             active = true
-            am.mode = AudioManager.MODE_IN_COMMUNICATION
-            am.requestAudioFocus(focusRequest)
             am.registerAudioDeviceCallback(devices, main)
             _focusLost.value = false
         }
-        setSpeaker(speaker)
+        if (live) setSpeaker(speaker)
+    }
+
+    /** Someone is on the line (true) or not any more (false). */
+    fun setLive(on: Boolean) {
+        if (on == live) return
+        if (on) {
+            if (!active) start(speakerOn)
+            live = true
+            am.mode = AudioManager.MODE_IN_COMMUNICATION
+            am.requestAudioFocus(focusRequest)
+            setSpeaker(speakerOn)
+        } else {
+            live = false
+            am.abandonAudioFocusRequest(focusRequest)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                am.clearCommunicationDevice()
+            } else {
+                @Suppress("DEPRECATION")
+                am.isSpeakerphoneOn = false
+            }
+            am.mode = AudioManager.MODE_NORMAL
+            _focusLost.value = false
+        }
     }
 
     fun setSpeaker(on: Boolean) {
-        if (!active) return
+        speakerOn = on
+        if (!live) return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val list = am.availableCommunicationDevices
             val pick = if (on) {
@@ -79,18 +110,10 @@ class AudioRouter @Inject constructor(@ApplicationContext context: Context) {
     }
 
     fun stop() {
+        setLive(false)
         if (!active) return
         active = false
         am.unregisterAudioDeviceCallback(devices)
-        am.abandonAudioFocusRequest(focusRequest)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            am.clearCommunicationDevice()
-        } else {
-            @Suppress("DEPRECATION")
-            am.isSpeakerphoneOn = false
-        }
-        am.mode = AudioManager.MODE_NORMAL
-        _focusLost.value = false
     }
 
     private fun hasHeadset() = am.getDevices(AudioManager.GET_DEVICES_OUTPUTS).any { it.type in HEADSETS }

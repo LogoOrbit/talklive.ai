@@ -149,6 +149,12 @@ class CallManager @Inject constructor(
     private val pendingSignals = mutableListOf<JSONObject>()
 
     init {
+        // "In a call" audio mode only while someone is actually on the line.
+        scope.launch {
+            _state.map { (it.phase is CallPhase.Connecting || it.phase is CallPhase.Connected) && it.mode == CallMode.Talk }
+                .distinctUntilChanged()
+                .collect { audio.setLive(it) }
+        }
         scope.launch { socket.events.collect(::onEvent) }
         // A phone call takes the mic: hold this call (mic off) until it ends.
         scope.launch {
