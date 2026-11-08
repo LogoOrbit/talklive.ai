@@ -9,6 +9,8 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -240,6 +242,7 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                         onReply = { replyTo = m },
                         onRetry = { vm.retry(clientId, m.id) },
                         onLongPress = { actionsFor = m },
+                        onDoubleTap = { vm.react(clientId, m.id, "❤️") },
                         playback = playback,
                         onPlay = { m.voiceId?.let { vm.play(clientId, it) } },
                     )
@@ -536,8 +539,11 @@ internal fun MessageBubble(
     onLongPress: (() -> Unit)? = null,
     playback: app.talklive.voice.Playback? = null,
     onPlay: (() -> Unit)? = null,
+    // Double tap: like with a heart (again to take it back).
+    onDoubleTap: (() -> Unit)? = null,
 ) {
     val haptics = LocalHapticFeedback.current
+    val pop = remember { Animatable(0f) }
     val density = LocalDensity.current
     val trigger = with(density) { 64.dp.toPx() }
     val drag = remember { Animatable(0f) }
@@ -585,9 +591,17 @@ internal fun MessageBubble(
                     .then(
                         when {
                             m.status == MsgStatus.Failed -> Modifier.clickable(onClick = onRetry)
-                            onLongPress != null -> Modifier.combinedClickable(onClick = {}, onLongClick = {
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress); onLongPress()
-                            })
+                            onLongPress != null || onDoubleTap != null -> Modifier.combinedClickable(
+                                onClick = {},
+                                onLongClick = onLongPress?.let { lp -> { haptics.performHapticFeedback(HapticFeedbackType.LongPress); lp() } },
+                                onDoubleClick = onDoubleTap?.let { dt ->
+                                    {
+                                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        if (m.myReaction != "❤️") scope.launch { pop.snapTo(0f); pop.animateTo(1f, tween(650)) }
+                                        dt()
+                                    }
+                                },
+                            )
                             else -> Modifier
                         },
                     ),
@@ -632,6 +646,17 @@ internal fun MessageBubble(
                     }
                     if (m.edited) Text(stringResource(R.string.edited), color = fg.copy(alpha = 0.7f), style = MaterialTheme.typography.labelMedium)
                 }
+                // The heart that pops out of a double tap.
+                if (pop.value in 0.01f..0.99f) Text(
+                    "❤️", fontSize = 34.sp,
+                    modifier = Modifier.align(Alignment.Center).graphicsLayer {
+                        val t = pop.value
+                        val sc = if (t < 0.35f) t / 0.35f * 1.25f else 1.25f - (t - 0.35f) * 0.4f
+                        scaleX = sc; scaleY = sc
+                        alpha = if (t < 0.7f) 1f else (1f - t) / 0.3f
+                        translationY = -t * 30f
+                    },
+                )
             }
         }
         val reactions = listOfNotNull(m.theirReaction, m.myReaction)

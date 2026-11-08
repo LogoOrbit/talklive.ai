@@ -216,6 +216,7 @@ fun TextChatScreen(
                             onReply = { replyTo = m },
                             onRetry = {},
                             onLongPress = { reactingTo = m },
+                            onDoubleTap = { onReact(m.id, "❤️") },
                         )
                     }
                 }

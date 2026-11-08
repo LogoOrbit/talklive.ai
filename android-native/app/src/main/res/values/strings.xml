@@ -569,4 +569,6 @@
     <string name="trial_ok">Let\'s go</string>
     <string name="streak_reminder_title">🔥 Your %1$d-day streak ends tonight</string>
     <string name="streak_reminder_body">One short call today keeps it going.</string>
+    <string name="pass_name">%1$d-day pass</string>
+    <string name="pass_per_day">About %1$s a day · pay once</string>
 </resources>

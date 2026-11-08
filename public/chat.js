@@ -394,7 +394,9 @@
   // Bot heuristic: the same line repeated back-to-back is the classic spam
   // signature - warn once so the user just taps Next.
   var UNSAFE_RE = /\b(child\s*porn|cp\s*trade|loli(?:con)?|jailbait|sell(?:ing)?\s+(?:drugs|guns|weapons)|buy\s+(?:drugs|cocaine|heroin|meth|fentanyl)|hire\s*(?:a\s*)?hitman|credit\s*card\s*numbers?|send\s+nudes|onlyfans|escort\s*service)\b/i;
-  var LINK_RE = /(https?:\/\/|www\.|\b[a-z0-9-]+\.(?:com|net|org|io|xyz|ru|link|gg)\b)/i;
+  var LINK_RE = /(https?:\/\/|www\.|\b[a-z0-9-]+\.(?:com|net|org|io|xyz|ru|link|gg|app|me|co|pk|in)\b)/i;
+  // TalkLive's own site and email addresses may be shared.
+  var OWN_LINK_RE = /(?:https?:\/\/)?(?:www\.)?talklive\.app(?:\/[^\s]*)?|[a-z0-9._%+-]+@talklive\.app\b/gi;
   var lastIn = '', repeat = 0, botWarned = false;
   // "Add me on WhatsApp / send your number" is the most common way a good
   // conversation leaves TalkLive for good (and the first step of most scams).
@@ -991,7 +993,7 @@
     if (!partnerHere) return false;
     var text = payload.text || '';
     if (!text && !payload.gif) return false;
-    if (text && LINK_RE.test(text)) { addMessage(t('chatLinkBlocked'), 'system'); return false; }
+    if (text && LINK_RE.test(text.replace(OWN_LINK_RE, ' '))) { addMessage(t('chatLinkBlocked'), 'system'); return false; }
     if (text && UNSAFE_RE.test(text)) { addMessage(t('chatBotWarning'), 'system'); return false; }
     // "Are you sure?" before something that reads as abusive (TalkGuard, on
     // this device). Pressing send again with the same text sends it.
@@ -2677,7 +2679,7 @@
     if (!toClientId || (!text && !payload.gif)) return false;
     var gate = dmGateFor(toClientId);
     if (gate !== 'open' && gate !== 'one') { applyFriendChatGate(); return false; }
-    if (text && LINK_RE.test(text)) { friendSystemNote(t('chatLinkBlocked')); return false; }
+    if (text && LINK_RE.test(text.replace(OWN_LINK_RE, ' '))) { friendSystemNote(t('chatLinkBlocked')); return false; }
     if (text && UNSAFE_RE.test(text)) { friendSystemNote(t('errUnsafeMessage')); return false; }
     // The one message before they accept: lock now, so a quick second tap
     // cannot go out too.
