@@ -572,6 +572,99 @@ th.sortable .ar{opacity:.5;font-size:.7rem}
 .vnote audio{display:block;width:100%;max-width:420px;height:36px;margin:8px 0 6px}
 .vnote .vtags{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 6px}
 .vnote.vsev{border-left:3px solid var(--crit)}
+
+/* ===== Plain, fast and professional: no animation, no gradients, no glow ===== */
+:root{
+  --bg-1:#0d1117;--bg-2:#161b22;--bg-glow:#0d1117;
+  --accent:#2f81f7;--accent-2:#58a6ff;--danger:#f85149;
+  --text:#e6edf3;--muted:#8b949e;--ink2:#c9d1d9;
+  --surface:#161b22;--surface-2:#21262d;--ring:#30363d;--grid:#21262d;
+  --good:#3fb950;--warn:#d29922;--serious:#db6d28;--crit:#f85149;
+  --s1:#58a6ff;--s2:#3fb950;--s3:#d29922;--s5:#a5a5a5;
+  --grad:var(--accent);
+}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
+  --bg-1:#f6f8fa;--bg-2:#ffffff;--bg-glow:#f6f8fa;--accent:#0969da;--accent-2:#0969da;
+  --text:#1f2328;--muted:#59636e;--ink2:#31373d;--surface:#ffffff;--surface-2:#f6f8fa;--ring:#d0d7de;--grid:#eaeef2;
+  --good:#1a7f37;--warn:#9a6700;--s1:#0969da;--s2:#1a7f37;--s3:#9a6700;
+}}
+:root[data-theme="light"]{
+  --bg-1:#f6f8fa;--bg-2:#ffffff;--bg-glow:#f6f8fa;--accent:#0969da;--accent-2:#0969da;
+  --text:#1f2328;--muted:#59636e;--ink2:#31373d;--surface:#ffffff;--surface-2:#f6f8fa;--ring:#d0d7de;--grid:#eaeef2;
+  --good:#1a7f37;--warn:#9a6700;--s1:#0969da;--s2:#1a7f37;--s3:#9a6700;
+}
+*,*::before,*::after{animation:none!important;transition:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+html{scroll-behavior:auto}
+body{background:var(--bg-1)!important}
+.card,.tile,.kpi,.stat{box-shadow:none!important;background:var(--surface)!important;border-color:var(--ring)!important}
+header h1 .grad-text{background:none!important;color:var(--text)!important}
+.spin{border-top-color:var(--muted)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+/* ===== Support inbox ===== */
+.sp{display:flex;height:calc(100dvh - 150px);min-height:480px;border:1px solid var(--ring);border-radius:10px;overflow:hidden;background:var(--bg-2)}
+.sp-side{width:340px;flex:none;display:flex;flex-direction:column;border-right:1px solid var(--ring);min-width:0}
+.sp-side-top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 14px 8px}
+.sp-title{font-weight:700;font-size:1.05rem}
+.sp-count{display:block;font-weight:400;font-size:.78rem;color:var(--muted);margin-top:2px}
+.sp-tools{display:flex;gap:6px}
+.sp-tools button,.sp-head-act button{border:1px solid var(--ring);background:var(--surface-2);color:var(--text);border-radius:6px;padding:6px 10px;font-size:.82rem;cursor:pointer}
+.sp-tools button.on{color:var(--good);border-color:var(--good)}
+.sp-tabs{display:flex;gap:2px;padding:0 14px;border-bottom:1px solid var(--ring)}
+.sp-tabs button{flex:1;border:0;background:none;color:var(--muted);padding:9px 4px;font-size:.85rem;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.sp-tabs button.on{color:var(--text);border-bottom-color:var(--accent);font-weight:600}
+.sp-search{margin:10px 14px;width:auto;padding:8px 10px;border-radius:6px;font-size:.88rem}
+.sp-list{flex:1;overflow-y:auto}
+.sp-row{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--grid);background:none;color:var(--text);padding:11px 14px;cursor:pointer}
+.sp-row:hover{background:var(--surface-2)}
+.sp-row.on{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.sp-row-top{display:flex;justify-content:space-between;gap:8px}
+.sp-row-name{font-weight:600;font-size:.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sp-row.unread .sp-row-name::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:6px;vertical-align:middle}
+.sp-row-time{flex:none;font-size:.75rem;color:var(--muted)}
+.sp-row-prev{font-size:.85rem;color:var(--muted);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sp-row-meta{display:flex;gap:8px;margin-top:5px;font-size:.72rem;color:var(--muted);align-items:center}
+.sp-tag{display:inline-block;font-size:.7rem;font-weight:600;padding:1px 6px;border-radius:4px;border:1px solid var(--ring);color:var(--muted)}
+.sp-tag.warn{color:var(--warn);border-color:var(--warn)}
+.sp-foot{padding:8px 14px;font-size:.72rem;color:var(--muted);border-top:1px solid var(--ring)}
+.sp-thread{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--bg-1)}
+.sp-head{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-bottom:1px solid var(--ring);background:var(--bg-2)}
+.sp-back{display:none;border:0;background:none;color:var(--text);font-size:1.3rem;padding:2px 8px 2px 0;cursor:pointer}
+.sp-head-who{flex:1;min-width:0}
+.sp-head-name{font-weight:700}
+.sp-head-sub{font-size:.8rem;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
+.sp-head-sub a{color:var(--accent)}
+.sp-online{color:var(--good);font-weight:600}
+.sp-head-act{display:flex;gap:6px;flex:none}
+.sp-head-act .sp-del{color:var(--danger)}
+.sp-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.sp-msg{display:flex;flex-direction:column;max-width:72%}
+.sp-msg.me{align-self:flex-end;align-items:flex-end}
+.sp-msg.them{align-self:flex-start}
+.sp-bubble{padding:9px 12px;border-radius:10px;font-size:.93rem;line-height:1.45;overflow-wrap:anywhere;background:var(--surface-2);border:1px solid var(--ring)}
+.sp-msg.me .sp-bubble{background:var(--accent);border-color:var(--accent);color:#fff}
+.sp-time{font-size:.7rem;color:var(--muted);margin-top:3px}
+.sp-cmp{border-top:1px solid var(--ring);padding:10px 12px;padding-bottom:calc(10px + env(safe-area-inset-bottom));background:var(--bg-2)}
+.sp-quick{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px}
+.sp-quick button{flex:none;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid var(--ring);background:var(--surface-2);color:var(--text);border-radius:6px;padding:5px 9px;font-size:.8rem;cursor:pointer}
+.sp-cmp-row{display:flex;gap:8px;align-items:flex-end}
+.sp-cmp-row textarea{flex:1;resize:none;min-height:42px;max-height:160px;border-radius:8px;padding:10px 12px;line-height:1.4}
+.sp-send{flex:none;height:42px;padding:0 18px;border:0;border-radius:8px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer}
+.sp-send:disabled{opacity:.6}
+.sp-cmp-hint{display:flex;justify-content:space-between;gap:8px;margin-top:6px;font-size:.74rem;color:var(--muted)}
+.sp-link{border:0;background:none;color:var(--accent);font-size:.78rem;cursor:pointer;padding:0}
+.sp-empty{color:var(--muted);text-align:center;padding:30px 16px;font-size:.9rem}
+.sp-pick{margin:auto}
+@media (max-width:760px){
+  .sp{height:calc(100dvh - 215px);min-height:380px;border-radius:8px}
+  .sp-side{width:100%;border-right:0}
+  .sp-thread{display:none}
+  .sp.reading .sp-thread{display:flex;position:fixed;inset:0;z-index:60}
+  .sp-back{display:block}
+  .sp-head{padding-top:calc(12px + env(safe-area-inset-top))}
+  .sp-head-act{flex-direction:column}
+  .sp-msg{max-width:86%}
+}
 </style>
 </head>
 <body>
@@ -3574,21 +3667,22 @@ function spFiltered(list){
     .filter(c=>!q||[c.email,c.name,c.account,c.last&&c.last.text].some(v=>String(v||'').toLowerCase().includes(q)));
 }
 function spRow(c){
-  return `<button class="cvrow${c.id===spSel?' on':''}" data-spc="${esc(c.id)}">
-    <div class="who">${c.unread?'<span class="spdot" title="Unread"></span>':''}${esc(spWho(c))}${c.verified?' <span class="pill good">account</span>':' <span class="pill info">guest</span>'}${c.status==='closed'?' <span class="pill">solved</span>':c.waiting?' <span class="pill warn">waiting</span>':''}</div>
-    <div class="prev">${c.last?(c.last.from==='owner'?'You: ':'')+esc(c.last.text):''}</div>
-    <div class="meta"><span>${ago(c.updatedAt)}</span>${c.name?`<span>${esc(c.email)}</span>`:''}${c.country&&c.country!=='Unknown'?`<span>${esc(c.country)}</span>`:''}<span>${num(c.count)} msg</span></div></button>`;
+  const tag=c.status==='closed'?'<span class="sp-tag">Solved</span>':c.waiting?'<span class="sp-tag warn">Waiting</span>':'';
+  return `<button class="sp-row${c.id===spSel?' on':''}${c.unread?' unread':''}" data-spc="${esc(c.id)}">
+    <div class="sp-row-top"><span class="sp-row-name">${esc(spWho(c))}</span><span class="sp-row-time">${ago(c.updatedAt)}</span></div>
+    <div class="sp-row-prev">${c.last?(c.last.from==='owner'?'You: ':'')+esc(c.last.text):''}</div>
+    <div class="sp-row-meta">${tag}<span>${c.verified?'Account':'Guest'}</span>${c.country&&c.country!=='Unknown'?`<span>${esc(c.country)}</span>`:''}</div></button>`;
 }
 function spHead(c){
   const where=[c.city,c.country].filter(v=>v&&v!=='Unknown').join(', ');
-  return `<button class="cvback lnk" id="spBack">&#8592; List</button>
-    <div><h3>${esc(spWho(c))} ${c.verified?'<span class="pill good">verified account</span>':'<span class="pill info">guest</span>'}</h3>
-    <span class="sub"><a href="mailto:${esc(c.email)}" style="color:var(--accent-2)">${esc(c.email)}</a>${c.account?` · @${esc(c.account)}`:''}${where?` · ${esc(where)}`:''}${c.page?` · from ${esc(c.page)}`:''}</span>
-    <span class="sub">${c.userActive?'🟢 Chat window open now - they will see your reply instantly':`Last active ${ago(c.userSeenAt||c.updatedAt)} - your reply will also be emailed`}</span></div>
-    <div class="rowbtns">${c.status==='closed'?`<button data-spst="open">↺ Reopen</button>`:`<button data-spst="closed">✓ Mark solved</button>`}<button class="danger" id="spDel" title="Delete conversation">🗑</button></div>`;
+  return `<button class="sp-back" id="spBack" aria-label="Back to list">&#8592;</button>
+    <div class="sp-head-who"><div class="sp-head-name">${esc(spWho(c))} <span class="sp-tag">${c.verified?'Account':'Guest'}</span></div>
+    <div class="sp-head-sub"><a href="mailto:${esc(c.email)}">${esc(c.email)}</a>${c.account?` · @${esc(c.account)}`:''}${where?` · ${esc(where)}`:''}</div>
+    <div class="sp-head-sub">${c.userActive?'<span class="sp-online">Online now</span> - sees your reply instantly':`Last active ${ago(c.userSeenAt||c.updatedAt)} - your reply is also emailed`}</div></div>
+    <div class="sp-head-act">${c.status==='closed'?`<button data-spst="open">Reopen</button>`:`<button data-spst="closed">Mark solved</button>`}<button class="sp-del" id="spDel" title="Delete conversation">Delete</button></div>`;
 }
 function spBody(c){
-  return c.messages.map(m=>`<div class="cvname${m.from==='owner'?' b':''}">${m.from==='owner'?'You':esc(spWho(c))}</div><div class="cvb ${m.from==='owner'?'b':'a'}">${esc(m.text).replace(/\n/g,'<br>')}<span class="t">${fmtTs(m.ts)}</span></div>`).join('')||'<div class="cvempty">No messages.</div>';
+  return c.messages.map(m=>`<div class="sp-msg ${m.from==='owner'?'me':'them'}"><div class="sp-bubble">${esc(m.text).replace(/\n/g,'<br>')}</div><div class="sp-time">${m.from==='owner'?'You · ':''}${fmtTs(m.ts)}</div></div>`).join('')||'<div class="sp-empty">No messages.</div>';
 }
 async function viewSupport(){
   const r=await vapi('support');
@@ -3598,12 +3692,12 @@ async function viewSupport(){
   let conv=null;
   if(spSel){try{conv=(await vapi('support/'+encodeURIComponent(spSel))).conversation;}catch(e){spSel=null;}}
   const st=r.settings,waitingN=counts.supportWaiting,openN=r.conversations.filter(c=>c.status==='open').length;
-  const listHtml=list.map(spRow).join('')||`<div class="cvempty">${spQ?'Nothing matches that search.':spFilter==='waiting'?'🎉 Nobody is waiting for a reply.':'No conversations here yet.'}</div>`;
+  const listHtml=list.map(spRow).join('')||`<div class="sp-empty">${spQ?'Nothing matches that search.':spFilter==='waiting'?'Nobody is waiting for a reply.':'No conversations here yet.'}</div>`;
   const wrap=$('#spWrap');
   /* Poll repaint: swap list + thread, keep the composer and its text. */
   if(wrap&&renderedTab==='support'&&wrap.dataset.sel===(spSel||'')){
     setHtml($('#spList'),listHtml);
-    $('#spSub').textContent=`${num(waitingN)} waiting · ${num(openN)} open · ${num(r.conversations.length)} total`;
+    $('#spSub').textContent=`${num(waitingN)} waiting · ${num(openN)} open`;
     if(conv){
       setHtml($('#spHead'),spHead(conv));
       const b=$('#spBody'),near=b.scrollHeight-b.scrollTop-b.clientHeight<80,html=spBody(conv);
@@ -3612,26 +3706,30 @@ async function viewSupport(){
     spWire(conv);
     return;
   }
-  $('#main').innerHTML=`<div class="card anim" style="margin-top:0">
-    <h2>🎧 Chat Support <span class="sub" id="spSub">${num(waitingN)} waiting · ${num(openN)} open · ${num(r.conversations.length)} total</span></h2>
-    <div class="tbar">
-      <div class="seg" id="spSeg">${[['waiting','Waiting'],['open','Open'],['closed','Solved'],['all','All']].map(([k,l])=>`<button data-spf="${k}" class="${spFilter===k?'on':''}">${l}</button>`).join('')}</div>
-      <input id="spQ" class="grow" placeholder="Search email, name or message…" value="${esc(spQ)}">
-      <button class="lnk" id="spAway" title="Shown to visitors in the chat window">${st.away?'🌙 Away':'🟢 Available'}</button>
-      <button class="lnk" id="spSettings">⚙️ Settings &amp; alerts</button>
-    </div>
-    <div class="muted" style="font-size:.78rem;margin:-2px 0 10px">${r.emailAlerts?`📧 Email alerts go to <b>${esc(r.alertsTo)}</b> (new chats, and follow-ups while you're not on this dashboard).`:'⚠️ Email alerts are off: mail is not configured on the server (RESEND_API_KEY or SMTP).'} ${r.push.devices?`📱 Phone alerts on for ${r.push.devices} device(s).`:''}${st.promoUntil>Date.now()?` 📣 Launch announcement running ${until(st.promoUntil)}.`:''}</div>
-    <div class="cvwrap${conv?' reading':''}" id="spWrap" data-sel="${esc(spSel||'')}">
-      <div class="cvlist" id="spList">${listHtml}</div>
-      <div class="cvthread sp">${conv?`
-        <div class="cvthead" id="spHead">${spHead(conv)}</div>
-        <div class="cvbody" id="spBody">${spBody(conv)}</div>
-        <div class="spcmp">
-          ${st.quickReplies.length?`<div class="quickq">${st.quickReplies.map((q,i)=>`<button data-spq="${i}" title="${esc(q)}">${esc(q)}</button>`).join('')}</div>`:''}
-          <textarea id="spMsg" maxlength="2000" placeholder="Write your reply… (Ctrl+Enter to send)"></textarea>
-          <div class="rowbtns"><button id="spSend">Send reply</button><button id="spSendClose">Send &amp; mark solved</button></div>
-        </div>`:`<div class="cvempty" style="margin-top:22vh">Pick a conversation to read and reply.</div>`}</div>
-    </div></div>`;
+  const alerts=r.emailAlerts?`Email alerts to ${esc(r.alertsTo)}`:'Email alerts off (mail not configured)';
+  $('#main').innerHTML=`<div class="sp${conv?' reading':''}" id="spWrap" data-sel="${esc(spSel||'')}">
+    <aside class="sp-side">
+      <div class="sp-side-top">
+        <div class="sp-title">Support <span class="sp-count" id="spSub">${num(waitingN)} waiting · ${num(openN)} open</span></div>
+        <div class="sp-tools"><button id="spAway" class="${st.away?'':'on'}" title="Shown to visitors">${st.away?'Away':'Available'}</button><button id="spSettings">Settings</button></div>
+      </div>
+      <div class="sp-tabs" id="spSeg">${[['waiting','Waiting'],['open','Open'],['closed','Solved'],['all','All']].map(([k,l])=>`<button data-spf="${k}" class="${spFilter===k?'on':''}">${l}</button>`).join('')}</div>
+      <input id="spQ" class="sp-search" placeholder="Search name, email or message" value="${esc(spQ)}">
+      <div class="sp-list" id="spList">${listHtml}</div>
+      <div class="sp-foot">${alerts}${r.push.devices?` · Phone alerts on`:''}</div>
+    </aside>
+    <section class="sp-thread">${conv?`
+      <header class="sp-head" id="spHead">${spHead(conv)}</header>
+      <div class="sp-body" id="spBody">${spBody(conv)}</div>
+      <footer class="sp-cmp">
+        ${st.quickReplies.length?`<div class="sp-quick">${st.quickReplies.map((q,i)=>`<button data-spq="${i}" title="${esc(q)}">${esc(q)}</button>`).join('')}</div>`:''}
+        <div class="sp-cmp-row">
+          <textarea id="spMsg" rows="1" maxlength="2000" placeholder="Write a reply"></textarea>
+          <button id="spSend" class="sp-send">Send</button>
+        </div>
+        <div class="sp-cmp-hint"><span>${isPhone()?'':'Enter to send · Shift+Enter for a new line'}</span><button id="spSendClose" class="sp-link">Send and mark solved</button></div>
+      </footer>`:`<div class="sp-empty sp-pick">Select a conversation to read and reply.</div>`}</section>
+  </div>`;
   const b=$('#spBody');if(b){b._html=b.innerHTML;b.scrollTop=b.scrollHeight;}
   document.querySelectorAll('[data-spf]').forEach(x=>x.onclick=()=>{spFilter=x.dataset.spf;spRefresh();});
   onFilterInput($('#spQ'),(v)=>{spQ=v;},()=>spRefresh().then(()=>keepFocus('#spQ')));
@@ -3639,15 +3737,17 @@ async function viewSupport(){
   $('#spSettings').onclick=()=>spSettings();
   if(conv){
     const msg=$('#spMsg');
-    document.querySelectorAll('[data-spq]').forEach(x=>x.onclick=()=>{const q=st.quickReplies[+x.dataset.spq];msg.value=msg.value?msg.value.replace(/\s*$/,'\n')+q:q;msg.focus();});
+    const grow=()=>{msg.style.height='auto';msg.style.height=Math.min(msg.scrollHeight,160)+'px';};
+    msg.addEventListener('input',grow);
+    document.querySelectorAll('[data-spq]').forEach(x=>x.onclick=()=>{const q=st.quickReplies[+x.dataset.spq];msg.value=msg.value?msg.value.replace(/\s*$/,'\n')+q:q;grow();msg.focus();});
     const send=async(close)=>{
       const text=msg.value.trim();
       if(!text){msg.focus();return;}
       $('#spSend').disabled=$('#spSendClose').disabled=true;
       try{
         const res=await post('support/'+encodeURIComponent(conv.id)+'/reply',{message:text,close:!!close});
-        msg.value='';
-        toast('Reply sent',res.emailed?'They are not on the site, so it was also emailed to them.':'Shown in their chat window.','good');
+        msg.value='';grow();
+        toast('Reply sent',res.emailed?'They are not on the site, so it was also emailed.':'Shown in their chat window.','good');
         if(close&&spFilter==='waiting')spSel=null;
         await spRefresh();
       }catch(e){toast('Could not send',e.message,'bad');}
@@ -3655,7 +3755,9 @@ async function viewSupport(){
     };
     $('#spSend').onclick=()=>send(false);
     $('#spSendClose').onclick=()=>send(true);
-    msg.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();send(false);}});
+    msg.addEventListener('keydown',(e)=>{
+      if(e.key==='Enter'&&(e.ctrlKey||e.metaKey||(!e.shiftKey&&!isPhone()))){e.preventDefault();send(false);}
+    });
     if(!isPhone())msg.focus();
   }
   spWire(conv);

@@ -589,7 +589,9 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
   // dashboard tab polls on its own. Identical GETs within a few seconds share
   // one answer; any write (ban, delete, settings...) clears it so actions
   // show up at once. Streams, audio, exports and the Data tab are never cached.
-  const REPORT_TTL = 5000;
+  // The dashboard polls every 12s; a cache shorter than that never hit, so
+  // every poll rebuilt every report. Writes still clear it at once.
+  const REPORT_TTL = 45000;
   const reportCache = new Map();
   router.use('/api', (req, res, next) => {
     if (req.method !== 'GET') { reportCache.clear(); return next(); }
@@ -598,7 +600,11 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     const hit = reportCache.get(key);
     if (hit && Date.now() - hit.at < REPORT_TTL) return res.json(hit.body);
     const json = res.json.bind(res);
+    const started = Date.now();
     res.json = (body) => {
+      const ms = Date.now() - started;
+      // Slow reports show up in the server log, so they can be made faster.
+      if (ms > 250) console.log(`[owner] slow report ${req.path} took ${ms}ms`);
       if (res.statusCode === 200) {
         if (reportCache.size > 200) reportCache.clear();
         reportCache.set(key, { at: Date.now(), body });

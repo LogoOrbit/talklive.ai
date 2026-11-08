@@ -1346,6 +1346,42 @@ setInterval(() => {
 }, 2000).unref();
 
 // Force-disconnect a freshly banned user so a ban takes effect instantly.
+// --- Keeping minors out ------------------------------------------------------
+// Two different people reporting someone as under 18 within 30 days puts them
+// on a week-long hold the owner reviews (Bans / Reports in the dashboard).
+const UNDERAGE_REPORTERS = 2;
+function checkUnderage(reported) {
+  if (!reported || !reported.clientId) return;
+  const since = Date.now() - 30 * 864e5;
+  const who = new Set();
+  for (const r of store.data.reports) {
+    if (r.ts < since) break;
+    if (r.reason === 'underage' && r.reported && r.reported.clientId === reported.clientId && r.reporter) who.add(r.reporter.clientId);
+  }
+  if (who.size < UNDERAGE_REPORTERS) return;
+  if (store.data.bans.some((b) => b.clientId === reported.clientId && !b.liftedAt && b.expiresAt > Date.now())) return;
+  const ban = store.addBan({
+    clientId: reported.clientId, ip: reported.ip || null, username: reported.username, country: reported.country, city: reported.city,
+    reason: `Possible minor: reported as under 18 by ${who.size} people. On hold until reviewed.`, minutes: 7 * 24 * 60,
+  });
+  kickBanned(reported.clientId, null, ban);
+  console.log(`[underage] ${reported.username || reported.clientId} on hold after ${who.size} under-18 reports`);
+}
+// Someone saying they are a child in a text chat: flagged to the dashboard
+// as a report (no automatic ban - phrasing is easy to misread).
+const UNDERAGE_SAYS_RE = /\b(?:i'?m|i am|im)\s+(?:only\s+)?(?:1[0-7]|[5-9])\s*(?:years?\s*old|yrs?\s*old|y\/?o)\b|\b(?:i'?m|i am|im)\s+in\s+(?:[5-9]|1[01])(?:st|nd|rd|th)\s+grade\b|\b(?:1[0-7]|[5-9])\s*(?:years?\s*old|y\/?o)\s+(?:here|girl|boy|m|f)\b/i;
+const underageFlagged = new Map(); // clientId -> ts, one flag a day
+function flagUnderageText(profile, text) {
+  if (!profile || !text || !UNDERAGE_SAYS_RE.test(text)) return;
+  if (Date.now() - (underageFlagged.get(profile.clientId) || 0) < 864e5) return;
+  underageFlagged.set(profile.clientId, Date.now());
+  store.addReport({
+    reporter: { clientId: 'system', username: 'Auto-check', country: '', city: '' },
+    reported: { clientId: profile.clientId, username: profile.username, country: profile.countryName, city: profile.city },
+    reason: 'underage-said', detail: String(text).slice(0, 200),
+  });
+}
+
 function kickBanned(clientId, ip, ban) {
   for (const [sid, p] of profiles) {
     const sock = io.sockets.sockets.get(sid);
@@ -6278,6 +6314,7 @@ io.on('connection', (socket) => {
         reason,
         detail,
       });
+      if (reason === 'underage') checkUnderage(rec.reported);
       const totalReports = store.reportCountFor(partner.clientId);
       console.log(`[report] ${seeker.username} reported ${partner.username} - reason: ${reason}${detail ? ` - "${detail}"` : ''} (total reports: ${totalReports})`);
       // No email alert for user reports: they arrive far too often to be useful
@@ -6340,6 +6377,7 @@ io.on('connection', (socket) => {
       reason: typeof reason === 'string' ? reason.slice(0, 40) : 'profile',
       detail: typeof detail === 'string' ? detail.slice(0, 300) : '',
     });
+    if (rec.reason === 'underage') checkUnderage(rec.reported);
     console.log(`[report] ${me.username} reported ${targetClientId} from a profile (total reports: ${store.reportCountFor(targetClientId)})`);
     automod.onReport({
       reportId: rec.id,
@@ -6608,6 +6646,7 @@ io.on('connection', (socket) => {
     // applies to what the user actually typed.
     // Before the link filter, as for friend messages (see captureContacts).
     captureContacts(profiles.get(socket.id), msg.text, 'stranger');
+    flagUnderageText(profiles.get(socket.id), msg.text);
     if (msg.text && containsLink(msg.text)) {
       return socket.emit('chat-blocked', { reason: 'link' });
     }
