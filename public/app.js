@@ -524,18 +524,10 @@ if (myAvatar) {
 
 // --- No links of any kind in chat. Mirrors the server-side filter. ---
 const LINK_RE = new RegExp(
-  '(?:[a-z][a-z0-9+.-]*:\\/\\/)' // any protocol://
+  '(?:[a-z][a-z0-9+.-]*:\\/\\/)'
   + '|(?:\\bwww\\.)'
-  // name.tld, but only real web endings: "asadsyed.director" or "asad.123"
-  // is a username, "google.com" and "site.pk" are links.
-  + '|(?:\\b[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.(?:com|net|org|io|co|me|app|gg|ly|xyz|info|biz|tv|live|site|online|link|store|shop|club|top|vip|pro|dev|ai|to|cc|ws|fm|us|uk|ca|au|in|pk|ru|de|fr|br|es|it|nl|jp|cn|kr|tr|id|ph|ng|za|mx|ar|eu|bd|ae|sa|asia|mobi|page|click|lol|fun|icu|cyou|world|today|life|space|website|tech|news|blog|art|xxx|porn|sex|cam|chat|social|tk|ml|ga|cf|gq|ir|ua|pl|vn|th|my|sg|nz|ch|se|no|dk|be|at|gr|pt|ro|cz|hu|il|eg|ke|gh|lk|np|af|iq)(?:\\/|\\b))'
-  + '|(?:\\b\\w+\\s*[(\\[{]?\\s*dot\\s*[)\\]}]?\\s*(?:com|net|org|io|gg|me|ly|co|xyz|site|online|app|tv|link|live|pk|ru|info|biz|store|shop)\\b)'
-  // Any name.word followed by a path ("shop.anything/abc") is a link whatever the ending.
-  + '|(?:\\b[a-z0-9-]+\\.[a-z]{2,}\\/\\S)'
-  // A bare IP address.
-  + '|(?:\\b\\d{1,3}(?:\\.\\d{1,3}){3}\\b)'
-  // Dots in disguise: "google . com", "google[.]com", "google(.)com", "google。com".
-  + '|(?:\\b[a-z0-9-]+\\s*(?:\\s\\.\\s|\\[\\.\\]|\\(\\.\\)|\\{\\.\\}|[\\u3002\\uff0e\\u2024\\u00b7])\\s*(?:com|net|org|io|app|gg|ly|xyz|info|biz|tv|site|online|link|store|shop|pk|ru|uk|de|fr|br|xxx|me)\\b)',
+  + '|(?:\\b[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.(?:com|net|org|io|co|me|app|gg|ly|xyz|info|biz|tv|live|site|online|link|store|shop|ru|pk|in|uk|de|tk)(?:\\/|\\b))'
+  + '|(?:\\b\\w+\\s*\\(?\\s*dot\\s*\\)?\\s*(?:com|net|org|io|gg|me|ly|co|xyz|site|online|app|tv|link|live)\\b)',
   'i'
 );
 // TalkLive's own site and email addresses are the one exception.
