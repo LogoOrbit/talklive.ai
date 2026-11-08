@@ -83,6 +83,9 @@
     ntfHelpSafari: "iPhone Safari: tap Share ⬆ → Add to Home Screen, open TalkLive from there, then turn on notifications.",
     ntfHelpReload: "Then reload this page.",
     ntfFirstFriend: "🔔 Want to know when {name} messages or comes online?",
+    restoreOk: "🔥 Streak restored: {n} days. Talk today to keep it going.",
+    restoreNo: "This streak can't be restored right now.",
+    restoreAsk: "Your {n}-day streak broke. Plus can bring it back.",
     callOffline: "{name} is offline right now. Tap to ask them to call you back, or ring the 🔔 to know when they're online.",
     awayTitle: "While you were away",
     awayMsg: "{name} sent {n} message(s)",
@@ -263,6 +266,15 @@
     }
     if (act === 'recap') { write(KEY.recap, state.prevWeek ? state.prevWeek.week : ''); render(); return; }
     if (act === 'streak') {
+      // A streak that just broke: Plus brings it back (same rule as the app).
+      var lost = state.streak && state.streak.lost;
+      if (state.streak && !state.streak.count && lost && lost.restorable && lost.count >= 2) {
+        if (!isPremiumUser) { showPremiumUpsell(t('restoreAsk', { n: lost.count }), 'streak'); return; }
+        socket.emit('streak-restore', function (r) {
+          showToast(r && r.ok ? t('restoreOk', { n: r.count || lost.count }) : t('restoreNo'), r && r.ok ? 'success' : 'social');
+        });
+        return;
+      }
       var fz = state.streak && state.streak.freezesLeft;
       showToast(t('engageStreakHow') + ' ' + (typeof fz === 'number' ? t('plusFreezes', { n: fz }) : t('plusFreezesFree')), 'success');
       return;
@@ -439,6 +451,9 @@
   function onReveal(partner) {
     var nameEl = document.getElementById('partnerName');
     if (nameEl) nameEl.classList.toggle('tl-plus-name', !!(partner && partner.premium));
+    // Plus members' faces come alive, as in the app.
+    var face = document.getElementById('partnerAnimal');
+    if (face) face.classList.toggle('tl-plus-alive', !!(partner && partner.premium));
     if (nameEl && partner && partner.premium) {
       var b = el('span', 'tl-plus-tag', '💎 Plus');
       nameEl.appendChild(b);
@@ -488,7 +503,11 @@
       + '.tl-blur-av{display:inline-grid;place-items:center;width:30px;height:30px;margin-right:10px;border-radius:50%;background:linear-gradient(135deg,rgba(245,196,81,.6),rgba(124,92,255,.5));color:#fff}'
       + '.tl-locked-row{display:block;width:100%;margin:8px 0;padding:12px 14px;border-radius:14px;border:1px solid rgba(245,196,81,.45);background:rgba(245,196,81,.1);color:inherit;text-align:left;cursor:pointer;font:inherit}'
       + '.animal-option.tl-plus-face{box-shadow:inset 0 0 0 1.5px rgba(245,196,81,.7);position:relative}.animal-option.tl-plus-face::after{content:attr(data-lock);position:absolute;top:4px;right:6px;font-size:12px}'
-      + '@media (prefers-reduced-motion:reduce){.tl-plus-sweep,.tl-plus-pill{animation:none;display:none}}';
+      + '.tl-plus-alive{position:relative;overflow:hidden;border-radius:50%;animation:tl-alive 4.6s ease-in-out infinite}'
+      + '.tl-plus-alive::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 35%,rgba(255,243,196,.55) 50%,transparent 65%);background-size:300% 100%;animation:tl-shine 4.6s linear infinite;pointer-events:none}'
+      + '@keyframes tl-alive{0%,78%,100%{transform:none}82%{transform:rotate(-7deg)}86%{transform:rotate(5deg)}90%{transform:rotate(-2deg) translateY(-2px)}94%{transform:translateY(0)}}'
+      + '@keyframes tl-shine{0%,70%{background-position:130% 0}90%,100%{background-position:-30% 0}}'
+      + '@media (prefers-reduced-motion:reduce){.tl-plus-sweep,.tl-plus-pill{animation:none;display:none}.tl-plus-alive,.tl-plus-alive::after{animation:none}}';
     var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   })();
 
