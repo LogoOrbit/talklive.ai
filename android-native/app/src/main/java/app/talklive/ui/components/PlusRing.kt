@@ -42,6 +42,6 @@ fun PlusRing(active: Boolean, size: Dp, modifier: Modifier = Modifier, content: 
         Canvas(Modifier.size(size + ring * 2).graphicsLayer { rotationZ = spin.value }) {
             drawCircle(Brush.sweepGradient(Gold), style = Stroke(width = ring.toPx()))
         }
-        Box(Modifier.padding(ring), contentAlignment = Alignment.Center) { content() }
+        Box(Modifier.padding(ring), contentAlignment = Alignment.Center) { androidx.compose.runtime.CompositionLocalProvider(app.talklive.ui.animals.LocalPlusAvatar provides true) { content() } }
     }
 }

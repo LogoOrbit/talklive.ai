@@ -372,8 +372,8 @@
     <string name="plus_perk_undo_body">Skipped someone by mistake? Bring them back.</string>
     <string name="plus_perk_queue">Skip the queue</string>
     <string name="plus_perk_queue_body">Get matched first when it is busy.</string>
-    <string name="plus_perk_badge">Plus badge</string>
-    <string name="plus_perk_badge_body">A 💎 next to your name.</string>
+    <string name="plus_perk_badge">A face that comes alive</string>
+    <string name="plus_perk_badge_body">Your avatar blinks, moves and shines, with a gold name and 💎 badge.</string>
     <string name="plus_hero">Meet the people you want to meet, faster.</string>
     <string name="plus_hero_active">Plus is on. Thanks for supporting TalkLive.</string>
     <string name="plus_earn_title">Or earn it free</string>
@@ -519,7 +519,7 @@
     <string name="id_letters">Letters</string>
     <string name="id_numbers">Numbers</string>
     <string name="plus_you_title">Your profile with Plus</string>
-    <string name="plus_you_body">A turning gold ring and a Plus badge on your picture, in calls and on your profile.</string>
+    <string name="plus_you_body">Your avatar comes alive: it blinks, moves and shines. A gold ring, gold name and Plus badge everywhere you go.</string>
     <string name="vn_policy_title">Voice messages: stay safe</string>
     <string name="vn_policy_intro">Before you send your first voice message, please read how it works and what\'s allowed.</string>
     <string name="vn_policy_consent">Voice messages only work between friends, and only after the other person agrees to receive them.</string>
@@ -579,4 +579,11 @@
     <string name="terms_pt_data">We keep your account, friends and chats to run the app. You can delete your account at any time.</string>
     <string name="terms_pt_pay">Plus is paid through Google Play. Purchases are non-refundable except where the law or Google Play requires.</string>
     <string name="terms_full_hint">Read the full documents:</string>
+    <string name="cmp_alive">Animated, shining avatar</string>
+    <string name="cmp_gold">Gold name and Plus badge</string>
+    <string name="cmp_faces">8 legendary avatars</string>
+    <string name="cmp_friends">Friends</string>
+    <string name="cmp_history">People you met, listed</string>
+    <string name="cmp_films">Favourite films</string>
+    <string name="cmp_freezes">2 extra streak freezes a month</string>
 </resources>

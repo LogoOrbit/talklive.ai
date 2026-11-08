@@ -2,6 +2,14 @@ package app.talklive.ui.animals
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Brush
+import kotlinx.coroutines.launch
+import androidx.compose.animation.graphics.res.animatedVectorResource
+import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
+import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.runtime.mutableStateOf
 import app.talklive.R
 import androidx.compose.ui.res.stringResource
@@ -71,7 +79,8 @@ fun AnimalAvatar(animalId: String?, name: String?, size: Dp, modifier: Modifier 
                 Modifier.size(size).clip(CircleShape).background(a.color.copy(alpha = 0.22f)),
                 contentAlignment = Alignment.Center,
             ) {
-                Image(painterResource(a.icon), contentDescription = a.name, modifier = Modifier.size(size * 0.82f))
+                if (LocalPlusAvatar.current && !app.talklive.ui.theme.LocalReduceMotion.current) LiveFace(a, size)
+                else Image(painterResource(a.icon), contentDescription = a.name, modifier = Modifier.size(size * 0.82f))
             }
         } else {
             Box(Modifier.size(size).clip(CircleShape).background(BrandGradient), contentAlignment = Alignment.Center) {
@@ -83,6 +92,74 @@ fun AnimalAvatar(animalId: String?, name: String?, size: Dp, modifier: Modifier 
                 )
             }
         }
+    }
+}
+
+/** True inside a Plus member's gold ring: their face comes alive (see LiveFace). */
+val LocalPlusAvatar = androidx.compose.runtime.staticCompositionLocalOf { false }
+
+/**
+ * A Plus member's face: every few seconds it blinks, tilts its head or
+ * chatters as if talking, and a gold shine sweeps across it. All motion is
+ * read in draw/layer lambdas, so it never recomposes the screen around it.
+ */
+@OptIn(androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi::class)
+@Composable
+private fun LiveFace(a: Animal, size: Dp) {
+    val live = LiveAvatars[a.icon]
+    var blink by remember { mutableStateOf(false) }
+    val tilt = remember { androidx.compose.animation.core.Animatable(0f) }
+    val bob = remember { androidx.compose.animation.core.Animatable(0f) }
+    val shine = remember { androidx.compose.animation.core.Animatable(-1f) }
+    LaunchedEffect(a.id) {
+        var turn = 0
+        while (true) {
+            kotlinx.coroutines.delay(2200L + (0..2600).random())
+            kotlinx.coroutines.coroutineScope {
+                launch { shine.snapTo(-1f); shine.animateTo(2f, androidx.compose.animation.core.tween(900)) }
+                when (turn++ % 3) {
+                    0 -> { blink = !blink; kotlinx.coroutines.delay(260); if (turn % 2 == 0) blink = !blink }
+                    1 -> launch {
+                        for (r in listOf(-7f, 5f, -2f, 0f)) tilt.animateTo(r, androidx.compose.animation.core.tween(220))
+                    }
+                    else -> launch {
+                        // Chatter: quick little bobs, like someone talking.
+                        repeat(3) {
+                            bob.animateTo(1f, androidx.compose.animation.core.tween(90))
+                            bob.animateTo(0f, androidx.compose.animation.core.tween(110))
+                        }
+                    }
+                }
+            }
+        }
+    }
+    val painter = if (live != null) {
+        rememberAnimatedVectorPainter(AnimatedImageVector.animatedVectorResource(live), blink)
+    } else painterResource(a.icon)
+    Box(
+        Modifier.size(size).drawWithContent {
+            drawContent()
+            // A band of gold light passing over the face.
+            val x = shine.value * this.size.width
+            drawRect(
+                Brush.linearGradient(
+                    listOf(Color.Transparent, Color(0x66FFF3C4), Color(0x88FFFFFF), Color(0x66F5C451), Color.Transparent),
+                    start = androidx.compose.ui.geometry.Offset(x - this.size.width * 0.35f, 0f),
+                    end = androidx.compose.ui.geometry.Offset(x + this.size.width * 0.15f, this.size.height),
+                ),
+            )
+        },
+        contentAlignment = Alignment.Center,
+    ) {
+        Image(
+            painter, contentDescription = a.name,
+            modifier = Modifier.size(size * 0.82f).graphicsLayer {
+                rotationZ = tilt.value
+                translationY = -bob.value * size.toPx() * 0.04f
+                scaleY = 1f - bob.value * 0.04f
+                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f)
+            },
+        )
     }
 }
 

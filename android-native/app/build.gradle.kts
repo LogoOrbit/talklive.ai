@@ -34,8 +34,8 @@ android {
         applicationId = "app.talklive"
         minSdk = 26
         targetSdk = 36
-        versionCode = 107
-        versionName = "3.4.2"
+        versionCode = 108
+        versionName = "3.5.0"
         buildConfigField("String", "SERVER_URL", "\"https://talklive.app\"")
     }
 
@@ -106,6 +106,7 @@ dependencies {
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
+    implementation(libs.compose.animation.graphics)
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.material3)
     implementation(libs.compose.material.icons)

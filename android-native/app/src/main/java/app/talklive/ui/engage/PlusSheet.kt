@@ -441,7 +441,7 @@ private fun FeatureCarousel() {
         if (still) return@LaunchedEffect
         while (true) { kotlinx.coroutines.delay(3800); pager.animateScrollToPage((pager.currentPage + 1) % PERKS.size) }
     }
-    androidx.compose.foundation.pager.HorizontalPager(state = pager, contentPadding = PaddingValues(horizontal = 36.dp), pageSpacing = 12.dp) { page ->
+    androidx.compose.foundation.pager.HorizontalPager(state = pager, contentPadding = PaddingValues(horizontal = 20.dp), pageSpacing = 24.dp) { page ->
         val p = PERKS[page]
         Surface(
             shape = RoundedCornerShape(28.dp),
@@ -531,15 +531,23 @@ private fun PerkPreview(page: Int) {
 /** Free vs Plus, row by row. */
 @Composable
 private fun CompareTable(modifier: Modifier = Modifier) {
+    // What each side gets: a tick, a dash, or how many.
+    val yes = "✓"; val no = "—"
     val rows = listOf(
-        R.string.cmp_calls to true,
-        R.string.cmp_streaks to true,
-        R.string.cmp_countries to false,
-        R.string.plus_perk_likes to false,
-        R.string.plus_perk_undo to false,
-        R.string.plus_perk_queue to false,
-        R.string.plus_perk_streak to false,
-        R.string.plus_perk_themes to false,
+        Triple(R.string.cmp_calls, yes, yes),
+        Triple(R.string.cmp_alive, no, yes),
+        Triple(R.string.cmp_gold, no, yes),
+        Triple(R.string.cmp_faces, no, yes),
+        Triple(R.string.cmp_countries, no, yes),
+        Triple(R.string.plus_perk_likes, no, yes),
+        Triple(R.string.cmp_friends, "30", "∞"),
+        Triple(R.string.cmp_history, "3", "∞"),
+        Triple(R.string.cmp_films, "1", "3"),
+        Triple(R.string.cmp_freezes, no, yes),
+        Triple(R.string.plus_perk_undo, no, yes),
+        Triple(R.string.plus_perk_queue, no, yes),
+        Triple(R.string.plus_perk_themes, no, yes),
+        Triple(R.string.cmp_streaks, yes, yes),
     )
     Surface(shape = RoundedCornerShape(24.dp), color = Color.White.copy(alpha = 0.05f), modifier = modifier.fillMaxWidth()) {
         Column(Modifier.padding(vertical = 8.dp)) {
@@ -548,11 +556,12 @@ private fun CompareTable(modifier: Modifier = Modifier) {
                 Text(stringResource(R.string.cmp_free), color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
                 Text("PLUS", style = MaterialTheme.typography.labelLarge.copy(brush = GoldBrush), fontWeight = FontWeight.Black, modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
             }
-            rows.forEach { (label, free) ->
-                Row(Modifier.padding(horizontal = 18.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
+            rows.forEachIndexed { i, (label, free, plus) ->
+                if (i > 0) Box(Modifier.padding(horizontal = 18.dp).fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.05f)))
+                Row(Modifier.padding(horizontal = 18.dp, vertical = 11.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(label), color = Color.White, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                    Text(if (free) "✓" else "—", color = Color.White.copy(alpha = if (free) 0.8f else 0.3f), modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
-                    Text("✓", style = MaterialTheme.typography.titleMedium.copy(brush = GoldBrush), fontWeight = FontWeight.Bold, modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
+                    Text(free, color = Color.White.copy(alpha = if (free == no) 0.3f else 0.8f), style = MaterialTheme.typography.titleSmall, modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
+                    Text(plus, style = MaterialTheme.typography.titleMedium.copy(brush = GoldBrush), fontWeight = FontWeight.Bold, modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
                 }
             }
         }

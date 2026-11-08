@@ -21,6 +21,7 @@ import app.talklive.ui.FriendStatus
 import app.talklive.ui.MutualHeartOverlay
 import app.talklive.ui.RateCard
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.unit.dp
 import app.talklive.ui.onboarding.AuthViewModel
 import app.talklive.ui.onboarding.ChooseScreen
@@ -31,6 +32,8 @@ import app.talklive.ui.onboarding.WelcomeScreen
 import app.talklive.ui.theme.TalkLiveTheme
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Test
+import androidx.compose.animation.graphics.res.animatedVectorResource
+import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -230,6 +233,36 @@ class ScreenshotTest {
     @Test fun callLive() = shot("33_call_live") {
         val bands = FloatArray(28) { i -> (0.25f + 0.6f * kotlin.math.sin(i / 3.0).toFloat().let { it * it }).coerceIn(0f, 1f) }
         CallScreen(CallState(phase = CallPhase.Connected(partner, now)), true, "fox", { 0.3f }, onNext = {}, onEnd = {}, onMute = {}, onSpeaker = {}, onReport = {}, bands = { bands })
+    }
+
+    // Every blinking Plus avatar must load (a broken one would only crash at runtime).
+    @OptIn(androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi::class)
+    @Test fun liveAvatars() = shot("40_live_avatars") {
+        androidx.compose.foundation.layout.FlowRow {
+            app.talklive.ui.animals.LiveAvatars.values.forEachIndexed { i, id ->
+                androidx.compose.foundation.Image(
+                    androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter(
+                        AnimatedImageVector.animatedVectorResource(id), i % 2 == 1,
+                    ),
+                    null, Modifier.padding(2.dp).size(44.dp),
+                )
+            }
+        }
+    }
+    private fun plusPage(state: app.talklive.billing.BillingState) = @Composable {
+        app.talklive.ui.engage.PlusContent(
+            app.talklive.engage.Premium(false, null, false), signedIn = true, myAnimal = "lion", myName = "Sam",
+            state = state, busy = false, onSignIn = {}, onBuy = {}, onRestore = {}, onManage = {},
+        )
+    }
+    @Config(qualifiers = "w400dp-h2400dp-xxhdpi")
+    @Test fun plusUnavailableTall() = shot("41_plus_unavailable") { plusPage(app.talklive.billing.BillingState.Unavailable)() }
+    @Config(qualifiers = "w400dp-h2400dp-xxhdpi")
+    @Test fun plusReadyTall() = shot("42_plus_ready") {
+        plusPage(app.talklive.billing.BillingState.Ready(
+            listOf(app.talklive.billing.PlusPlan("monthly", "$10.00", "P1M", "a", null)),
+            listOf(app.talklive.billing.PlusPass("pass_1d", 1, "$2.00", 0), app.talklive.billing.PlusPass("pass_7d", 7, "$5.00", 0), app.talklive.billing.PlusPass("pass_15d", 15, "$7.00", 0)),
+        ))()
     }
     @Test fun plus() = shot("30_plus") { plusShot()() }
     @Config(qualifiers = "de-w400dp-h860dp-xxhdpi")
