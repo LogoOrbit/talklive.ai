@@ -44,23 +44,33 @@ class LocalNotifier @Inject constructor(
             social.requests.collect { list ->
                 val ids = list.mapTo(HashSet()) { it.clientId }
                 seen?.let { before ->
-                    if (background()) list.filter { it.clientId !in before }.forEach { p ->
+                    val fresh = list.filter { it.clientId !in before }
+                    // A reloaded inbox (several at once) is not news.
+                    if (background() && fresh.size <= 3) fresh.forEach { p ->
                         post("req:${p.clientId}", context.getString(R.string.n_request_title, p.displayName), context.getString(R.string.n_request_body), "requests", social = true)
                     }
                 }
                 seen = ids
             }
         }
+        // Who this user asked and is still waiting on: only they can "accept".
+        // A friend list that reloads (sign-in, a reconnect, a profile switch
+        // empties and refills it) must never read as a wave of new friends.
+        var pendingAsked: Set<String> = emptySet()
+        scope.launch { social.sent.collect { asked -> if (asked.isNotEmpty()) pendingAsked = pendingAsked + asked } }
         scope.launch {
             var seen: Set<String>? = null
             social.friends.collect { list ->
                 val ids = list.mapTo(HashSet()) { it.clientId }
                 seen?.let { before ->
-                    if (background()) list.filter { it.clientId !in before }.forEach { p ->
+                    val accepted = list.filter { it.clientId !in before && it.clientId in pendingAsked }
+                    pendingAsked = pendingAsked - accepted.map { it.clientId }.toSet()
+                    if (background() && accepted.size <= 3) accepted.forEach { p ->
                         post("acc:${p.clientId}", context.getString(R.string.n_accepted_title, p.displayName), context.getString(R.string.n_accepted_body), "chat:${p.clientId}", social = true)
                     }
                 }
-                seen = ids
+                // Emptied (signed out, switching profile): the next list is a fresh start.
+                seen = if (ids.isEmpty()) null else ids
             }
         }
         scope.launch {
