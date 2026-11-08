@@ -445,7 +445,7 @@
     <string name="n_accepted_body">あいさつしよう：いつでもメッセージできます。</string>
     <string name="n_missed_body">タップして折り返す。</string>
     <string name="support_quick">すぐわかる回答</string>
-    <string name="film_match">🎬 2人とも「%1$s」が好き！</string>
+    <string name="film_match">2人とも「%1$s」が好き！</string>
     <string name="plus_perk_streak">連続記録を戻す</string>
     <string name="plus_perk_streak_body">1日休んだ？月に1回、記録を戻せます。</string>
     <string name="connecting_short">接続中</string>

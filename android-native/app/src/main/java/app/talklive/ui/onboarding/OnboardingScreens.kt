@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -85,11 +86,14 @@ enum class AuthRoute { Welcome, Choose, Signup, Login, Reset }
 /** Welcome slides, then sign-in choices, then email sign-up or log-in. */
 @Composable
 fun OnboardingFlow(vm: AuthViewModel, start: AuthRoute = AuthRoute.Choose, onClose: (() -> Unit)? = null) {
-    var route by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(start) }
+    val introPrefs = LocalContext.current.let { c -> remember { c.getSharedPreferences("ui", android.content.Context.MODE_PRIVATE) } }
+    // The three intro swipes, once, on a fresh install.
+    val first = if (start == AuthRoute.Choose && onClose == null && !introPrefs.getBoolean("intro_seen", false)) AuthRoute.Welcome else start
+    var route by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(first) }
 
     fun go(r: AuthRoute) { vm.clearError(); route = r }
 
-    BackHandler(enabled = route != start || onClose != null) {
+    BackHandler(enabled = (route != start && route != AuthRoute.Welcome) || onClose != null) {
         when (route) {
             AuthRoute.Signup -> if (!vm.back()) go(AuthRoute.Choose)
             AuthRoute.Login -> go(AuthRoute.Choose)
@@ -109,7 +113,7 @@ fun OnboardingFlow(vm: AuthViewModel, start: AuthRoute = AuthRoute.Choose, onClo
         label = "auth",
     ) { r ->
         when (r) {
-            AuthRoute.Welcome -> WelcomeScreen(onDone = { go(AuthRoute.Choose) })
+            AuthRoute.Welcome -> WelcomeScreen(onDone = { introPrefs.edit().putBoolean("intro_seen", true).apply(); go(AuthRoute.Choose) })
             AuthRoute.Choose -> ChooseScreen(
                 vm = vm,
                 onSignup = { go(AuthRoute.Signup) },
@@ -128,25 +132,37 @@ fun OnboardingFlow(vm: AuthViewModel, start: AuthRoute = AuthRoute.Choose, onClo
     }
 }
 
-private data class Slide(val icon: ImageVector, val title: Int, val body: Int)
+private data class Slide(val icon: ImageVector, val title: Int, val body: Int, val faces: List<String>)
 
 @Composable
 internal fun WelcomeScreen(onDone: () -> Unit) {
     val slides = remember {
+        val all = app.talklive.ui.animals.Animals.map { it.id }.shuffled()
         listOf(
-            Slide(Icons.Rounded.Mic, R.string.welcome_1_title, R.string.welcome_1_body),
-            Slide(Icons.Rounded.Public, R.string.welcome_2_title, R.string.welcome_2_body),
-            Slide(Icons.Rounded.Shield, R.string.welcome_3_title, R.string.welcome_3_body),
+            Slide(Icons.Rounded.Mic, R.string.welcome_1_title, R.string.welcome_1_body, all.take(4)),
+            Slide(Icons.Rounded.Public, R.string.welcome_2_title, R.string.welcome_2_body, all.drop(4).take(6)),
+            Slide(Icons.Rounded.Shield, R.string.welcome_3_title, R.string.welcome_3_body, all.drop(10).take(3)),
         )
     }
     val pager = rememberPagerState { slides.size }
     val scope = rememberCoroutineScope()
     val last = pager.currentPage == slides.lastIndex
+    val spin = androidx.compose.animation.core.rememberInfiniteTransition(label = "orbit")
+    val angle by spin.animateFloat(
+        0f, 360f,
+        androidx.compose.animation.core.infiniteRepeatable(tween(40_000, easing = androidx.compose.animation.core.LinearEasing)),
+        label = "angle",
+    )
+    val pulse by spin.animateFloat(
+        1f, 1.08f,
+        androidx.compose.animation.core.infiniteRepeatable(tween(1400), androidx.compose.animation.core.RepeatMode.Reverse),
+        label = "pulse",
+    )
 
     Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(24.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Image(painterResource(R.drawable.logo), null, Modifier.size(36.dp))
-            TextButton(onClick = onDone) { Text(stringResource(R.string.skip)) }
+            if (!last) TextButton(onClick = onDone) { Text(stringResource(R.string.skip)) }
         }
         HorizontalPager(pager, Modifier.weight(1f)) { page ->
             val offset = (pager.currentPage - page + pager.currentPageOffsetFraction).absoluteValue
@@ -160,17 +176,23 @@ internal fun WelcomeScreen(onDone: () -> Unit) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
-                Box(
-                    Modifier.size(200.dp).clip(CircleShape)
-                        .background(Brush.linearGradient(listOf(BrandViolet.copy(alpha = 0.14f), BrandTeal.copy(alpha = 0.14f)))),
-                    contentAlignment = Alignment.Center,
-                ) {
+                Box(Modifier.size(260.dp), contentAlignment = Alignment.Center) {
                     Box(
-                        Modifier.size(120.dp).clip(CircleShape).background(Brush.linearGradient(listOf(BrandViolet, BrandTeal))),
+                        Modifier.size(210.dp).clip(CircleShape)
+                            .background(Brush.linearGradient(listOf(BrandViolet.copy(alpha = 0.14f), BrandTeal.copy(alpha = 0.14f)))),
+                    )
+                    Box(
+                        Modifier.size(116.dp).graphicsLayer { scaleX = pulse; scaleY = pulse }
+                            .clip(CircleShape).background(Brush.linearGradient(listOf(BrandViolet, BrandTeal))),
                         contentAlignment = Alignment.Center,
-                    ) { Icon(s.icon, null, tint = Color.White, modifier = Modifier.size(56.dp)) }
+                    ) { Icon(s.icon, null, tint = Color.White, modifier = Modifier.size(52.dp)) }
+                    // People around the circle, drifting slowly.
+                    s.faces.forEachIndexed { i, id ->
+                        val a = Math.toRadians((angle * (if (page == 1) -1 else 1) + i * 360f / s.faces.size).toDouble())
+                        AnimalAvatarAt(id, kotlin.math.cos(a).toFloat() * 105f, kotlin.math.sin(a).toFloat() * 105f)
+                    }
                 }
-                Spacer(Modifier.height(40.dp))
+                Spacer(Modifier.height(36.dp))
                 Text(
                     stringResource(s.title), style = MaterialTheme.typography.headlineMedium,
                     color = MaterialTheme.colorScheme.onBackground, textAlign = TextAlign.Center,
@@ -200,6 +222,15 @@ internal fun WelcomeScreen(onDone: () -> Unit) {
 }
 
 @Composable
+private fun AnimalAvatarAt(id: String, x: Float, y: Float) {
+    app.talklive.ui.animals.AnimalAvatar(
+        id, null, 46.dp,
+        Modifier.graphicsLayer { translationX = x * density; translationY = y * density }
+            .clip(CircleShape).background(MaterialTheme.colorScheme.surface).padding(3.dp),
+    )
+}
+
+@Composable
 internal fun ChooseScreen(vm: AuthViewModel, onSignup: () -> Unit, onLogin: () -> Unit, onClose: (() -> Unit)?) {
     val context = LocalContext.current
     Column(
@@ -219,34 +250,33 @@ internal fun ChooseScreen(vm: AuthViewModel, onSignup: () -> Unit, onLogin: () -
             style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onBackground, textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(24.dp))
-        // What TalkLive is, in three lines, on the same screen as the way in
-        // (it used to take three swipes before this screen).
-        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            listOf(
-                Triple(Icons.Rounded.Mic, R.string.welcome_1_title, R.string.welcome_1_body),
-                Triple(Icons.Rounded.Public, R.string.welcome_2_title, R.string.welcome_2_body),
-                Triple(Icons.Rounded.Shield, R.string.welcome_3_title, R.string.welcome_3_body),
-            ).forEach { (icon, title, body) ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(44.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
-                        Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
-                    }
-                    Spacer(Modifier.width(14.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(stringResource(title), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onBackground)
-                        Text(stringResource(body), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
-        }
         Spacer(Modifier.weight(1f))
         // 18+ and the rules, confirmed once on this device before anyone talks
         // to a stranger (adding an account later skips it: already agreed).
         val prefs = remember { context.getSharedPreferences("consent", android.content.Context.MODE_PRIVATE) }
         var agreed by remember { mutableStateOf(onClose != null || prefs.getBoolean("adult_terms", false)) }
+        // The Terms and Privacy Policy are read in the app before any account
+        // or guest profile is made; ticking the box opens them first.
+        var read by remember { mutableStateOf(onClose != null || prefs.getBoolean("read_terms", false)) }
+        var showTerms by remember { mutableStateOf(false) }
+        var pending by remember { mutableStateOf<(() -> Unit)?>(null) }
         var nudge by remember { mutableStateOf(0) }
         fun gate(go: () -> Unit) {
-            if (agreed) { prefs.edit().putBoolean("adult_terms", true).apply(); go() } else nudge++
+            when {
+                !read -> { pending = go; showTerms = true }
+                agreed -> { prefs.edit().putBoolean("adult_terms", true).apply(); go() }
+                else -> nudge++
+            }
+        }
+        if (showTerms) {
+            TermsReader(
+                onDismiss = { showTerms = false; pending = null },
+                onAgree = {
+                    prefs.edit().putBoolean("read_terms", true).putBoolean("adult_terms", true).apply()
+                    read = true; agreed = true; showTerms = false
+                    pending?.invoke(); pending = null
+                },
+            )
         }
         if (onClose == null) {
             val shake = remember { androidx.compose.animation.core.Animatable(0f) }
@@ -254,19 +284,30 @@ internal fun ChooseScreen(vm: AuthViewModel, onSignup: () -> Unit, onLogin: () -
                 if (nudge == 0) return@LaunchedEffect
                 for (x in listOf(12f, -10f, 8f, -6f, 3f, 0f)) shake.animateTo(x, androidx.compose.animation.core.tween(45))
             }
+            val warn = nudge > 0 && !agreed
             Row(
                 Modifier.fillMaxWidth().graphicsLayer { translationX = shake.value * density }
                     .clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
-                    .background(if (nudge > 0 && !agreed) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surface)
-                    .clickable { agreed = !agreed }
-                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                    .background(if (warn) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surface)
+                    .clickable { if (!read) showTerms = true else agreed = !agreed }
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                androidx.compose.material3.Checkbox(checked = agreed, onCheckedChange = { agreed = it })
+                androidx.compose.runtime.CompositionLocalProvider(
+                    androidx.compose.material3.LocalMinimumInteractiveComponentSize provides 0.dp,
+                ) {
+                    androidx.compose.material3.Checkbox(
+                        checked = agreed,
+                        onCheckedChange = { if (!read) showTerms = true else agreed = it },
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
                 Text(
                     stringResource(R.string.adult_consent),
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (nudge > 0 && !agreed) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface,
+                    color = if (warn) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f),
                 )
             }
             Spacer(Modifier.height(14.dp))

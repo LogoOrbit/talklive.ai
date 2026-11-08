@@ -50,8 +50,16 @@ const film = (id, extra = {}) => ({
     socks.push(sock);
     const id = once(sock, 'friend-id');
     sock.emit('register', { clientId, nickname: clientId, gender: 'male' });
-    await id;
+    sock.friendId = (await id).friendId;
     return sock;
+  }
+  // Plus for a test profile, the way the owner's dashboard gives it.
+  async function plus(sock) {
+    const r = await fetch(BASE + '/internal/premium/grant', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ who: sock.friendId, days: 1 }),
+    });
+    if (!r.ok) throw new Error('grant failed: ' + (await r.text()));
   }
   async function save(sock, films) {
     const r = once(sock, 'set-fav-films-result');
@@ -65,6 +73,7 @@ const film = (id, extra = {}) => ({
     }
     const a = await connect('c_films_a');
     const b = await connect('c_films_b');
+    await plus(a);
 
     const saved = await save(a, [
       film(1),
@@ -92,6 +101,10 @@ const film = (id, extra = {}) => ({
     const clean = await save(a, [film(20, { title: '  The​   Dark   Knight  ' })]);
     ok('titles are cleaned of invisible characters and extra spaces', clean.films[0].title === 'The Dark Knight', JSON.stringify(clean.films[0].title));
 
+    // Free profiles keep one favourite; Plus keeps three.
+    const free = await save(b, [film(31), film(32), film(33)]);
+    ok('a free profile keeps one film', free.ok && free.films.length === 1 && free.films[0].id === 31 && free.max === 1, JSON.stringify(free));
+
     await save(a, [film(1), film(2)]);
     b.emit('get-fav-films', { clientId: 'c_films_a' });
     const seen = await once(b, 'fav-films');
@@ -104,6 +117,7 @@ const film = (id, extra = {}) => ({
     // id, or the same title + year under a different id.
     const c = await connect('c_films_c');
     const d = await connect('c_films_d');
+    await plus(c); await plus(d);
     await save(c, [film(1), film(5), film(7)]);
     await save(d, [film(1), film(99, { title: 'Film 5' }), film(8)]);
     const both = Promise.all([once(c, 'matched'), once(d, 'matched')]);

@@ -45,7 +45,7 @@ class LocalNotifier @Inject constructor(
                 val ids = list.mapTo(HashSet()) { it.clientId }
                 seen?.let { before ->
                     if (background()) list.filter { it.clientId !in before }.forEach { p ->
-                        post("req:${p.clientId}", context.getString(R.string.n_request_title, p.displayName), context.getString(R.string.n_request_body), "requests")
+                        post("req:${p.clientId}", context.getString(R.string.n_request_title, p.displayName), context.getString(R.string.n_request_body), "requests", social = true)
                     }
                 }
                 seen = ids
@@ -57,7 +57,7 @@ class LocalNotifier @Inject constructor(
                 val ids = list.mapTo(HashSet()) { it.clientId }
                 seen?.let { before ->
                     if (background()) list.filter { it.clientId !in before }.forEach { p ->
-                        post("acc:${p.clientId}", context.getString(R.string.n_accepted_title, p.displayName), context.getString(R.string.n_accepted_body), "chat:${p.clientId}")
+                        post("acc:${p.clientId}", context.getString(R.string.n_accepted_title, p.displayName), context.getString(R.string.n_accepted_body), "chat:${p.clientId}", social = true)
                     }
                 }
                 seen = ids
@@ -191,8 +191,9 @@ class LocalNotifier @Inject constructor(
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
 
-    private fun post(tag: String, title: String, body: String, target: String?, calls: Boolean = false) = runCatching {
-        val n = NotificationCompat.Builder(context, if (calls) TalkLiveApplication.CHANNEL_CALLS else TalkLiveApplication.CHANNEL_MESSAGES)
+    private fun post(tag: String, title: String, body: String, target: String?, calls: Boolean = false, social: Boolean = false) = runCatching {
+        val channel = when { calls -> TalkLiveApplication.CHANNEL_CALLS; social -> TalkLiveApplication.CHANNEL_SOCIAL; else -> TalkLiveApplication.CHANNEL_MESSAGES }
+        val n = NotificationCompat.Builder(context, channel)
             .setSmallIcon(R.drawable.ic_stat_talklive)
             .setColor(0xFF6C5CE7.toInt())
             .setContentTitle(title)

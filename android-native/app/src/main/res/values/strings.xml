@@ -34,12 +34,12 @@
     <string name="skip">Skip</string>
     <string name="continue_">Continue</string>
     <string name="get_started">Get started</string>
-    <string name="welcome_1_title">Real voices, real people</string>
-    <string name="welcome_1_body">One tap and you are talking to someone new. Voice only, no camera.</string>
-    <string name="welcome_2_title">Meet the whole world</string>
-    <string name="welcome_2_body">People from around the world are online right now. Talk, practise a language, make friends.</string>
-    <string name="welcome_3_title">Safe by design</string>
-    <string name="welcome_3_body">Nobody sees your name or number. Skip anyone, and report in one tap.</string>
+    <string name="welcome_1_title">Talk to someone new in one tap</string>
+    <string name="welcome_1_body">Voice only, no camera. Press Talk and you are with a real person in seconds.</string>
+    <string name="welcome_2_title">Turn good chats into friends</string>
+    <string name="welcome_2_body">Add the people you click with. Text, send voice notes and call them again anytime, from anywhere in the world.</string>
+    <string name="welcome_3_title">You stay in control</string>
+    <string name="welcome_3_body">Nobody sees your name or number. Skip, block or report in one tap, and live moderation keeps calls friendly.</string>
     <string name="choose_title">Join TalkLive</string>
     <string name="choose_body">Create an account to keep your friends and chats on every device.</string>
     <string name="continue_google">Continue with Google</string>
@@ -163,7 +163,9 @@
     <string name="channel_calls">Calls</string>
     <string name="channel_calls_desc">When a friend wants to talk to you</string>
     <string name="channel_messages">Messages</string>
-    <string name="channel_messages_desc">Friend messages and friend requests</string>
+    <string name="channel_messages_desc">Messages from your friends</string>
+    <string name="channel_social">Friends</string>
+    <string name="channel_social_desc">Friend requests, accepted requests and friends coming online</string>
     <string name="start_chatting">Start chatting</string>
     <string name="mode_voice">Voice</string>
     <string name="mode_text">Text</string>
@@ -214,7 +216,7 @@
     <string name="passport_title">Passport · %1$d countries</string>
     <string name="passport_body">A stamp for every country you have talked to.</string>
     <string name="fav_films">Favourite films and shows</string>
-    <string name="fav_films_body">Pick up to 3. People you meet see them on your card.</string>
+    <string name="fav_films_body">Pick your favourite. People you meet see it on your card. Plus adds two more.</string>
     <string name="search_films">Search films and shows</string>
     <string name="apple_credit">Posters and links from Apple TV.</string>
     <string name="filters">Match filters</string>
@@ -451,7 +453,7 @@
     <string name="n_accepted_body">Say hello: you can message them any time.</string>
     <string name="n_missed_body">Tap to call back.</string>
     <string name="support_quick">Quick answers</string>
-    <string name="film_match">🎬 You both love %1$s!</string>
+    <string name="film_match">You both liked %1$s</string>
     <string name="plus_perk_streak">Restore your streak</string>
     <string name="plus_perk_streak_body">Missed a day? Bring your streak back, once a month.</string>
     <string name="connecting_short">Connecting</string>
@@ -546,4 +548,10 @@
         <item quantity="one">day</item>
         <item quantity="other">days</item>
     </plurals>
+    <string name="terms_read_title">Before you start</string>
+    <string name="terms_read_hint">Please read the Terms of Service and the Privacy Policy to the end.</string>
+    <string name="terms_read_ready">By tapping I agree, you confirm you are 18 or older and accept both.</string>
+    <string name="terms_agree">I\'m 18+ and I agree</string>
+    <string name="terms_keep_reading">Scroll to the end to continue</string>
+    <string name="terms_next">Next: read the other one</string>
 </resources>

@@ -76,7 +76,9 @@ function fcmConfigured() {
 }
 
 // Android channels created by the app (mobile/android Notifications.java).
-const CHANNEL_FOR_KIND = { call: 'calls', message: 'messages' };
+// Android channels (TalkLiveApplication), each with its own TalkLive sound.
+const CHANNEL_FOR_KIND = { call: 'calls_v2', message: 'messages_v2', social: 'social_v2' };
+const SOUND_FOR_KIND = { call: 'tl_ring', message: 'tl_message', social: 'tl_friend' };
 
 async function sendFcm(token, { title, body, url, tag, kind }) {
   const accessToken = await fcm.auth.getAccessToken();
@@ -96,7 +98,7 @@ async function sendFcm(token, { title, body, url, tag, kind }) {
           notification: {
             channel_id: CHANNEL_FOR_KIND[kind] || 'messages',
             tag: tag || 'talklive',
-            sound: 'default',
+            sound: SOUND_FOR_KIND[kind] || 'tl_message',
             default_vibrate_timings: !call,
           },
         },

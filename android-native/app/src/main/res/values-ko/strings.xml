@@ -445,7 +445,7 @@
     <string name="n_accepted_body">인사해 보세요: 언제든 메시지를 보낼 수 있어요.</string>
     <string name="n_missed_body">탭해서 다시 전화하기.</string>
     <string name="support_quick">빠른 답변</string>
-    <string name="film_match">🎬 두 분 다 %1$s을(를) 좋아해요!</string>
+    <string name="film_match">두 분 다 %1$s을(를) 좋아해요!</string>
     <string name="plus_perk_streak">연속 기록 되살리기</string>
     <string name="plus_perk_streak_body">하루를 놓쳤나요? 한 달에 한 번 기록을 되살려요.</string>
     <string name="connecting_short">연결 중</string>

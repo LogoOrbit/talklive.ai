@@ -445,7 +445,7 @@
     <string name="n_accepted_body">হ্যালো বলুন: যখন খুশি মেসেজ করতে পারেন।</string>
     <string name="n_missed_body">কল ব্যাক করতে ট্যাপ করুন।</string>
     <string name="support_quick">দ্রুত উত্তর</string>
-    <string name="film_match">🎬 আপনারা দুজনেই %1$s ভালোবাসেন!</string>
+    <string name="film_match">আপনারা দুজনেই %1$s ভালোবাসেন!</string>
     <string name="plus_perk_streak">স্ট্রিক ফেরান</string>
     <string name="plus_perk_streak_body">একদিন মিস করেছেন? মাসে একবার স্ট্রিক ফেরান।</string>
     <string name="connecting_short">যুক্ত হচ্ছে</string>

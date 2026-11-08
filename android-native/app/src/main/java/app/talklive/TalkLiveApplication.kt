@@ -38,13 +38,31 @@ class TalkLiveApplication : Application(), coil.ImageLoaderFactory {
                 .apply { setShowBadge(false) },
         )
         // Channel ids the server's pushes name (server/push.js CHANNEL_FOR_KIND).
+        // Each has its own TalkLive sound. A channel's sound cannot change once
+        // made, so these are new ids and the old silent-default ones go.
+        fun sound(name: String) = android.net.Uri.parse("android.resource://$packageName/raw/$name")
+        fun attrs(usage: Int) = android.media.AudioAttributes.Builder()
+            .setUsage(usage).setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
+        listOf("calls", "messages").forEach { runCatching { nm.deleteNotificationChannel(it) } }
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_CALLS, getString(R.string.channel_calls), NotificationManager.IMPORTANCE_HIGH)
-                .apply { description = getString(R.string.channel_calls_desc) },
+            NotificationChannel(CHANNEL_CALLS, getString(R.string.channel_calls), NotificationManager.IMPORTANCE_HIGH).apply {
+                description = getString(R.string.channel_calls_desc)
+                setSound(sound("tl_ring"), attrs(android.media.AudioAttributes.USAGE_NOTIFICATION_RINGTONE))
+                enableVibration(true); vibrationPattern = longArrayOf(0, 400, 250, 400)
+            },
         )
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_MESSAGES, getString(R.string.channel_messages), NotificationManager.IMPORTANCE_HIGH)
-                .apply { description = getString(R.string.channel_messages_desc) },
+            NotificationChannel(CHANNEL_MESSAGES, getString(R.string.channel_messages), NotificationManager.IMPORTANCE_HIGH).apply {
+                description = getString(R.string.channel_messages_desc)
+                setSound(sound("tl_message"), attrs(android.media.AudioAttributes.USAGE_NOTIFICATION))
+                enableVibration(true); vibrationPattern = longArrayOf(0, 120, 80, 120)
+            },
+        )
+        nm.createNotificationChannel(
+            NotificationChannel(CHANNEL_SOCIAL, getString(R.string.channel_social), NotificationManager.IMPORTANCE_HIGH).apply {
+                description = getString(R.string.channel_social_desc)
+                setSound(sound("tl_friend"), attrs(android.media.AudioAttributes.USAGE_NOTIFICATION))
+            },
         )
         push.refresh()
         // Connect as early as possible, and again the moment the network returns.
@@ -79,7 +97,8 @@ class TalkLiveApplication : Application(), coil.ImageLoaderFactory {
 
     companion object {
         const val CHANNEL_CALL = "ongoing_call"
-        const val CHANNEL_CALLS = "calls"
-        const val CHANNEL_MESSAGES = "messages"
+        const val CHANNEL_CALLS = "calls_v2"
+        const val CHANNEL_MESSAGES = "messages_v2"
+        const val CHANNEL_SOCIAL = "social_v2"
     }
 }

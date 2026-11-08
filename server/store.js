@@ -332,7 +332,12 @@ function applyParsed(parsed) {
   for (const [usernameLower, acc] of Object.entries(data.accounts)) {
     if (acc && acc.friendId) friendIdIndex.set(acc.friendId, usernameLower);
     if (acc && acc.handle) handleIndex.set(String(acc.handle).toLowerCase(), usernameLower);
-    if (acc && acc.clientId) clientIdIndex.set(acc.clientId, usernameLower);
+    if (acc && acc.clientId && !acc.mergedInto) clientIdIndex.set(acc.clientId, usernameLower);
+  }
+  // An account merged into another (Google -> email owner) only answers for
+  // its profile when no real account does.
+  for (const [usernameLower, acc] of Object.entries(data.accounts)) {
+    if (acc && acc.clientId && acc.mergedInto && !clientIdIndex.has(acc.clientId)) clientIdIndex.set(acc.clientId, usernameLower);
   }
 }
 

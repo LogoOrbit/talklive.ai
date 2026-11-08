@@ -445,7 +445,7 @@
     <string name="n_accepted_body">Dis bonjour : tu peux lui écrire quand tu veux.</string>
     <string name="n_missed_body">Touche pour rappeler.</string>
     <string name="support_quick">Réponses rapides</string>
-    <string name="film_match">🎬 Vous adorez tous les deux %1$s !</string>
+    <string name="film_match">Vous adorez tous les deux %1$s !</string>
     <string name="plus_perk_streak">Récupère ta série</string>
     <string name="plus_perk_streak_body">Un jour raté ? Récupère ta série, une fois par mois.</string>
     <string name="connecting_short">Connexion</string>

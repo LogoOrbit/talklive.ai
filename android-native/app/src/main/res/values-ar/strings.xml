@@ -445,7 +445,7 @@
     <string name="n_accepted_body">قل مرحبًا: يمكنك مراسلته في أي وقت.</string>
     <string name="n_missed_body">اضغط لمعاودة الاتصال.</string>
     <string name="support_quick">إجابات سريعة</string>
-    <string name="film_match">🎬 كلاكما يحب %1$s!</string>
+    <string name="film_match">كلاكما يحب %1$s!</string>
     <string name="plus_perk_streak">استعد سلسلتك</string>
     <string name="plus_perk_streak_body">فاتك يوم؟ استعد سلسلتك مرة في الشهر.</string>
     <string name="connecting_short">جارٍ الاتصال</string>

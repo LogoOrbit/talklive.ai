@@ -26,6 +26,8 @@
   var APPLE = 'https://itunes.apple.com/';
   var SPARQL = 'https://query.wikidata.org/sparql?format=json&query=';
   var MAX = 3;
+  // How many this user may pick (1 free, 3 with Plus); the server says.
+  var myMax = 1;
   var CACHE_MS = 5 * 60000;
   var cache = {}; // clientId -> { films, at }
   var waiting = {}; // clientId -> [callback]
@@ -129,7 +131,7 @@
       var films = Array.isArray(msg.films) ? msg.films : [];
       cache[msg.clientId] = { films: films, at: Date.now() };
       var keys = [msg.clientId];
-      if (msg.self) { myId = msg.clientId; keys.push('me'); }
+      if (msg.self) { myId = msg.clientId; keys.push('me'); if (typeof msg.max === 'number') myMax = msg.max; }
       keys.forEach(function (k) {
         var cbs = waiting[k] || [];
         delete waiting[k];
@@ -228,6 +230,10 @@
   function paint(box, sock, films) {
     var slots = '';
     for (var i = 0; i < MAX; i++) {
+      if (i >= myMax) {
+        slots += '<a class="tlf-pickbtn" href="/pricing" title="TalkLive Plus"><span class="tlf-empty" style="font-size:12px;border-color:rgba(245,196,81,.5);color:#f5c451">\uD83D\uDD12 Plus</span></a>';
+        continue;
+      }
       slots += films[i] ? tile(films[i], true, i)
         : '<button type="button" class="tlf-pickbtn" data-i="' + i + '" aria-label="' + esc(tr('favFilmsAdd')) + '"><span class="tlf-empty">+</span></button>';
     }
@@ -261,6 +267,7 @@
     sock.off('set-fav-films-result');
     sock.once('set-fav-films-result', function (r) {
       if (r && r.ok && Array.isArray(r.films)) {
+        if (typeof r.max === 'number') myMax = r.max;
         if (myId) cache[myId] = { films: r.films, at: Date.now() };
         paint(box, sock, r.films.slice());
       } else if (r && r.error) {

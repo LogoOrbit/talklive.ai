@@ -445,7 +445,7 @@
     <string name="n_accepted_body">हैलो कहें: कभी भी मैसेज कर सकते हैं।</string>
     <string name="n_missed_body">वापस कॉल करने के लिए टैप करें।</string>
     <string name="support_quick">झटपट जवाब</string>
-    <string name="film_match">🎬 आप दोनों को %1$s पसंद है!</string>
+    <string name="film_match">आप दोनों को %1$s पसंद है!</string>
     <string name="plus_perk_streak">अपनी स्ट्रीक वापस लाएँ</string>
     <string name="plus_perk_streak_body">एक दिन छूट गया? महीने में एक बार स्ट्रीक वापस लाएँ।</string>
     <string name="connecting_short">जुड़ रहा है</string>

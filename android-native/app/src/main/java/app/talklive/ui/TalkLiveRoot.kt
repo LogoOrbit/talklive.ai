@@ -126,6 +126,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     val animal by vm.animal.collectAsStateWithLifecycle()
     val account by vm.account.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+    var filmMatch by remember { mutableStateOf<String?>(null) }
     var micDenied by remember { mutableStateOf(false) }
     var tab by rememberSaveable { mutableStateOf(MainTab.Talk) }
     val social: SocialViewModel = hiltViewModel()
@@ -425,6 +426,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                     onAutoConnect = vm::setAutoConnect,
                     bands = { voiceBands },
                 )
+                app.talklive.ui.call.FilmMatchBanner(filmMatch, Modifier.align(Alignment.TopCenter))
             }
         }
     }
@@ -525,10 +527,14 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     val myFilms by engageVm.films.collectAsStateWithLifecycle()
     val livePartner = (state.phase as? CallPhase.Connected)?.partner
     LaunchedEffect(livePartner?.clientId) {
+        filmMatch = null
         val p = livePartner ?: return@LaunchedEffect
-        val shared = p.films.firstOrNull { f -> myFilms.any { it.type == f.type && it.id == f.id } } ?: return@LaunchedEffect
+        fun key(f: app.talklive.engage.Film) = f.title.lowercase().filter { it.isLetterOrDigit() } + f.year
+        val shared = p.films.firstOrNull { f -> myFilms.any { (it.type == f.type && it.id == f.id) || key(it) == key(f) } } ?: return@LaunchedEffect
         kotlinx.coroutines.delay(1200)
-        snackbar.say(context.getString(R.string.film_match, shared.title))
+        filmMatch = shared.title
+        kotlinx.coroutines.delay(7000)
+        filmMatch = null
     }
     // Replies from the team to this person's feedback.
     val replies by engageVm.replies.collectAsStateWithLifecycle()

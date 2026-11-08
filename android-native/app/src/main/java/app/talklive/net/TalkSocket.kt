@@ -255,9 +255,30 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
 
     /** Back in the foreground or back online: connect now instead of waiting out the retry backoff. */
     fun reconnectNow() {
-        if (socket.connected()) return
+        if (socket.connected()) { verify(); return }
         socket.disconnect()
         socket.connect()
+    }
+
+    // After the background or a network switch a socket can still say
+    // "connected" while the link under it is gone (the phone slept, Wi-Fi
+    // changed); socket.io only notices after its 85 s ping timeout. Ask the
+    // server for a quick answer and start a fresh connection if none comes.
+    @Volatile private var verifying = false
+    private fun verify() {
+        if (verifying) return
+        verifying = true
+        val answered = java.util.concurrent.atomic.AtomicBoolean(false)
+        socket.emit("app-ping", io.socket.client.Ack { answered.set(true) })
+        Thread {
+            runCatching { Thread.sleep(3_000) }
+            verifying = false
+            if (!answered.get()) {
+                Log.i(TAG, "connection stale, reconnecting")
+                socket.disconnect()
+                socket.connect()
+            }
+        }.start()
     }
 
     /** People online per country (aggregate only), for the country picker. */

@@ -199,12 +199,14 @@ fun FilmPosters(films: List<Film>, size: androidx.compose.ui.unit.Dp = 56.dp, on
     }
 }
 
-/** Pick up to three favourite films and shows. */
+/** Pick a favourite film or show (three with Plus). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FilmsSheet(vm: EngageViewModel, current: List<Film>, onDismiss: () -> Unit) {
-    // Three boxes; tapping one opens the search for that box.
-    var slots by remember { mutableStateOf(List(3) { current.getOrNull(it) }) }
+fun FilmsSheet(vm: EngageViewModel, current: List<Film>, premium: Boolean = false, onPlus: () -> Unit = {}, onDismiss: () -> Unit) {
+    // Three boxes; tapping one opens the search for that box. Free profiles
+    // fill the first; the other two are Plus.
+    val open = if (premium) 3 else 1
+    var slots by remember { mutableStateOf(List(3) { i -> current.getOrNull(i)?.takeIf { i < open } }) }
     var active by remember { mutableStateOf<Int?>(null) }
     var query by rememberSaveable { mutableStateOf("") }
     val focus = remember { androidx.compose.ui.focus.FocusRequester() }
@@ -221,6 +223,22 @@ fun FilmsSheet(vm: EngageViewModel, current: List<Film>, onDismiss: () -> Unit) 
                 slots.forEachIndexed { i, f ->
                     val selected = active == i
                     val scale by animateFloatAsState(if (selected) 1.04f else 1f, spring(dampingRatio = 0.55f), label = "slot")
+                    if (i >= open) {
+                        Box(
+                            Modifier.weight(1f).aspectRatio(2f / 3f).clip(RoundedCornerShape(14.dp))
+                                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
+                                .border(1.dp, androidx.compose.ui.graphics.Color(0xFFF5C451).copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+                                .clickable(onClick = onPlus),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(Icons.Rounded.Lock, null, tint = androidx.compose.ui.graphics.Color(0xFFF5C451), modifier = Modifier.size(20.dp))
+                                Spacer(Modifier.height(4.dp))
+                                Text("Plus", style = MaterialTheme.typography.labelMedium, color = androidx.compose.ui.graphics.Color(0xFFF5C451))
+                            }
+                        }
+                        return@forEachIndexed
+                    }
                     Box(
                         Modifier.weight(1f).aspectRatio(2f / 3f).graphicsLayer { scaleX = scale; scaleY = scale }
                             .clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surface)
@@ -271,7 +289,7 @@ fun FilmsSheet(vm: EngageViewModel, current: List<Film>, onDismiss: () -> Unit) 
                                 val chosen = slots.any { it != null && it.type == f.type && it.id == f.id }
                                 Row(
                                     Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(enabled = !chosen) {
-                                        val at = active ?: slots.indexOfFirst { it == null }.takeIf { it >= 0 } ?: return@clickable
+                                        val at = active ?: slots.take(open).indexOfFirst { it == null }.takeIf { it >= 0 } ?: return@clickable
                                         slots = slots.toMutableList().also { it[at] = f }
                                         active = null; query = ""; vm.search(""); keyboard?.hide()
                                     }.padding(horizontal = 4.dp, vertical = 8.dp),
@@ -292,7 +310,7 @@ fun FilmsSheet(vm: EngageViewModel, current: List<Film>, onDismiss: () -> Unit) 
             }
             ErrorBanner(vm.error)
             Spacer(Modifier.height(16.dp))
-            PrimaryButton(stringResource(R.string.save), onClick = { vm.saveFilms(slots.filterNotNull(), onDismiss) }, loading = vm.busy)
+            PrimaryButton(stringResource(R.string.save), onClick = { vm.saveFilms(slots.take(open).filterNotNull(), onDismiss) }, loading = vm.busy)
             Text(stringResource(R.string.apple_credit), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
         }
     }

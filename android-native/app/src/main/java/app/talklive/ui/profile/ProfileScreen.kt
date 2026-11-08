@@ -230,7 +230,7 @@ fun ProfileScreen(
             }
             when (youSheet) {
                 "passport" -> engage?.let { app.talklive.ui.engage.StreakSheet(it, onDismiss = { youSheet = null }, premium = premium.active, restoring = engageVm.restoring, onRestore = engageVm::restoreStreak, onPlus = { youSheet = "plus" }) } ?: run { youSheet = null }
-                "films" -> app.talklive.ui.engage.FilmsSheet(engageVm, films) { youSheet = null }
+                "films" -> app.talklive.ui.engage.FilmsSheet(engageVm, films, premium.active, onPlus = { youSheet = "plus" }) { youSheet = null }
                 "likes" -> app.talklive.ui.engage.LikesSheet(engageVm, onPlus = { youSheet = "plus" }) { youSheet = null }
                 "invite" -> app.talklive.ui.engage.InviteSheet(engageVm) { youSheet = null }
                 "feedback" -> app.talklive.ui.engage.FeedbackSheet(onSend = { engageVm.sendFeedback(it); vm.saved = context.getString(R.string.feedback_thanks) }) { youSheet = null }

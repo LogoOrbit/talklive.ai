@@ -1878,6 +1878,11 @@ app.get('/api/gifs', async (req, res) => {
 // Posters are Apple's promotional artwork, which Apple allows only to promote
 // its store: every poster links to its Apple TV / iTunes page.
 const FILM_MAX = 3;
+// Free profiles keep one favourite; Plus shows all three.
+const FILM_FREE = 1;
+function shownFilms(clientId) {
+  return store.getFavFilms(clientId).slice(0, isPremium(clientId) ? FILM_MAX : FILM_FREE);
+}
 const FILM_ART_RE = /^https:\/\/is\d{1,2}-ssl\.mzstatic\.com\/image\/thumb\/[A-Za-z0-9._/%-]{1,300}\/\d{2,4}x\d{2,4}bb\.(?:jpg|png|webp)$/;
 const FILM_URL_RE = /^https:\/\/(?:itunes|tv)\.apple\.com\/[A-Za-z0-9._/%?=&-]{1,300}$/;
 
@@ -2683,9 +2688,9 @@ function pushCopyFor(notif) {
       // request waiting for an answer - not a panel to hunt through.
       return { topic: `msg:${notif.fromClientId}`, title: `${notif.username} messaged you`, body: 'Open TalkLive to read it.', url: `/?open=chat&with=${encodeURIComponent(notif.fromClientId)}`, kind: 'message' };
     case 'friend_request':
-      return { topic: `req:${notif.fromClientId}`, title: `${notif.username} wants to be friends`, body: 'Tap to accept or decline.', url: '/?open=requests', kind: 'message' };
+      return { topic: `req:${notif.fromClientId}`, title: `${notif.username} wants to be friends`, body: 'Tap to accept or decline.', url: '/?open=requests', kind: 'social' };
     case 'friend_accepted':
-      return { topic: `acc:${notif.byClientId}`, title: `${notif.username} accepted your friend request`, body: 'Say hello - you can message them any time.', url: `/?open=chat&with=${encodeURIComponent(notif.byClientId)}`, kind: 'message' };
+      return { topic: `acc:${notif.byClientId}`, title: `${notif.username} accepted your friend request`, body: 'Say hello - you can message them any time.', url: `/?open=chat&with=${encodeURIComponent(notif.byClientId)}`, kind: 'social' };
     case 'call_back_request':
       return { topic: `call:${notif.fromClientId}`, title: `${notif.username} wants to talk`, body: 'They asked you to call back.', url: '/?open=requests', kind: 'call' };
     default:
@@ -2746,7 +2751,7 @@ function pushTopContactOnline(clientId, username) {
       title: `${username} is online`,
       body: 'One of the people you talk to most just came online.',
       url: `/?open=chat&with=${encodeURIComponent(clientId)}`,
-      kind: 'message',
+      kind: 'social',
     }).catch(() => {});
   }
 }
@@ -3431,6 +3436,17 @@ function signupOtpEmail(nickname, code) {
   });
   return { text, html };
 }
+
+// Throwaway inboxes, used to farm duplicate accounts and dodge bans.
+const DISPOSABLE_EMAIL = new Set([
+  'mailinator.com', 'guerrillamail.com', 'guerrillamail.net', 'sharklasers.com', 'grr.la', '10minutemail.com',
+  '10minutemail.net', 'temp-mail.org', 'tempmail.com', 'tempmail.net', 'tempmailo.com', 'temp-mail.io',
+  'yopmail.com', 'yopmail.net', 'throwawaymail.com', 'getnada.com', 'nada.email', 'trashmail.com',
+  'dispostable.com', 'maildrop.cc', 'mailnesia.com', 'mintemail.com', 'fakeinbox.com', 'emailondeck.com',
+  'mohmal.com', 'moakt.com', 'tempail.com', 'tmpmail.org', 'tmpmail.net', 'burnermail.io', 'spamgourmet.com',
+  'mailcatch.com', 'mytemp.email', 'tempr.email', 'discard.email', 'inboxkitten.com', 'emailfake.com',
+  'cs.email', '1secmail.com', '1secmail.net', '1secmail.org', 'mail.tm', 'linshiyouxiang.net', 'dropmail.me',
+]);
 
 // Per-IP signup throttle: at most a handful of new accounts per IP per hour so
 // a script can't mass-create accounts to flood storage or evade bans.
@@ -4277,9 +4293,9 @@ function filmKey(f) {
   return `${f.t}:${String(f.title || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '')}:${f.year || ''}`;
 }
 function sharedFilms(a, b) {
-  const mine = store.getFavFilms(a && a.clientId);
+  const mine = shownFilms(a && a.clientId);
   if (!mine.length) return [];
-  return store.getFavFilms(b && b.clientId).filter((f) => mine.some((m) =>
+  return shownFilms(b && b.clientId).filter((f) => mine.some((m) =>
     (m.t === f.t && m.id === f.id) || filmKey(m) === filmKey(f)));
 }
 
@@ -4309,7 +4325,7 @@ function publicProfile(p) {
     // Their public friend ID, so it can be copied from their profile in one tap.
     friendId: publicIdOf(p.clientId) || null,
     // Their top 3 films & shows, shown on the live chat and call screens.
-    films: store.getFavFilms(p.clientId).slice(0, FILM_MAX),
+    films: shownFilms(p.clientId),
   };
 }
 
@@ -4999,6 +5015,9 @@ io.on('connection', (socket) => {
     if (!signupEmail) return { error: 'Enter a valid email address. We send it a code to confirm it is yours.' };
     if (store.findUsernameByEmail(signupEmail) || pendingEmails.has(signupEmail)) {
       return { error: 'That email is already used by another account.' };
+    }
+    if (DISPOSABLE_EMAIL.has(signupEmail.split('@')[1])) {
+      return { error: 'Please use your real email address. Temporary inboxes are not accepted.' };
     }
     // Nickname is optional - the display name defaults to the username
     // (changeable later).
@@ -6072,8 +6091,8 @@ io.on('connection', (socket) => {
     if (!me || !socialRateOk('get-fav-films', me.clientId, 120, 60000)) return;
     const target = clientId === undefined ? me.clientId : validId(clientId);
     if (!target) return;
-    const films = isBlockedPair(me.clientId, target) ? [] : store.getFavFilms(target);
-    socket.emit('fav-films', { clientId: target, films, self: target === me.clientId });
+    const films = isBlockedPair(me.clientId, target) ? [] : shownFilms(target);
+    socket.emit('fav-films', { clientId: target, films, self: target === me.clientId, max: target === me.clientId ? (isPremium(me.clientId) ? FILM_MAX : FILM_FREE) : undefined });
   });
 
   socket.on('set-fav-films', ({ films } = {}) => {
@@ -6084,14 +6103,19 @@ io.on('connection', (socket) => {
       return reply({ ok: false, error: 'Too many changes. Try again later.' });
     }
     const picks = [];
+    const max = isPremium(me.clientId) ? FILM_MAX : FILM_FREE;
     for (const f of Array.isArray(films) ? films.slice(0, 10) : []) {
-      if (picks.length === FILM_MAX) break;
+      if (picks.length === max) break;
       const film = cleanFilm(f);
       if (film && !picks.some((p) => p.t === film.t && p.id === film.id)) picks.push(film);
     }
-    store.setFavFilms(me.clientId, picks);
+    // A free profile that saved three while on Plus keeps the other two
+    // stored (hidden), so they come back if Plus does.
+    const kept = max < FILM_MAX ? store.getFavFilms(me.clientId).slice(max) : [];
+    const all = picks.concat(kept.filter((k) => !picks.some((p) => p.t === k.t && p.id === k.id))).slice(0, FILM_MAX);
+    store.setFavFilms(me.clientId, all);
     store.recordFeature('fav_films');
-    reply({ ok: true, films: picks });
+    reply({ ok: true, films: picks, max });
   });
 
   // Settings > Privacy > "Save contact info I share". Opt-in; off erases.
@@ -6943,6 +6967,10 @@ io.on('connection', (socket) => {
   // Whether this tab is in front of the person. A hidden tab keeps its socket,
   // so without this a message to someone who had switched away reached neither
   // their eyes nor their phone (see pushNotification).
+  // The app checks its connection is really alive after coming back from the
+  // background (a socket can look connected long after the network dropped it).
+  socket.on('app-ping', (ack) => { if (typeof ack === 'function') ack({ ok: true }); });
+
   socket.on('app-visibility', ({ hidden } = {}) => {
     const me = profiles.get(socket.id);
     if (me) me.hidden = hidden === true;

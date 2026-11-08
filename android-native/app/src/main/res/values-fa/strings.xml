@@ -445,7 +445,7 @@
     <string name="n_accepted_body">سلام کن: هر وقت خواستی پیام بده.</string>
     <string name="n_missed_body">برای تماس دوباره بزن.</string>
     <string name="support_quick">پاسخ‌های سریع</string>
-    <string name="film_match">🎬 هر دوی شما عاشق %1$s هستید!</string>
+    <string name="film_match">هر دوی شما عاشق %1$s هستید!</string>
     <string name="plus_perk_streak">برگرداندن رکورد</string>
     <string name="plus_perk_streak_body">یک روز جا ماندی؟ ماهی یک بار رکوردت را برگردان.</string>
     <string name="connecting_short">در حال اتصال</string>

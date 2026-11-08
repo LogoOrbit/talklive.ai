@@ -445,7 +445,7 @@
     <string name="n_accepted_body">Sag Hallo: Du kannst jederzeit schreiben.</string>
     <string name="n_missed_body">Tippen zum Zurückrufen.</string>
     <string name="support_quick">Schnelle Antworten</string>
-    <string name="film_match">🎬 Ihr beide liebt %1$s!</string>
+    <string name="film_match">Ihr beide liebt %1$s!</string>
     <string name="plus_perk_streak">Serie zurückholen</string>
     <string name="plus_perk_streak_body">Einen Tag verpasst? Hol deine Serie zurück, einmal im Monat.</string>
     <string name="connecting_short">Verbinde</string>

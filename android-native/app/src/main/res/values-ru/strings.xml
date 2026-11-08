@@ -445,7 +445,7 @@
     <string name="n_accepted_body">Поздоровайтесь: писать можно в любое время.</string>
     <string name="n_missed_body">Нажмите, чтобы перезвонить.</string>
     <string name="support_quick">Быстрые ответы</string>
-    <string name="film_match">🎬 Вы оба любите «%1$s»!</string>
+    <string name="film_match">Вы оба любите «%1$s»!</string>
     <string name="plus_perk_streak">Вернуть серию</string>
     <string name="plus_perk_streak_body">Пропустили день? Верните серию раз в месяц.</string>
     <string name="connecting_short">Соединение</string>

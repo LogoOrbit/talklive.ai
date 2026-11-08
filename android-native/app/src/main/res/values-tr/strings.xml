@@ -445,7 +445,7 @@
     <string name="n_accepted_body">Merhaba de: istediğin zaman mesaj atabilirsin.</string>
     <string name="n_missed_body">Geri aramak için dokun.</string>
     <string name="support_quick">Hızlı yanıtlar</string>
-    <string name="film_match">🎬 İkiniz de %1$s seviyorsunuz!</string>
+    <string name="film_match">İkiniz de %1$s seviyorsunuz!</string>
     <string name="plus_perk_streak">Serini geri getir</string>
     <string name="plus_perk_streak_body">Bir günü mü kaçırdın? Serini ayda bir geri getir.</string>
     <string name="connecting_short">Bağlanıyor</string>

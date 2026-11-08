@@ -445,7 +445,7 @@
     <string name="n_accepted_body">打个招呼吧：随时都可以发消息。</string>
     <string name="n_missed_body">点按回拨。</string>
     <string name="support_quick">快速解答</string>
-    <string name="film_match">🎬 你们都喜欢《%1$s》！</string>
+    <string name="film_match">你们都喜欢《%1$s》！</string>
     <string name="plus_perk_streak">恢复连续记录</string>
     <string name="plus_perk_streak_body">漏了一天？每月可恢复一次连续记录。</string>
     <string name="connecting_short">连接中</string>
