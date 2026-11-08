@@ -2645,15 +2645,6 @@ function hasChatHistory(a, b) {
   return !!(lb && lb.some((e) => e.clientId === a));
 }
 
-// Free profiles keep up to 15 friends (people already past it keep them all);
-// Plus has no limit.
-const FREE_FRIEND_CAP = 15;
-function friendCapFull(clientId) {
-  return !isPremium(clientId) && (friends.get(clientId) || new Map()).size >= FREE_FRIEND_CAP;
-}
-const FRIEND_CAP_MINE = { ok: false, plusLimit: 'friends', error: `Free accounts can have up to ${FREE_FRIEND_CAP} friends. Get TalkLive Plus for unlimited friends.` };
-const FRIEND_CAP_THEIRS = { ok: false, error: 'They have reached their friend limit right now. Try again later.' };
-
 function addFriendPair(clientIdA, infoA, clientIdB, infoB) {
   if (!friends.has(clientIdA)) friends.set(clientIdA, new Map());
   if (!friends.has(clientIdB)) friends.set(clientIdB, new Map());
@@ -3036,7 +3027,6 @@ function syncClientState(socket, clientId) {
     chatHistory: historyList,
     // How many older people are kept but only shown with Plus.
     historyHidden: Math.max(0, fullHistory.length - historyList.length),
-    friendCap: isPremium(clientId) ? null : FREE_FRIEND_CAP,
     blocked: blockedList,
     muted: Array.from(mutedChats.get(clientId) || []),
   });
@@ -6766,8 +6756,6 @@ io.on('connection', (socket) => {
     if (isFriend(me.clientId, targetClientId)) {
       return socket.emit('friend-request-result', { ok: true, alreadyFriends: true });
     }
-    if (friendCapFull(me.clientId)) return socket.emit('friend-request-result', FRIEND_CAP_MINE);
-    if (friendCapFull(targetClientId)) return socket.emit('friend-request-result', FRIEND_CAP_THEIRS);
     const temporary = !socketAuth.get(socket.id);
     const myInfo = { username: me.username, countryCode: me.country, temporary, avatar: shownAvatar(me) };
 
@@ -6869,9 +6857,6 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Full: the request stays in the inbox, so it can be accepted after Plus.
-    if (accept && friendCapFull(me.clientId)) return socket.emit('friend-request-result', FRIEND_CAP_MINE);
-    if (accept && friendCapFull(fromClientId)) return socket.emit('friend-request-result', FRIEND_CAP_THEIRS);
     const outboxEntry = (sentRequests.get(fromClientId) || new Map()).get(me.clientId);
     clearRequestPair(fromClientId, me.clientId);
     if (notificationId) removeNotification(me.clientId, notificationId);
