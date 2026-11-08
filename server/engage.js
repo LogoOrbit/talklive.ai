@@ -24,6 +24,7 @@ function emptyRecord() {
     week: { week: '', calls: 0, countries: [], longest: 0 },
     prevWeek: null,
     merged: false,
+    goodCalls: 0,
   };
 }
 
@@ -36,6 +37,7 @@ function normalise(rec) {
     week: Object.assign(base.week, rec.week || {}),
     prevWeek: rec.prevWeek || null,
     merged: !!rec.merged,
+    goodCalls: Math.max(0, Math.floor(Number(rec.goodCalls) || 0)),
   };
 }
 
@@ -129,6 +131,7 @@ function noteCall(input, { country, seconds, now = Date.now(), tz, plus = false 
   }
 
   rec.week.calls += 1;
+  rec.goodCalls += 1;
   if (validCountry(country) && !rec.week.countries.includes(country)) rec.week.countries.push(country);
   rec.week.longest = Math.max(rec.week.longest || 0, Math.round(seconds));
   return result;

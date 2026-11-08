@@ -37,6 +37,7 @@ class EngageViewModel @Inject constructor(private val repo: EngageRepository, pr
     val films = repo.films
     val filters = repo.filters
     val moments = repo.moments
+    val trials = repo.trials
 
     var likes by mutableStateOf<Likes?>(null); private set
     var results by mutableStateOf<List<Film>>(emptyList()); private set

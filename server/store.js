@@ -2295,6 +2295,18 @@ function extendPremium(clientId, ms, info = {}) {
   return setPremium(clientId, { ...info, expiresAt: base + ms });
 }
 
+// The one free Plus day an account gets after its first good calls.
+function trialUsed(usernameLower, clientId) {
+  const acc = data.accounts[String(usernameLower || '').toLowerCase()];
+  return !acc || !!acc.trialAt || !!data.premium[clientId];
+}
+function markTrial(usernameLower) {
+  const acc = data.accounts[String(usernameLower || '').toLowerCase()];
+  if (!acc) return;
+  acc.trialAt = Date.now();
+  save();
+}
+
 function revokePremium(clientId, info = {}) {
   const existing = data.premium[clientId];
   if (!existing) return null;
@@ -3635,6 +3647,8 @@ function publicModes() {
 }
 
 module.exports = {
+  trialUsed,
+  markTrial,
   RESERVED_KEYS,
   siteModes,
   publicModes,

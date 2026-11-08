@@ -146,23 +146,51 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     var showFilters by remember { mutableStateOf(false) }
     // The Plus page; from a free feature it offers to carry on free.
     var showPlus by remember { mutableStateOf<String?>(null) }
-    // Plus is offered once, after someone's 3rd good conversation (a minute or
-    // more), when they are back on Home: they already know they like it, and
-    // nobody is interrupted mid-call.
+    // Plus is only ever suggested gently, at most once a day, never mid-call
+    // and never at launch: after a call that clearly went well (10+ minutes,
+    // or both tapped the heart), and a guest's 3rd good call suggests an
+    // account (accounts get a free Plus day from the server).
     var liveSince by remember { mutableStateOf<Long?>(null) }
+    var hearted by remember { mutableStateOf(false) }
+    LaunchedEffect(state.mutualHeart) { if (state.mutualHeart) hearted = true }
     LaunchedEffect(state.phase) {
         val p = state.phase
         if (p is CallPhase.Connected) { if (liveSince == null) liveSince = p.sinceMs; return@LaunchedEffect }
+        val since = liveSince ?: return@LaunchedEffect
+        liveSince = null
+        val wasHearted = hearted; hearted = false
         val prefs = context.getSharedPreferences("ui", android.content.Context.MODE_PRIVATE)
-        liveSince?.let { since ->
-            liveSince = null
-            if (System.currentTimeMillis() - since >= 60_000) prefs.edit().putInt("good_calls", prefs.getInt("good_calls", 0) + 1).apply()
+        val seconds = (System.currentTimeMillis() - since) / 1000
+        if (seconds >= 60) prefs.edit().putInt("good_calls", prefs.getInt("good_calls", 0) + 1).apply()
+        if (premium.active) return@LaunchedEffect
+        val now = System.currentTimeMillis()
+        val quiet = now - prefs.getLong("plus_nudge_at", 0) < 24 * 3600_000L || now < prefs.getLong("plus_nudge_snooze", 0)
+        if (quiet) return@LaunchedEffect
+        kotlinx.coroutines.delay(1500) // let the call screen close first
+        if (account == null && prefs.getInt("good_calls", 0) >= 3 && !prefs.getBoolean("trial_hint", false)) {
+            prefs.edit().putBoolean("trial_hint", true).putLong("plus_nudge_at", now).apply()
+            if (snackbar.say(context.getString(R.string.nudge_trial_guest), context.getString(R.string.sign_in)) == androidx.compose.material3.SnackbarResult.ActionPerformed) onSignIn()
+            return@LaunchedEffect
         }
-        if (p is CallPhase.Idle && !premium.active && prefs.getInt("good_calls", 0) >= 3 && !prefs.getBoolean("plus_offered", false)) {
-            prefs.edit().putBoolean("plus_offered", true).apply()
-            kotlinx.coroutines.delay(1200) // let the call screen close first
-            showPlus = "good_calls"
+        if (seconds >= 600 || wasHearted) {
+            prefs.edit().putLong("plus_nudge_at", now).apply()
+            val r = snackbar.say(context.getString(if (wasHearted) R.string.nudge_after_heart else R.string.nudge_after_call), context.getString(R.string.nudge_see_plus))
+            if (r == androidx.compose.material3.SnackbarResult.ActionPerformed) showPlus = "after_call"
+            // Closed without a look: stay quiet for 3 days.
+            else prefs.edit().putLong("plus_nudge_snooze", now + 3 * 24 * 3600_000L).apply()
         }
+    }
+    // The free Plus day, when the server grants it.
+    var trialUntil by remember { mutableStateOf<Long?>(null) }
+    LaunchedEffect(Unit) { engageVm.trials.collect { trialUntil = it } }
+    trialUntil?.let {
+        AlertDialog(
+            onDismissRequest = { trialUntil = null },
+            icon = { Text("🎁", fontSize = 40.sp) },
+            title = { Text(stringResource(R.string.trial_title)) },
+            text = { Text(stringResource(R.string.trial_body)) },
+            confirmButton = { TextButton(onClick = { trialUntil = null }) { Text(stringResource(R.string.trial_ok)) } },
+        )
     }
     LaunchedEffect(Unit) {
         engageVm.moments.collect { m ->
@@ -561,6 +589,8 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
             onSignIn = { showPlus = null; onSignIn() },
             onDismiss = { showPlus = null },
             onFreeOption = if (from == "filters") stringResource(R.string.plus_free_filters) to { showPlus = null; showFilters = true } else null,
+            // Reached from a limit (locked filter, history, a free feature): lead with the 1-day pass.
+            passFirst = from in setOf("locked", "history", "filters", "undo", "likes", "streak"),
         )
     }
 

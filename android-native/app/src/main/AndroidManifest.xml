@@ -75,5 +75,6 @@
             android:foregroundServiceType="microphone" />
             <receiver android:name=".push.CallActionReceiver" android:exported="false" />
         <receiver android:name=".push.MessageActionReceiver" android:exported="false" />
+        <receiver android:name=".push.StreakReceiver" android:exported="false" />
     </application>
 </manifest>

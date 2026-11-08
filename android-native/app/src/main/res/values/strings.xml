@@ -560,4 +560,13 @@
     <string name="likes_see_who">💎 See who liked you</string>
     <string name="streak_freezes_left">%1$d streak freezes left this month. Miss a day and your streak stays.</string>
     <string name="streak_freezes_plus">Plus gives you 2 streak freezes a month, so a missed day never breaks your streak.</string>
+    <string name="nudge_trial_guest">Enjoying TalkLive? Create a free account and get a day of Plus on us.</string>
+    <string name="nudge_after_call">Great call! With Plus you never lose anyone you met.</string>
+    <string name="nudge_after_heart">You both tapped ❤️! Plus keeps everyone you meet in your history.</string>
+    <string name="nudge_see_plus">See Plus</string>
+    <string name="trial_title">A day of Plus, on us</string>
+    <string name="trial_body">Thanks for being part of TalkLive. For the next 24 hours you have a gold name, legendary avatars, every filter, your full history and more. Enjoy!</string>
+    <string name="trial_ok">Let\'s go</string>
+    <string name="streak_reminder_title">🔥 Your %1$d-day streak ends tonight</string>
+    <string name="streak_reminder_body">One short call today keeps it going.</string>
 </resources>

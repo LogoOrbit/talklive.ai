@@ -120,6 +120,7 @@ fun PlusSheet(
     onDismiss: () -> Unit,
     onInvite: (() -> Unit)? = null,
     onFreeOption: Pair<String, () -> Unit>? = null,
+    passFirst: Boolean = false,
     vm: PlusViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
@@ -154,6 +155,7 @@ fun PlusSheet(
             onClose = onDismiss,
             onInvite = onInvite,
             onFreeOption = onFreeOption,
+            passFirst = passFirst,
         )
     }
 }
@@ -184,12 +186,22 @@ fun PlusContent(
     onSignIn: () -> Unit, onBuy: (PlusPlan) -> Unit, onRestore: () -> Unit, onManage: () -> Unit,
     onClose: () -> Unit = {}, onInvite: (() -> Unit)? = null, onFreeOption: Pair<String, () -> Unit>? = null,
     onBuyPass: (app.talklive.billing.PlusPass) -> Unit = {},
+    // Opened from a limit someone just hit: the 1-day pass comes first and is
+    // picked, since a small try is the easiest yes.
+    passFirst: Boolean = false,
 ) {
     val accents = LocalAccents.current
     val still = app.talklive.ui.theme.LocalReduceMotion.current
     // One choice at a time: a subscription plan, or a one-time pass.
     var picked by remember(state) { mutableStateOf((state as? BillingState.Ready)?.plans?.lastOrNull()) }
-    var pickedPass by remember(state) { mutableStateOf<app.talklive.billing.PlusPass?>(if ((state as? BillingState.Ready)?.plans.isNullOrEmpty()) (state as? BillingState.Ready)?.passes?.getOrNull(1) else null) }
+    var pickedPass by remember(state) {
+        val ready = state as? BillingState.Ready
+        mutableStateOf<app.talklive.billing.PlusPass?>(when {
+            passFirst -> ready?.passes?.firstOrNull()
+            ready?.plans.isNullOrEmpty() -> ready?.passes?.getOrNull(1)
+            else -> null
+        })
+    }
     Box(Modifier.fillMaxSize().background(PlusBg)) {
         // Aurora: gold and violet light drifting behind everything.
         val drift = if (still) 0.4f else rememberInfiniteTransition(label = "aurora").animateFloat(0f, 1f, infiniteRepeatable(tween(7000, easing = LinearEasing), RepeatMode.Reverse), label = "d").value
@@ -266,7 +278,7 @@ fun PlusContent(
                         }
                     }
                     state is BillingState.Ready -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        state.plans.asReversed().forEach { plan -> PlanCard(plan, state.plans, plan == picked && pickedPass == null) { picked = plan; pickedPass = null } }
+                        if (!passFirst) state.plans.asReversed().forEach { plan -> PlanCard(plan, state.plans, plan == picked && pickedPass == null) { picked = plan; pickedPass = null } }
                         if (state.passes.isNotEmpty()) {
                             Text(
                                 stringResource(R.string.pass_heading), style = MaterialTheme.typography.titleSmall, color = Color.White.copy(alpha = 0.8f),
@@ -283,6 +295,7 @@ fun PlusContent(
                                 }
                             }
                         }
+                        if (passFirst) state.plans.asReversed().forEach { plan -> PlanCard(plan, state.plans, plan == picked && pickedPass == null) { picked = plan; pickedPass = null } }
                     }
                 }
                 if (onInvite != null && !premium.active) {

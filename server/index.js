@@ -4148,6 +4148,23 @@ function recordEngageCall(profile, country, seconds) {
   const { rec, bump, stamp } = Engage.noteCall(store.engageGet(profile.clientId), { country, seconds, tz: profile.timezone, plus: isPremium(profile.clientId) });
   store.engageSet(profile.clientId, rec);
   emitToClient(profile.clientId, 'engage-update', { state: Engage.view(rec, { tz: profile.timezone, plus: isPremium(profile.clientId) }), bump, stamp });
+  maybeGiveTrial(profile.clientId, rec.goodCalls);
+}
+
+// One free day of Plus after a signed-in account's 3rd good call, once per
+// account, and only for someone who never had Plus. Guests are left out, or a
+// fresh guest profile would mean a fresh trial.
+const TRIAL_AFTER_CALLS = 3;
+const TRIAL_MS = 24 * 60 * 60 * 1000;
+function maybeGiveTrial(clientId, goodCalls) {
+  if (goodCalls < TRIAL_AFTER_CALLS || isPremium(clientId)) return;
+  const usernameLower = store.findUsernameByClientId(clientId);
+  if (!usernameLower || store.trialUsed(usernameLower, clientId)) return;
+  store.markTrial(usernameLower);
+  const p = store.extendPremium(clientId, TRIAL_MS, { source: 'trial', lastEvent: 'trial:start' });
+  emitPremiumStatus(clientId);
+  emitToClient(clientId, 'plus-trial', { expiresAt: p && p.expiresAt });
+  store.recordFeature('plus_trial');
 }
 
 // Re-send premium state to every live socket belonging to a clientId. Used

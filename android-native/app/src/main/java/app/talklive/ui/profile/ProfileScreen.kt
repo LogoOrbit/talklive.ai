@@ -230,9 +230,9 @@ fun ProfileScreen(
                 }
             }
             when (youSheet) {
-                "passport" -> engage?.let { app.talklive.ui.engage.StreakSheet(it, onDismiss = { youSheet = null }, premium = premium.active, restoring = engageVm.restoring, onRestore = engageVm::restoreStreak, onPlus = { youSheet = "plus" }) } ?: run { youSheet = null }
-                "films" -> app.talklive.ui.engage.FilmsSheet(engageVm, films, premium.active, onPlus = { youSheet = "plus" }) { youSheet = null }
-                "likes" -> app.talklive.ui.engage.LikesSheet(engageVm, onPlus = { youSheet = "plus" }) { youSheet = null }
+                "passport" -> engage?.let { app.talklive.ui.engage.StreakSheet(it, onDismiss = { youSheet = null }, premium = premium.active, restoring = engageVm.restoring, onRestore = engageVm::restoreStreak, onPlus = { youSheet = "plus-locked" }) } ?: run { youSheet = null }
+                "films" -> app.talklive.ui.engage.FilmsSheet(engageVm, films, premium.active, onPlus = { youSheet = "plus-locked" }) { youSheet = null }
+                "likes" -> app.talklive.ui.engage.LikesSheet(engageVm, onPlus = { youSheet = "plus-locked" }) { youSheet = null }
                 "invite" -> app.talklive.ui.engage.InviteSheet(engageVm) { youSheet = null }
                 "feedback" -> app.talklive.ui.engage.FeedbackSheet(onSend = { engageVm.sendFeedback(it); vm.saved = context.getString(R.string.feedback_thanks) }) { youSheet = null }
                 "problem" -> app.talklive.ui.engage.FeedbackSheet(problem = true, onSend = { engageVm.sendFeedback(it, problem = true); vm.saved = context.getString(R.string.problem_thanks) }) { youSheet = null }
@@ -242,7 +242,7 @@ fun ProfileScreen(
                 ) { app.talklive.ui.support.SupportScreen(onBack = { youSheet = null }) }
                 "gender" -> ChoiceDialog(stringResource(R.string.i_am), listOf("male", "female", "unspecified"), engageVm.myGender.value, { genderLabel(it) }, { engageVm.setMyGender(it) }) { youSheet = null }
                 "age" -> ChoiceDialog(stringResource(R.string.age_group), listOf("18-24", "25-34", "35-44", "45-54", "55+", "unspecified"), engageVm.ageGroup.value, { if (it == "unspecified") stringResource(R.string.gender_unspecified) else it }, { engageVm.setAgeGroup(it) }) { youSheet = null }
-                "plus" -> app.talklive.ui.engage.PlusSheet(premium, signedIn = account != null, onSignIn = { youSheet = null; onSignIn() }, onDismiss = { youSheet = null }, onInvite = { youSheet = "invite" })
+                "plus", "plus-locked" -> app.talklive.ui.engage.PlusSheet(premium, signedIn = account != null, onSignIn = { youSheet = null; onSignIn() }, onDismiss = { youSheet = null }, onInvite = { youSheet = "invite" }, passFirst = youSheet == "plus-locked")
             }
 
             if (account != null) {
@@ -307,7 +307,7 @@ fun ProfileScreen(
 
             Section(stringResource(R.string.section_appearance)) {
                 val current by vm.theme.collectAsStateWithLifecycle()
-                ThemePicker(current, premium.active, onLocked = { youSheet = "plus" }, onPick = vm::setTheme)
+                ThemePicker(current, premium.active, onLocked = { youSheet = "plus-locked" }, onPick = vm::setTheme)
                 val soundsOn by vm.sounds.collectAsStateWithLifecycle()
                 SettingRow(Icons.Rounded.VolumeUp, stringResource(R.string.sounds), stringResource(R.string.sounds_desc), onClick = { vm.setSounds(!soundsOn) }, trailing = {
                     Switch(checked = soundsOn, onCheckedChange = vm::setSounds, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary))
@@ -367,7 +367,7 @@ fun ProfileScreen(
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
     }
 
-    vm.sheet?.let { sheet -> ProfileSheetHost(sheet, vm, animal, onSignIn, premium = plusNow.active, onPlus = { vm.close(); youSheet = "plus" }) }
+    vm.sheet?.let { sheet -> ProfileSheetHost(sheet, vm, animal, onSignIn, premium = plusNow.active, onPlus = { vm.close(); youSheet = "plus-locked" }) }
 }
 
 @Composable

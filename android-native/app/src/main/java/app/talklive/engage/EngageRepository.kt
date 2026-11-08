@@ -40,6 +40,7 @@ class EngageRepository(
     @Inject constructor(@ApplicationContext context: Context, socket: TalkSocket) : this(context, socket, "engage")
 
     private val prefs = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
+    private val appContext: Context = context.applicationContext ?: context
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val http = app.talklive.net.Http.client
 
@@ -65,6 +66,10 @@ class EngageRepository(
     }
 
     /** The server matched past this person's filters because nobody fitted them for a while. */
+    /** The server just gave this account its free Plus day (until the given time). */
+    private val _trials = MutableSharedFlow<Long>(extraBufferCapacity = 2)
+    val trials: SharedFlow<Long> = _trials
+
     private val _fallback = MutableSharedFlow<Unit>(extraBufferCapacity = 2)
     val fallback: SharedFlow<Unit> = _fallback
     fun keepFilters() = socket.emit("keep-filters")
@@ -114,10 +119,10 @@ class EngageRepository(
                 }
             }
         }
-        socket.on("engage-state") { a -> (a.firstOrNull() as? JSONObject)?.let { _engage.value = Engage.from(it) } }
+        socket.on("engage-state") { a -> (a.firstOrNull() as? JSONObject)?.let { _engage.value = Engage.from(it).also { e -> runCatching { app.talklive.push.StreakReminder.update(appContext, e) } } } }
         socket.on("engage-update") { a ->
             val o = a.firstOrNull() as? JSONObject ?: return@on
-            o.optJSONObject("state")?.let { _engage.value = Engage.from(it) }
+            o.optJSONObject("state")?.let { _engage.value = Engage.from(it).also { e -> runCatching { app.talklive.push.StreakReminder.update(appContext, e) } } }
             if (o.optBoolean("bump")) _engage.value?.let { _moments.tryEmit(EngageMoment.StreakUp(it.streak.count)) }
             o.optString("stamp").takeIf { it.length == 2 }?.let { _moments.tryEmit(EngageMoment.NewStamp(it)) }
         }
@@ -127,6 +132,7 @@ class EngageRepository(
             if (r.id.isNotBlank() && r.message.isNotBlank() && _replies.value.none { it.id == r.id }) _replies.value = _replies.value + r
         }
         socket.on("random-fallback") { _fallback.tryEmit(Unit) }
+        socket.on("plus-trial") { a -> _trials.tryEmit((a.firstOrNull() as? JSONObject)?.optLong("expiresAt") ?: 0L) }
         socket.on("premium-status") { a ->
             val o = a.firstOrNull() as? JSONObject ?: return@on
             _premium.value = Premium(o.optBoolean("premium"), if (o.isNull("expiresAt")) null else o.optLong("expiresAt"), o.optBoolean("checkout"), o.optBoolean("play"))
