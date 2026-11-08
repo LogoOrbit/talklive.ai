@@ -53,7 +53,9 @@ class ProfileViewModel @Inject constructor(
         if (busy) return
         busy = true; error = null
         viewModelScope.launch {
-            social.setHandle(handle).onSuccess { close(); saved = "Friend ID updated" }.onFailure { error = it.message }
+            val r = social.setHandle(handle)
+            busy = false
+            r.onSuccess { confirmThenClose("Friend ID updated") }.onFailure { error = it.message }
             busy = false
         }
     }
@@ -68,6 +70,15 @@ class ProfileViewModel @Inject constructor(
     var error by mutableStateOf<String?>(null); private set
     /** Short confirmation shown after a change saves. */
     var saved by mutableStateOf<String?>(null)
+    /** True for a moment after a save succeeds, so the button can show a check before the sheet closes. */
+    var justDone by mutableStateOf(false); private set
+
+    private suspend fun confirmThenClose(msg: String) {
+        justDone = true
+        kotlinx.coroutines.delay(650)
+        justDone = false
+        close(); saved = msg
+    }
 
     fun open(s: ProfileSheet) { error = null; sheet = s }
     fun close() { sheet = null; error = null }
@@ -85,7 +96,24 @@ class ProfileViewModel @Inject constructor(
     val readReceipts = privacy.readReceipts
     fun setReadReceipts(on: Boolean) = privacy.setReadReceipts(on)
     fun setSounds(on: Boolean) { soundFx.setEnabled(on); if (on) soundFx.play(app.talklive.sound.Sounds.Fx.Message) }
-    fun signOut() = auth.logout()
+    /** True while the server confirms the sign-out ("Signing out…"). */
+    var signingOut by androidx.compose.runtime.mutableStateOf(false)
+        private set
+    fun signOut(allDevices: Boolean = false, onDone: () -> Unit = {}) {
+        if (signingOut) return
+        signingOut = true
+        run {
+            viewModelScope.launch {
+                val started = System.currentTimeMillis()
+                auth.signOut(allDevices)
+                // Long enough to read, never longer than the work.
+                val left = 900 - (System.currentTimeMillis() - started)
+                if (left > 0) kotlinx.coroutines.delay(left)
+                signingOut = false
+                onDone()
+            }
+        }
+    }
     fun deleteAccount(secret: String) = run("Account deleted") { auth.deleteAccount(secret) }
 
     fun saveNickname(nick: String) = run("Name updated") { auth.updateNickname(nick) }
@@ -98,7 +126,7 @@ class ProfileViewModel @Inject constructor(
         error = null
         viewModelScope.launch {
             when (val r = block()) {
-                AuthResult.Ok -> { close(); saved = done }
+                AuthResult.Ok -> { busy = false; confirmThenClose(done) }
                 is AuthResult.Error -> error = r.message
             }
             busy = false

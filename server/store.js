@@ -2452,6 +2452,8 @@ function saveAccount(usernameLower, account) {
     // The chosen, editable public ID ("asad#1234") - see setAccountHandle.
     handle: previous.handle || null,
     createdAt: previous.createdAt || Date.now(),
+    // Date of birth given at sign-up (YYYY-MM-DD).
+    dob: account.dob || previous.dob || null,
   };
   if (account.googleId) data.googleIndex[account.googleId] = usernameLower;
   if (email) data.emailIndex[email] = usernameLower;

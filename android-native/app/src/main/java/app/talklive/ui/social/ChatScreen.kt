@@ -660,11 +660,21 @@ internal fun MessageBubble(
             }
         }
         val reactions = listOfNotNull(m.theirReaction, m.myReaction)
-        if (reactions.isNotEmpty()) {
+        // The reaction chip springs in with a little overshoot, and bounces
+        // again whenever it changes; it shows at once (the server confirms later).
+        val shown = reactions.distinct().joinToString(" ")
+        val chip = remember { Animatable(if (shown.isEmpty()) 0f else 1f) }
+        LaunchedEffect(shown) {
+            if (shown.isEmpty()) chip.animateTo(0f, tween(140))
+            else { chip.snapTo(0.3f); chip.animateTo(1f, spring(dampingRatio = 0.38f, stiffness = 520f)) }
+        }
+        if (shown.isNotEmpty() || chip.value > 0.01f) {
             Row(
-                Modifier.padding(top = 2.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surface)
+                Modifier.padding(top = 2.dp)
+                    .graphicsLayer { scaleX = chip.value; scaleY = chip.value; alpha = chip.value.coerceIn(0f, 1f); transformOrigin = androidx.compose.ui.graphics.TransformOrigin(if (m.mine) 1f else 0f, 0f) }
+                    .clip(CircleShape).background(MaterialTheme.colorScheme.surface)
                     .padding(horizontal = 8.dp, vertical = 2.dp),
-            ) { Text(reactions.distinct().joinToString(" "), style = MaterialTheme.typography.labelMedium) }
+            ) { Text(shown.ifEmpty { " " }, style = MaterialTheme.typography.labelMedium) }
         }
         if (showStatus && m.mine) {
             Row(Modifier.padding(top = 3.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {

@@ -83,7 +83,7 @@ async function signUp(state) {
   const username = `u${state.name}${seq++}`.slice(0, 24);
   const email = `${username}@example.com`;
   const sent = new Promise((r) => state.socket.once('signup-code-result', r));
-  state.socket.emit('signup-send-code', { username, email });
+  state.socket.emit('signup-send-code', { dob: '1990-01-01',  username, email });
   const r = await sent;
   if (!r.ok) return r;
   let code = '';
@@ -93,7 +93,7 @@ async function signUp(state) {
     return !!code;
   }, 3000);
   const done = new Promise((res) => state.socket.once('signup-result', res));
-  state.socket.emit('signup', { username, password: 'secret123', email, code });
+  state.socket.emit('signup', { dob: '1990-01-01',  username, password: 'secret123', email, code });
   return done;
 }
 
@@ -130,22 +130,22 @@ async function refreshOwner(owner) {
   const noCode = await connect('nocode', '203.0.113.9');
   const missing = await new Promise((r) => {
     noCode.socket.once('signup-result', r);
-    noCode.socket.emit('signup', { username: 'nocodeuser', password: 'secret123', email: 'nocode@example.com' });
+    noCode.socket.emit('signup', { dob: '1990-01-01',  username: 'nocodeuser', password: 'secret123', email: 'nocode@example.com' });
   });
   ok('sign-up without a code is refused', missing.ok === false, missing);
   const noEmail = await new Promise((r) => {
     noCode.socket.once('signup-code-result', r);
-    noCode.socket.emit('signup-send-code', { username: 'noemailuser' });
+    noCode.socket.emit('signup-send-code', { dob: '1990-01-01',  username: 'noemailuser' });
   });
   ok('sign-up without an email is refused', noEmail.ok === false, noEmail);
   const sent = await new Promise((r) => {
     noCode.socket.once('signup-code-result', r);
-    noCode.socket.emit('signup-send-code', { username: 'wrongcode', email: 'wrong@example.com' });
+    noCode.socket.emit('signup-send-code', { dob: '1990-01-01',  username: 'wrongcode', email: 'wrong@example.com' });
   });
   ok('a code is sent for valid details', sent.ok === true, sent);
   const wrong = await new Promise((r) => {
     noCode.socket.once('signup-result', r);
-    noCode.socket.emit('signup', { username: 'wrongcode', password: 'secret123', email: 'wrong@example.com', code: '000000' });
+    noCode.socket.emit('signup', { dob: '1990-01-01',  username: 'wrongcode', password: 'secret123', email: 'wrong@example.com', code: '000000' });
   });
   ok('a wrong code is refused', wrong.ok === false && wrong.errorKey === 'signupCode', wrong);
 

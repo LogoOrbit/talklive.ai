@@ -79,14 +79,14 @@ async function ready(sock) {
 
 // Sign-up needs the 6-digit code; without SMTP the server prints it.
 async function signupWithCode(sock, details) {
-  const sent = await ask(sock, 'signup-send-code', details, 'signup-code-result');
+  const sent = await ask(sock, 'signup-send-code', { dob: '1990-01-01', ...details }, 'signup-code-result');
   if (!sent.ok) return sent;
   let code = null;
   for (let i = 0; i < 40 && !code; i++) {
     const m = logs.match(new RegExp(`verification code for ${details.email.replace(/[.+]/g, '\\$&')} is (\\d{6})`));
     if (m) code = m[1]; else await wait(50);
   }
-  return ask(sock, 'signup', { ...details, code }, 'signup-result');
+  return ask(sock, 'signup', { dob: '1990-01-01',  ...details, code }, 'signup-result');
 }
 
 function storedSessions() {

@@ -3387,13 +3387,39 @@ function hashPassword(password, salt) {
   });
 }
 
-async function createAccount(username, password, nickname, email) {
+// Date of birth, asked when an account is made. YYYY-MM-DD; returns whole
+// years, or null when it is not a real date.
+function ageFromDob(dob) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dob || ''));
+  if (!m) return null;
+  const y = +m[1], mo = +m[2], d = +m[3];
+  const date = new Date(Date.UTC(y, mo - 1, d));
+  if (date.getUTCFullYear() !== y || date.getUTCMonth() !== mo - 1 || date.getUTCDate() !== d) return null;
+  const now = new Date();
+  if (y < 1900 || date > now) return null;
+  let age = now.getUTCFullYear() - y;
+  if (now.getUTCMonth() < mo - 1 || (now.getUTCMonth() === mo - 1 && now.getUTCDate() < d)) age--;
+  return age;
+}
+const DOB_ERRORS = {
+  needDob: 'Enter your date of birth to create an account.',
+  underage: 'TalkLive is only for people aged 18 and over.',
+};
+function dobProblem(dob) {
+  const age = ageFromDob(dob);
+  if (age === null) return 'needDob';
+  if (age < 18) return 'underage';
+  return null;
+}
+
+async function createAccount(username, password, nickname, email, dob) {
   const salt = crypto.randomBytes(16).toString('hex');
   accounts.set(username.toLowerCase(), {
     passwordHash: await hashPassword(password, salt),
     salt,
     nickname,
     email: email || null,
+    dob: dob || null,
   });
   persistAccount(username.toLowerCase());
 }
@@ -3779,7 +3805,7 @@ function modeRefusal(socket, mode) {
   return null;
 }
 
-async function findOrCreateGoogleAccount(idToken) {
+async function findOrCreateGoogleAccount(idToken, { dob } = {}) {
   const ticket = await googleClient.verifyIdToken({ idToken, audience: GOOGLE_CLIENT_ID });
   const payload = ticket.getPayload();
   if (!payload || !payload.sub || !payload.email_verified) {
@@ -3826,6 +3852,11 @@ async function findOrCreateGoogleAccount(idToken) {
   if (!username && store.siteModes().signupsPaused) {
     throw Object.assign(new Error('New sign-ups are paused'), { errorKey: 'modeSignupsPaused' });
   }
+  // A brand-new account needs a date of birth showing 18 or over.
+  if (!username) {
+    const dobErr = dobProblem(dob);
+    if (dobErr) throw Object.assign(new Error(DOB_ERRORS[dobErr]), { errorKey: dobErr });
+  }
   if (!username) {
     username = uniqueUsernameFromBase((payload.email || 'user').split('@')[0]);
     const nickname = Nick.clean(payload.name) || Nick.clean(username) || username.slice(0, Nick.MAX_LEN);
@@ -3836,6 +3867,7 @@ async function findOrCreateGoogleAccount(idToken) {
       googleId,
       email: googleEmail && !store.findUsernameByEmail(googleEmail) ? googleEmail : null,
       google: profile,
+      dob: dob || null,
     });
     googleAccounts.set(googleId, username.toLowerCase());
     persistAccount(username.toLowerCase());
@@ -5174,8 +5206,10 @@ io.on('connection', (socket) => {
   };
 
   // Sign-up step 1: check the details and email a 6-digit code.
-  socket.on('signup-send-code', async ({ username, nickname, email } = {}) => {
+  socket.on('signup-send-code', async ({ username, nickname, email, dob } = {}) => {
     const reply = (r) => socket.emit('signup-code-result', r);
+    const dobErr = dobProblem(dob);
+    if (dobErr) return reply({ ok: false, error: DOB_ERRORS[dobErr], errorKey: dobErr });
     const checked = checkSignup({ username, nickname, email }, { needPassword: false });
     if (checked.error) return reply({ ok: false, ...checked });
     const address = checked.email;
@@ -5217,7 +5251,9 @@ io.on('connection', (socket) => {
 
   // Sign-up step 2: the same details plus the emailed code. The account is
   // only created once the code matches.
-  socket.on('signup', async ({ username, password, nickname, email, code } = {}) => {
+  socket.on('signup', async ({ username, password, nickname, email, code, dob } = {}) => {
+    const dobErr = dobProblem(dob);
+    if (dobErr) return socket.emit('signup-result', { ok: false, error: DOB_ERRORS[dobErr], errorKey: dobErr });
     const checked = checkSignup({ username, password, nickname, email }, { needPassword: true });
     if (checked.error) return socket.emit('signup-result', { ok: false, ...checked });
     nickname = checked.nickname;
@@ -5231,7 +5267,7 @@ io.on('connection', (socket) => {
     pendingSignups.add(username.toLowerCase());
     if (signupEmail) pendingEmails.add(signupEmail);
     try {
-      await createAccount(username, password, nickname, signupEmail);
+      await createAccount(username, password, nickname, signupEmail, dob);
     } finally {
       pendingSignups.delete(username.toLowerCase());
       if (signupEmail) pendingEmails.delete(signupEmail);
@@ -5336,15 +5372,34 @@ io.on('connection', (socket) => {
     sendFriendId(socket);
   });
 
-  socket.on('logout', ({ token } = {}) => {
+  socket.on('logout', ({ token, pushToken, pushEndpoint, all } = {}) => {
+    const usernameLower = socketAuth.get(socket.id);
+    const me = profiles.get(socket.id);
     socketAuth.delete(socket.id);
     // Kill the durable session too, so the token in localStorage (or a stolen
     // copy of it) can't silently sign back in.
     store.deleteAuthSession(token);
+    // This device stops getting the account's notifications.
+    if (me) {
+      if (typeof pushToken === 'string' && pushToken) store.removePushSubscription(me.clientId, 'fcm:' + pushToken.slice(0, 4096));
+      if (typeof pushEndpoint === 'string' && pushEndpoint) store.removePushSubscription(me.clientId, pushEndpoint.slice(0, 4096));
+    }
+    // "Sign out of all devices": every session ends and every open tab or
+    // phone of the account is told.
+    if (all === true && usernameLower) {
+      store.deleteAuthSessionsForUser(usernameLower, null);
+      for (const [sid, u] of socketAuth) {
+        if (u !== usernameLower || sid === socket.id) continue;
+        socketAuth.delete(sid);
+        const other = io.sockets.sockets.get(sid);
+        if (other) other.emit('signed-out', { reason: 'all-devices' });
+      }
+    }
     sendFriendId(socket);
+    socket.emit('logout-result', { ok: true });
   });
 
-  socket.on('google-auth', async ({ credential } = {}) => {
+  socket.on('google-auth', async ({ credential, dob } = {}) => {
     const gate = ageGate('account');
     if (!gate.ok) return socket.emit('google-auth-result', { ok: false, error: gate.message, ageCheck: gate.reason });
     if (!GOOGLE_CLIENT_ID) {
@@ -5354,7 +5409,7 @@ io.on('connection', (socket) => {
       return socket.emit('google-auth-result', { ok: false, error: 'Missing Google credential.' });
     }
     try {
-      const { username, account, profile, created } = await findOrCreateGoogleAccount(credential);
+      const { username, account, profile, created } = await findOrCreateGoogleAccount(credential, { dob });
       socketAuth.set(socket.id, username.toLowerCase());
       store.recordFeature('google_signin');
       store.upsertAccount(username.toLowerCase(), {
@@ -5385,6 +5440,7 @@ io.on('connection', (socket) => {
         ...linked,
       });
     } catch (err) {
+      if (err.errorKey && DOB_ERRORS[err.errorKey]) return socket.emit('google-auth-result', { ok: false, error: err.message, errorKey: err.errorKey });
       if (err.errorKey) return socket.emit('google-auth-result', { ok: false, error: 'New sign-ups are paused right now. Please try again later.', errorKey: err.errorKey });
       console.error('[google-auth] verification failed:', err.message);
       socket.emit('google-auth-result', { ok: false, error: 'Google sign-in failed. Please try again.' });

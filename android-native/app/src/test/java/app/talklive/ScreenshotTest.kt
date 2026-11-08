@@ -264,6 +264,9 @@ class ScreenshotTest {
             listOf(app.talklive.billing.PlusPass("pass_1d", 1, "$2.00", 0), app.talklive.billing.PlusPass("pass_7d", 7, "$5.00", 0), app.talklive.billing.PlusPass("pass_15d", 15, "$7.00", 0)),
         ))()
     }
+    @Test fun start() = shot("50_start") { app.talklive.ui.onboarding.StartScreen({}, {}) }
+    @Test fun age() = shot("51_age") { app.talklive.ui.onboarding.AgeScreen({}) {} }
+    @Test fun methods() = shot("52_methods") { app.talklive.ui.onboarding.MethodsScreen(vm(), {}, {}, {}, true) }
     @Test fun plus() = shot("30_plus") { plusShot()() }
     @Config(qualifiers = "de-w400dp-h860dp-xxhdpi")
     @Test fun plusGerman() = shot("31_plus_de") { plusShot()() }

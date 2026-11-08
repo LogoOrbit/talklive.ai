@@ -431,16 +431,14 @@ private fun PlusRadar(content: @Composable () -> Unit) {
     ) { content() }
 }
 
-/** "⚡ Plus priority": the Plus member's place at the front of the line. */
+/** Plus: one quiet line under the title, a small gold dot and two words. */
 @Composable
 private fun PlusPriority() {
-    Text(
-        stringResource(R.string.plus_priority),
-        style = MaterialTheme.typography.labelLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-        color = Color(0xFFF5C451),
-        modifier = Modifier.clip(RoundedCornerShape(50)).background(Color(0xFFF5C451).copy(alpha = 0.12f))
-            .border(1.dp, Color(0xFFF5C451).copy(alpha = 0.6f), RoundedCornerShape(50)).padding(horizontal = 12.dp, vertical = 5.dp),
-    )
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(6.dp).clip(CircleShape).background(Color(0xFFF5C451)))
+        Spacer(Modifier.width(8.dp))
+        Text(stringResource(R.string.plus_priority), style = MaterialTheme.typography.labelLarge, color = Color(0xFFF5C451).copy(alpha = 0.9f))
+    }
 }
 
 /** The stranger's face, with a glow that swells as they talk. */

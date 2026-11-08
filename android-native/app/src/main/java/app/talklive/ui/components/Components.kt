@@ -1,5 +1,6 @@
 package app.talklive.ui.components
 
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -28,6 +29,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
@@ -47,6 +49,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
@@ -80,7 +86,8 @@ val BrandGradient: Brush
 @Composable
 private fun pressScale(source: MutableInteractionSource): Float {
     val pressed by source.collectIsPressedAsState()
-    return animateFloatAsState(if (pressed) 0.96f else 1f, spring(dampingRatio = 0.6f, stiffness = 800f), label = "press").value
+    // Low damping: the button springs slightly past full size when let go.
+    return animateFloatAsState(if (pressed) 0.95f else 1f, spring(dampingRatio = if (pressed) 0.8f else 0.4f, stiffness = 700f), label = "press").value
 }
 
 @Composable
@@ -91,17 +98,20 @@ fun PrimaryButton(
     enabled: Boolean = true,
     loading: Boolean = false,
     icon: ImageVector? = null,
+    shape: androidx.compose.ui.graphics.Shape = CircleShape,
+    done: Boolean = false,
 ) {
     val haptics = LocalHapticFeedback.current
     val source = remember { MutableInteractionSource() }
+    androidx.compose.runtime.LaunchedEffect(done) { if (done) haptics.performHapticFeedback(HapticFeedbackType.LongPress) }
     Surface(
         onClick = {
             haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
             app.talklive.sound.Tap.pop()
             onClick()
         },
-        enabled = enabled && !loading,
-        shape = CircleShape,
+        enabled = enabled && !loading && !done,
+        shape = shape,
         color = Color.Transparent,
         interactionSource = source,
         modifier = modifier.fillMaxWidth().height(56.dp).scale(pressScale(source)),
@@ -110,12 +120,23 @@ fun PrimaryButton(
             Modifier.background(BrandGradient).alpha(if (enabled) 1f else 0.5f),
             contentAlignment = Alignment.Center,
         ) {
-            if (loading) {
-                CircularProgressIndicator(Modifier.size(24.dp), color = Color.White, strokeWidth = 2.5.dp)
-            } else {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    icon?.let { Icon(it, null, tint = Color.White); Spacer(Modifier.width(10.dp)) }
-                    Text(text, color = Color.White, style = MaterialTheme.typography.labelLarge)
+            // Text, spinner and success check cross-fade; the check pops in with overshoot.
+            androidx.compose.animation.AnimatedContent(
+                targetState = when { done -> 2; loading -> 1; else -> 0 },
+                transitionSpec = {
+                    (androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(160)) +
+                        androidx.compose.animation.scaleIn(spring(dampingRatio = 0.45f, stiffness = 500f), initialScale = 0.6f))
+                        .togetherWith(androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(120)))
+                },
+                label = "btn",
+            ) { st ->
+                when (st) {
+                    2 -> Icon(Icons.Rounded.Check, null, tint = Color.White, modifier = Modifier.size(26.dp))
+                    1 -> CircularProgressIndicator(Modifier.size(24.dp), color = Color.White, strokeWidth = 2.5.dp)
+                    else -> Row(verticalAlignment = Alignment.CenterVertically) {
+                        icon?.let { Icon(it, null, tint = Color.White); Spacer(Modifier.width(10.dp)) }
+                        Text(text, color = Color.White, style = MaterialTheme.typography.labelLarge)
+                    }
                 }
             }
         }
@@ -129,14 +150,16 @@ fun SecondaryButton(
     modifier: Modifier = Modifier,
     leading: (@Composable () -> Unit)? = null,
     loading: Boolean = false,
+    // A custom shape is used inside cards: filled, no outline.
+    shape: androidx.compose.ui.graphics.Shape? = null,
 ) {
     val source = remember { MutableInteractionSource() }
     Surface(
         onClick = { app.talklive.sound.Tap.pop(); onClick() },
         enabled = !loading,
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        shape = shape ?: CircleShape,
+        color = if (shape == null) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant,
+        border = if (shape == null) BorderStroke(1.dp, MaterialTheme.colorScheme.outline) else null,
         interactionSource = source,
         modifier = modifier.fillMaxWidth().height(56.dp).scale(pressScale(source)),
     ) {
@@ -197,9 +220,18 @@ fun TalkTextField(
 
 /** Six boxes for the emailed code. Auto-focuses and submits when full. */
 @Composable
-fun OtpField(value: String, onValueChange: (String) -> Unit, onComplete: (String) -> Unit, error: Boolean) {
+fun OtpField(value: String, onValueChange: (String) -> Unit, onComplete: (String) -> Unit, error: Boolean, checking: Boolean = false) {
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { focus.requestFocus() }
+    // A wrong code shakes the row once.
+    val shake = remember { androidx.compose.animation.core.Animatable(0f) }
+    LaunchedEffect(error) {
+        if (error) for (x in listOf(14f, -12f, 9f, -6f, 3f, 0f)) shake.animateTo(x, androidx.compose.animation.core.tween(45))
+    }
+    // While checking, the digits breathe.
+    val pulse = if (checking) androidx.compose.animation.core.rememberInfiniteTransition(label = "otp").animateFloat(
+        0.55f, 1f, androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(520), androidx.compose.animation.core.RepeatMode.Reverse), label = "p",
+    ).value else 1f
     BasicTextField(
         value = value,
         onValueChange = { raw ->
@@ -208,27 +240,43 @@ fun OtpField(value: String, onValueChange: (String) -> Unit, onComplete: (String
             if (digits.length == 6) onComplete(digits)
         },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword, imeAction = ImeAction.Done),
-        modifier = Modifier.focusRequester(focus),
+        modifier = Modifier.focusRequester(focus)
+            // Lets the keyboard offer the code from a message ("one-time code" autofill).
+            .semantics { contentType = androidx.compose.ui.autofill.ContentType.SmsOtpCode },
         decorationBox = {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxWidth().graphicsLayer { translationX = shake.value * density },
+            ) {
                 repeat(6) { i ->
                     val ch = value.getOrNull(i)?.toString().orEmpty()
-                    val active = i == value.length
-                    val border by animateColorAsState(
+                    val active = i == value.length && !checking
+                    val tint by animateColorAsState(
                         when {
-                            error -> Danger
-                            active -> BrandViolet
-                            else -> MaterialTheme.colorScheme.outline
+                            error -> Danger.copy(alpha = 0.16f)
+                            active -> BrandViolet.copy(alpha = 0.18f)
+                            else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)
                         },
                         label = "otp",
                     )
+                    // Each digit pops in as it is typed.
+                    val pop = remember { androidx.compose.animation.core.Animatable(1f) }
+                    LaunchedEffect(ch) { if (ch.isNotEmpty()) { pop.snapTo(0.6f); pop.animateTo(1f, spring(dampingRatio = 0.45f, stiffness = 600f)) } }
                     Box(
-                        Modifier.weight(1f).height(60.dp).clip(RoundedCornerShape(14.dp))
-                            .background(MaterialTheme.colorScheme.surface)
-                            .border(if (active || error) 2.dp else 1.dp, border, RoundedCornerShape(14.dp)),
+                        Modifier.weight(1f).height(62.dp).clip(RoundedCornerShape(16.dp)).background(tint),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text(ch, style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
+                        if (ch.isNotEmpty()) Text(
+                            ch, style = TextStyle(fontSize = 26.sp, fontWeight = FontWeight.SemiBold, fontFeatureSettings = "tnum"),
+                            color = if (error) Danger else MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.graphicsLayer { scaleX = pop.value; scaleY = pop.value; alpha = pulse },
+                        ) else if (active) {
+                            // A blinking caret in the next box.
+                            val blink = androidx.compose.animation.core.rememberInfiniteTransition(label = "caret").animateFloat(
+                                1f, 0f, androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(530), androidx.compose.animation.core.RepeatMode.Reverse), label = "c",
+                            )
+                            Box(Modifier.width(2.dp).height(26.dp).graphicsLayer { alpha = blink.value }.background(BrandViolet))
+                        }
                     }
                 }
             }

@@ -118,6 +118,7 @@ fun ProfileScreen(
     val snackbar = remember { SnackbarHostState() }
     var youSheet by remember { mutableStateOf<String?>(null) }
     val plusNow by engageVm.premium.collectAsStateWithLifecycle()
+    var confirmSignOut by remember { mutableStateOf(false) }
     LaunchedEffect(vm.saved) {
         vm.saved?.let { snackbar.showSnackbar(it); vm.saved = null }
     }
@@ -330,8 +331,14 @@ fun ProfileScreen(
 
             if (account != null) {
                 Spacer(Modifier.height(16.dp))
+                Text(
+                    stringResource(R.string.signed_in_as, account!!.email.ifBlank { account!!.username }),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 4.dp, bottom = 8.dp),
+                )
                 Surface(
-                    onClick = vm::signOut,
+                    onClick = { confirmSignOut = true },
                     shape = MaterialTheme.shapes.large,
                     color = MaterialTheme.colorScheme.surface,
                     modifier = Modifier.fillMaxWidth(),
@@ -367,6 +374,23 @@ fun ProfileScreen(
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
     }
 
+    if (confirmSignOut) account?.let { acc ->
+        SignOutSheet(
+            name = acc.nickname, email = acc.email, animal = animal,
+            onCancel = { confirmSignOut = false },
+            onSignOut = { all -> confirmSignOut = false; vm.signOut(all) { onSignIn() } },
+        )
+    }
+    // "Signing out…": the moment the server confirms, then the sign-in screen.
+    androidx.compose.animation.AnimatedVisibility(vm.signingOut, enter = androidx.compose.animation.fadeIn(), exit = androidx.compose.animation.fadeOut()) {
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).clickable(enabled = true) {}, contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                androidx.compose.material3.CircularProgressIndicator(Modifier.size(32.dp), strokeWidth = 3.dp)
+                Spacer(Modifier.height(16.dp))
+                Text(stringResource(R.string.signing_out), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
+            }
+        }
+    }
     vm.sheet?.let { sheet -> ProfileSheetHost(sheet, vm, animal, onSignIn, premium = plusNow.active, look = plusNow.look, lookFace = plusNow.lookFace, onPlus = { vm.close(); youSheet = "plus-locked" }) }
 }
 
@@ -509,6 +533,27 @@ private fun SettingRow(
     }
 }
 
+/** "Sign out of TalkLive?" with who is signed in, as other apps do. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SignOutSheet(name: String, email: String, animal: String?, onCancel: () -> Unit, onSignOut: (allDevices: Boolean) -> Unit) {
+    ModalBottomSheet(onDismissRequest = onCancel, containerColor = MaterialTheme.colorScheme.background) {
+        Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 24.dp).padding(bottom = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            app.talklive.ui.animals.AnimalAvatar(animal, name, 64.dp)
+            Spacer(Modifier.height(12.dp))
+            Text(stringResource(R.string.sign_out_q, name), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            if (email.isNotBlank()) Text(email, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(20.dp))
+            Surface(onClick = { onSignOut(false) }, shape = MaterialTheme.shapes.large, color = Danger, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+                Box(contentAlignment = Alignment.Center) { Text(stringResource(R.string.sign_out), style = MaterialTheme.typography.labelLarge, color = Color.White) }
+            }
+            Spacer(Modifier.height(8.dp))
+            androidx.compose.material3.TextButton(onClick = { onSignOut(true) }) { Text(stringResource(R.string.sign_out_all), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            androidx.compose.material3.TextButton(onClick = onCancel) { Text(stringResource(R.string.cancel)) }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ProfileSheetHost(sheet: ProfileSheet, vm: ProfileViewModel, animal: String?, onSignIn: () -> Unit = {}, premium: Boolean = false, onPlus: () -> Unit = {}, look: Boolean = false, lookFace: String? = null) {
@@ -576,7 +621,7 @@ private fun ProfileSheetHost(sheet: ProfileSheet, vm: ProfileViewModel, animal: 
                     }
                     ErrorBanner(vm.error)
                     Spacer(Modifier.height(16.dp))
-                    PrimaryButton(stringResource(R.string.save), onClick = { vm.saveFriendId(handle) }, enabled = idOk, loading = vm.busy)
+                    PrimaryButton(stringResource(R.string.save), onClick = { vm.saveFriendId(handle) }, enabled = idOk, loading = vm.busy, done = vm.justDone)
                 }
                 ProfileSheet.Delete -> {
                     var secret by rememberSaveable { mutableStateOf("") }
@@ -611,7 +656,7 @@ private fun ProfileSheetHost(sheet: ProfileSheet, vm: ProfileViewModel, animal: 
                         Text(stringResource(R.string.display_name_rules), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp, start = 4.dp))
                         ErrorBanner(vm.error)
                         Spacer(Modifier.height(16.dp))
-                        PrimaryButton(stringResource(R.string.save), onClick = { vm.saveNickname(nick) }, enabled = nick.isNotBlank() && nick.trim() != account?.nickname, loading = vm.busy)
+                        PrimaryButton(stringResource(R.string.save), onClick = { vm.saveNickname(nick) }, enabled = nick.isNotBlank() && nick.trim() != account?.nickname, loading = vm.busy, done = vm.justDone)
                     } else {
                         Text(stringResource(R.string.name_needs_account), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.height(12.dp))
@@ -624,7 +669,7 @@ private fun ProfileSheetHost(sheet: ProfileSheet, vm: ProfileViewModel, animal: 
                     TalkTextField(nick, { nick = it.take(24) }, stringResource(R.string.display_name), imeAction = ImeAction.Done, onIme = { vm.saveNickname(nick) })
                     ErrorBanner(vm.error)
                     Spacer(Modifier.height(16.dp))
-                    PrimaryButton(stringResource(R.string.save), onClick = { vm.saveNickname(nick) }, enabled = nick.isNotBlank(), loading = vm.busy)
+                    PrimaryButton(stringResource(R.string.save), onClick = { vm.saveNickname(nick) }, enabled = nick.isNotBlank(), loading = vm.busy, done = vm.justDone)
                 }
                 ProfileSheet.Email -> {
                     var email by rememberSaveable { mutableStateOf(account?.email.orEmpty()) }

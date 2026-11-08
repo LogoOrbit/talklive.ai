@@ -128,18 +128,19 @@ step("Welcome page", wait_for(r"welcome to talklive", 40))
 tap(r"^continue$"); tap(r"^continue$")
 step("Intro last slide", wait_for(r"you stay in control", 10))
 tap(r"get started")
-step("Welcome screen", wait_for(r"continue as guest", 20))
-# Nothing gets through before the Terms and Privacy Policy are read in the app.
-tap(r"continue as guest")
-step("Terms open before anything else", wait_for(r"before you start", 15))
-step("Rules summary with one agree button", find(r"i.m 18\+ and i agree") is not None)
+step("Start screen", wait_for(r"talk to someone new", 20))
+tap(r"get started")
+# Date of birth first: the wheels open on an adult year, so Continue goes on.
+step("Date of birth", wait_for(r"when were you born", 15))
+tap(r"^continue$")
+step("Rules summary with one agree button", wait_for(r"i.m 18\+ and i agree", 15))
 tap(r"i.m 18\+ and i agree")
+step("Ways in", wait_for(r"continue as guest", 15))
+tap(r"continue as guest")
 
 # 2. Setup: avatar, then about you.
 step("Pick an avatar", wait_for(r"surprise me", 20))
 tap(r"surprise me"); tap(r"^continue$")
-step("About you", wait_for(r"let.s go", 15))
-tap(r"let.s go")
 
 # 3. Home.
 step("Home", wait_for(r"start talking", 25))

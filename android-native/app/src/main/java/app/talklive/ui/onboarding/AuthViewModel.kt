@@ -90,6 +90,10 @@ class AuthViewModel @Inject constructor(private val auth: AuthRepository) : View
 
     fun continueAsGuest() = auth.finishOnboarding()
 
+    /** The account signed out last on this phone, offered back in one tap. */
+    val saved get() = auth.savedAccount()
+    fun useSaved() { auth.savedAccount()?.let { loginUser = it.username } }
+
     fun next() {
         error = null
         when (step) {

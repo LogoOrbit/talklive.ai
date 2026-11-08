@@ -87,25 +87,59 @@ import app.talklive.ui.theme.BrandViolet
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 
-enum class AuthRoute { Welcome, Choose, Signup, Login, Reset }
+enum class AuthRoute { Welcome, Choose, Age, Methods, Signup, Login, Reset, Blocked }
 
 /** Welcome slides, then sign-in choices, then email sign-up or log-in. */
 @Composable
 fun OnboardingFlow(vm: AuthViewModel, start: AuthRoute = AuthRoute.Choose, onClose: (() -> Unit)? = null) {
-    val introPrefs = LocalContext.current.let { c -> remember { c.getSharedPreferences("ui", android.content.Context.MODE_PRIVATE) } }
-    // The three intro swipes, once, on a fresh install.
-    val first = if (start == AuthRoute.Choose && onClose == null && !introPrefs.getBoolean("intro_seen", false)) AuthRoute.Welcome else start
+    val ctx = LocalContext.current
+    val introPrefs = remember { ctx.getSharedPreferences("ui", android.content.Context.MODE_PRIVATE) }
+    val inApp = onClose != null
+    // Under 18 on this phone: nothing else is reachable. Otherwise the intro
+    // swipes once on a fresh install; signing in from inside the app goes
+    // straight to the ways in.
+    val first = when {
+        app.talklive.data.AgeGate.blocked(ctx) -> AuthRoute.Blocked
+        inApp -> AuthRoute.Methods
+        start == AuthRoute.Choose && !introPrefs.getBoolean("intro_seen", false) -> AuthRoute.Welcome
+        else -> start
+    }
     var route by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(first) }
+    // Where to go once the date of birth (and the rules) are done.
+    var afterAge by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(AuthRoute.Methods) }
+    var showTerms by remember { mutableStateOf(false) }
 
     fun go(r: AuthRoute) { vm.clearError(); route = r }
+    // Date of birth first (once per phone), then the rules (once), then on.
+    fun gated(target: AuthRoute) {
+        afterAge = target
+        when {
+            app.talklive.data.AgeGate.dob(ctx) == null -> go(AuthRoute.Age)
+            !ctx.getSharedPreferences("consent", android.content.Context.MODE_PRIVATE).getBoolean("read_terms", false) -> showTerms = true
+            else -> go(target)
+        }
+    }
+    if (showTerms) {
+        TermsReader(
+            onDismiss = { showTerms = false },
+            onAgree = {
+                ctx.getSharedPreferences("consent", android.content.Context.MODE_PRIVATE).edit().putBoolean("read_terms", true).putBoolean("adult_terms", true).apply()
+                showTerms = false
+                go(afterAge)
+            },
+        )
+    }
 
-    BackHandler(enabled = (route != start && route != AuthRoute.Welcome) || onClose != null) {
+    BackHandler(enabled = route != AuthRoute.Blocked && ((route != first && route != AuthRoute.Welcome) || inApp)) {
         when (route) {
-            AuthRoute.Signup -> if (!vm.back()) go(AuthRoute.Choose)
-            AuthRoute.Login -> go(AuthRoute.Choose)
+            AuthRoute.Signup -> if (!vm.back()) go(AuthRoute.Methods)
+            AuthRoute.Login -> go(if (inApp) AuthRoute.Methods else AuthRoute.Choose)
             AuthRoute.Reset -> if (!vm.resetBack()) go(AuthRoute.Login)
-            AuthRoute.Choose -> if (start == AuthRoute.Choose) onClose?.invoke() else go(AuthRoute.Welcome)
+            AuthRoute.Age -> go(AuthRoute.Choose)
+            AuthRoute.Methods -> if (inApp) onClose?.invoke() else go(AuthRoute.Choose)
+            AuthRoute.Choose -> if (inApp) onClose?.invoke() else go(AuthRoute.Welcome)
             AuthRoute.Welcome -> onClose?.invoke()
+            AuthRoute.Blocked -> Unit
         }
     }
 
@@ -120,16 +154,19 @@ fun OnboardingFlow(vm: AuthViewModel, start: AuthRoute = AuthRoute.Choose, onClo
     ) { r ->
         when (r) {
             AuthRoute.Welcome -> WelcomeScreen(onDone = { introPrefs.edit().putBoolean("intro_seen", true).apply(); go(AuthRoute.Choose) })
-            AuthRoute.Choose -> ChooseScreen(
-                vm = vm,
-                onSignup = { go(AuthRoute.Signup) },
-                onLogin = { go(AuthRoute.Login) },
-                onClose = onClose,
+            AuthRoute.Choose -> StartScreen(onStart = { gated(AuthRoute.Methods) }, onLogin = { gated(AuthRoute.Login) })
+            AuthRoute.Age -> AgeScreen(onBack = { go(AuthRoute.Choose) }) { adult ->
+                if (!adult) go(AuthRoute.Blocked) else gated(afterAge)
+            }
+            AuthRoute.Methods -> MethodsScreen(
+                vm, onBack = if (inApp) onClose else ({ go(AuthRoute.Choose) }),
+                onEmail = { go(AuthRoute.Signup) }, onLogin = { go(AuthRoute.Login) }, allowGuest = !inApp,
             )
-            AuthRoute.Signup -> SignupScreen(vm, onExit = { go(AuthRoute.Choose) }, onLogin = { go(AuthRoute.Login) })
+            AuthRoute.Blocked -> BlockedScreen()
+            AuthRoute.Signup -> SignupScreen(vm, onExit = { go(AuthRoute.Methods) }, onLogin = { go(AuthRoute.Login) })
             AuthRoute.Login -> LoginScreen(
                 vm,
-                onBack = { go(AuthRoute.Choose) },
+                onBack = { go(if (inApp) AuthRoute.Methods else AuthRoute.Choose) },
                 onSignup = { go(AuthRoute.Signup) },
                 onForgot = { vm.startReset(); go(AuthRoute.Reset) },
             )
@@ -490,6 +527,7 @@ private fun FormScaffold(
 
 @Composable
 internal fun SignupScreen(vm: AuthViewModel, onExit: () -> Unit, onLogin: () -> Unit = {}) {
+    if (vm.step == SignupStep.Code) AuroraBackground {}
     FormScaffold(
         onBack = { if (!vm.back()) onExit() },
         progress = (vm.step.ordinal + 1) / 3f,
@@ -562,15 +600,49 @@ private fun AccountStep(vm: AuthViewModel) {
 
 @Composable
 private fun ColumnScope.CodeStep(vm: AuthViewModel) {
-    ScreenTitle(stringResource(R.string.signup_code_title), stringResource(R.string.signup_code_body, vm.email.trim()))
+    Text(stringResource(R.string.code_title), style = MaterialTheme.typography.headlineMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+    Spacer(Modifier.height(6.dp))
+    Text(stringResource(R.string.code_sent_to, vm.email.trim()), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     Spacer(Modifier.height(28.dp))
-    OtpField(value = vm.code, onValueChange = { vm.code = it; vm.clearError() }, onComplete = vm::verify, error = vm.error != null)
-    ErrorBanner(vm.error)
-    Spacer(Modifier.height(24.dp))
-    PrimaryButton(stringResource(R.string.create_account), onClick = vm::next, enabled = vm.code.length == 6, loading = vm.busy)
-    Spacer(Modifier.height(8.dp))
+    // Submits by itself on the sixth digit.
+    OtpField(value = vm.code, onValueChange = { vm.code = it; vm.clearError() }, onComplete = vm::verify, error = vm.error != null, checking = vm.busy)
+    Spacer(Modifier.height(12.dp))
+    Box(Modifier.fillMaxWidth().height(24.dp), contentAlignment = Alignment.CenterStart) {
+        androidx.compose.animation.AnimatedContent(
+            targetState = when { vm.busy -> 1; vm.error != null -> 2; else -> 0 },
+            transitionSpec = { fadeIn(tween(200)) togetherWith fadeOut(tween(150)) }, label = "otpState",
+        ) { st ->
+            when (st) {
+                1 -> Text(stringResource(R.string.code_checking), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                2 -> Text(vm.error.orEmpty(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                else -> PasteCode { vm.code = it; vm.verify(it) }
+            }
+        }
+    }
+    Spacer(Modifier.height(16.dp))
     TextButton(onClick = vm::sendCode, enabled = vm.resendIn == 0 && !vm.busy, modifier = Modifier.align(Alignment.CenterHorizontally)) {
         Text(if (vm.resendIn > 0) stringResource(R.string.resend_in, vm.resendIn) else stringResource(R.string.resend))
+    }
+}
+
+/** A code copied from the email: offered as one tap. */
+@Composable
+private fun PasteCode(onPaste: (String) -> Unit) {
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+    var code by remember { mutableStateOf<String?>(null) }
+    val owner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(owner) {
+        fun read() { code = clipboard.getText()?.text?.let { Regex("\\b(\\d{6})\\b").find(it)?.groupValues?.get(1) } }
+        read()
+        val obs = androidx.lifecycle.LifecycleEventObserver { _, e -> if (e == androidx.lifecycle.Lifecycle.Event.ON_RESUME) read() }
+        owner.lifecycle.addObserver(obs)
+        onDispose { owner.lifecycle.removeObserver(obs) }
+    }
+    code?.let { c ->
+        Text(
+            stringResource(R.string.code_paste, c), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { onPaste(c) }.padding(vertical = 2.dp),
+        )
     }
 }
 

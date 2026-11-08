@@ -378,6 +378,7 @@ class ServerE2ETest {
     @Test fun custom_friend_id_for_accounts(): Unit = runBlocking {
         val email = "id.e2e.${System.nanoTime()}@example.com"
         val a = Client("a")
+        app.talklive.data.AgeGate.submit(ctx, 1990, 1, 1)
         assertEquals(AuthResult.Ok, a.auth.sendSignupCode("idtester", email))
         val code = waitFor("code") { server.findInLog(Regex("verification code for ${Regex.escape(email)} is (\\d{6})")) }
         assertEquals(AuthResult.Ok, a.auth.signup("idtester", email, "secret123", code))
@@ -511,6 +512,8 @@ class ServerE2ETest {
         val email = "android.e2e.${System.nanoTime()}@example.com"
         val user = "droid${(1000..9999).random()}"
         val a = Client("a")
+        // Sign-up needs a date of birth showing 18+, given once on the phone.
+        app.talklive.data.AgeGate.submit(androidx.test.core.app.ApplicationProvider.getApplicationContext(), 1990, 1, 1)
         assertEquals(AuthResult.Ok, a.auth.sendSignupCode(user, email))
         val code = waitFor("signup code in server log") { server.findInLog(Regex("verification code for ${Regex.escape(email)} is (\\d{6})")) }
         // Wrong code first.
@@ -585,7 +588,7 @@ class ServerE2ETest {
         assertTrue(Client("e").auth.login(email, "secret789") is AuthResult.Error)
 
         // Signing out forgets the session.
-        c.auth.logout()
+        kotlinx.coroutines.runBlocking { c.auth.signOut() }
         assertEquals(null, c.auth.account.value)
     }
 }

@@ -43,6 +43,7 @@ class AuthRepository(
         this(context, socket, identity, "account")
 
     private val prefs = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
+    private val appContext: Context = context.applicationContext ?: context
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private val _account = MutableStateFlow(loadAccount())
@@ -56,6 +57,8 @@ class AuthRepository(
     @Volatile private var sentNickname: String? = null
 
     init {
+        // "Sign out of all devices" on another phone or browser.
+        socket.on("signed-out") { scope.launch { if (_account.value != null) forgetLocally(_account.value) } }
         // Like the website: registration carries the account's display name, or
         // everyone sees a random guest name instead of the one you chose.
         socket.registerFields.add { o ->
@@ -88,7 +91,7 @@ class AuthRepository(
     suspend fun sendSignupCode(username: String, email: String): AuthResult =
         call(
             "signup-send-code",
-            JSONObject().put("username", username.trim()).put("email", email.trim()),
+            JSONObject().put("username", username.trim()).put("email", email.trim()).put("dob", app.talklive.data.AgeGate.dob(appContext)),
             "signup-code-result",
             signsIn = false,
         )
@@ -96,12 +99,12 @@ class AuthRepository(
     suspend fun signup(username: String, email: String, password: String, code: String): AuthResult =
         call(
             "signup",
-            JSONObject().put("username", username.trim()).put("email", email.trim()).put("password", password).put("code", code),
+            JSONObject().put("username", username.trim()).put("email", email.trim()).put("password", password).put("code", code).put("dob", app.talklive.data.AgeGate.dob(appContext)),
             "signup-result",
         )
 
     suspend fun google(idToken: String): AuthResult =
-        call("google-auth", JSONObject().put("credential", idToken), "google-auth-result")
+        call("google-auth", JSONObject().put("credential", idToken).put("dob", app.talklive.data.AgeGate.dob(appContext)), "google-auth-result")
 
     suspend fun updateNickname(nickname: String): AuthResult {
         val (r, res) = callRaw("update-nickname", JSONObject().put("nickname", nickname.trim()), "update-nickname-result")
@@ -169,9 +172,36 @@ class AuthRepository(
         socket.register()
     }
 
-    fun logout() {
-        socket.emit("logout", JSONObject().put("token", prefs.getString(KEY_TOKEN, null)))
-        prefs.edit().remove(KEY_TOKEN).remove(KEY_USERNAME).remove(KEY_NICKNAME).remove(KEY_EMAIL).apply()
+    /** The account last signed out on this phone, offered back on the sign-in screen. */
+    data class SavedAccount(val username: String, val nickname: String, val email: String)
+    fun savedAccount(): SavedAccount? = prefs.getString("saved_user", null)?.let {
+        SavedAccount(it, prefs.getString("saved_nick", it) ?: it, prefs.getString("saved_email", "") ?: "")
+    }
+    fun forgetSavedAccount() = prefs.edit().remove("saved_user").remove("saved_nick").remove("saved_email").apply()
+
+    /**
+     * Sign out properly: the server ends the session (and, with [allDevices],
+     * every session of the account) and stops this phone's notifications for
+     * it; then the phone forgets the account's data and becomes a fresh guest.
+     * Waits for the server up to a few seconds; offline, the phone still signs
+     * out and the session simply expires.
+     */
+    suspend fun signOut(allDevices: Boolean = false) {
+        val acc = _account.value
+        val pushToken = appContext.getSharedPreferences("push", Context.MODE_PRIVATE).getString("sent", null)?.substringAfter('|', "")
+        val payload = JSONObject().put("token", prefs.getString(KEY_TOKEN, null)).put("all", allDevices)
+        if (!pushToken.isNullOrBlank()) payload.put("pushToken", pushToken)
+        runCatching { socket.request("logout", payload, "logout-result", timeoutMs = 4000) }
+        forgetLocally(acc)
+    }
+
+    private fun forgetLocally(acc: Account?) {
+        prefs.edit().remove(KEY_TOKEN).remove(KEY_USERNAME).remove(KEY_NICKNAME).remove(KEY_EMAIL)
+            .apply { if (acc != null) putString("saved_user", acc.username).putString("saved_nick", acc.nickname).putString("saved_email", acc.email) }
+            .apply()
+        appContext.getSharedPreferences("push", Context.MODE_PRIVATE).edit().remove("sent").apply()
+        // The account's notifications leave the shade with it.
+        runCatching { androidx.core.app.NotificationManagerCompat.from(appContext).cancelAll() }
         _account.value = null
         // The profile belongs to the account: a signed-out device starts as a
         // fresh guest, so the next person (or account) never inherits its
@@ -179,6 +209,9 @@ class AuthRepository(
         identity.reset()
         socket.register()
     }
+
+    /** Kept for callers that cannot wait: signs out in the background. */
+    fun logout() { scope.launch { signOut() } }
 
     /** The site's public Google web client ID, read from /config.js. */
     suspend fun googleClientId(): String? = withContext(Dispatchers.IO) {

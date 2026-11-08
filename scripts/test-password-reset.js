@@ -43,12 +43,12 @@ function codeFromLog(email) {
 
 // Sign-up now verifies the email first: ask for a code, read it from the log.
 async function signUpWithCode(socket, payload) {
-  const sent = await ask(socket, 'signup-send-code', { username: payload.username, email: payload.email }, 'signup-code-result');
+  const sent = await ask(socket, 'signup-send-code', { dob: '1990-01-01', username: payload.username, email: payload.email }, 'signup-code-result');
   if (!sent.ok) return sent;
   await wait(200);
   const log = fs.readFileSync(LOG, 'utf8');
   const m = [...log.matchAll(new RegExp(`verification code for ${payload.email} is (\\d{6})`, 'g'))].pop();
-  return ask(socket, 'signup', { ...payload, code: m ? m[1] : '' }, 'signup-result');
+  return ask(socket, 'signup', { dob: '1990-01-01',  ...payload, code: m ? m[1] : '' }, 'signup-result');
 }
 
 (async () => {
@@ -70,7 +70,7 @@ async function signUpWithCode(socket, payload) {
   ok('signup echoes the recovery email', signup.email === email, signup);
 
   const dupe = await ask(connect(), 'signup',
-    { username: `${username}b`, password: 'first-pass', email }, 'signup-result');
+    { dob: '1990-01-01', username: `${username}b`, password: 'first-pass', email }, 'signup-result');
   ok('a second account cannot claim the same email', dupe.ok === false, dupe);
 
   const badEmail = await ask(connect(), 'signup-send-code',

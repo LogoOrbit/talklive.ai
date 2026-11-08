@@ -136,7 +136,12 @@ function throttled(clientId, topic) {
   const key = `${clientId}:${topic}`;
   const now = Date.now();
   const last = lastSent.get(key) || 0;
-  if (now - last < THROTTLE_MS) return true;
+  // Messages, calls and requests always go out (the shared tag replaces the
+  // earlier notification instead of stacking). Holding them back for minutes
+  // made a second or third message arrive with no notification at all. Only
+  // a burst within a couple of seconds is folded into one.
+  const window = /^online:/.test(String(topic)) ? THROTTLE_MS : 2500;
+  if (now - last < window) return true;
   lastSent.set(key, now);
   return false;
 }

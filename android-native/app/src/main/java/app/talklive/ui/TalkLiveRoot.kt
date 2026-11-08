@@ -97,6 +97,14 @@ fun TalkLiveRoot(vm: TalkViewModel = hiltViewModel()) {
     val animal by vm.animal.collectAsStateWithLifecycle()
     var signingIn by remember { mutableStateOf(false) }
     LaunchedEffect(account) { if (account != null) signingIn = false }
+    // Signing in (not opening the app already signed in) plays the welcome.
+    var hadAccount by remember { mutableStateOf<Boolean?>(null) }
+    var celebrate by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(account) {
+        val now = account != null
+        if (hadAccount == false && now) celebrate = account?.nickname
+        hadAccount = now
+    }
 
     AnimatedContent(
         targetState = when {
@@ -115,16 +123,17 @@ fun TalkLiveRoot(vm: TalkViewModel = hiltViewModel()) {
             RootScreen.Onboarding -> OnboardingFlow(hiltViewModel<AuthViewModel>())
             RootScreen.SignIn -> OnboardingFlow(hiltViewModel<AuthViewModel>(), start = AuthRoute.Choose, onClose = { signingIn = false })
             RootScreen.Animal -> {
+                val context = LocalContext.current
                 val engageVm: app.talklive.ui.engage.EngageViewModel = hiltViewModel()
                 app.talklive.ui.onboarding.FirstRunSetup(onBack = { signingIn = true }) { a, g, age ->
-                    engageVm.setMyGender(g)
-                    engageVm.setAgeGroup(age)
+                    engageVm.setAgeGroup(app.talklive.data.AgeGate.ageGroup(context))
                     vm.setAnimal(a)
                 }
             }
             RootScreen.Main -> MainScreen(vm, onSignIn = { signingIn = true })
         }
     }
+    celebrate?.let { name -> app.talklive.ui.onboarding.SignedInWelcome(name, animal) { celebrate = null } }
 }
 
 @Composable

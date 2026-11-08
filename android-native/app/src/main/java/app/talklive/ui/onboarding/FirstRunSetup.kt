@@ -80,7 +80,7 @@ fun FirstRunSetup(onBack: () -> Unit = {}, onDone: (animal: String, gender: Stri
         Spacer(Modifier.height(16.dp))
         // Progress: three dots, the current one long.
         Row(Modifier.align(Alignment.CenterHorizontally), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            repeat(2) { i ->
+            repeat(1) { i ->
                 val w by animateDpAsState(if (i == step) 26.dp else 8.dp, spring(dampingRatio = 0.6f), label = "dot")
                 Box(Modifier.width(w).height(8.dp).clip(CircleShape).background(if (i <= step) BrandGradient else androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.surfaceVariant)))
             }
@@ -98,7 +98,9 @@ fun FirstRunSetup(onBack: () -> Unit = {}, onDone: (animal: String, gender: Stri
                     Spacer(Modifier.height(12.dp))
                     AnimalGrid(selected = animal, onSelect = { animal = it }, modifier = Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(vertical = 8.dp))
                     AnimalCaption(animal, Modifier.padding(vertical = 10.dp))
-                    PrimaryButton(stringResource(R.string.continue_), onClick = { step = 1 }, enabled = animal != null)
+                    // Gender and age band are no longer asked: the age band comes from the
+                    // date of birth given at the start.
+                    PrimaryButton(stringResource(R.string.continue_), onClick = { onDone(animal ?: Animals.first().id, "unspecified", "unspecified") }, enabled = animal != null)
                     TextButton(onClick = { animal = Animals.random().id }, modifier = Modifier.align(Alignment.CenterHorizontally)) { Text("🎲  " + stringResource(R.string.surprise_me)) }
                 }
                 else -> AboutYou(gender, age, onGender = { gender = it }, onAge = { age = it }, onNext = { onDone(animal ?: Animals.first().id, gender, age) })

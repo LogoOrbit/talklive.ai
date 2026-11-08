@@ -60,7 +60,7 @@ async function search(sock, friendId) {
 async function signUp(sock, srv, username, password) {
   const email = `${username}@example.com`;
   const sent = once(sock, 'signup-code-result');
-  sock.emit('signup-send-code', { username, email });
+  sock.emit('signup-send-code', { dob: '1990-01-01',  username, email });
   const r = await sent;
   if (!r.ok) return r;
   let code = '';
@@ -69,7 +69,7 @@ async function signUp(sock, srv, username, password) {
     if (m) code = m[1]; else await wait(50);
   }
   const done = once(sock, 'signup-result');
-  sock.emit('signup', { username, password, email, code });
+  sock.emit('signup', { dob: '1990-01-01',  username, password, email, code });
   return done;
 }
 

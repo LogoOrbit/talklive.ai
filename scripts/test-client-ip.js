@@ -88,14 +88,14 @@ ok('"::ffff:" inside an ordinary IPv6 address is left alone',
   const socks = [];
   // Sign-up needs the emailed 6-digit code; without SMTP the server logs it.
   const signup = async (sock, details) => {
-    const sent = await ask(sock, 'signup-send-code', details, 'signup-code-result');
+    const sent = await ask(sock, 'signup-send-code', { dob: '1990-01-01', ...details }, 'signup-code-result');
     if (!sent.ok) return sent;
     let code = null;
     for (let i = 0; i < 40 && !code; i++) {
       const m = logs.join('').match(new RegExp(`verification code for ${details.email.replace(/[.+]/g, '\\$&')} is (\\d{6})`));
       if (m) code = m[1]; else await wait(50);
     }
-    return ask(sock, 'signup', { ...details, code }, 'signup-result');
+    return ask(sock, 'signup', { dob: '1990-01-01',  ...details, code }, 'signup-result');
   };
   const done = (code) => {
     socks.forEach((s) => { try { s.close(); } catch (_) { /* closed */ } });
@@ -148,12 +148,12 @@ ok('"::ffff:" inside an ordinary IPv6 address is left alone',
     const a = connectFrom('198.51.100.1');
     socks.push(a);
     await once(a, 'connect');
-    const short = await ask(a, 'signup', { username: 'iptestshort', password: 'abcd' }, 'signup-result');
+    const short = await ask(a, 'signup', { dob: '1990-01-01',  username: 'iptestshort', password: 'abcd' }, 'signup-result');
     ok('a 4-character password is refused', short.ok === false, JSON.stringify(short));
     const made = await signup(a, { username: 'iptestuser', password: 'longenough1', email: 'iptest@example.com' });
     ok('an 8+ character password is accepted', made.ok === true, JSON.stringify(made));
 
-    const proto = await ask(a, 'signup', { username: '__proto__', password: 'longenough1', email: 'proto@example.com' }, 'signup-result');
+    const proto = await ask(a, 'signup', { dob: '1990-01-01',  username: '__proto__', password: 'longenough1', email: 'proto@example.com' }, 'signup-result');
     ok('a reserved username like __proto__ is refused', proto.ok === false, JSON.stringify(proto));
     ok('refusing it left Object.prototype untouched', ({}).username === undefined && ({}).nickname === undefined);
 
