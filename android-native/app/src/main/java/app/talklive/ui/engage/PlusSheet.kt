@@ -258,8 +258,26 @@ fun PlusContent(
                     // Play, or the products are not live): show the prices anyway, so
                     // people know what Plus and the passes cost.
                     state is BillingState.Unavailable -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Surface(shape = RoundedCornerShape(22.dp), color = Gold2.copy(alpha = 0.10f), border = BorderStroke(2.dp, Gold2), modifier = Modifier.fillMaxWidth()) {
+                        // Same choices as when Play can sell (-1 = monthly, 0..2 = passes), so
+                        // everything here can be picked; buying waits for Google Play.
+                        var shownPick by remember { mutableStateOf(if (passFirst) 0 else -1) }
+                        val monthOn = shownPick == -1
+                        val monthBorder by animateColorAsState(if (monthOn) Gold2 else Color.White.copy(alpha = 0.16f), label = "month")
+                        Surface(
+                            onClick = { app.talklive.sound.Tap.pop(); shownPick = -1 },
+                            shape = RoundedCornerShape(20.dp),
+                            color = if (monthOn) Gold2.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.05f),
+                            border = BorderStroke(if (monthOn) 2.dp else 1.dp, monthBorder),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
                             Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    Modifier.size(22.dp).clip(CircleShape)
+                                        .background(if (monthOn) GoldBrush else SolidColor(Color.Transparent))
+                                        .border(2.dp, if (monthOn) Color.Transparent else Color.White.copy(alpha = 0.45f), CircleShape),
+                                    contentAlignment = Alignment.Center,
+                                ) { if (monthOn) Box(Modifier.size(8.dp).clip(CircleShape).background(Color.White)) }
+                                Spacer(Modifier.width(14.dp))
                                 Column(Modifier.weight(1f)) {
                                     Text("TalkLive Plus", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
                                     Text(stringResource(R.string.plus_monthly), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.65f))
@@ -269,7 +287,6 @@ fun PlusContent(
                         }
                         Text(stringResource(R.string.pass_heading), style = MaterialTheme.typography.titleSmall, color = Color.White.copy(alpha = 0.8f), modifier = Modifier.fillMaxWidth().padding(top = 10.dp), textAlign = TextAlign.Center)
                         Text(stringResource(R.string.pass_sub), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.55f), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
-                        var shownPick by remember { mutableStateOf(1) }
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                             listOf(app.talklive.billing.PlusPass("pass_1d", 1, "$2", 0), app.talklive.billing.PlusPass("pass_7d", 7, "$5", 0), app.talklive.billing.PlusPass("pass_15d", 15, "$7", 0)).forEachIndexed { i, pass ->
                                 PassCard(pass, badge = when (i) { 1 -> stringResource(R.string.pass_popular); 2 -> stringResource(R.string.pass_best); else -> null }, selected = shownPick == i) { shownPick = i }
