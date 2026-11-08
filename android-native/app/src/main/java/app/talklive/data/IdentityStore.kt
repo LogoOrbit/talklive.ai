@@ -37,6 +37,19 @@ class IdentityStore(context: Context, name: String) {
             _animal.value = value
         }
 
+    /**
+     * The person picked a new face here. Until the server has it (a register
+     * sent while signed in), a sign-in must not put the account's older saved
+     * face back over it.
+     */
+    fun chooseAnimal(id: String) {
+        prefs.edit().putBoolean(KEY_ANIMAL_DIRTY, true).apply()
+        animal = id
+    }
+    var animalDirty: Boolean
+        get() = prefs.getBoolean(KEY_ANIMAL_DIRTY, false)
+        set(v) = prefs.edit().putBoolean(KEY_ANIMAL_DIRTY, v).apply()
+
     /** Switches to the profile an account owns, so its friends and history follow it to this phone. */
     fun adopt(clientId: String, token: String) {
         val changed = prefs.getString(KEY_CLIENT_ID, null) != clientId
@@ -65,5 +78,6 @@ class IdentityStore(context: Context, name: String) {
         const val KEY_CLIENT_ID = "client_id"
         const val KEY_TOKEN = "identity_token"
         const val KEY_ANIMAL = "animal"
+        const val KEY_ANIMAL_DIRTY = "animal_dirty"
     }
 }

@@ -27,7 +27,7 @@ private val Gold = listOf(Color(0xFFFFE08A), Color(0xFFF2C14E), Color(0xFFD97706
  * glow, so they stand out everywhere their face appears. Nothing for others.
  */
 @Composable
-fun PlusRing(active: Boolean, size: Dp, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+fun PlusRing(active: Boolean, size: Dp, modifier: Modifier = Modifier, alive: Boolean = active, content: @Composable () -> Unit) {
     if (!active) { Box(modifier, contentAlignment = Alignment.Center) { content() }; return }
     val still = app.talklive.ui.theme.LocalReduceMotion.current
     val t = rememberInfiniteTransition(label = "plus")
@@ -42,6 +42,6 @@ fun PlusRing(active: Boolean, size: Dp, modifier: Modifier = Modifier, content: 
         Canvas(Modifier.size(size + ring * 2).graphicsLayer { rotationZ = spin.value }) {
             drawCircle(Brush.sweepGradient(Gold), style = Stroke(width = ring.toPx()))
         }
-        Box(Modifier.padding(ring), contentAlignment = Alignment.Center) { androidx.compose.runtime.CompositionLocalProvider(app.talklive.ui.animals.LocalPlusAvatar provides true) { content() } }
+        Box(Modifier.padding(ring), contentAlignment = Alignment.Center) { androidx.compose.runtime.CompositionLocalProvider(app.talklive.ui.animals.LocalPlusAvatar provides alive) { content() } }
     }
 }

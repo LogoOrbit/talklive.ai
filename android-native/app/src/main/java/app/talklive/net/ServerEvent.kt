@@ -14,6 +14,8 @@ data class Partner(
     val interests: List<String> = emptyList(),
     val films: List<app.talklive.engage.Film> = emptyList(),
     val friendId: String? = null,
+    /** Gold ring: Plus or the invite reward (premium is Plus itself). */
+    val ring: Boolean = false,
 ) {
     companion object {
         fun from(json: JSONObject?) = Partner(
@@ -27,6 +29,7 @@ data class Partner(
             lang = json?.optNullableString("lang"),
             films = app.talklive.engage.Film.list(json?.optJSONArray("films")),
             friendId = json?.optNullableString("friendId"),
+            ring = json?.optBoolean("ring") ?: false,
             interests = json?.optJSONArray("interests")?.let { a -> (0 until a.length()).map { a.optString(it) }.filter { it.isNotBlank() } }.orEmpty(),
         )
     }

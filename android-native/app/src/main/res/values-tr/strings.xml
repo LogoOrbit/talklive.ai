@@ -234,8 +234,6 @@
     <string name="likes_locked">%1$s ülkesinden kişiler seni beğendi. TalkLive Plus kim olduğunu gösterir.</string>
     <string name="online">Çevrim içi</string>
     <string name="invite_title">Arkadaşlarını davet et</string>
-    <string name="invite_body">Katılıp gerçek bir sohbet eden her %1$d arkadaş için ücretsiz TalkLive Plus.</string>
-    <string name="invite_progress">Sonraki ödüle %2$d içinden %1$d · %3$d katıldı · %4$d saat Plus kazanıldı</string>
     <string name="share_link">Davet bağlantını paylaş</string>
     <string name="invite_share_text">Benimle TalkLive\'da konuş, dünyanın her yerinden insanlarla ücretsiz sesli sohbet: %1$s</string>
     <string name="feedback_title">Geri bildirim gönder</string>
@@ -368,8 +366,6 @@
     <string name="plus_perk_badge_body">Adının yanında bir 💎.</string>
     <string name="plus_hero">Tanışmak istediğin kişilerle daha hızlı tanış.</string>
     <string name="plus_hero_active">Plus açık. TalkLive\'ı desteklediğin için teşekkürler.</string>
-    <string name="plus_earn_title">Ya da ücretsiz kazan</string>
-    <string name="plus_earn_body">Katılıp konuşan 3 arkadaşını davet et: Plus süresi kazan.</string>
     <string name="plus_subscribe_price">%1$s karşılığında abone ol</string>
     <string name="plus_free_filters">Ücretsiz filtrelerle devam et</string>
     <string name="theme_dark">Koyu</string>

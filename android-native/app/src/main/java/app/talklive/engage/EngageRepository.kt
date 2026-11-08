@@ -135,7 +135,11 @@ class EngageRepository(
         socket.on("plus-trial") { a -> _trials.tryEmit((a.firstOrNull() as? JSONObject)?.optLong("expiresAt") ?: 0L) }
         socket.on("premium-status") { a ->
             val o = a.firstOrNull() as? JSONObject ?: return@on
-            _premium.value = Premium(o.optBoolean("premium"), if (o.isNull("expiresAt")) null else o.optLong("expiresAt"), o.optBoolean("checkout"), o.optBoolean("play"))
+            val look = o.optJSONObject("look")
+            _premium.value = Premium(
+                o.optBoolean("premium"), if (o.isNull("expiresAt")) null else o.optLong("expiresAt"), o.optBoolean("checkout"), o.optBoolean("play"),
+                look = look != null, lookFace = look?.optString("face")?.takeIf { it.isNotBlank() && it != "null" },
+            )
         }
         socket.on("referral-status") { a ->
             val o = a.firstOrNull() as? JSONObject ?: return@on

@@ -234,8 +234,6 @@
     <string name="likes_locked">%1$s के लोगों ने आपको लाइक किया। TalkLive Plus बताता है कौन।</string>
     <string name="online">ऑनलाइन</string>
     <string name="invite_title">दोस्तों को बुलाएँ</string>
-    <string name="invite_body">हर %1$d दोस्तों के जुड़ने और असली बातचीत करने पर मुफ़्त TalkLive Plus पाएँ।</string>
-    <string name="invite_progress">अगले इनाम तक %2$d में से %1$d · %3$d जुड़े · %4$d घंटे Plus मिला</string>
     <string name="share_link">अपना इनवाइट लिंक शेयर करें</string>
     <string name="invite_share_text">TalkLive पर मुझसे बात करें, दुनिया भर के लोगों से मुफ़्त वॉइस चैट: %1$s</string>
     <string name="feedback_title">फ़ीडबैक भेजें</string>
@@ -368,8 +366,6 @@
     <string name="plus_perk_badge_body">आपके नाम के आगे 💎।</string>
     <string name="plus_hero">जिनसे मिलना चाहते हैं, उनसे जल्दी मिलें।</string>
     <string name="plus_hero_active">Plus चालू है। TalkLive का साथ देने के लिए धन्यवाद।</string>
-    <string name="plus_earn_title">या मुफ़्त में पाएँ</string>
-    <string name="plus_earn_body">3 दोस्तों को बुलाएँ जो जुड़ें और बात करें: आपको Plus समय मिलेगा।</string>
     <string name="plus_subscribe_price">%1$s में सब्सक्राइब करें</string>
     <string name="plus_free_filters">मुफ़्त फ़िल्टर के साथ जारी रखें</string>
     <string name="theme_dark">डार्क</string>

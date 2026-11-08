@@ -139,7 +139,7 @@ fun ProfileScreen(
                 Column(Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(contentAlignment = Alignment.BottomEnd) {
                         val headerPremium by engageVm.premium.collectAsStateWithLifecycle()
-                        app.talklive.ui.components.PlusRing(headerPremium.active, 104.dp) {
+                        app.talklive.ui.components.PlusRing(headerPremium.ring, 104.dp, alive = headerPremium.active) {
                             AnimalAvatar(animal, account?.nickname, 104.dp, Modifier.clip(CircleShape).clickable { vm.open(ProfileSheet.Edit) })
                         }
                         Box(
@@ -367,7 +367,7 @@ fun ProfileScreen(
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
     }
 
-    vm.sheet?.let { sheet -> ProfileSheetHost(sheet, vm, animal, onSignIn, premium = plusNow.active, onPlus = { vm.close(); youSheet = "plus-locked" }) }
+    vm.sheet?.let { sheet -> ProfileSheetHost(sheet, vm, animal, onSignIn, premium = plusNow.active, look = plusNow.look, lookFace = plusNow.lookFace, onPlus = { vm.close(); youSheet = "plus-locked" }) }
 }
 
 @Composable
@@ -511,7 +511,7 @@ private fun SettingRow(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ProfileSheetHost(sheet: ProfileSheet, vm: ProfileViewModel, animal: String?, onSignIn: () -> Unit = {}, premium: Boolean = false, onPlus: () -> Unit = {}) {
+private fun ProfileSheetHost(sheet: ProfileSheet, vm: ProfileViewModel, animal: String?, onSignIn: () -> Unit = {}, premium: Boolean = false, onPlus: () -> Unit = {}, look: Boolean = false, lookFace: String? = null) {
     val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val account by vm.account.collectAsStateWithLifecycle()
     ModalBottomSheet(onDismissRequest = vm::close, sheetState = state, containerColor = MaterialTheme.colorScheme.background) {
@@ -525,6 +525,8 @@ private fun ProfileSheetHost(sheet: ProfileSheet, vm: ProfileViewModel, animal: 
                         onSelect = { pick = it },
                         premium = premium,
                         onLocked = onPlus,
+                        look = look,
+                        lookFace = lookFace,
                         modifier = Modifier.fillMaxWidth().height(380.dp),
                         contentPadding = PaddingValues(vertical = 8.dp),
                     )

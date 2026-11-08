@@ -234,8 +234,6 @@
     <string name="likes_locked">أُعجب بك أشخاص من %1$s. يُظهر TalkLive Plus من هم.</string>
     <string name="online">متصل</string>
     <string name="invite_title">ادعُ أصدقاءك</string>
-    <string name="invite_body">احصل على TalkLive Plus مجانًا لكل %1$d أصدقاء ينضمون ويجرون محادثة حقيقية.</string>
-    <string name="invite_progress">%1$d من %2$d نحو مكافأتك التالية · انضم %3$d · ربحت %4$d ساعة من Plus</string>
     <string name="share_link">شارك رابط الدعوة</string>
     <string name="invite_share_text">تعال وتحدّث معي على TalkLive، دردشة صوتية مجانية مع أناس من كل العالم: %1$s</string>
     <string name="feedback_title">إرسال ملاحظات</string>
@@ -368,8 +366,6 @@
     <string name="plus_perk_badge_body">💎 بجانب اسمك.</string>
     <string name="plus_hero">قابل من تريد مقابلتهم، أسرع.</string>
     <string name="plus_hero_active">Plus مفعّل. شكرًا لدعمك TalkLive.</string>
-    <string name="plus_earn_title">أو احصل عليه مجانًا</string>
-    <string name="plus_earn_body">ادعُ 3 أصدقاء ينضمون ويتحدثون: تحصل على وقت Plus.</string>
     <string name="plus_subscribe_price">اشترك مقابل %1$s</string>
     <string name="plus_free_filters">تابع بالفلاتر المجانية</string>
     <string name="theme_dark">داكن</string>

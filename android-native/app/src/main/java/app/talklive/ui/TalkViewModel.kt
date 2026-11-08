@@ -97,5 +97,5 @@ class TalkViewModel @Inject constructor(
     fun dismissNotice() = calls.dismissNotice()
     fun signOut() = auth.logout()
     fun toggleTheme() = theme.toggle()
-    fun setAnimal(id: String) { identity.animal = id }
+    fun setAnimal(id: String) { auth.setAnimal(id) }
 }

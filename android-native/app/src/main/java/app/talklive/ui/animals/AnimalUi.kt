@@ -175,7 +175,11 @@ fun AnimalGrid(
     contentPadding: PaddingValues = PaddingValues(0.dp),
     premium: Boolean = false,
     onLocked: () -> Unit = {},
+    // The invite reward: one legendary face, the first one picked (null = not picked yet).
+    look: Boolean = false,
+    lookFace: String? = null,
 ) {
+    fun unlocked(id: String) = premium || (look && (lookFace == null || lookFace.removePrefix("a:") == id))
     val haptics = LocalHapticFeedback.current
     // Two families, two tabs, so the characters are never hidden below the animals.
     var tab by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(if (selected?.startsWith("c:") == true) 1 else 0) }
@@ -214,14 +218,14 @@ fun AnimalGrid(
                     .then(if (a.id in PLUS_FACES) Modifier.border(1.5.dp, app.talklive.ui.components.PlusGold.copy(alpha = 0.7f), RoundedCornerShape(20.dp)) else Modifier)
                     .clickable(remember { MutableInteractionSource() }, indication = null) {
                         haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        if (a.id in PLUS_FACES && !premium) onLocked() else onSelect(a.id)
+                        if (a.id in PLUS_FACES && !unlocked(a.id)) onLocked() else onSelect(a.id)
                     }
                     .padding(vertical = 10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Box {
                     Image(painterResource(a.icon), a.name, Modifier.fillMaxWidth(0.72f).aspectRatio(1f))
-                    if (a.id in PLUS_FACES) Text(if (premium) "💎" else "🔒", fontSize = 13.sp, modifier = Modifier.align(Alignment.TopEnd))
+                    if (a.id in PLUS_FACES) Text(if (unlocked(a.id)) "💎" else "🔒", fontSize = 13.sp, modifier = Modifier.align(Alignment.TopEnd))
                 }
                 Text(
                     a.name,

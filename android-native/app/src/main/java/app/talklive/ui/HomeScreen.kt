@@ -85,6 +85,7 @@ fun HomeScreen(
     onFindIn: (String) -> Unit = {},
     autoConnect: Boolean = true,
     onAutoConnect: (Boolean) -> Unit = {},
+    ring: Boolean = false,
 ) {
     Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 24.dp, vertical = 16.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -107,7 +108,7 @@ fun HomeScreen(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            app.talklive.ui.components.PlusRing(premium, 36.dp) {
+            app.talklive.ui.components.PlusRing(premium || ring, 36.dp, alive = premium) {
                 AnimalAvatar(animal, name, 36.dp, Modifier.clip(CircleShape).clickable(onClick = onProfile))
             }
         }

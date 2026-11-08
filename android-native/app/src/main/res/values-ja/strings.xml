@@ -234,8 +234,6 @@
     <string name="likes_locked">%1$s の人があなたにいいねしました。TalkLive Plusなら誰か分かります。</string>
     <string name="online">オンライン</string>
     <string name="invite_title">友達を招待</string>
-    <string name="invite_body">参加してしっかり会話した友達%1$d人ごとにTalkLive Plusを無料でプレゼント。</string>
-    <string name="invite_progress">次の特典まで %1$d/%2$d · 参加 %3$d人 · 獲得したPlus %4$d時間</string>
     <string name="share_link">招待リンクを共有</string>
     <string name="invite_share_text">TalkLiveで話そう。世界中の人と無料で音声チャット: %1$s</string>
     <string name="feedback_title">フィードバックを送る</string>
@@ -368,8 +366,6 @@
     <string name="plus_perk_badge_body">名前の横に💎。</string>
     <string name="plus_hero">会いたい人に、もっと早く。</string>
     <string name="plus_hero_active">Plusは有効です。TalkLiveを応援してくれてありがとう。</string>
-    <string name="plus_earn_title">または無料でゲット</string>
-    <string name="plus_earn_body">参加して話した友達3人を招待すると、Plusの時間がもらえます。</string>
     <string name="plus_subscribe_price">%1$sで登録</string>
     <string name="plus_free_filters">無料フィルターで続ける</string>
     <string name="theme_dark">ダーク</string>

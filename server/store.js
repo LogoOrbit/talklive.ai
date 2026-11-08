@@ -231,6 +231,7 @@ function defaults() {
     // link (checked by cleanFilm in server/index.js). Images are served by
     // Apple's CDN, never by us.
     favFilms: {},
+    plusLook: {},
     // "Get email updates" sign-ups from the public site footer, double opt-in:
     // lowercased email -> { email, status: 'pending'|'confirmed', tokenHash,
     // createdAt, confirmedAt, source, country }. Only 'confirmed' rows are
@@ -310,6 +311,7 @@ function applyParsed(parsed) {
   data.contactConsent = parsed.contactConsent || {};
   data.contactCapture = parsed.contactCapture || {};
   data.favFilms = parsed.favFilms || {};
+  data.plusLook = parsed.plusLook || {};
   data.subscribers = parsed.subscribers || {};
   for (const [id, c] of Object.entries(data.contactConsent)) {
     if (!c || c.on !== true) delete data.contactConsent[id];
@@ -2369,8 +2371,33 @@ function engageSet(clientId, rec) {
 function isPremiumClient(clientId) {
   const rec = data.premium[clientId];
   if (!rec || rec.revokedAt) return false;
+  // Free trials are gone, and invite rewards are the Plus look only (see
+  // plusLook below): neither is Plus, including records made before.
+  if (rec.source === 'trial' || rec.source === 'referral') return false;
   if (rec.expiresAt && rec.expiresAt <= Date.now()) return false;
   return true;
+}
+
+// --- Plus look: the invite reward ------------------------------------------
+// Three verified friends earn the gold profile ring and one legendary avatar
+// (picked once) for a while. Nothing else of Plus.
+function plusLook(clientId) {
+  const rec = data.plusLook && data.plusLook[clientId];
+  return rec && rec.expiresAt > Date.now() ? rec : null;
+}
+function extendPlusLook(clientId, ms) {
+  if (!data.plusLook) data.plusLook = {};
+  const rec = data.plusLook[clientId] || { expiresAt: 0, face: null };
+  rec.expiresAt = Math.max(rec.expiresAt, Date.now()) + ms;
+  data.plusLook[clientId] = rec;
+  save();
+  return rec;
+}
+function setPlusLookFace(clientId, face) {
+  const rec = plusLook(clientId);
+  if (!rec || rec.face) return;
+  rec.face = face;
+  save();
 }
 
 // null = premium is permanent or absent; a number = epoch ms it lapses at.
@@ -3647,6 +3674,9 @@ function publicModes() {
 }
 
 module.exports = {
+  plusLook,
+  extendPlusLook,
+  setPlusLookFace,
   trialUsed,
   markTrial,
   RESERVED_KEYS,

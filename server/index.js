@@ -3050,6 +3050,7 @@ function syncClientState(socket, clientId) {
     ...presenceOf(fid),
     last: lastMessageBetween(clientId, fid),
     premium: isPremium(fid),
+    ring: hasRing(fid),
     usual: usualHours(fid),
     alert: !!(onlineAlerts.get(clientId) && onlineAlerts.get(clientId).has(fid)),
   }));
@@ -3893,11 +3894,20 @@ function placeFromHints(timezone, acceptLanguage) {
 // avatar, but everyone who calls has a spirit animal - without this fallback
 // their friends saw a blank silhouette for someone they knew as "the Fox".
 // Legendary faces only Plus members can wear (android AnimalUi PLUS_FACES).
+// The gold profile ring: Plus, or the invite reward's Plus look.
+function hasRing(clientId) { return isPremium(clientId) || !!store.plusLook(clientId); }
+function lookStatus(clientId) {
+  const l = store.plusLook(clientId);
+  return l && !isPremium(clientId) ? { until: l.expiresAt, face: l.face || null } : null;
+}
 const PLUS_FACES = new Set(['a:unicorn', 'a:dragon', 'a:eagle', 'a:shark', 'c:king', 'c:queen', 'c:knight', 'c:astronaut']);
 function shownAvatar(p) {
   if (!p) return null;
   const face = p.avatar || (p.animal ? `a:${p.animal}` : null);
-  if (face && PLUS_FACES.has(face) && !isPremium(p.clientId)) return null;
+  if (face && PLUS_FACES.has(face) && !isPremium(p.clientId)) {
+    const look = store.plusLook(p.clientId);
+    if (!look || look.face !== face) return null;
+  }
   return face;
 }
 
@@ -4162,9 +4172,10 @@ function blockPair(clientIdA, clientIdB) {
 // Overridable so an end-to-end test does not have to hold a call open for a
 // full minute; production never sets it.
 const REAL_CONVERSATION_MS = Number(process.env.REAL_CONVERSATION_MS) || 60000;
-// Invite 3 friends, get 1 hour of Plus. Only the inviter is rewarded. See the
-// Referrals section of server/store.js for every rule an invite has to pass.
-const REFERRAL_REWARD_MS = 60 * 60000;
+// Invite 3 verified friends, get the Plus look (gold ring + one legendary
+// avatar) for 30 days. Only the inviter is rewarded. See the Referrals section
+// of server/store.js for every rule an invite has to pass.
+const REFERRAL_REWARD_MS = 30 * 864e5;
 
 // The network an address belongs to, for telling one person's devices apart
 // from a friend's. IPv4 is grouped by /24 (stricter than the rate-limit
@@ -4214,7 +4225,7 @@ function settleReferral(clientId) {
   store.recordFeature('referral_qualified');
   const owner = settled.owner;
   if (settled.rewards) {
-    store.extendPremium(owner, settled.rewards * REFERRAL_REWARD_MS, { source: 'referral', lastEvent: '3 friends joined' });
+    store.extendPlusLook(owner, settled.rewards * REFERRAL_REWARD_MS);
     store.recordFeature('referral_rewarded');
     emitPremiumStatus(owner);
   }
@@ -4238,24 +4249,8 @@ function recordEngageCall(profile, country, seconds) {
   const { rec, bump, stamp } = Engage.noteCall(store.engageGet(profile.clientId), { country, seconds, tz: profile.timezone, plus: isPremium(profile.clientId) });
   store.engageSet(profile.clientId, rec);
   emitToClient(profile.clientId, 'engage-update', { state: Engage.view(rec, { tz: profile.timezone, plus: isPremium(profile.clientId) }), bump, stamp });
-  maybeGiveTrial(profile.clientId, rec.goodCalls);
 }
 
-// One free day of Plus after a signed-in account's 3rd good call, once per
-// account, and only for someone who never had Plus. Guests are left out, or a
-// fresh guest profile would mean a fresh trial.
-const TRIAL_AFTER_CALLS = 3;
-const TRIAL_MS = 24 * 60 * 60 * 1000;
-function maybeGiveTrial(clientId, goodCalls) {
-  if (goodCalls < TRIAL_AFTER_CALLS || isPremium(clientId)) return;
-  const usernameLower = store.findUsernameByClientId(clientId);
-  if (!usernameLower || store.trialUsed(usernameLower, clientId)) return;
-  store.markTrial(usernameLower);
-  const p = store.extendPremium(clientId, TRIAL_MS, { source: 'trial', lastEvent: 'trial:start' });
-  emitPremiumStatus(clientId);
-  emitToClient(clientId, 'plus-trial', { expiresAt: p && p.expiresAt });
-  store.recordFeature('plus_trial');
-}
 
 // Re-send premium state to every live socket belonging to a clientId. Used
 // whenever a grant changes outside registration (a referral reward now; a
@@ -4270,6 +4265,7 @@ function emitPremiumStatus(clientId) {
     if (!sock) continue;
     sock.emit('premium-status', {
       premium: profile.premium,
+      look: lookStatus(clientId),
       expiresAt: envPremiumClients.has(clientId) ? null : store.premiumExpiry(clientId),
       limits: FREE_LIMITS,
       checkout: billing.configured(),
@@ -4451,6 +4447,8 @@ function publicProfile(p) {
     lang: p.lang || null,
     // Premium badge next to the name.
     premium: !!p.premium,
+    // Gold ring (Plus, or the invite reward).
+    ring: hasRing(p.clientId),
     // Their public friend ID, so it can be copied from their profile in one tap.
     friendId: publicIdOf(p.clientId) || null,
     // Their top 3 films & shows, shown on the live chat and call screens.
@@ -5835,6 +5833,11 @@ io.on('connection', (socket) => {
       if (sentAge !== 'unspecified') authedAccount.ageGroup = sentAge;
       persistAccount(socketAuth.get(socket.id));
     }
+    // The invite reward unlocks one legendary face: the first one worn.
+    if (sentAnimal && !isPremium(clientId)) {
+      const key = sentAnimal.startsWith('c:') ? sentAnimal : 'a:' + sentAnimal;
+      if (PLUS_FACES.has(key)) store.setPlusLookFace(clientId, key);
+    }
     if (authedAccount && sentAnimal && authedAccount.animal !== sentAnimal) {
       authedAccount.animal = sentAnimal;
       persistAccount(socketAuth.get(socket.id));
@@ -5930,6 +5933,7 @@ io.on('connection', (socket) => {
 
     socket.emit('premium-status', {
       premium,
+      look: lookStatus(clientId),
       expiresAt: envPremiumClients.has(clientId) ? null : store.premiumExpiry(clientId),
       limits: FREE_LIMITS,
       checkout: billing.configured(),

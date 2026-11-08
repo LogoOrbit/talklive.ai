@@ -76,7 +76,7 @@ fun PartnerSheet(
             Modifier.fillMaxWidth().verticalScroll(androidx.compose.foundation.rememberScrollState()).navigationBarsPadding().padding(horizontal = 24.dp).padding(bottom = 24.dp),
             horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
         ) {
-            app.talklive.ui.components.PlusRing(p.premium, 112.dp) { app.talklive.ui.animals.AnimalAvatar(p.animal, p.username, 112.dp) }
+            app.talklive.ui.components.PlusRing(p.premium || p.ring, 112.dp, alive = p.premium) { app.talklive.ui.animals.AnimalAvatar(p.animal, p.username, 112.dp) }
             androidx.compose.foundation.layout.Spacer(Modifier.height(14.dp))
             androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 androidx.compose.material3.Text(p.username, style = androidx.compose.material3.MaterialTheme.typography.headlineSmall, color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground)

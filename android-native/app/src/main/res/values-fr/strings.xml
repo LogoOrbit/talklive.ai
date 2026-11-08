@@ -234,8 +234,6 @@
     <string name="likes_locked">Des gens de %1$s t\'ont aimé. TalkLive Plus montre qui.</string>
     <string name="online">En ligne</string>
     <string name="invite_title">Inviter des amis</string>
-    <string name="invite_body">Obtiens TalkLive Plus gratuit pour chaque groupe de %1$d amis qui rejoignent et ont une vraie conversation.</string>
-    <string name="invite_progress">%1$d sur %2$d vers ta prochaine récompense · %3$d inscrits · %4$d heures de Plus gagnées</string>
     <string name="share_link">Partager ton lien d\'invitation</string>
     <string name="invite_share_text">Viens me parler sur TalkLive, le chat vocal gratuit avec des gens du monde entier : %1$s</string>
     <string name="feedback_title">Envoyer un avis</string>
@@ -368,8 +366,6 @@
     <string name="plus_perk_badge_body">Un 💎 à côté de ton nom.</string>
     <string name="plus_hero">Rencontre les gens que tu veux rencontrer, plus vite.</string>
     <string name="plus_hero_active">Plus est actif. Merci de soutenir TalkLive.</string>
-    <string name="plus_earn_title">Ou gagne-le gratuitement</string>
-    <string name="plus_earn_body">Invite 3 amis qui s\'inscrivent et parlent : tu gagnes du temps Plus.</string>
     <string name="plus_subscribe_price">S\'abonner pour %1$s</string>
     <string name="plus_free_filters">Continuer avec les filtres gratuits</string>
     <string name="theme_dark">Sombre</string>

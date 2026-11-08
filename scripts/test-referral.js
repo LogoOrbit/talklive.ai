@@ -194,11 +194,12 @@ async function refreshOwner(owner) {
   ok('friend 3 signs up', (await signUp(f3)).ok === true);
   ok('friend 3 had a real call', await realCall(f3));
   ok('inviter is told about the reward', await until(() => owner.reward !== null, 5000));
-  ok('the reward is 1 hour', owner.reward && owner.reward.hours === 1, owner.reward);
-  await until(() => owner.premium && owner.premium.premium === true, 4000);
-  ok('inviter has Plus', owner.premium && owner.premium.premium === true, owner.premium);
-  const left = owner.premium && owner.premium.expiresAt - Date.now();
-  ok('and it lasts about an hour', left > 55 * 60000 && left <= 60 * 60000, left);
+  ok('one reward earned', owner.reward && owner.reward.hours === 1, owner.reward);
+  await until(() => owner.premium && owner.premium.look, 4000);
+  // The reward is the Plus look (gold ring + one legendary face), not Plus.
+  ok('inviter gets the Plus look, not Plus', owner.premium && owner.premium.look && owner.premium.premium === false, owner.premium);
+  const left = owner.premium && owner.premium.look && owner.premium.look.until - Date.now();
+  ok('and it lasts about 30 days', left > 29 * 864e5 && left <= 30 * 864e5, left);
 
   // Another call from a counted friend must not count again.
   owner.reward = null;

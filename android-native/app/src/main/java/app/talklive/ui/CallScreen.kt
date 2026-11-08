@@ -71,6 +71,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
@@ -122,6 +126,7 @@ fun CallScreen(
     autoConnect: Boolean = true,
     onAutoConnect: (Boolean) -> Unit = {},
     bands: () -> FloatArray = { FloatArray(0) },
+    premium: Boolean = false,
 ) {
     var reporting by remember { mutableStateOf(false) }
     var showPartner by remember { mutableStateOf(false) }
@@ -193,11 +198,12 @@ fun CallScreen(
             modifier = Modifier.graphicsLayer { val tilt = tiltState.value; translationX = tilt.x * 22f; translationY = tilt.y * 14f },
         ) { id ->
             if (id == null || partner == null) {
-                Radar { AnimalAvatar(myAnimal, null, 112.dp) }
+                if (premium) PlusRadar { app.talklive.ui.components.PlusRing(true, 112.dp) { AnimalAvatar(myAnimal, null, 112.dp) } }
+                else Radar { AnimalAvatar(myAnimal, null, 112.dp) }
             } else {
                 Box(Modifier.clip(CircleShape).clickable { showPartner = true }) {
                     app.talklive.ui.call.SpectrumRing(bands = if (showChat) NoBands else bands, active = live, size = 260.dp, inner = 150.dp) {
-                        app.talklive.ui.components.PlusRing(partner.premium, 150.dp) {
+                        app.talklive.ui.components.PlusRing(partner.premium || partner.ring, 150.dp, alive = partner.premium) {
                             SpeakingAvatar(partner, active = live, level = remoteLevel)
                         }
                     }
@@ -217,10 +223,12 @@ fun CallScreen(
                 when (p) {
                     is CallPhase.Searching -> {
                         SearchingTitle()
+                        if (premium) { Spacer(Modifier.height(8.dp)); PlusPriority() }
                         p.etaSeconds?.takeIf { it > 0 }?.let { Subtitle(stringResource(R.string.searching_eta, it)) }
                     }
                     is CallPhase.Connecting -> {
                         Title(stringResource(R.string.almost_there))
+                        if (premium) { Spacer(Modifier.height(8.dp)); PlusPriority() }
                         Spacer(Modifier.height(6.dp))
                         val where = listOfNotNull(flag(p.partner.countryCode), p.partner.country).joinToString(" ")
                         Subtitle(if (where.isBlank()) stringResource(R.string.connecting_someone) else stringResource(R.string.connecting_someone_in, where))
@@ -370,6 +378,69 @@ private fun Radar(content: @Composable () -> Unit) {
         },
         contentAlignment = Alignment.Center,
     ) { content() }
+}
+
+/**
+ * Plus members wait in style: fast gold rings on a quick beat, a turning gold
+ * sweep and light streaking in towards them, as if the match is racing in.
+ * All motion is read in draw lambdas, so it never recomposes the screen.
+ */
+@Composable
+private fun PlusRadar(content: @Composable () -> Unit) {
+    val still = app.talklive.ui.theme.LocalReduceMotion.current
+    val t = rememberInfiniteTransition(label = "plusRadar")
+    val rings = (0 until 4).map { i ->
+        t.animateFloat(0f, 1f, infiniteRepeatable(tween(1100, easing = LinearEasing), RepeatMode.Restart, initialStartOffset = androidx.compose.animation.core.StartOffset(i * 275)), label = "pr$i")
+    }
+    val sweep = t.animateFloat(0f, 360f, infiniteRepeatable(tween(1400, easing = LinearEasing)), label = "sweep")
+    val beat = t.animateFloat(0f, 1f, infiniteRepeatable(tween(550, easing = LinearEasing)), label = "beat")
+    val gold = Color(0xFFF5C451)
+    val streaks = remember { List(18) { Triple(Math.random().toFloat() * 360f, 0.4f + Math.random().toFloat() * 0.6f, Math.random().toFloat()) } }
+    Box(
+        Modifier.size(260.dp).drawBehind {
+            if (still) return@drawBehind
+            val c = center
+            val base = 64.dp.toPx()
+            val maxR = size.minDimension / 2
+            // Light streaking in from the edge.
+            streaks.forEach { (deg, speed, off) ->
+                val f = ((beat.value * speed * 2f) + off) % 1f
+                val a = Math.toRadians(deg.toDouble())
+                val r1 = maxR * (1f - f)
+                val r2 = (r1 - 18.dp.toPx() * speed).coerceAtLeast(base)
+                val dir = androidx.compose.ui.geometry.Offset(kotlin.math.cos(a).toFloat(), kotlin.math.sin(a).toFloat())
+                drawLine(gold.copy(alpha = 0.55f * f), c + dir * r1, c + dir * r2, strokeWidth = 2.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+            }
+            // Fast gold rings.
+            rings.forEach { p ->
+                val f = p.value
+                drawCircle(gold.copy(alpha = (1f - f) * 0.5f), radius = base + (maxR - base) * f, style = Stroke(width = (2.5f - f * 1.5f).dp.toPx()))
+            }
+            // A turning sweep of light.
+            rotate(sweep.value) {
+                drawArc(
+                    brush = Brush.sweepGradient(listOf(Color.Transparent, gold.copy(alpha = 0.0f), gold.copy(alpha = 0.45f)), center = c),
+                    startAngle = 0f, sweepAngle = 90f, useCenter = false,
+                    topLeft = c - androidx.compose.ui.geometry.Offset(base + 22.dp.toPx(), base + 22.dp.toPx()),
+                    size = androidx.compose.ui.geometry.Size((base + 22.dp.toPx()) * 2, (base + 22.dp.toPx()) * 2),
+                    style = Stroke(width = 3.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round),
+                )
+            }
+        },
+        contentAlignment = Alignment.Center,
+    ) { content() }
+}
+
+/** "⚡ Plus priority": the Plus member's place at the front of the line. */
+@Composable
+private fun PlusPriority() {
+    Text(
+        stringResource(R.string.plus_priority),
+        style = MaterialTheme.typography.labelLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+        color = Color(0xFFF5C451),
+        modifier = Modifier.clip(RoundedCornerShape(50)).background(Color(0xFFF5C451).copy(alpha = 0.12f))
+            .border(1.dp, Color(0xFFF5C451).copy(alpha = 0.6f), RoundedCornerShape(50)).padding(horizontal = 12.dp, vertical = 5.dp),
+    )
 }
 
 /** The stranger's face, with a glow that swells as they talk. */

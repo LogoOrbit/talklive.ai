@@ -83,6 +83,7 @@
     ntfHelpSafari: "iPhone Safari: tap Share ⬆ → Add to Home Screen, open TalkLive from there, then turn on notifications.",
     ntfHelpReload: "Then reload this page.",
     ntfFirstFriend: "🔔 Want to know when {name} messages or comes online?",
+    callOffline: "{name} is offline right now. Tap to ask them to call you back, or ring the 🔔 to know when they're online.",
     awayTitle: "While you were away",
     awayMsg: "{name} sent {n} message(s)",
     awayCall: "{name} wanted to talk",
@@ -544,16 +545,20 @@
 
   // Legendary faces only Plus can wear (server/index.js PLUS_FACES).
   var PLUS_FACES = { 'a:unicorn': 1, 'a:dragon': 1, 'a:eagle': 1, 'a:shark': 1, 'c:king': 1, 'c:queen': 1, 'c:knight': 1, 'c:astronaut': 1 };
+  // The invite reward unlocks one legendary face: the first one picked.
+  var look = null;
+  socket.on('premium-status', function (st) { look = st && st.look ? st.look : null; markFaces(); });
+  function faceOk(id) { return isPremiumUser || (look && (!look.face || look.face === id)); }
   function markFaces() {
     document.querySelectorAll('.animal-option[data-avatar]').forEach(function (b) {
       if (!PLUS_FACES[b.dataset.avatar]) return;
       b.classList.add('tl-plus-face');
-      b.dataset.lock = isPremiumUser ? '💎' : '🔒';
+      b.dataset.lock = faceOk(b.dataset.avatar) ? '💎' : '🔒';
     });
   }
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('.animal-option[data-avatar]');
-    if (!b || !PLUS_FACES[b.dataset.avatar] || isPremiumUser) return;
+    if (!b || !PLUS_FACES[b.dataset.avatar] || faceOk(b.dataset.avatar)) return;
     e.stopPropagation(); e.preventDefault();
     showPremiumUpsell(t('plusMember'), 'avatars');
   }, true);
@@ -743,6 +748,42 @@
       + '.tl-notify-bar.is-on{background:rgba(34,197,94,.08)}.tl-notify-bar button{flex:none;border:0;border-radius:99px;padding:7px 12px;font:inherit;font-weight:700;cursor:pointer;background:rgba(255,255,255,.1);color:inherit}'
       + '.tl-notify-bar button.is-primary{background:#7c5cff;color:#fff}.tl-ntf-steps{text-align:left;padding-left:18px;line-height:1.5;font-size:14px}.tl-ntf-steps li{margin:6px 0}';
     document.head.appendChild(st);
+  })();
+
+  // Calling a friend who is offline: say so first; tapping the note asks
+  // them to call back (what the button used to do straight away).
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('#friendsList .friend-call-btn');
+    if (!b || b.dataset.offlineOk) return;
+    var f = friendsById[b.dataset.id];
+    if (!f || f.online) return;
+    e.stopPropagation(); e.preventDefault();
+    showToast(t('callOffline', { name: f.username || b.dataset.name || '' }), 'social', function () {
+      b.dataset.offlineOk = '1'; b.click(); delete b.dataset.offlineOk;
+    });
+  }, true);
+
+  // Swipe a pop-up away, sideways or up.
+  (function swipeToast() {
+    var sx = 0, sy = 0, dx = 0, dy = 0, el = null;
+    document.addEventListener('touchstart', function (e) {
+      el = e.target.closest && e.target.closest('#tlToast');
+      if (!el) return;
+      sx = e.touches[0].clientX; sy = e.touches[0].clientY; dx = dy = 0;
+    }, { passive: true });
+    document.addEventListener('touchmove', function (e) {
+      if (!el) return;
+      dx = e.touches[0].clientX - sx; dy = Math.min(0, e.touches[0].clientY - sy);
+      el.style.transform = 'translate(calc(-50% + ' + dx + 'px),' + dy + 'px)';
+      el.style.opacity = String(Math.max(0, 1 - Math.abs(dx) / 220 + dy / 120));
+    }, { passive: true });
+    document.addEventListener('touchend', function () {
+      if (!el) return;
+      var gone = Math.abs(dx) > 80 || dy < -40;
+      if (gone) el.classList.remove('show');
+      var t0 = el; setTimeout(function () { t0.style.transform = ''; t0.style.opacity = ''; }, gone ? 250 : 0);
+      el = null;
+    });
   })();
 
   window.TalkLiveEngage = { onCall: onCall, onReveal: onReveal, offerUndo: offerUndo, render: render };

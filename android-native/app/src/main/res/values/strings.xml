@@ -240,8 +240,8 @@
     <string name="likes_locked">People from %1$s liked you. TalkLive Plus shows who.</string>
     <string name="online">Online</string>
     <string name="invite_title">Invite friends</string>
-    <string name="invite_body">Get free TalkLive Plus for every %1$d friends who join and have a real conversation.</string>
-    <string name="invite_progress">%1$d of %2$d toward your next reward · %3$d joined · %4$d hours of Plus earned</string>
+    <string name="invite_body">For every %1$d friends who join and have a real conversation, you get the gold profile ring and one legendary avatar for 30 days.</string>
+    <string name="invite_progress">%1$d of %2$d toward your next reward · %3$d joined</string>
     <string name="share_link">Share your invite link</string>
     <string name="invite_share_text">Come talk with me on TalkLive, free voice chat with people worldwide: %1$s</string>
     <string name="feedback_title">Send feedback</string>
@@ -376,8 +376,8 @@
     <string name="plus_perk_badge_body">Your avatar blinks, moves and shines, with a gold name and 💎 badge.</string>
     <string name="plus_hero">Meet the people you want to meet, faster.</string>
     <string name="plus_hero_active">Plus is on. Thanks for supporting TalkLive.</string>
-    <string name="plus_earn_title">Or earn it free</string>
-    <string name="plus_earn_body">Invite 3 friends who join and talk: you get Plus time.</string>
+    <string name="plus_earn_title">Earn the gold ring free</string>
+    <string name="plus_earn_body">Invite 3 friends who join and talk: you get the gold ring and one legendary avatar for 30 days.</string>
     <string name="plus_subscribe_price">Subscribe for %1$s</string>
     <string name="plus_free_filters">Continue with free filters</string>
     <string name="theme_dark">Dark</string>
@@ -560,7 +560,7 @@
     <string name="likes_see_who">💎 See who liked you</string>
     <string name="streak_freezes_left">%1$d streak freezes left this month. Miss a day and your streak stays.</string>
     <string name="streak_freezes_plus">Plus gives you 2 streak freezes a month, so a missed day never breaks your streak.</string>
-    <string name="nudge_trial_guest">Enjoying TalkLive? Create a free account and get a day of Plus on us.</string>
+    <string name="nudge_trial_guest">Enjoying TalkLive? Create a free account so you never lose your friends and chats.</string>
     <string name="nudge_after_call">Great call! With Plus you never lose anyone you met.</string>
     <string name="nudge_after_heart">You both tapped ❤️! Plus keeps everyone you meet in your history.</string>
     <string name="nudge_see_plus">See Plus</string>
@@ -597,4 +597,8 @@
     <string name="away_called">Wanted to talk</string>
     <string name="away_reply">Reply</string>
     <string name="away_call_back">Call back</string>
+    <string name="friend_offline_call">%1$s is offline right now. Send a message, or tap 🔔 to be told when they\'re online.</string>
+    <string name="plus_priority">⚡ Plus priority · you\'re first in line</string>
+    <string name="call_minimized_hint">Call minimised. Tap the bar at the top to go back to it.</string>
+    <string name="call_tap_return">Tap to return to the call</string>
 </resources>

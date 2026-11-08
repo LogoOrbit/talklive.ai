@@ -234,8 +234,6 @@
     <string name="likes_locked">%1$s 사람들이 나를 좋아해요. TalkLive Plus로 누군지 확인하세요.</string>
     <string name="online">온라인</string>
     <string name="invite_title">친구 초대</string>
-    <string name="invite_body">가입해서 제대로 대화한 친구 %1$d명마다 TalkLive Plus를 무료로 받으세요.</string>
-    <string name="invite_progress">다음 보상까지 %1$d/%2$d · %3$d명 가입 · Plus %4$d시간 획득</string>
     <string name="share_link">초대 링크 공유</string>
     <string name="invite_share_text">TalkLive에서 나랑 대화해요. 전 세계 사람들과 무료 음성 채팅: %1$s</string>
     <string name="feedback_title">의견 보내기</string>
@@ -368,8 +366,6 @@
     <string name="plus_perk_badge_body">이름 옆에 💎.</string>
     <string name="plus_hero">만나고 싶은 사람을 더 빨리.</string>
     <string name="plus_hero_active">Plus가 켜져 있어요. TalkLive를 응원해 주셔서 감사해요.</string>
-    <string name="plus_earn_title">또는 무료로 받기</string>
-    <string name="plus_earn_body">가입해서 대화한 친구 3명을 초대하면 Plus 시간을 받아요.</string>
     <string name="plus_subscribe_price">%1$s에 구독하기</string>
     <string name="plus_free_filters">무료 필터로 계속</string>
     <string name="theme_dark">다크</string>

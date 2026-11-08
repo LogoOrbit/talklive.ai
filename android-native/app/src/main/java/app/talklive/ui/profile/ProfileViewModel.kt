@@ -74,7 +74,7 @@ class ProfileViewModel @Inject constructor(
     fun clearError() { error = null }
 
     fun setAnimal(id: String) {
-        identity.animal = id
+        auth.setAnimal(id)
         close()
     }
 

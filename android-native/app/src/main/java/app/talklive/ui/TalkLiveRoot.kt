@@ -66,6 +66,12 @@ import app.talklive.call.CallService
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import app.talklive.ui.animals.AnimalSetupScreen
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -334,6 +340,12 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     }
 
     val inCall = state.phase !is CallPhase.Idle
+    // Back on a live voice call shrinks it to a bar at the top, so the rest of
+    // the app can be used while talking; tapping the bar brings it back.
+    var callMinimized by remember { mutableStateOf(false) }
+    val liveVoice = state.phase is CallPhase.Connected && state.mode == CallMode.Talk
+    LaunchedEffect(liveVoice) { if (!liveVoice) callMinimized = false }
+    val showFullCall = inCall && !callMinimized
     val onlinePeople by vm.onlinePeople.collectAsStateWithLifecycle()
     var filtersBeforeFindIn by remember { mutableStateOf<app.talklive.engage.Filters?>(null) }
     LaunchedEffect(inCall) {
@@ -352,13 +364,22 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     var lastBackAt by remember { mutableStateOf(0L) }
     val activity = context as? android.app.Activity
     val backScope = androidx.compose.runtime.rememberCoroutineScope()
-    androidx.activity.compose.BackHandler(enabled = !inCall && openChat == null) {
+    androidx.activity.compose.BackHandler(enabled = !showFullCall && openChat == null) {
         val now = System.currentTimeMillis()
         if (tab != MainTab.Talk) tab = MainTab.Talk
         else if (now - lastBackAt < 2000) activity?.finish()
         else { lastBackAt = now; backScope.launch { snackbar.say(context.getString(R.string.press_back_exit)) } }
     }
-    androidx.activity.compose.BackHandler(enabled = inCall) { confirmLeave = true }
+    androidx.activity.compose.BackHandler(enabled = showFullCall) {
+        if (liveVoice) {
+            callMinimized = true
+            val prefs = context.getSharedPreferences("ui", android.content.Context.MODE_PRIVATE)
+            if (!prefs.getBoolean("minimize_hint", false)) {
+                prefs.edit().putBoolean("minimize_hint", true).apply()
+                backScope.launch { snackbar.say(context.getString(R.string.call_minimized_hint)) }
+            }
+        } else confirmLeave = true
+    }
     if (confirmLeave && inCall) {
         val live = state.phase is CallPhase.Connected
         androidx.compose.material3.AlertDialog(
@@ -390,7 +411,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             AnimatedVisibility(
-                visible = !inCall,
+                visible = !showFullCall,
                 enter = slideInVertically { it } + fadeIn(),
                 exit = slideOutVertically { it } + fadeOut(),
             ) {
@@ -402,7 +423,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
             }
         },
     ) { pad ->
-        Box(Modifier.fillMaxSize().padding(bottom = if (inCall) 0.dp else pad.calculateBottomPadding())) {
+        Box(Modifier.fillMaxSize().padding(bottom = if (showFullCall) 0.dp else pad.calculateBottomPadding())) {
             val homeAutoConnect by vm.autoConnect.collectAsStateWithLifecycle()
             AnimatedContent(
                 targetState = tab,
@@ -428,6 +449,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                         // gender and more countries open Plus from inside the sheet.
                         onFilters = { showFilters = true },
                         premium = premium.active,
+                        ring = premium.ring,
                         onPlus = { showPlus = "home" },
                         online = onlinePeople,
                         autoConnect = homeAutoConnect,
@@ -449,9 +471,10 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
             }
         }
         AnimatedVisibility(
-            visible = inCall,
-            enter = slideInVertically(tween(380)) { it / 4 } + fadeIn(tween(300)),
-            exit = slideOutVertically(tween(300)) { it / 4 } + fadeOut(tween(220)),
+            visible = showFullCall,
+            // Shrinks up into the top bar and grows back out of it.
+            enter = scaleIn(tween(320), initialScale = 0.85f, transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0f)) + fadeIn(tween(240)),
+            exit = scaleOut(tween(280), targetScale = 0.85f, transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0f)) + fadeOut(tween(200)),
         ) {
             val level by vm.remoteLevel.collectAsStateWithLifecycle()
             val chatMessages by vm.chat.collectAsStateWithLifecycle()
@@ -512,6 +535,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                     autoConnect = autoConnect,
                     onAutoConnect = vm::setAutoConnect,
                     bands = { voiceBands },
+                    premium = premium.active,
                 )
                 val connectedPartner = (state.phase as? CallPhase.Connected)?.partner
                 app.talklive.ui.components.PlusEntrance(connectedPartner?.clientId, connectedPartner?.premium == true)
@@ -537,7 +561,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
 
     // Mini-games with the person on the call or chat.
     val partnerName = (state.phase as? CallPhase.Connected)?.partner?.username ?: ""
-    if (inCall && showGames) {
+    if (showFullCall && showGames) {
         app.talklive.ui.game.GameSheet(
             ui = game, partnerName = partnerName,
             onInvite = vm::inviteGame, onCell = vm::tapCell, onEdge = vm::drawEdge, onRematch = vm::rematch,
@@ -577,7 +601,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
 
     // A conversation slides in over the tabs.
     AnimatedVisibility(
-        visible = openChat != null && !inCall,
+        visible = openChat != null && !showFullCall,
         enter = slideInHorizontally(tween(320)) { it } + fadeIn(tween(200)),
         exit = slideOutHorizontally(tween(260)) { it } + fadeOut(tween(200)),
     ) {
@@ -726,18 +750,55 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         }
     }
 
+    // The minimised call, floating at the top over whatever else is open.
+    AnimatedVisibility(
+        visible = inCall && callMinimized,
+        enter = slideInVertically(tween(320)) { -it } + fadeIn(tween(240)),
+        exit = slideOutVertically(tween(260)) { -it } + fadeOut(tween(200)),
+        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 6.dp),
+    ) {
+        (state.phase as? CallPhase.Connected)?.let { live ->
+            app.talklive.ui.call.MiniCallBar(
+                partner = live.partner, sinceMs = live.sinceMs, muted = state.muted,
+                onOpen = { callMinimized = false }, onMute = vm::toggleMute, onEnd = vm::end,
+            )
+        }
+    }
     // Messages show at the top of every screen, clear of the buttons below.
     androidx.compose.foundation.layout.Box(
         androidx.compose.ui.Modifier.fillMaxSize().statusBarsPadding().padding(top = 8.dp, start = 16.dp, end = 16.dp),
         contentAlignment = androidx.compose.ui.Alignment.TopCenter,
     ) {
         SnackbarHost(snackbar) { data ->
+            // Swipe it away sideways or up, like a phone notification.
+            val dx = remember(data) { androidx.compose.animation.core.Animatable(0f) }
+            val dy = remember(data) { androidx.compose.animation.core.Animatable(0f) }
+            val swipeScope = rememberCoroutineScope()
             androidx.compose.material3.Surface(
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 contentColor = MaterialTheme.colorScheme.onSurface,
                 shadowElevation = 6.dp,
-                modifier = androidx.compose.ui.Modifier.clickable { data.dismiss() },
+                modifier = androidx.compose.ui.Modifier
+                    .graphicsLayer {
+                        translationX = dx.value; translationY = dy.value
+                        alpha = (1f - (kotlin.math.abs(dx.value) / (size.width * 0.8f)) - (-dy.value / 160f)).coerceIn(0f, 1f)
+                    }
+                    .pointerInput(data) {
+                        detectDragGestures(
+                            onDragEnd = {
+                                swipeScope.launch {
+                                    if (kotlin.math.abs(dx.value) > size.width * 0.3f || dy.value < -48f) data.dismiss()
+                                    else { launch { dx.animateTo(0f) }; dy.animateTo(0f) }
+                                }
+                            },
+                            onDragCancel = { swipeScope.launch { launch { dx.animateTo(0f) }; dy.animateTo(0f) } },
+                        ) { change, drag ->
+                            change.consume()
+                            swipeScope.launch { dx.snapTo(dx.value + drag.x); dy.snapTo((dy.value + drag.y).coerceAtMost(0f)) }
+                        }
+                    }
+                    .clickable { data.dismiss() },
             ) {
                 androidx.compose.foundation.layout.Row(
                     androidx.compose.ui.Modifier.padding(start = 16.dp, end = 8.dp, top = 6.dp, bottom = 6.dp).heightIn(min = 40.dp),

@@ -163,6 +163,12 @@ class AuthRepository(
         return r
     }
 
+    /** A new face: kept on this phone and sent to the server straight away. */
+    fun setAnimal(id: String) {
+        identity.chooseAnimal(id)
+        socket.register()
+    }
+
     fun logout() {
         socket.emit("logout", JSONObject().put("token", prefs.getString(KEY_TOKEN, null)))
         prefs.edit().remove(KEY_TOKEN).remove(KEY_USERNAME).remove(KEY_NICKNAME).remove(KEY_EMAIL).apply()
@@ -217,7 +223,11 @@ class AuthRepository(
         _account.value = acc
         // The avatar saved with the account follows it to this device.
         val saved = res.optString("animal").takeIf { it.isNotBlank() && it != "null" }
-        if (saved != null) { if (saved != identity.animal) identity.animal = saved }
+        if (identity.animalDirty && identity.animal != null) {
+            // A face picked here that the server has not saved yet wins: send it now
+            // that this socket is signed in (the register saves it to the account).
+            if (saved == identity.animal) identity.animalDirty = false else socket.register()
+        } else if (saved != null) { if (saved != identity.animal) identity.animal = saved }
         // An older account with no avatar saved: give it one instead of asking.
         else if (identity.animal == null) identity.animal = app.talklive.ui.animals.Animals.random().id
         finishOnboarding()

@@ -37,7 +37,14 @@ data class Film(val type: String, val id: Long, val title: String, val year: Str
     }
 }
 
-data class Premium(val active: Boolean, val expiresAt: Long?, val checkout: Boolean, val play: Boolean = false)
+data class Premium(
+    val active: Boolean, val expiresAt: Long?, val checkout: Boolean, val play: Boolean = false,
+    /** The invite reward: the gold ring and one legendary face (picked once), not Plus. */
+    val look: Boolean = false, val lookFace: String? = null,
+) {
+    /** Shows the gold ring: Plus, or the invite reward. */
+    val ring: Boolean get() = active || look
+}
 
 data class Referral(val code: String, val verified: Int, val progress: Int, val needed: Int, val rewardedHours: Int) {
     val link: String get() = "https://talklive.app/?ref=$code"

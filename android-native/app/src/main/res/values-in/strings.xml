@@ -234,8 +234,6 @@
     <string name="likes_locked">Orang dari %1$s menyukaimu. TalkLive Plus menunjukkan siapa.</string>
     <string name="online">Online</string>
     <string name="invite_title">Undang teman</string>
-    <string name="invite_body">Dapatkan TalkLive Plus gratis untuk setiap %1$d teman yang bergabung dan benar-benar ngobrol.</string>
-    <string name="invite_progress">%1$d dari %2$d menuju hadiah berikutnya · %3$d bergabung · %4$d jam Plus didapat</string>
     <string name="share_link">Bagikan tautan undangan</string>
     <string name="invite_share_text">Yuk ngobrol denganku di TalkLive, chat suara gratis dengan orang di seluruh dunia: %1$s</string>
     <string name="feedback_title">Kirim masukan</string>
@@ -368,8 +366,6 @@
     <string name="plus_perk_badge_body">💎 di samping namamu.</string>
     <string name="plus_hero">Temui orang yang ingin kamu temui, lebih cepat.</string>
     <string name="plus_hero_active">Plus aktif. Terima kasih telah mendukung TalkLive.</string>
-    <string name="plus_earn_title">Atau dapatkan gratis</string>
-    <string name="plus_earn_body">Undang 3 teman yang bergabung dan mengobrol: kamu dapat waktu Plus.</string>
     <string name="plus_subscribe_price">Berlangganan seharga %1$s</string>
     <string name="plus_free_filters">Lanjut dengan filter gratis</string>
     <string name="theme_dark">Gelap</string>

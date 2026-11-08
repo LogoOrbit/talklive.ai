@@ -234,8 +234,6 @@
     <string name="likes_locked">来自 %1$s 的人喜欢你。TalkLive Plus 可以看到是谁。</string>
     <string name="online">在线</string>
     <string name="invite_title">邀请好友</string>
-    <string name="invite_body">每有 %1$d 位好友加入并真正聊过天，就能免费获得 TalkLive Plus。</string>
-    <string name="invite_progress">距下次奖励 %1$d/%2$d · 已加入 %3$d 人 · 已获得 %4$d 小时 Plus</string>
     <string name="share_link">分享邀请链接</string>
     <string name="invite_share_text">来 TalkLive 和我聊天吧，与全球的人免费语音聊天：%1$s</string>
     <string name="feedback_title">发送反馈</string>
@@ -368,8 +366,6 @@
     <string name="plus_perk_badge_body">名字旁边的 💎。</string>
     <string name="plus_hero">更快遇见你想认识的人。</string>
     <string name="plus_hero_active">Plus 已开启。感谢支持 TalkLive。</string>
-    <string name="plus_earn_title">或者免费获得</string>
-    <string name="plus_earn_body">邀请 3 位加入并聊过天的好友，即可获得 Plus 时长。</string>
     <string name="plus_subscribe_price">以 %1$s 订阅</string>
     <string name="plus_free_filters">继续使用免费筛选</string>
     <string name="theme_dark">深色</string>

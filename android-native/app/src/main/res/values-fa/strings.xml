@@ -234,8 +234,6 @@
     <string name="likes_locked">آدم‌هایی از %1$s تو را پسندیدند. TalkLive Plus نشان می‌دهد چه کسی.</string>
     <string name="online">آنلاین</string>
     <string name="invite_title">دعوت از دوستان</string>
-    <string name="invite_body">به ازای هر %1$d دوستی که بپیوندد و واقعاً گفتگو کند، TalkLive Plus رایگان بگیر.</string>
-    <string name="invite_progress">%1$d از %2$d تا جایزهٔ بعدی · %3$d نفر پیوستند · %4$d ساعت Plus گرفتی</string>
     <string name="share_link">اشتراک پیوند دعوت</string>
     <string name="invite_share_text">در TalkLive با من حرف بزن، گفتگوی صوتی رایگان با آدم‌های سراسر دنیا: %1$s</string>
     <string name="feedback_title">ارسال بازخورد</string>
@@ -368,8 +366,6 @@
     <string name="plus_perk_badge_body">یک 💎 کنار نامت.</string>
     <string name="plus_hero">با کسانی که می‌خواهی سریع‌تر آشنا شو.</string>
     <string name="plus_hero_active">Plus فعال است. ممنون که از TalkLive حمایت می‌کنید.</string>
-    <string name="plus_earn_title">یا رایگان بگیرش</string>
-    <string name="plus_earn_body">۳ دوست دعوت کن که بپیوندند و گفتگو کنند: زمان Plus می‌گیری.</string>
     <string name="plus_subscribe_price">اشتراک با %1$s</string>
     <string name="plus_free_filters">ادامه با فیلترهای رایگان</string>
     <string name="theme_dark">تیره</string>

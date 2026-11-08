@@ -120,6 +120,15 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
     var actionsFor by remember { mutableStateOf<Person?>(null) }
     val haptics = LocalHapticFeedback.current
     var bellToast by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
+    // Calling someone who is offline: say so, and what to do instead.
+    var offlineTap by remember { mutableStateOf<String?>(null) }
+    offlineTap?.let { name ->
+        val ctx = LocalContext.current
+        LaunchedEffect(name) {
+            android.widget.Toast.makeText(ctx, ctx.getString(R.string.friend_offline_call, name), android.widget.Toast.LENGTH_LONG).show()
+            offlineTap = null
+        }
+    }
     bellToast?.let { (name, on) ->
         val ctx = LocalContext.current
         LaunchedEffect(bellToast) {
@@ -226,7 +235,7 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
                             onClick = { onOpenChat(p.clientId) },
                             onLongClick = { haptics.performHapticFeedback(HapticFeedbackType.LongPress); actionsFor = p },
                         ),
-                        onCall = { vm.call(p) },
+                        onCall = { if (p.online) vm.call(p) else offlineTap = p.displayName },
                         onChat = { onOpenChat(p.clientId) },
                         onProfile = { profileOf = p },
                         onBell = { vm.setOnlineAlert(p.clientId, !p.alert); bellToast = if (!p.alert) p.displayName to true else p.displayName to false },
@@ -386,7 +395,9 @@ private fun FriendRow(p: Person, modifier: Modifier, onCall: () -> Unit, onChat:
             )
         }
         IconButton(onClick = onChat) { Icon(Icons.AutoMirrored.Rounded.Chat, stringResource(R.string.message), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
-        FilledTonalIconButton(onClick = onCall, enabled = p.online) { Icon(Icons.Rounded.Call, stringResource(R.string.call)) }
+        FilledTonalIconButton(onClick = onCall) {
+            Icon(Icons.Rounded.Call, stringResource(R.string.call), tint = if (p.online) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
 
