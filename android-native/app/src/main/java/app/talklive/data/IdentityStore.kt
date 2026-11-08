@@ -39,12 +39,19 @@ class IdentityStore(context: Context, name: String) {
 
     /** Switches to the profile an account owns, so its friends and history follow it to this phone. */
     fun adopt(clientId: String, token: String) {
+        val changed = prefs.getString(KEY_CLIENT_ID, null) != clientId
         prefs.edit().putString(KEY_CLIENT_ID, clientId).putString(KEY_TOKEN, token).apply()
+        if (changed) _switches.value++
     }
+
+    private val _switches = MutableStateFlow(0)
+    /** Bumps whenever this device moves to a different profile, so cached friends, chats and Plus can be dropped. */
+    val switches: StateFlow<Int> = _switches
 
     /** Starts a fresh identity, for when the server cannot verify this one. */
     fun reset() {
         prefs.edit().remove(KEY_CLIENT_ID).remove(KEY_TOKEN).apply()
+        _switches.value++
     }
 
     private fun newClientId(): String {

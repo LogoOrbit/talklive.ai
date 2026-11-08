@@ -167,6 +167,11 @@ class AuthRepository(
         socket.emit("logout", JSONObject().put("token", prefs.getString(KEY_TOKEN, null)))
         prefs.edit().remove(KEY_TOKEN).remove(KEY_USERNAME).remove(KEY_NICKNAME).remove(KEY_EMAIL).apply()
         _account.value = null
+        // The profile belongs to the account: a signed-out device starts as a
+        // fresh guest, so the next person (or account) never inherits its
+        // friends, history or Plus. Signing back in adopts the profile again.
+        identity.reset()
+        socket.register()
     }
 
     /** The site's public Google web client ID, read from /config.js. */

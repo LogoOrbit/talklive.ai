@@ -328,10 +328,39 @@ function applyParsed(parsed) {
   friendIdIndex = new Map();
   handleIndex = new Map();
   clientIdIndex = new Map();
+  splitSharedProfiles();
   for (const [usernameLower, acc] of Object.entries(data.accounts)) {
     if (acc && acc.friendId) friendIdIndex.set(acc.friendId, usernameLower);
     if (acc && acc.handle) handleIndex.set(String(acc.handle).toLowerCase(), usernameLower);
     if (acc && acc.clientId) clientIdIndex.set(acc.clientId, usernameLower);
+  }
+}
+
+// Older builds let a signed-out device hand its profile to the next account
+// created on it, so two accounts could share one clientId (and its friends,
+// history and Plus). The oldest account keeps the profile; each newer one gets
+// a fresh, empty one. Accounts merged into another (Google -> email owner) are
+// aliases and are left alone.
+function splitSharedProfiles() {
+  const byClient = new Map();
+  for (const [u, acc] of Object.entries(data.accounts)) {
+    if (!acc || !acc.clientId || acc.mergedInto) continue;
+    if (!byClient.has(acc.clientId)) byClient.set(acc.clientId, []);
+    byClient.get(acc.clientId).push(u);
+  }
+  let split = 0;
+  for (const users of byClient.values()) {
+    if (users.length < 2) continue;
+    users.sort((a, b) => (data.accounts[a].createdAt || 0) - (data.accounts[b].createdAt || 0));
+    for (const u of users.slice(1)) {
+      data.accounts[u].clientId = 'a_' + crypto.randomBytes(16).toString('hex');
+      split++;
+    }
+  }
+  if (split) {
+    console.log(`[store] gave ${split} account(s) that shared a profile their own`);
+    // Write it once boot has finished, so the new IDs stick.
+    setTimeout(() => { try { save(); } catch (_) {} }, 15000).unref();
   }
 }
 

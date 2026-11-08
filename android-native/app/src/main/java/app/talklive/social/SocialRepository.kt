@@ -15,6 +15,7 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -108,6 +109,15 @@ class SocialRepository @Inject constructor(
     private val random = SecureRandom()
 
     init {
+        scope.launch {
+            identity.switches.drop(1).collect {
+                _friends.value = emptyList(); _requests.value = emptyList(); _sent.value = emptySet()
+                _history.value = emptyList(); _unread.value = emptyMap(); _threads.value = emptyMap()
+                _typing.value = emptySet(); _myFriendId.value = null; _gates.value = emptyMap()
+                _voice.value = emptyMap(); _blocked.value = emptyList(); _activity.value = emptyList()
+                _muted.value = emptySet()
+            }
+        }
         socket.on("state-sync") { a -> (a.firstOrNull() as? JSONObject)?.let { scope.launch { onStateSync(it) } } }
         socket.on("friend-id") { a -> (a.firstOrNull() as? JSONObject)?.optNullableString("friendId")?.let { _myFriendId.value = it } }
         socket.on("friend-online") { a ->

@@ -2145,8 +2145,17 @@ const googleAccounts = new Map(); // Google "sub" id -> username (lowercase)
 function linkAccountProfile(usernameLower, socketId) {
   const profile = profiles.get(socketId);
   const currentClientId = profile ? profile.clientId : null;
-  const linked = store.getAccountClientId(usernameLower)
-    || store.setAccountClientId(usernameLower, currentClientId);
+  let linked = store.getAccountClientId(usernameLower);
+  if (!linked) {
+    // A device that is still on another account's profile (signed out, then
+    // created a new account) must not hand that profile - its friends, history
+    // and Plus - to the new account. The new account gets a fresh one.
+    const owner = currentClientId ? store.findUsernameByClientId(currentClientId) : null;
+    const donate = owner && owner !== usernameLower
+      ? 'a_' + crypto.randomBytes(16).toString('hex')
+      : currentClientId;
+    linked = store.setAccountClientId(usernameLower, donate);
+  }
   // Nothing linked and nothing to link (the socket authenticated before it
   // registered a profile): leave the browser on the clientId it already has.
   if (!linked || linked === currentClientId) return {};
