@@ -132,15 +132,7 @@ step("Welcome screen", wait_for(r"continue as guest", 20))
 # Nothing gets through before the Terms and Privacy Policy are read in the app.
 tap(r"continue as guest")
 step("Terms open before anything else", wait_for(r"before you start", 15))
-def read_to_end():
-    for _ in range(40):
-        if find(r"next: read the other one|i.m 18\+ and i agree") is not None:
-            return True
-        adb("shell", "input", "swipe", "540", "1500", "540", "300", "120"); time.sleep(0.4)
-    return False
-read_to_end()
-tap(r"next: read the other one", 5)
-step("Both documents read", read_to_end())
+step("Rules summary with one agree button", find(r"i.m 18\+ and i agree") is not None)
 tap(r"i.m 18\+ and i agree")
 
 # 2. Setup: avatar, then about you.

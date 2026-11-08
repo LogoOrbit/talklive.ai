@@ -550,7 +550,7 @@
     </plurals>
     <string name="terms_read_title">Before you start</string>
     <string name="terms_read_hint">Please read the Terms of Service and the Privacy Policy to the end.</string>
-    <string name="terms_read_ready">By tapping I agree, you confirm you are 18 or older and accept both.</string>
+    <string name="terms_read_ready">By tapping, you confirm you are 18 or older and accept the Terms of Service and Privacy Policy.</string>
     <string name="terms_agree">I\'m 18+ and I agree</string>
     <string name="terms_keep_reading">Scroll to the end to continue</string>
     <string name="terms_next">Next: read the other one</string>
@@ -571,4 +571,12 @@
     <string name="streak_reminder_body">One short call today keeps it going.</string>
     <string name="pass_name">%1$d-day pass</string>
     <string name="pass_per_day">About %1$s a day · pay once</string>
+    <string name="terms_intro">The short version of our rules. It takes 20 seconds.</string>
+    <string name="terms_pt_age">TalkLive is for adults only. You must be 18 or older.</string>
+    <string name="terms_pt_respect">Be kind. No harassment, hate, nudity, threats, scams or anything illegal.</string>
+    <string name="terms_pt_safety">Automatic safety checks and reports keep calls friendly. Breaking the rules can get you banned.</string>
+    <string name="terms_pt_private">Strangers never see your name, number or email. Don\'t share personal details you\'d regret.</string>
+    <string name="terms_pt_data">We keep your account, friends and chats to run the app. You can delete your account at any time.</string>
+    <string name="terms_pt_pay">Plus is paid through Google Play. Purchases are non-refundable except where the law or Google Play requires.</string>
+    <string name="terms_full_hint">Read the full documents:</string>
 </resources>

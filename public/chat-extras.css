@@ -626,3 +626,8 @@
   margin-right: 4px;
 }
 .cx-reply-bar.cx-editing { border-left-color: var(--accent, #7c5cff); }
+
+/* Double-tap like */
+.cx-pop{animation:cx-pop .35s ease-out}
+@keyframes cx-pop{40%{transform:scale(1.06)}}
+@media (prefers-reduced-motion:reduce){.cx-pop{animation:none}}

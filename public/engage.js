@@ -60,6 +60,19 @@
     engageStreakStart: "🔥 Streak started! Talk tomorrow to keep it",
     engageStamp: "{flag} New stamp: {country} ({n} countries)",
     engageQuestionToast: "💬 Today's question: {q}",
+    plusFreezes: "🧊 {n} Plus streak freezes left this month.",
+    plusFreezesFree: "Plus gives you 2 streak freezes a month.",
+    plusFrozen: "🧊 {n}-day streak kept by a Plus freeze",
+    plusMember: "💎 Plus member",
+    plusTrialTitle: "A day of Plus, on us",
+    plusTrialBody: "Thanks for being part of TalkLive. For the next 24 hours you have a gold name, legendary avatars, every filter, your full history and more. Enjoy!",
+    plusTrialOk: "Let's go",
+    likesFrom: "Someone from {where} liked you",
+    likesMore: "and {n} more",
+    likesSeeWho: "💎 See who liked you",
+    historyLocked: "🔒 {n} more people you met. See them all with Plus.",
+    nudgeCall: "Great call! With Plus you never lose anyone you met.",
+    nudgeHeart: "You both tapped ❤️! Plus keeps everyone you meet in your history.",
     engageMutual: "💞 It's mutual! You both liked this call. Tap to add them as a friend.",
     engageUndoThem: "👋 They came back! Your last chat is back on.",
   };
@@ -220,7 +233,11 @@
       return;
     }
     if (act === 'recap') { write(KEY.recap, state.prevWeek ? state.prevWeek.week : ''); render(); return; }
-    if (act === 'streak') { showToast(t('engageStreakHow'), 'success'); return; }
+    if (act === 'streak') {
+      var fz = state.streak && state.streak.freezesLeft;
+      showToast(t('engageStreakHow') + ' ' + (typeof fz === 'number' ? t('plusFreezes', { n: fz }) : t('plusFreezesFree')), 'success');
+      return;
+    }
     if (act === 'passport') { openPassport(); return; }
     if (act === 'likes') openLikes();
   }
@@ -280,7 +297,7 @@
     if (!socket || !socket.connected) return;
     socket.emit('get-likes', function (res) {
       res = res || {};
-      likes = { count: res.count || 0, locked: !!res.locked, list: res.list || [] };
+      likes = { count: res.count || 0, locked: !!res.locked, list: res.list || [], countries: res.countries || [] };
       render();
     });
   }
@@ -296,7 +313,20 @@
   function openLikes() {
     if (likes.locked) {
       if (typeof trackGrowthEvent === 'function') trackGrowthEvent('likes_locked_tap');
-      showPremiumUpsell(likes.count ? t('engageLikesReason', { n: likes.count }) : t('engageLikesReasonNone'), 'likes');
+      if (!likes.count) { showPremiumUpsell(t('engageLikesReasonNone'), 'likes'); return; }
+      // A teaser: real likes, one row each with the country, names hidden.
+      var shown = likes.countries.slice(0, 5);
+      if (!shown.length) shown = [''];
+      var tm = dialog('likesModal',
+        '<div class="pu-hero" aria-hidden="true"><span class="pu-gem tl-gem-pink">❤️</span></div>'
+        + '<div class="pu-title">' + esc(t('engageLikesTitle', { n: likes.count })) + '</div>'
+        + '<ul class="tl-likes">' + shown.map(function (c) {
+          return '<li><span class="tl-likes-who"><b><span class="tl-blur-av">?</span>' + esc(t('likesFrom', { where: c ? flag(c) + ' ' + countryName(c) : '🌍' })) + '</b></span>🔒</li>';
+        }).join('') + '</ul>'
+        + (likes.count > shown.length ? '<p class="pu-reason">' + esc(t('likesMore', { n: likes.count - shown.length })) + '</p>' : '')
+        + '<button type="button" class="pu-cta tl-see-who">' + esc(t('likesSeeWho')) + '</button>');
+      var go = tm.querySelector('.tl-see-who');
+      if (go) go.addEventListener('click', function () { closeModal(tm); showPremiumUpsell(t('engageLikesReason', { n: likes.count }), 'likes'); });
       return;
     }
     var rows = likes.list.length
@@ -370,7 +400,7 @@
     setState(msg.state);
     var bump = msg.bump;
     var parts = [];
-    if (bump && bump.count > 1) parts.push(t(bump.saved ? 'engageStreakSaved' : 'engageStreakUp', { n: bump.count }));
+    if (bump && bump.count > 1) parts.push(t(bump.frozen ? 'plusFrozen' : bump.saved ? 'engageStreakSaved' : 'engageStreakUp', { n: bump.count }));
     else if (bump) parts.push(t('engageStreakStart'));
     if (msg.stamp) parts.push(t('engageStamp', { flag: flag(msg.stamp.country), country: countryName(msg.stamp.country), n: msg.stamp.total }));
     if (parts.length) showToast(parts.join(' · '), 'success');
@@ -379,10 +409,11 @@
   // The partner is on the line: Premium badge, and today's question once a day.
   function onReveal(partner) {
     var nameEl = document.getElementById('partnerName');
+    if (nameEl) nameEl.classList.toggle('tl-plus-name', !!(partner && partner.premium));
     if (nameEl && partner && partner.premium) {
-      var b = el('span', 'tl-plus-badge', '💎');
-      b.title = 'Premium';
+      var b = el('span', 'tl-plus-tag', '💎 Plus');
       nameEl.appendChild(b);
+      plusEntrance();
     }
     if (read(KEY.question, '') !== dayKey()) {
       write(KEY.question, dayKey());
@@ -416,6 +447,115 @@
   });
   socket.on('premium-status', function () { setTimeout(refreshLikes, 300); });
   socket.on('connect', function () { setTimeout(refreshLikes, 1500); });
+
+  // ---- Plus touches ---------------------------------------------------------
+  (function style() {
+    var css = '.tl-plus-name{background:linear-gradient(90deg,#ffe08a,#f2c14e,#d97706,#f2c14e);-webkit-background-clip:text;background-clip:text;color:transparent!important;font-weight:800}'
+      + '.tl-plus-tag{margin-left:6px;font-size:11px;padding:1px 7px;border-radius:99px;border:1px solid rgba(245,196,81,.6);color:#f5c451;background:rgba(245,196,81,.14);-webkit-text-fill-color:#f5c451;vertical-align:middle}'
+      + '.tl-plus-sweep{position:fixed;inset:0;pointer-events:none;z-index:60;background:linear-gradient(110deg,transparent 30%,rgba(245,196,81,.28) 45%,rgba(255,243,196,.4) 50%,rgba(245,196,81,.28) 55%,transparent 70%);background-size:250% 100%;animation:tl-sweep 1.1s linear forwards}'
+      + '.tl-plus-pill{position:fixed;top:110px;left:50%;transform:translateX(-50%);z-index:61;padding:8px 16px;border-radius:99px;border:1px solid #f5c451;background:rgba(0,0,0,.6);color:#f5c451;font-weight:800;animation:tl-pill 2.6s ease forwards;pointer-events:none}'
+      + '@keyframes tl-sweep{from{background-position:120% 0}to{background-position:-30% 0}}'
+      + '@keyframes tl-pill{0%{opacity:0;transform:translate(-50%,-8px) scale(.8)}12%{opacity:1;transform:translate(-50%,0) scale(1)}85%{opacity:1}100%{opacity:0}}'
+      + '.tl-blur-av{display:inline-grid;place-items:center;width:30px;height:30px;margin-right:10px;border-radius:50%;background:linear-gradient(135deg,rgba(245,196,81,.6),rgba(124,92,255,.5));color:#fff}'
+      + '.tl-locked-row{display:block;width:100%;margin:8px 0;padding:12px 14px;border-radius:14px;border:1px solid rgba(245,196,81,.45);background:rgba(245,196,81,.1);color:inherit;text-align:left;cursor:pointer;font:inherit}'
+      + '.animal-option.tl-plus-face{box-shadow:inset 0 0 0 1.5px rgba(245,196,81,.7);position:relative}.animal-option.tl-plus-face::after{content:attr(data-lock);position:absolute;top:4px;right:6px;font-size:12px}'
+      + '@media (prefers-reduced-motion:reduce){.tl-plus-sweep,.tl-plus-pill{animation:none;display:none}}';
+    var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+  })();
+
+  function plusEntrance() {
+    var sw = el('div', 'tl-plus-sweep'); var pill = el('div', 'tl-plus-pill', esc(t('plusMember')));
+    document.body.appendChild(sw); document.body.appendChild(pill);
+    setTimeout(function () { sw.remove(); pill.remove(); }, 2800);
+  }
+
+  // The free Plus day the server gives an account after its 3rd good call.
+  socket.on('plus-trial', function () {
+    var m = dialog('plusTrialModal',
+      '<div class="pu-hero" aria-hidden="true"><span class="pu-gem">🎁</span></div>'
+      + '<div class="pu-title">' + esc(t('plusTrialTitle')) + '</div>'
+      + '<p class="pu-reason">' + esc(t('plusTrialBody')) + '</p>'
+      + '<button type="button" class="pu-cta tl-trial-ok">' + esc(t('plusTrialOk')) + '</button>');
+    var ok = m.querySelector('.tl-trial-ok');
+    if (ok) ok.addEventListener('click', function () { closeModal(m); });
+  });
+
+  // Gold names for Plus friends, and the "more with Plus" history row.
+  var plusIds = {};
+  var historyHidden = 0;
+  socket.on('state-sync', function (st) {
+    st = st || {};
+    plusIds = {};
+    (st.friends || []).concat(st.chatHistory || []).forEach(function (p) { if (p && p.premium) plusIds[p.clientId] = 1; });
+    historyHidden = st.historyHidden || 0;
+    setTimeout(function () { goldFriends(); lockedHistory(); }, 0);
+  });
+  function goldFriends() {
+    document.querySelectorAll('.friend-row-main[data-id], .history-item [data-id]').forEach(function (n) {
+      if (!plusIds[n.dataset.id]) return;
+      var label = n.querySelector('.friend-item-label, .history-name, strong');
+      if (label) label.classList.add('tl-plus-name');
+    });
+  }
+  function lockedHistory() {
+    var list = document.getElementById('historyList');
+    if (!list) return;
+    var old = list.querySelector('.tl-locked-row');
+    if (old) old.remove();
+    if (!historyHidden || isPremiumUser) return;
+    var row = el('button', 'tl-locked-row', esc(t('historyLocked', { n: historyHidden })));
+    row.type = 'button';
+    row.addEventListener('click', function () { showPremiumUpsell(t('historyLocked', { n: historyHidden }), 'history'); });
+    list.appendChild(row);
+  }
+  ['renderFriendsList', 'renderHistory'].forEach(function (name) {
+    var orig = window[name];
+    if (typeof orig !== 'function') return;
+    window[name] = function () { var r = orig.apply(this, arguments); goldFriends(); if (name === 'renderHistory') lockedHistory(); return r; };
+  });
+
+  // Legendary faces only Plus can wear (server/index.js PLUS_FACES).
+  var PLUS_FACES = { 'a:unicorn': 1, 'a:dragon': 1, 'a:eagle': 1, 'a:shark': 1, 'c:king': 1, 'c:queen': 1, 'c:knight': 1, 'c:astronaut': 1 };
+  function markFaces() {
+    document.querySelectorAll('.animal-option[data-avatar]').forEach(function (b) {
+      if (!PLUS_FACES[b.dataset.avatar]) return;
+      b.classList.add('tl-plus-face');
+      b.dataset.lock = isPremiumUser ? '💎' : '🔒';
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.animal-option[data-avatar]');
+    if (!b || !PLUS_FACES[b.dataset.avatar] || isPremiumUser) return;
+    e.stopPropagation(); e.preventDefault();
+    showPremiumUpsell(t('plusMember'), 'avatars');
+  }, true);
+  if (typeof window.renderAnimalPicker === 'function') {
+    var origPicker = window.renderAnimalPicker;
+    window.renderAnimalPicker = function () { var r = origPicker.apply(this, arguments); markFaces(); return r; };
+  }
+  markFaces();
+  socket.on('premium-status', function () { setTimeout(function () { markFaces(); lockedHistory(); }, 0); });
+
+  // A gentle Plus hint after a call that clearly went well (10+ minutes, or
+  // both tapped the heart): at most once a day, quiet for 3 days if ignored.
+  var callStart = 0; var hearted = false;
+  socket.on('matched', function () { callStart = Date.now(); hearted = false; });
+  socket.on('mutual-heart', function () { hearted = true; });
+  socket.on('partner-left', function () { afterCall(); });
+  window.addEventListener('tl-call-ended', afterCall);
+  function afterCall() {
+    if (!callStart || isPremiumUser) { callStart = 0; return; }
+    var secs = (Date.now() - callStart) / 1000; var h = hearted;
+    callStart = 0;
+    var now = Date.now();
+    if (now - (read('tl_nudge_at', 0) || 0) < 864e5 || now < (read('tl_nudge_snooze', 0) || 0)) return;
+    if (secs < 600 && !h) return;
+    write('tl_nudge_at', now);
+    write('tl_nudge_snooze', now + 3 * 864e5);
+    setTimeout(function () {
+      showToast(t(h ? 'nudgeHeart' : 'nudgeCall'), 'success', function () { write('tl_nudge_snooze', 0); showPremiumUpsell(t(h ? 'nudgeHeart' : 'nudgeCall'), 'history'); });
+    }, 1500);
+  }
 
   window.TalkLiveEngage = { onCall: onCall, onReveal: onReveal, offerUndo: offerUndo, render: render };
   window.addEventListener('i18n-changed', render);

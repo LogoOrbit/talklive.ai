@@ -4077,6 +4077,10 @@ logoutBtn.addEventListener('click', async () => {
   storeAccountEmail('');
   localStorage.removeItem('talklive_session');
   localStorage.removeItem('talklive_nickname');
+  // The profile belongs to the account: signed out, this browser is a fresh
+  // guest (signing in again brings the profile back).
+  localStorage.removeItem('talklive_client_id');
+  localStorage.removeItem('talklive_identity_token');
   // Give the logout packet a moment to flush before the page goes.
   goHomeAfterAuth(t('loggedOutToast'), 250);
 });
@@ -11538,7 +11542,7 @@ socket.on('friend-online', ({ clientId, username, countryCode, country } = {}) =
 // a call, so it loads once the page is up and stays out of the first paint.
 window.addEventListener('load', () => {
   const s = document.createElement('script');
-  s.src = '/engage.js?v=20261101flags';
+  s.src = '/engage.js?v=20261108plus';
   s.async = true;
   document.head.appendChild(s);
 });

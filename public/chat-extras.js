@@ -739,6 +739,16 @@
       if (replyTo || editing) cancelReply();
     });
 
+    // Double tap (or double click) a message: like it with a heart, again to undo.
+    messages.addEventListener('dblclick', function (e) {
+      var b = e.target.closest ? e.target.closest(msgSelector) : null;
+      var id = b && b.dataset ? b.dataset.cxId : null;
+      if (!id || !canReact) return;
+      if (window.getSelection) window.getSelection().removeAllRanges();
+      toggleReaction(id, '\u2764\ufe0f');
+      b.classList.remove('cx-pop'); void b.offsetWidth; b.classList.add('cx-pop');
+    });
+
     // --- reactions -----------------------------------------------------------
     function toggleReaction(id, emoji) {
       var rec = index[id];
