@@ -49,12 +49,25 @@ fun shortTime(ts: Long): String {
 
 @Composable
 fun presence(p: Person): String = when {
-    p.online -> androidx.compose.ui.res.stringResource(app.talklive.R.string.online)
+    p.online -> androidx.compose.ui.res.stringResource(app.talklive.R.string.online_now)
     p.lastSeen != null -> androidx.compose.ui.res.stringResource(
         app.talklive.R.string.last_seen,
         DateUtils.getRelativeTimeSpanString(p.lastSeen, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS).toString(),
     )
     else -> androidx.compose.ui.res.stringResource(app.talklive.R.string.offline)
+}
+
+/** "Usually online 8 PM–11 PM", in this phone's time, or null when unknown. */
+@Composable
+fun usualOnline(p: Person): String? {
+    val from = p.usualFrom ?: return null
+    val to = p.usualTo ?: return null
+    val h24 = android.text.format.DateFormat.is24HourFormat(androidx.compose.ui.platform.LocalContext.current)
+    fun hour(h: Int): String {
+        val c = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply { set(java.util.Calendar.HOUR_OF_DAY, h); set(java.util.Calendar.MINUTE, 0) }
+        return SimpleDateFormat(if (h24) "HH:mm" else "h a", Locale.getDefault()).format(c.time)
+    }
+    return androidx.compose.ui.res.stringResource(app.talklive.R.string.usually_online, hour(from), hour(to))
 }
 
 /** ISO country code to its flag emoji. */

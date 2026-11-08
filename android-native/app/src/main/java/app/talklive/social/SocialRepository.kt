@@ -418,6 +418,12 @@ class SocialRepository @Inject constructor(
         socket.emit("friend-reaction", JSONObject().put("toClientId", toClientId).put("id", id).put("emoji", emoji).put("on", on))
     }
 
+    /** The bell: tell me when this friend comes online. */
+    fun setOnlineAlert(clientId: String, on: Boolean) {
+        _friends.update { list -> list.map { if (it.clientId == clientId) it.copy(alert = on) else it } }
+        socket.emit("online-alert", JSONObject().put("clientId", clientId).put("on", on))
+    }
+
     /** Clears this user's copy of a conversation. */
     fun clearChat(clientId: String) = scope.launch {
         updateThread(clientId) { emptyList() }

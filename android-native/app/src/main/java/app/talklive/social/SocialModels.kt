@@ -40,6 +40,11 @@ data class Person(
     val durationSeconds: Int = 0,
     /** A Plus member: their name shows in gold. */
     val premium: Boolean = false,
+    /** Hours (UTC, 0-23, `to` exclusive) this friend is usually online, if known. */
+    val usualFrom: Int? = null,
+    val usualTo: Int? = null,
+    /** This user asked to be told when they come online (the bell). */
+    val alert: Boolean = false,
 ) {
     val displayName: String get() = nickname?.takeIf { it.isNotBlank() } ?: username.ifBlank { "Stranger" }
     val canMessage: Boolean get() = dm == "open" || dm == "one"
@@ -61,6 +66,9 @@ data class Person(
             mode = o.optString("mode", "chat"),
             durationSeconds = o.optInt("durationSeconds"),
             premium = o.optBoolean("premium"),
+            usualFrom = o.optJSONObject("usual")?.optInt("from"),
+            usualTo = o.optJSONObject("usual")?.optInt("to"),
+            alert = o.optBoolean("alert"),
         )
     }
 }

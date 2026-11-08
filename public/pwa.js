@@ -128,6 +128,7 @@
       return window.TalkLiveNative ? window.TalkLiveNative.askForPush() : undefined;
     }
     if (!('Notification' in window) || !('PushManager' in window)) return;
+    if (Notification.permission === 'granted') { enablePush(reason); return; }
     if (Notification.permission !== 'default') return;
     var asked = Number(readLS(PUSH_ASKED_KEY, '0')) || 0;
     if (Date.now() - asked < 30 * 24 * 60 * 60 * 1000) return;
@@ -159,12 +160,17 @@
     return out;
   }
 
+  function enablePush(reason) {
+    return fetch('/push/key').then(function (r) { return r.json(); }).then(function (cfg) {
+      return cfg && cfg.enabled && cfg.key ? subscribe(cfg.key, reason) : false;
+    }).catch(function () { return false; });
+  }
+  window.TalkLivePush = { enable: enablePush };
+
   function subscribe(vapidKey, reason) {
-    if (!('serviceWorker' in navigator)) return;
-    navigator.serviceWorker.ready.then(function (reg) {
+    if (!('serviceWorker' in navigator)) return Promise.resolve(false);
+    return navigator.serviceWorker.ready.then(function (reg) {
       return reg.pushManager.subscribe({
-        // Chrome refuses a subscription without this: every push must result in
-        // a visible notification, which is exactly what we do.
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidKey),
       });
@@ -181,8 +187,9 @@
         }),
       }).then(function () {
         track('push_optin');
+        return true;
       });
-    }).catch(function () { /* denied, or no push service - nothing to do */ });
+    }).catch(function () { return false; });
   }
 
   // --- Shared card UI --------------------------------------------------------

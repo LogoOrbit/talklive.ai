@@ -586,4 +586,15 @@
     <string name="cmp_history">People you met, listed</string>
     <string name="cmp_films">Favourite films</string>
     <string name="cmp_freezes">2 extra streak freezes a month</string>
+    <string name="usually_online">Usually online %1$s–%2$s</string>
+    <string name="bell_title">Tell me when they\'re online</string>
+    <string name="bell_on">You\'ll be told when %1$s comes online</string>
+    <string name="bell_off">Online alerts off for %1$s</string>
+    <string name="ntf_off_title">Notifications are off, so you\'ll miss messages and calls.</string>
+    <string name="ntf_turn_on">Turn on</string>
+    <string name="away_title">While you were away</string>
+    <string name="away_msgs">%1$d new message(s)</string>
+    <string name="away_called">Wanted to talk</string>
+    <string name="away_reply">Reply</string>
+    <string name="away_call_back">Call back</string>
 </resources>

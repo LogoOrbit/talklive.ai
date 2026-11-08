@@ -114,6 +114,9 @@ async function subscribe(clientId, endpoint) {
 
     ok('subscribe accepted', (await subscribe(B, B_ENDPOINT)) === 204);
 
+    // Bravo rings the bell on Alpha: tell me when they come online.
+    b.emit('online-alert', { clientId: A, on: true });
+    await wait(200);
     // Bravo leaves; everything below happens while they are away.
     b.disconnect();
     await wait(300);
@@ -129,13 +132,13 @@ async function subscribe(clientId, endpoint) {
     ok('caller told peer is offline', res.reason === 'offline', res);
     ok('call pushed', sentTo(B_ENDPOINT).some((p) => p.title === 'Alpha is calling you' && /open=chat/.test(p.url)), sentTo(B_ENDPOINT));
 
-    // Alpha goes away and comes back: Bravo talks to them most, so is told.
+    // Alpha goes away and comes back: Bravo asked to be told.
     a.disconnect();
     await wait(400);
     a = connect('Alpha');
     await wait(500);
     const online = sentTo(B_ENDPOINT).filter((p) => p.title === 'Alpha is online');
-    ok('top contact online pushed', online.length === 1, sentTo(B_ENDPOINT));
+    ok('bell: online pushed', online.length === 1, sentTo(B_ENDPOINT));
     ok('online push opens the chat', online[0] && online[0].url === `/?open=chat&with=${A}`);
 
     // Again shortly after: still one alert.

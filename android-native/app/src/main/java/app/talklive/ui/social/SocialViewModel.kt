@@ -83,6 +83,7 @@ class SocialViewModel @Inject constructor(
     fun delete(to: String, id: String) = repo.delete(to, id)
     fun react(to: String, id: String, emoji: String) = repo.react(to, id, emoji)
     fun clearChat(id: String) = repo.clearChat(id)
+    fun setOnlineAlert(id: String, on: Boolean) = repo.setOnlineAlert(id, on)
     fun report(id: String, reason: String) = repo.report(id, reason)
     fun cancelRequest(id: String) = repo.cancelRequest(id)
     fun callLater(id: String) = repo.callLater(id)

@@ -60,6 +60,34 @@
     engageStreakStart: "🔥 Streak started! Talk tomorrow to keep it",
     engageStamp: "{flag} New stamp: {country} ({n} countries)",
     engageQuestionToast: "💬 Today's question: {q}",
+    presOnline: "Online now",
+    presActive: "Active {time}",
+    presUsual: "Usually online {from}–{to}",
+    bellOn: "You'll be told when {name} comes online",
+    bellOff: "Online alerts off for {name}",
+    bellTitle: "Tell me when they're online",
+    ntfOffTitle: "Get notified when friends message, call or come online",
+    ntfTurnOn: "Turn on",
+    ntfBlocked: "Notifications are blocked in this browser.",
+    ntfHow: "How to fix",
+    ntfOn: "Notifications are on",
+    ntfTest: "Send a test",
+    ntfTestSent: "Test sent. Check your notifications.",
+    ntfTestNone: "Nothing arrived? Allow notifications for talklive.app in your browser settings.",
+    ntfIos: "On iPhone, add TalkLive to your Home Screen to get notifications.",
+    ntfIosHow: "Show me",
+    ntfHelpTitle: "Turn on notifications",
+    ntfHelpChrome: "Chrome / Edge: tap the 🔒 or ⓘ next to the address, then Notifications → Allow.",
+    ntfHelpSamsung: "Samsung Internet: ⋮ menu → Settings → Sites and downloads → Notifications → allow talklive.app.",
+    ntfHelpFirefox: "Firefox: tap the 🔒 next to the address, then clear the Notifications block.",
+    ntfHelpSafari: "iPhone Safari: tap Share ⬆ → Add to Home Screen, open TalkLive from there, then turn on notifications.",
+    ntfHelpReload: "Then reload this page.",
+    ntfFirstFriend: "🔔 Want to know when {name} messages or comes online?",
+    awayTitle: "While you were away",
+    awayMsg: "{name} sent {n} message(s)",
+    awayCall: "{name} wanted to talk",
+    awayReply: "Reply",
+    awayCall2: "Call back",
     plusFreezes: "🧊 {n} Plus streak freezes left this month.",
     plusFreezesFree: "Plus gives you 2 streak freezes a month.",
     plusFrozen: "🧊 {n}-day streak kept by a Plus freeze",
@@ -556,6 +584,166 @@
       showToast(t(h ? 'nudgeHeart' : 'nudgeCall'), 'success', function () { write('tl_nudge_snooze', 0); showPremiumUpsell(t(h ? 'nudgeHeart' : 'nudgeCall'), 'history'); });
     }, 1500);
   }
+
+  // ---- Friends: clear status, usual hours, online bell -----------------------
+  var friendsById = {};
+  socket.on('state-sync', function (st) {
+    st = st || {};
+    var before = Object.keys(friendsById).length;
+    friendsById = {};
+    (st.friends || []).forEach(function (f) { if (f && f.clientId) friendsById[f.clientId] = f; });
+    notifs = st.notifications || notifs;
+    setTimeout(decorateFriends, 0);
+    // First friend: the best moment to offer notifications.
+    var list = st.friends || [];
+    if (before === 0 && list.length === 1 && pushState() === 'off' && !read('tl_ntf_first', 0)) {
+      write('tl_ntf_first', 1);
+      setTimeout(function () { showToast(t('ntfFirstFriend', { name: list[0].username || '' }), 'social', enableNotifications); }, 1200);
+    }
+    maybeAway();
+  });
+  function hourLabel(utcHour) {
+    var d = new Date(); d.setUTCHours(utcHour, 0, 0, 0);
+    try { return d.toLocaleTimeString([], { hour: 'numeric' }); } catch (_) { return String(d.getHours()); }
+  }
+  function statusLine(f) {
+    if (f.online) return '<span class="tl-pres is-on">' + esc(t('presOnline')) + '</span>';
+    var parts = [];
+    if (f.lastSeen && typeof timeAgo === 'function') parts.push(t('presActive', { time: timeAgo(f.lastSeen) }));
+    if (f.usual) parts.push(t('presUsual', { from: hourLabel(f.usual.from), to: hourLabel(f.usual.to) }));
+    return parts.length ? '<span class="tl-pres">' + esc(parts.join(' · ')) + '</span>' : '';
+  }
+  function decorateFriends() {
+    document.querySelectorAll('#friendsList .friend-row-main[data-id]').forEach(function (row) {
+      var f = friendsById[row.dataset.id];
+      if (!f) return;
+      var old = row.querySelector('.tl-pres-line'); if (old) old.remove();
+      var line = el('span', 'friend-item-line tl-pres-line', statusLine(f));
+      row.appendChild(line);
+      var item = row.parentElement;
+      if (item && !item.querySelector('.tl-bell')) {
+        var bell = el('button', 'tl-bell', '');
+        bell.type = 'button';
+        bell.title = t('bellTitle'); bell.setAttribute('aria-label', t('bellTitle'));
+        bell.dataset.id = f.clientId;
+        var msg = item.querySelector('.friend-msg-btn');
+        item.insertBefore(bell, msg || null);
+      }
+      var b = item && item.querySelector('.tl-bell');
+      if (b) { b.textContent = f.alert ? '🔔' : '🔕'; b.classList.toggle('is-on', !!f.alert); }
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.tl-bell');
+    if (!b) return;
+    e.stopPropagation(); e.preventDefault();
+    var f = friendsById[b.dataset.id]; if (!f) return;
+    var on = !f.alert; f.alert = on; decorateFriends();
+    socket.emit('online-alert', { clientId: f.clientId, on: on });
+    showToast(t(on ? 'bellOn' : 'bellOff', { name: f.username || '' }), 'success');
+    if (on && pushState() !== 'on') setTimeout(enableNotifications, 600);
+  }, true);
+  if (typeof window.renderFriendsList === 'function') {
+    var origFriends = window.renderFriendsList;
+    window.renderFriendsList = function () { var r = origFriends.apply(this, arguments); decorateFriends(); renderNotifyBar(); return r; };
+  }
+
+  // ---- Browser notifications: a visible switch, help, and a test ------------
+  function isIos() { return /iphone|ipad|ipod/i.test(navigator.userAgent); }
+  function standalone() { return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone; }
+  function pushState() {
+    if (!('Notification' in window) || !('PushManager' in window)) return isIos() && !standalone() ? 'ios' : 'none';
+    return Notification.permission === 'granted' ? 'on' : Notification.permission === 'denied' ? 'blocked' : 'off';
+  }
+  function enableNotifications() {
+    if (pushState() === 'blocked') return showHelp();
+    if (pushState() === 'ios') return showHelp();
+    if (!window.TalkLivePush) return;
+    window.TalkLivePush.enable('friends').then(function () { renderNotifyBar(); });
+  }
+  function showHelp() {
+    dialog('ntfHelp', '<div class="pu-hero" aria-hidden="true"><span class="pu-gem">🔔</span></div>'
+      + '<div class="pu-title">' + esc(t('ntfHelpTitle')) + '</div><ol class="tl-ntf-steps">'
+      + ['ntfHelpChrome', 'ntfHelpSamsung', 'ntfHelpFirefox', 'ntfHelpSafari'].map(function (k) { return '<li>' + esc(t(k)) + '</li>'; }).join('')
+      + '</ol><p class="pu-reason">' + esc(t('ntfHelpReload')) + '</p>');
+  }
+  function renderNotifyBar() {
+    var list = document.getElementById('friendsList');
+    if (!list) return;
+    var bar = document.getElementById('tlNotifyBar');
+    var state = pushState();
+    if (state === 'none') { if (bar) bar.remove(); return; }
+    if (!bar) { bar = el('div', 'tl-notify-bar'); bar.id = 'tlNotifyBar'; list.parentNode.insertBefore(bar, list); }
+    var html;
+    if (state === 'on') html = '<span>✅ ' + esc(t('ntfOn')) + '</span><button type="button" data-ntf="test">' + esc(t('ntfTest')) + '</button>';
+    else if (state === 'blocked') html = '<span>🔕 ' + esc(t('ntfBlocked')) + '</span><button type="button" data-ntf="help">' + esc(t('ntfHow')) + '</button>';
+    else if (state === 'ios') html = '<span>📱 ' + esc(t('ntfIos')) + '</span><button type="button" data-ntf="help">' + esc(t('ntfIosHow')) + '</button>';
+    else html = '<span>🔔 ' + esc(t('ntfOffTitle')) + '</span><button type="button" data-ntf="on" class="is-primary">' + esc(t('ntfTurnOn')) + '</button>';
+    bar.innerHTML = html;
+    bar.classList.toggle('is-on', state === 'on');
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-ntf]');
+    if (!b) return;
+    var a = b.dataset.ntf;
+    if (a === 'on') enableNotifications();
+    else if (a === 'help') showHelp();
+    else if (a === 'test') socket.emit('push-test', function (r) { showToast(t(r && r.sent ? 'ntfTestSent' : 'ntfTestNone'), r && r.sent ? 'success' : 'social'); });
+  });
+  // Already allowed: re-register, so notifications follow this browser's profile.
+  socket.on('connect', function () { setTimeout(function () { if (pushState() === 'on' && window.TalkLivePush) window.TalkLivePush.enable('refresh'); }, 4000); });
+  renderNotifyBar();
+
+  // ---- While you were away ----------------------------------------------------
+  var notifs = [];
+  var hiddenAt = 0;
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { hiddenAt = Date.now(); write('tl_away_since', hiddenAt); }
+    else if (hiddenAt && Date.now() - hiddenAt > 10 * 60000) { awaySince = hiddenAt; awayShown = false; }
+  });
+  var awaySince = read('tl_away_since', 0) || 0;
+  if (Date.now() - awaySince < 10 * 60000) awaySince = 0;
+  var awayShown = false;
+  function maybeAway() {
+    if (awayShown || !awaySince || document.hidden) return;
+    var since = awaySince;
+    var rows = {};
+    notifs.forEach(function (n) {
+      if (!n || !n.ts || n.ts < since || !n.fromClientId) return;
+      if (n.type !== 'message' && n.type !== 'call_back_request') return;
+      var r = rows[n.fromClientId] || (rows[n.fromClientId] = { id: n.fromClientId, name: n.username || '', msgs: 0, call: false });
+      if (n.type === 'message') r.msgs++; else r.call = true;
+    });
+    var list = Object.keys(rows).map(function (k) { return rows[k]; });
+    awayShown = true;
+    write('tl_away_since', 0);
+    if (!list.length) return;
+    var m = dialog('awayModal', '<div class="pu-title">' + esc(t('awayTitle')) + '</div><ul class="tl-likes">'
+      + list.slice(0, 6).map(function (r) {
+        return '<li><span class="tl-likes-who"><b>' + esc(r.name) + '</b><small>'
+          + esc(r.call ? t('awayCall', { name: r.name }) : t('awayMsg', { name: r.name, n: r.msgs })) + '</small></span>'
+          + '<button type="button" class="tl-likes-call" data-away="' + (r.call ? 'call' : 'reply') + '" data-id="' + esc(r.id) + '" data-name="' + esc(r.name) + '">'
+          + esc(r.call ? '📞 ' + t('awayCall2') : '💬 ' + t('awayReply')) + '</button></li>';
+      }).join('') + '</ul>');
+    m.querySelectorAll('[data-away]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        closeModal(m);
+        if (b.dataset.away === 'call' && typeof requestCallBack === 'function') requestCallBack(b.dataset.id, b.dataset.name);
+        else if (typeof openFriendChat === 'function') openFriendChat(b.dataset.id);
+      });
+    });
+  }
+
+  (function presenceStyle() {
+    var st = document.createElement('style');
+    st.textContent = '.tl-pres{font-size:12px;color:var(--muted,#8a90a8)}.tl-pres.is-on{color:#22c55e;font-weight:600}'
+      + '.tl-pres.is-on::before{content:"";display:inline-block;width:7px;height:7px;margin-right:5px;border-radius:50%;background:#22c55e;vertical-align:middle}'
+      + '.tl-bell{background:none;border:0;font-size:17px;cursor:pointer;opacity:.55;padding:6px}.tl-bell.is-on{opacity:1}'
+      + '.tl-notify-bar{display:flex;align-items:center;gap:10px;justify-content:space-between;margin:0 0 10px;padding:10px 12px;border-radius:14px;background:rgba(124,92,255,.12);font-size:13px}'
+      + '.tl-notify-bar.is-on{background:rgba(34,197,94,.08)}.tl-notify-bar button{flex:none;border:0;border-radius:99px;padding:7px 12px;font:inherit;font-weight:700;cursor:pointer;background:rgba(255,255,255,.1);color:inherit}'
+      + '.tl-notify-bar button.is-primary{background:#7c5cff;color:#fff}.tl-ntf-steps{text-align:left;padding-left:18px;line-height:1.5;font-size:14px}.tl-ntf-steps li{margin:6px 0}';
+    document.head.appendChild(st);
+  })();
 
   window.TalkLiveEngage = { onCall: onCall, onReveal: onReveal, offerUndo: offerUndo, render: render };
   window.addEventListener('i18n-changed', render);

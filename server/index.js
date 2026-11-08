@@ -1961,6 +1961,11 @@ const chatClears = new Map();
 // still count as unread; they just never wake a phone or play a sound. The
 // other person is never told - muting is a private volume knob, not a signal.
 const mutedChats = new Map();
+// When someone is usually around: one bit per UTC hour, per UTC day, for the
+// last two weeks (clientId -> { dayNumber: 24-bit mask }).
+const activeHours = new Map();
+// "Tell me when they're online": watcher -> Set of friends' clientIds.
+const onlineAlerts = new Map();
 const MAX_MUTED = 500;
 function isMuted(ownerClientId, otherClientId) {
   const set = mutedChats.get(ownerClientId);
@@ -2329,6 +2334,8 @@ function writeSocial() {
     chatClears: Object.fromEntries(chatClears),
     declinedRequests: Object.fromEntries(declinedRequests),
     voiceConsent: Object.fromEntries(voiceConsent),
+    activeHours: Object.fromEntries(activeHours),
+    onlineAlerts: Object.fromEntries(Array.from(onlineAlerts, ([k, v]) => [k, Array.from(v)])),
     mutedChats: Object.fromEntries(Array.from(mutedChats).filter(([, s]) => s.size).map(([cid, s]) => [cid, Array.from(s)])),
     privacy: privacyObj(),
   };
@@ -2394,6 +2401,12 @@ function hydrateFromStore() {
   }
   for (const [cid, ts] of Object.entries(social.lastSeen || {})) {
     if (typeof ts === 'number') lastSeen.set(cid, ts);
+  }
+  for (const [cid, rec] of Object.entries(social.activeHours || {})) {
+    if (rec && typeof rec === 'object') activeHours.set(cid, rec);
+  }
+  for (const [cid, arr] of Object.entries(social.onlineAlerts || {})) {
+    if (Array.isArray(arr) && arr.length) onlineAlerts.set(cid, new Set(arr));
   }
   for (const [cid, m] of Object.entries(social.blockMeta || {})) {
     if (m && typeof m === 'object') blockMeta.set(cid, new Map(Object.entries(m)));
@@ -2630,6 +2643,43 @@ function lastMessageBetween(me, other) {
 
 // Presence as friends see it: live, or when they were last here. Someone who
 // hides their status shows neither.
+function markActive(clientId, now = Date.now()) {
+  if (!clientId || statusHidden.get(clientId)) return;
+  const day = Math.floor(now / 864e5);
+  const bit = 1 << new Date(now).getUTCHours();
+  let rec = activeHours.get(clientId);
+  if (!rec) { rec = {}; activeHours.set(clientId, rec); }
+  const before = rec[day] || 0;
+  if (before & bit) return;
+  rec[day] = before | bit;
+  for (const k of Object.keys(rec)) if (day - Number(k) > 14) delete rec[k];
+  persistSocial();
+}
+// The hours (UTC) someone is usually online, as { from, to } with to exclusive,
+// or null when there is too little to go on or they are around all day.
+function usualHours(clientId) {
+  if (statusHidden.get(clientId)) return null;
+  const rec = activeHours.get(clientId);
+  const days = rec ? Object.values(rec) : [];
+  if (days.length < 3) return null;
+  const counts = new Array(24).fill(0);
+  for (const mask of days) for (let h = 0; h < 24; h++) if (mask & (1 << h)) counts[h]++;
+  const need = Math.max(2, Math.ceil(days.length * 0.4));
+  const on = counts.map((c) => c >= need);
+  if (on.every(Boolean) || !on.some(Boolean)) return null;
+  // Longest run of usual hours, wrapping past midnight.
+  let best = { from: 0, len: 0 };
+  for (let start = 0; start < 24; start++) {
+    if (!on[start] || on[(start + 23) % 24]) continue;
+    let len = 0;
+    while (len < 24 && on[(start + len) % 24]) len++;
+    if (len > best.len) best = { from: start, len };
+  }
+  if (!best.len || best.len > 16) return null;
+  return { from: best.from, to: (best.from + best.len) % 24 };
+}
+setInterval(() => { for (const cid of clientSockets.keys()) markActive(cid); }, 10 * 60000).unref();
+
 function presenceOf(clientId) {
   if (statusHidden.get(clientId)) return { online: false, lastSeen: null };
   if (clientSockets.has(clientId)) return { online: true, lastSeen: null };
@@ -2728,7 +2778,7 @@ function isTopContact(ownerClientId, otherClientId) {
 
 // At most one "<name> is online" push per pair in this window: someone whose
 // connection comes and goes all evening is still one alert.
-const ONLINE_PUSH_COOLDOWN_MS = 6 * 60 * 60 * 1000;
+const ONLINE_PUSH_COOLDOWN_MS = 3 * 60 * 60 * 1000;
 const onlinePushSent = new Map(); // `${owner}>${other}` -> ts
 setInterval(() => {
   const cutoff = Date.now() - ONLINE_PUSH_COOLDOWN_MS;
@@ -2742,14 +2792,16 @@ function pushTopContactOnline(clientId, username) {
     const prof = sock && profiles.get(sock.id);
     if (prof && !prof.hidden) continue;
     if (isMuted(fid, clientId) || isBlockedPair(fid, clientId)) continue;
-    if (!isTopContact(fid, clientId)) continue;
+    // Only friends who asked to be told (the bell on a friend).
+    const wants = onlineAlerts.get(fid);
+    if (!wants || !wants.has(clientId)) continue;
     const key = `${fid}>${clientId}`;
     if (Date.now() - (onlinePushSent.get(key) || 0) < ONLINE_PUSH_COOLDOWN_MS) continue;
     onlinePushSent.set(key, Date.now());
     push.send(fid, {
       topic: `online:${clientId}`,
       title: `${username} is online`,
-      body: 'One of the people you talk to most just came online.',
+      body: 'Tap to say hi or give them a call.',
       url: `/?open=chat&with=${encodeURIComponent(clientId)}`,
       kind: 'social',
     }).catch(() => {});
@@ -2962,6 +3014,8 @@ function syncClientState(socket, clientId) {
     ...presenceOf(fid),
     last: lastMessageBetween(clientId, fid),
     premium: isPremium(fid),
+    usual: usualHours(fid),
+    alert: !!(onlineAlerts.get(clientId) && onlineAlerts.get(clientId).has(fid)),
   }));
   const requestList = Array.from((friendRequests.get(clientId) || new Map()).entries()).map(([fid, info]) => ({
     clientId: fid,
@@ -5909,6 +5963,7 @@ io.on('connection', (socket) => {
       // recent matches, so "message back" shows them online.
       resyncWatchers(clientId);
     }
+    markActive(clientId);
     broadcastOnlinePeopleSoon();
     // Anything sent while this socket had no profile runs now, in order.
     socket.releaseHeldEvents();
@@ -7009,6 +7064,35 @@ io.on('connection', (socket) => {
   // The app checks its connection is really alive after coming back from the
   // background (a socket can look connected long after the network dropped it).
   socket.on('app-ping', (ack) => { if (typeof ack === 'function') ack({ ok: true }); });
+
+  // The bell on a friend: tell me when they come online.
+  socket.on('online-alert', ({ clientId: fid, on } = {}) => {
+    const me = profiles.get(socket.id);
+    fid = validId(fid);
+    if (!me || !fid || !isFriend(me.clientId, fid)) return;
+    let set = onlineAlerts.get(me.clientId);
+    if (on === true) {
+      if (!set) { set = new Set(); onlineAlerts.set(me.clientId, set); }
+      set.add(fid);
+    } else if (set) {
+      set.delete(fid);
+      if (!set.size) onlineAlerts.delete(me.clientId);
+    }
+    persistSocial();
+    syncClientState(socket, me.clientId);
+  });
+
+  // "Send a test notification", so people can see notifications work.
+  socket.on('push-test', async (ack) => {
+    const me = profiles.get(socket.id);
+    if (!me || typeof ack !== 'function') return;
+    if (!socialRateOk('push-test', me.clientId, 5, 10 * 60000)) return ack({ ok: false, sent: 0 });
+    const sent = await push.send(me.clientId, {
+      topic: 'test', title: 'Notifications are on ✅', body: 'You will hear here when friends message, call or come online.',
+      url: '/?open=friends', kind: 'message',
+    }).catch(() => 0);
+    ack({ ok: true, sent: sent || 0 });
+  });
 
   socket.on('app-visibility', ({ hidden } = {}) => {
     const me = profiles.get(socket.id);

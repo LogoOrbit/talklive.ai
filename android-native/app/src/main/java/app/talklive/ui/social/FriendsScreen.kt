@@ -42,6 +42,8 @@ import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.NotificationsOff
 import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.NotificationsNone
+import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.PersonAdd
 import androidx.compose.material.icons.rounded.PersonRemove
 import androidx.compose.material.icons.rounded.PushPin
@@ -117,6 +119,14 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
     val activity by vm.activity.collectAsStateWithLifecycle()
     var actionsFor by remember { mutableStateOf<Person?>(null) }
     val haptics = LocalHapticFeedback.current
+    var bellToast by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
+    bellToast?.let { (name, on) ->
+        val ctx = LocalContext.current
+        LaunchedEffect(bellToast) {
+            android.widget.Toast.makeText(ctx, ctx.getString(if (on) R.string.bell_on else R.string.bell_off, name), android.widget.Toast.LENGTH_SHORT).show()
+            bellToast = null
+        }
+    }
 
     val friendIds = friends.map { it.clientId }.toSet()
     val met = history.filter { it.clientId !in friendIds }
@@ -140,6 +150,7 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
         }
 
         LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(bottom = 16.dp)) {
+            item(key = "notify") { NotificationsBanner() }
             if (requests.isNotEmpty()) {
                 item { SectionLabel(stringResource(R.string.friend_requests, requests.size)) }
                 items(requests, key = { "r" + it.clientId }) { p ->
@@ -218,6 +229,7 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
                         onCall = { vm.call(p) },
                         onChat = { onOpenChat(p.clientId) },
                         onProfile = { profileOf = p },
+                        onBell = { vm.setOnlineAlert(p.clientId, !p.alert); bellToast = if (!p.alert) p.displayName to true else p.displayName to false },
                     )
                 }
             }
@@ -227,6 +239,37 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
     if (showActivity) ActivitySheet(vm, friends, onDismiss = { showActivity = false }, onOpenChat = { showActivity = false; onOpenChat(it) })
     if (adding) AddFriendSheet(vm, onDismiss = { adding = false }, onOpenChat = { adding = false; onOpenChat(it) })
     actionsFor?.let { p -> FriendActionsSheet(vm, p, onDismiss = { actionsFor = null }, onOpenChat = { actionsFor = null; onOpenChat(p.clientId) }) }
+}
+
+/** Notifications switched off for TalkLive: say so, and one tap opens the setting. */
+@Composable
+private fun NotificationsBanner() {
+    val ctx = LocalContext.current
+    var enabled by remember { mutableStateOf(androidx.core.app.NotificationManagerCompat.from(ctx).areNotificationsEnabled()) }
+    val owner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(owner) {
+        val obs = androidx.lifecycle.LifecycleEventObserver { _, e ->
+            if (e == androidx.lifecycle.Lifecycle.Event.ON_RESUME) enabled = androidx.core.app.NotificationManagerCompat.from(ctx).areNotificationsEnabled()
+        }
+        owner.lifecycle.addObserver(obs)
+        onDispose { owner.lifecycle.removeObserver(obs) }
+    }
+    if (enabled) return
+    Row(
+        Modifier.padding(horizontal = 20.dp, vertical = 6.dp).fillMaxWidth().clip(MaterialTheme.shapes.large)
+            .background(MaterialTheme.colorScheme.primaryContainer).padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Rounded.NotificationsOff, null, tint = MaterialTheme.colorScheme.primary)
+        Spacer(Modifier.width(10.dp))
+        Text(stringResource(R.string.ntf_off_title), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.weight(1f))
+        TextButton(onClick = {
+            runCatching {
+                ctx.startActivity(android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                    .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, ctx.packageName).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+            }
+        }) { Text(stringResource(R.string.ntf_turn_on)) }
+    }
 }
 
 @Composable
@@ -312,7 +355,7 @@ private fun MetCard(
 }
 
 @Composable
-private fun FriendRow(p: Person, modifier: Modifier, onCall: () -> Unit, onChat: () -> Unit, onProfile: () -> Unit = {}) {
+private fun FriendRow(p: Person, modifier: Modifier, onCall: () -> Unit, onChat: () -> Unit, onProfile: () -> Unit = {}, onBell: (() -> Unit)? = null) {
     Row(modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.clip(CircleShape).clickable(onClick = onProfile)) { PersonAvatar(p, 52.dp) }
         Spacer(Modifier.width(14.dp))
@@ -329,6 +372,17 @@ private fun FriendRow(p: Person, modifier: Modifier, onCall: () -> Unit, onChat:
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (p.online) app.talklive.ui.theme.Success else MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
+            )
+            if (!p.online) usualOnline(p)?.let {
+                Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f), maxLines = 1)
+            }
+        }
+        // The bell: get a notification when they come online.
+        if (onBell != null) IconButton(onClick = onBell) {
+            Icon(
+                if (p.alert) Icons.Rounded.NotificationsActive else Icons.Rounded.NotificationsNone,
+                stringResource(R.string.bell_title),
+                tint = if (p.alert) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         IconButton(onClick = onChat) { Icon(Icons.AutoMirrored.Rounded.Chat, stringResource(R.string.message), tint = MaterialTheme.colorScheme.onSurfaceVariant) }

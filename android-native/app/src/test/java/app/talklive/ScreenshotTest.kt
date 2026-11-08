@@ -118,7 +118,7 @@ class ScreenshotTest {
     @Test fun friends() = shot("14_friends") {
         app.talklive.ui.social.FriendsScreen(socialVm {
             seedForPreview(
-                friends = listOf(p("a", "Sofia", "ES", "fox", true), p("b", "Kenji", "JP", "panda", false), p("c", "Amara", "NG", "owl", true)),
+                friends = listOf(p("a", "Sofia", "ES", "fox", true).copy(alert = true), p("b", "Kenji", "JP", "panda", false).copy(usualFrom = 14, usualTo = 17), p("c", "Amara", "NG", "owl", true)),
                 requests = listOf(p("d", "Lucas", "BR", "dolphin", true)),
                 history = listOf(p("e", "Mia", "DE", "cat", true), p("f", "Omar", "EG", "lion", false)),
             )

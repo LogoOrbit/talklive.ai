@@ -8,6 +8,11 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -131,6 +136,32 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     var tab by rememberSaveable { mutableStateOf(MainTab.Talk) }
     val social: SocialViewModel = hiltViewModel()
     var openChat by rememberSaveable { mutableStateOf<String?>(null) }
+    // While you were away: back after 10+ minutes, who wrote and who wanted to talk.
+    var leftAt by remember { mutableStateOf(0L) }
+    var awaySince by remember { mutableStateOf(0L) }
+    var away by remember { mutableStateOf<List<Triple<app.talklive.social.Person, Int, Boolean>>?>(null) }
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycle) {
+        val obs = androidx.lifecycle.LifecycleEventObserver { _, e ->
+            when (e) {
+                androidx.lifecycle.Lifecycle.Event.ON_STOP -> leftAt = System.currentTimeMillis()
+                androidx.lifecycle.Lifecycle.Event.ON_START -> if (leftAt > 0 && System.currentTimeMillis() - leftAt > 10 * 60_000) awaySince = leftAt
+                else -> Unit
+            }
+        }
+        lifecycle.lifecycle.addObserver(obs)
+        onDispose { lifecycle.lifecycle.removeObserver(obs) }
+    }
+    LaunchedEffect(awaySince) {
+        if (awaySince == 0L) return@LaunchedEffect
+        kotlinx.coroutines.delay(2500) // let the fresh state arrive first
+        val people = (social.friends.value + social.history.value).associateBy { it.clientId }
+        val called = social.activity.value.filter { it.type == "call_back_request" && it.ts >= awaySince }.map { it.fromClientId }.toSet()
+        val wrote = social.unread.value.filterValues { it > 0 }
+        val ids = (called + wrote.keys).distinct()
+        away = ids.mapNotNull { id -> people[id]?.let { Triple(it, wrote[id] ?: 0, id in called) } }.take(6).ifEmpty { null }
+        awaySince = 0L
+    }
     val incoming by social.incoming.collectAsStateWithLifecycle()
     val outgoing by social.outgoing.collectAsStateWithLifecycle()
     val totalUnread by social.totalUnread.collectAsStateWithLifecycle()
@@ -179,6 +210,34 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
             // Closed without a look: stay quiet for 3 days.
             else prefs.edit().putLong("plus_nudge_snooze", now + 3 * 24 * 3600_000L).apply()
         }
+    }
+    away?.let { list ->
+        AlertDialog(
+            onDismissRequest = { away = null },
+            title = { Text(stringResource(R.string.away_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    list.forEach { (p, msgs, called) ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            app.talklive.ui.animals.AnimalAvatar(p.animal, p.displayName, 36.dp)
+                            Spacer(Modifier.width(10.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(p.displayName, style = MaterialTheme.typography.titleSmall, maxLines = 1)
+                                Text(
+                                    if (called) stringResource(R.string.away_called) else stringResource(R.string.away_msgs, msgs),
+                                    style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            TextButton(onClick = {
+                                away = null
+                                if (called) social.call(p) else openChat = p.clientId
+                            }) { Text(stringResource(if (called) R.string.away_call_back else R.string.away_reply)) }
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { away = null }) { Text(stringResource(R.string.got_it)) } },
+        )
     }
     // The free Plus day, when the server grants it.
     var trialUntil by remember { mutableStateOf<Long?>(null) }
