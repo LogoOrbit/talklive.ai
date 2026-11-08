@@ -56,6 +56,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Brush
@@ -139,7 +145,8 @@ internal fun WelcomeScreen(onDone: () -> Unit) {
     val slides = remember {
         val all = app.talklive.ui.animals.Animals.map { it.id }.shuffled()
         listOf(
-            Slide(Icons.Rounded.Mic, R.string.welcome_1_title, R.string.welcome_1_body, all.take(4)),
+            // Page 0 is the welcome page (WelcomeHero); its slide is a placeholder.
+            Slide(Icons.Rounded.Mic, R.string.welcome_hero_title, R.string.welcome_hero_body, all.take(2)),
             Slide(Icons.Rounded.Public, R.string.welcome_2_title, R.string.welcome_2_body, all.drop(4).take(6)),
             Slide(Icons.Rounded.Shield, R.string.welcome_3_title, R.string.welcome_3_body, all.drop(10).take(3)),
         )
@@ -161,12 +168,13 @@ internal fun WelcomeScreen(onDone: () -> Unit) {
 
     Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(24.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Image(painterResource(R.drawable.logo), null, Modifier.size(36.dp))
+            Box(Modifier.size(36.dp)) { if (pager.currentPage > 0) Image(painterResource(R.drawable.logo), null, Modifier.size(36.dp)) }
             if (!last) TextButton(onClick = onDone) { Text(stringResource(R.string.skip)) }
         }
         HorizontalPager(pager, Modifier.weight(1f)) { page ->
             val offset = (pager.currentPage - page + pager.currentPageOffsetFraction).absoluteValue
             val s = slides[page]
+            if (page == 0) { WelcomeHero(s.faces, Modifier.graphicsLayer { alpha = 1f - offset.coerceIn(0f, 1f) * 0.6f }); return@HorizontalPager }
             Column(
                 Modifier.fillMaxSize().graphicsLayer {
                     alpha = 1f - offset.coerceIn(0f, 1f) * 0.6f
@@ -218,6 +226,114 @@ internal fun WelcomeScreen(onDone: () -> Unit) {
             text = stringResource(if (last) R.string.get_started else R.string.continue_),
             onClick = { if (last) onDone() else scope.launch { pager.animateScrollToPage(pager.currentPage + 1) } },
         )
+    }
+}
+
+/**
+ * The first page: a calm globe with a line of light joining two people across
+ * it, the app's mark above, then a short welcome. Clean and quiet on purpose.
+ */
+@Composable
+private fun WelcomeHero(faces: List<String>, modifier: Modifier = Modifier) {
+    val still = app.talklive.ui.theme.LocalReduceMotion.current
+    val t = androidx.compose.animation.core.rememberInfiniteTransition(label = "hero")
+    val travel by t.animateFloat(
+        0f, 1f,
+        androidx.compose.animation.core.infiniteRepeatable(tween(2600, easing = androidx.compose.animation.core.FastOutSlowInEasing)),
+        label = "travel",
+    )
+    val glow by t.animateFloat(
+        0.55f, 1f,
+        androidx.compose.animation.core.infiniteRepeatable(tween(1600), androidx.compose.animation.core.RepeatMode.Reverse),
+        label = "glow",
+    )
+    val stars = remember { List(22) { androidx.compose.ui.geometry.Offset(Math.random().toFloat(), Math.random().toFloat() * 0.55f) to (0.3f + Math.random().toFloat() * 0.7f) } }
+    val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    Column(modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
+            val w = constraints.maxWidth.toFloat()
+            val h = constraints.maxHeight.toFloat()
+            // Globe geometry, shared by the drawing and the avatars on it.
+            val r = w * 0.46f
+            val cx = w / 2f
+            val cy = h * 0.50f + r
+            val a = androidx.compose.ui.geometry.Offset(cx - r * 0.62f, cy - r * 0.66f)
+            val b = androidx.compose.ui.geometry.Offset(cx + r * 0.58f, cy - r * 0.74f)
+            val ctrl = androidx.compose.ui.geometry.Offset(cx, cy - r * 1.32f)
+            fun bez(f: Float) = androidx.compose.ui.geometry.Offset(
+                (1 - f) * (1 - f) * a.x + 2 * (1 - f) * f * ctrl.x + f * f * b.x,
+                (1 - f) * (1 - f) * a.y + 2 * (1 - f) * f * ctrl.y + f * f * b.y,
+            )
+            androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+                // Soft light behind everything.
+                drawCircle(Brush.radialGradient(listOf(BrandTeal.copy(alpha = if (dark) 0.26f else 0.16f), Color.Transparent), center = androidx.compose.ui.geometry.Offset(cx, h * 0.38f), radius = minOf(w, h) * 0.5f), radius = minOf(w, h) * 0.5f, center = androidx.compose.ui.geometry.Offset(cx, h * 0.38f))
+                stars.forEach { (p, k) -> drawCircle(Color.White.copy(alpha = (if (dark) 0.5f else 0.25f) * k), radius = 1.6.dp.toPx() * k, center = androidx.compose.ui.geometry.Offset(p.x * w, p.y * h)) }
+                // The globe, lit from above, fading into the page below.
+                drawCircle(
+                    Brush.verticalGradient(
+                        listOf(Color.White.copy(alpha = if (dark) 0.20f else 0.65f), Color.White.copy(alpha = if (dark) 0.06f else 0.25f), Color.Transparent),
+                        startY = cy - r, endY = cy + r * 0.2f,
+                    ),
+                    radius = r, center = androidx.compose.ui.geometry.Offset(cx, cy),
+                )
+                for (i in 1..3) drawOval(
+                    Color.White.copy(alpha = if (dark) 0.06f else 0.18f),
+                    topLeft = androidx.compose.ui.geometry.Offset(cx - r, cy - r * 0.92f + i * r * 0.22f),
+                    size = androidx.compose.ui.geometry.Size(r * 2, r * 0.5f),
+                    style = Stroke(1.dp.toPx()),
+                )
+                // The line of light between the two people.
+                val path = androidx.compose.ui.graphics.Path().apply { moveTo(a.x, a.y); quadraticTo(ctrl.x, ctrl.y, b.x, b.y) }
+                drawPath(path, Brush.linearGradient(listOf(BrandViolet, BrandTeal), start = a, end = b), style = Stroke(4.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round))
+                drawPath(path, Brush.linearGradient(listOf(BrandViolet.copy(alpha = 0.35f * glow), BrandTeal.copy(alpha = 0.35f * glow)), start = a, end = b), style = Stroke(12.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round))
+                if (!still) {
+                    val p = bez(travel)
+                    drawCircle(Color.White.copy(alpha = 0.9f), radius = 4.dp.toPx(), center = p)
+                    drawCircle(BrandTeal.copy(alpha = 0.35f), radius = 11.dp.toPx(), center = p)
+                }
+                drawCircle(BrandTeal.copy(alpha = 0.22f * glow), radius = 40.dp.toPx(), center = b)
+            }
+            // The two people at either end.
+            val density = androidx.compose.ui.platform.LocalDensity.current
+            listOf(a to faces.getOrNull(0), b to faces.getOrNull(1)).forEach { (pt, id) ->
+                with(density) {
+                    app.talklive.ui.animals.AnimalAvatar(
+                        id, null, 52.dp,
+                        Modifier.offset(x = (pt.x).toDp() - 26.dp, y = (pt.y).toDp() - 26.dp)
+                            .border(3.dp, Color.White, CircleShape),
+                    )
+                }
+            }
+            // The app's mark, on a white tile above the globe.
+            with(density) {
+                Box(
+                    Modifier.offset(x = cx.toDp() - 40.dp, y = (cy - r * 1.01f).toDp() - 112.dp).size(80.dp)
+                        .shadow(18.dp, RoundedCornerShape(22.dp)).clip(RoundedCornerShape(22.dp)).background(Color.White),
+                    contentAlignment = Alignment.Center,
+                ) { Image(painterResource(R.drawable.logo), null, Modifier.size(50.dp)) }
+            }
+        }
+        Row(
+            Modifier.clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surface).padding(horizontal = 14.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Rounded.Shield, null, tint = BrandTeal, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.welcome_hero_badge), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
+        }
+        Spacer(Modifier.height(20.dp))
+        Text(
+            stringResource(R.string.welcome_hero_title), style = MaterialTheme.typography.headlineLarge,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground, textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(10.dp))
+        Text(
+            stringResource(R.string.welcome_hero_body), style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 8.dp),
+        )
+        Spacer(Modifier.height(8.dp))
     }
 }
 

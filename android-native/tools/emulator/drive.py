@@ -124,7 +124,7 @@ adb("shell", "am", "start", "-n", f"{PKG}/app.talklive.MainActivity")
 time.sleep(6)
 
 # 1. First launch: three intro swipes, then the ways in.
-step("Intro swipes", wait_for(r"talk to someone new in one tap", 40))
+step("Welcome page", wait_for(r"welcome to talklive", 40))
 tap(r"^continue$"); tap(r"^continue$")
 step("Intro last slide", wait_for(r"you stay in control", 10))
 tap(r"get started")

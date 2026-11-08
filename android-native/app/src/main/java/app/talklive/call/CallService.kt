@@ -33,12 +33,20 @@ class CallService : LifecycleService() {
             this, NOTIFICATION_ID, notification(searching = true),
             ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE,
         )
+        // The service is started a moment before the search itself, so the
+        // first state it sees is usually still Idle. Stopping on that left the
+        // call with no foreground service: Android then cut the mic and the
+        // connection as soon as the app left the screen (Recents, Home), and
+        // the call dropped. Only stop once a call or search has actually run
+        // and ended - or if nothing starts within a few seconds.
         lifecycleScope.launch {
+            var started = false
+            launch { kotlinx.coroutines.delay(8000); if (!started && calls.state.value.phase is CallPhase.Idle) stopSelf() }
             calls.state.distinctUntilChangedBy { it.phase::class }.collect { s ->
                 when (s.phase) {
-                    CallPhase.Idle -> stopSelf()
-                    is CallPhase.Connected -> notify(searching = false)
-                    else -> notify(searching = true)
+                    CallPhase.Idle -> if (started) stopSelf()
+                    is CallPhase.Connected -> { started = true; notify(searching = false) }
+                    else -> { started = true; notify(searching = true) }
                 }
             }
         }

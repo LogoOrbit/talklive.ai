@@ -601,4 +601,7 @@
     <string name="plus_priority">⚡ Plus priority · you\'re first in line</string>
     <string name="call_minimized_hint">Call minimised. Tap the bar at the top to go back to it.</string>
     <string name="call_tap_return">Tap to return to the call</string>
+    <string name="welcome_hero_title">Welcome to TalkLive</string>
+    <string name="welcome_hero_body">Talk to real people around the world. One tap, voice only, no names.</string>
+    <string name="welcome_hero_badge">Anonymous · Voice only · 18+</string>
 </resources>
