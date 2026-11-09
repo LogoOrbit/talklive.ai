@@ -34,8 +34,8 @@ android {
         applicationId = "app.talklive"
         minSdk = 26
         targetSdk = 36
-        versionCode = 121
-        versionName = "3.9.1"
+        versionCode = 122
+        versionName = "3.9.2"
         buildConfigField("String", "SERVER_URL", "\"https://talklive.app\"")
     }
 
@@ -70,6 +70,9 @@ android {
             }
         }
         release {
+            // Phones only: without this the APK also carried the WebRTC library
+            // for desktop-emulator chips, which made the download twice the size.
+            ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")

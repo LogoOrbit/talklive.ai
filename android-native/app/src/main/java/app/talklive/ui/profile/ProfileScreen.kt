@@ -209,7 +209,6 @@ fun ProfileScreen(
             }
             Section(stringResource(R.string.section_you)) {
                 SettingRow(Icons.Rounded.Public, stringResource(R.string.passport), stringResource(R.string.passport_count, engage?.passport?.size ?: 0)) { youSheet = "passport" }
-                SettingRow(Icons.Rounded.Movie, stringResource(R.string.fav_films), if (films.isEmpty()) stringResource(R.string.not_set) else films.joinToString(", ") { it.title }) { youSheet = "films" }
                 SettingRow(Icons.Rounded.Favorite, stringResource(R.string.likes), null) { youSheet = "likes" }
                 SettingRow(Icons.Rounded.CardGiftcard, stringResource(R.string.invite_title), null) { youSheet = "invite" }
                 val myGender by engageVm.myGender.collectAsStateWithLifecycle()
@@ -337,7 +336,6 @@ fun ProfileScreen(
             Section(stringResource(R.string.section_safety)) {
                 SettingRow(Icons.Rounded.SupportAgent, stringResource(R.string.support_title), stringResource(R.string.support_row)) { youSheet = "support" }
                 SettingRow(Icons.Rounded.BugReport, stringResource(R.string.problem_title), null) { youSheet = "problem" }
-                SettingRow(Icons.Rounded.Feedback, stringResource(R.string.feedback_title), null) { youSheet = "feedback" }
                 SettingRow(Icons.Rounded.Shield, stringResource(R.string.safety_tips), null) { open("safety") }
                 SettingRow(Icons.Rounded.Groups, stringResource(R.string.community_guidelines), null) { open("community-guidelines") }
                 SettingRow(Icons.Rounded.PrivacyTip, stringResource(R.string.privacy_policy), null) { open("privacy") }

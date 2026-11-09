@@ -6637,13 +6637,13 @@ function recordCallHistory() {
   renderHistory();
   if (durationSeconds >= 30) trackGrowthEvent('quality_call');
   if (window.TalkLiveEngage) window.TalkLiveEngage.onCall(currentPartner, durationSeconds);
-  if (!maybeShowFriendPrompt(currentPartner, durationSeconds)) maybeShowSharePrompt(durationSeconds);
+  // The share pop-up after calls is gone: shown 6,264 times in a month for 71 shares.
+  maybeShowFriendPrompt(currentPartner, durationSeconds);
 }
 
 // --- Post-call share prompt -------------------------------------------------
 // After a real call (30+ seconds) nudge the user to invite friends. Shown at
 // most once per 24h so it never becomes nagging.
-const SHARE_PROMPT_KEY = 'tl_share_prompt_at';
 // Personalised when the server has issued this user a referral code, so the
 // invite is attributable and counts toward their hour of Plus. Falls back to the plain
 // tracked link when it has not (the code is minted on demand, and the first
@@ -6663,16 +6663,6 @@ function trackGrowthEvent(event) {
     body: JSON.stringify({ event }),
     keepalive: true,
   }).catch(() => {});
-}
-
-function maybeShowSharePrompt(durationSeconds) {
-  if (durationSeconds < 30) return;
-  try {
-    const last = Number(localStorage.getItem(SHARE_PROMPT_KEY) || 0);
-    if (Date.now() - last < 24 * 60 * 60 * 1000) return;
-    localStorage.setItem(SHARE_PROMPT_KEY, String(Date.now()));
-  } catch (_) { return; }
-  showSharePrompt();
 }
 
 function showSharePrompt() {
@@ -8623,10 +8613,11 @@ function requireAnimal(next) {
   // Any face will do - an animal, a character or a plain one. Only someone with
   // none at all is asked, so a choice made in Settings is never overwritten.
   if (myAvatar || !animalGateModal || !Animals) { next(); return false; }
-  afterAnimalGate = next;
-  renderAnimalPicker();
-  openModal(animalGateModal);
-  return true;
+  // Nobody is stopped to choose a face before their first call any more: they
+  // get one at random and can change it from Home or during the call.
+  setMyAnimal(Animals.random());
+  next();
+  return false;
 }
 
 function closeAnimalGate(run) {

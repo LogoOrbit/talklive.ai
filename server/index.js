@@ -195,6 +195,12 @@ app.use(compress());
 // never inflates visit counts.
 app.get(['/healthz', '/ping'], (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
+  // ?mem adds memory in MB, to size the machine against what it really uses.
+  if ('mem' in req.query) {
+    const m = process.memoryUsage();
+    const mb = (n) => Math.round(n / 1048576);
+    return res.type('text/plain').send(`ok rss=${mb(m.rss)} heap=${mb(m.heapUsed)}/${mb(m.heapTotal)} ext=${mb(m.external + m.arrayBuffers)} up=${Math.round(process.uptime() / 60)}m`);
+  }
   res.type('text/plain').send('ok');
 });
 
