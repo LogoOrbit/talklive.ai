@@ -18,16 +18,33 @@
 html.auth-route #authPage.hidden { display: flex !important; }
 html.auth-route body { overflow: hidden; }
 
-.tl-authpage-aside { display: none; }
 .tl-authpage-main {
+  position: relative;
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   min-height: 100%;
   padding: calc(var(--tl-s3) + env(safe-area-inset-top, 0px)) var(--tl-s4) calc(var(--tl-s4) + env(safe-area-inset-bottom, 0px));
-  background:
-    radial-gradient(600px 320px at 50% -80px, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%),
-    var(--bg-1);
+}
+/* Soft colour drifting slowly behind the card. */
+.tl-aurora { position: fixed; inset: 0; overflow: hidden; pointer-events: none; transition: filter 1.2s ease; }
+.tl-aurora i {
+  position: absolute; width: 60vmax; height: 60vmax; border-radius: 50%;
+  filter: blur(80px); opacity: .3; will-change: transform;
+  animation: tl-drift 22s ease-in-out infinite alternate;
+}
+.tl-aurora i:nth-child(1) { left: -20vmax; top: -25vmax; background: var(--accent); }
+.tl-aurora i:nth-child(2) { right: -25vmax; top: 10vh; background: #00b7d6; animation-duration: 28s; animation-delay: -6s; }
+.tl-aurora i:nth-child(3) { left: 10vw; bottom: -35vmax; background: #e2559b; opacity: .2; animation-duration: 34s; animation-delay: -12s; }
+[data-theme="light"] .tl-aurora i { opacity: .16; }
+/* Entering a code: the colours turn and shimmer. */
+.tl-authpage.is-code .tl-aurora { filter: hue-rotate(50deg) saturate(1.2); }
+.tl-authpage.is-code .tl-aurora i { animation-duration: 10s; }
+/* Signed in: the colours swell. */
+.tl-authpage.is-done .tl-aurora i { opacity: .5; transform: scale(1.4); transition: transform 1s cubic-bezier(.2, .8, .2, 1), opacity 1s ease; animation: none; }
+@keyframes tl-drift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(8vmax, 6vmax, 0) scale(1.15); }
 }
 .tl-authpage-top {
   display: flex;
@@ -60,20 +77,37 @@ html.auth-route body { overflow: hidden; }
   margin: 0 auto;
   padding: var(--tl-s5) 0;
 }
+/* Concentric corners: card radius 32 with 20px padding, so every control
+   inside uses 12 (32 - 20). Shadows are tinted with the page colour. */
 .tl-authpage .tl-auth-card {
-  padding: var(--tl-s5);
-  border: 1px solid var(--tl-line);
-  border-radius: var(--tl-r-lg);
-  background: var(--bg-2);
-  box-shadow: var(--tl-shadow);
-  animation: tl-auth-in 0.28s ease both;
+  position: relative;
+  padding: 28px 20px 20px;
+  border-radius: 32px;
+  background: color-mix(in srgb, var(--bg-2) 90%, transparent);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--bg-1) 55%, #000),
+    0 8px 24px -6px color-mix(in srgb, var(--bg-1) 65%, #000),
+    0 30px 70px -20px color-mix(in srgb, var(--bg-1) 75%, #000);
+  animation: tl-auth-in 0.36s cubic-bezier(.2, 1.2, .4, 1) both;
 }
+.tl-auth-card .account-input, .tl-auth-card .tl-pw > input, .tl-auth-card .tl-submit,
+.tl-auth-card .tlo-t, .tl-auth-card .tlx-saved-go, .tl-auth-card .link-profile-card,
+.tl-auth-card .account-status { border-radius: 12px; }
+.tl-auth-card .account-input, .tl-auth-card .tl-pw > input {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+}
+/* One title per screen; the line under it only repeated it. */
+#authSub, label[for="signupCode"], label[for="forgotCode"] { display: none; }
 .tl-authpage-title {
-  margin: 0 0 6px;
+  margin: 0 0 var(--tl-s5);
   font-size: 28px;
   line-height: 1.2;
   font-weight: 800;
-  letter-spacing: -0.3px;
+  text-wrap: balance;
+  color: var(--text);
 }
 .tl-authpage-sub {
   margin: 0 0 var(--tl-s5);
@@ -243,9 +277,7 @@ html.auth-route body { overflow: hidden; }
 }
 #forgotTab[data-step="email"] .tl-steps li:nth-child(-n+1),
 #forgotTab[data-step="code"] .tl-steps li:nth-child(-n+2),
-#forgotTab[data-step="password"] .tl-steps li {
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
-}
+#forgotTab[data-step="password"] .tl-steps li { background: var(--text); }
 
 /* Signed in: a tick that draws itself, then home. */
 .tl-authpage-done {
@@ -254,6 +286,14 @@ html.auth-route body { overflow: hidden; }
   animation: tl-auth-in 0.28s ease both;
 }
 .tl-authpage-done.hidden { display: none; }
+.tl-authpage-check { position: relative; display: inline-block; animation: tl-pop .5s cubic-bezier(.2, 1.6, .4, 1) both; }
+.tl-burst {
+  position: absolute; left: 0; top: 0; width: 72px; height: 72px;
+  border-radius: 50%; border: 2px solid #2ed47a; opacity: 0;
+  animation: tl-burst .9s .15s ease-out;
+}
+@keyframes tl-pop { from { transform: scale(.4); opacity: 0; } }
+@keyframes tl-burst { from { transform: scale(.8); opacity: .8; } to { transform: scale(2.6); opacity: 0; } }
 .tl-authpage-check svg {
   width: 72px;
   height: 72px;
@@ -266,65 +306,28 @@ html.auth-route body { overflow: hidden; }
 .tl-authpage-check circle { stroke-dasharray: 151; stroke-dashoffset: 151; animation: tl-draw 0.5s ease forwards; }
 .tl-authpage-check path { stroke-dasharray: 36; stroke-dashoffset: 36; animation: tl-draw 0.3s 0.4s ease forwards; }
 
-@keyframes tl-auth-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes tl-auth-in { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
 @keyframes tl-spin { to { transform: rotate(360deg); } }
 @keyframes tl-draw { to { stroke-dashoffset: 0; } }
 
-@media (min-width: 900px) {
-  .tl-authpage-aside {
-    display: flex;
-    flex: 0 0 42%;
-    max-width: 560px;
-    position: sticky;
-    top: 0;
-    min-height: 100%;
-    align-items: center;
-    padding: var(--tl-s6) 56px;
-    color: #fff;
-    background:
-      radial-gradient(520px 420px at 15% 10%, rgba(0, 212, 255, 0.35), transparent 65%),
-      radial-gradient(560px 460px at 90% 95%, rgba(255, 94, 170, 0.28), transparent 65%),
-      linear-gradient(160deg, #6c5ce7, #2a1f8f 70%);
-  }
-  .tl-authpage-logo {
-    display: inline-grid;
-    place-items: center;
-    width: 64px;
-    height: 64px;
-    margin-bottom: var(--tl-s5);
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.14);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
-  }
-  .tl-authpage-pitch {
-    margin: 0 0 var(--tl-s6);
-    font-size: 34px;
-    line-height: 1.15;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-  }
-  .tl-authpage-perks { display: grid; gap: var(--tl-s4); margin: 0; padding: 0; list-style: none; }
-  .tl-authpage-perks li {
-    display: flex;
-    align-items: center;
-    gap: var(--tl-s3);
-    font-size: 16px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.92);
-  }
-  .tl-authpage-perks svg {
-    flex: 0 0 auto;
-    width: 38px;
-    height: 38px;
-    padding: 9px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.14);
-  }
-  .tl-authpage-main { padding-inline: var(--tl-s6); }
-}
+@media (min-width: 900px) { .tl-authpage-main { padding-inline: var(--tl-s6); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .tl-authpage .tl-auth-card, .tl-authpage-done { animation: none; }
+  .tl-authpage .tl-auth-card, .tl-authpage-done, .tl-aurora i, .tl-authpage-check, .tl-burst { animation: none; }
   .tl-authpage-check circle, .tl-authpage-check path { animation: none; stroke-dashoffset: 0; }
 }
-[data-theme="light"] .tl-authpage .tl-auth-card { box-shadow: 0 12px 34px rgba(20, 30, 70, 0.1); }
+[data-theme="light"] .tl-authpage .tl-auth-card {
+  box-shadow: 0 1px 2px rgba(20, 30, 70, .06), 0 8px 24px -6px rgba(20, 30, 70, .1), 0 30px 70px -20px rgba(20, 30, 70, .16);
+}
+
+/* Quiet, solid buttons on the account pages: no gradient. */
+.tl-auth-card .tl-submit, .tlx-primary {
+  background: var(--text);
+  color: var(--bg-1);
+  box-shadow: none;
+}
+.tl-auth-card .tl-submit:active, .tlx-primary:active { transform: scale(.97); }
+.tl-auth-card .tl-submit.is-busy::after { border-color: color-mix(in srgb, var(--bg-1) 30%, transparent); border-top-color: var(--bg-1); }
+/* The profile being linked: one plain row, no eyebrow, chips or border. */
+.tl-auth-card .link-profile-card { border: 0; background: color-mix(in srgb, var(--text) 6%, transparent); }
+.tl-auth-card .link-profile-kicker, .tl-auth-card .link-profile-chips { display: none; }

@@ -186,7 +186,7 @@ ${c.faq('Questions from listeners')}
 </section>
 
 <section class="uk-end"><div class="uk-end-in">
-  <div><h2>Talkative, becoming very talkative.</h2><p>Someone in Cardiff, Carlisle or Coleraine is about to press the button too.</p></div>
+  <div><h2>Talkative, becoming very talkative</h2><p>Someone in Cardiff, Carlisle or Coleraine is about to press the button too.</p></div>
   ${c.ctas('Tap to Talk', 'Tap to Chat')}
 </div></section>
 </main>`,

@@ -126,7 +126,7 @@ body{font-family:"Inter",system-ui,sans-serif;background:var(--paper) linear-gra
 
 ${c.faq('Questions at night')}
 <section class="ln-end">
-  <h2>The night is long. Share it.</h2>
+  <h2>The night is long. Share it</h2>
   <p>Someone, somewhere, is awake too.</p>
   ${c.ctas('Tap to Talk', 'Tap to Chat')}
 </section>

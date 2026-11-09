@@ -792,6 +792,8 @@
       }
       chip.textContent = total > 1 ? emoji + ' ' + total : emoji;
       chip.classList.toggle('own', !!c.mine);
+      // Optimistic: the chip pops the moment it is tapped, before the server answers.
+      if (on) { chip.classList.remove('cx-pop'); void chip.offsetWidth; chip.classList.add('cx-pop'); }
     }
 
     // --- jump to a quoted message --------------------------------------------

@@ -6,10 +6,9 @@
 .tt-in { max-width: 1120px; margin: 0 auto; }
 .tt img { display: block; width: 100%; height: auto; }
 .tt picture { display: contents; }
-.tt-eyebrow { display: inline-flex; align-items: center; gap: 10px; font-size: 12.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--tt-sky); }
-.tt-eyebrow::before { content: ""; width: 26px; height: 2px; border-radius: 2px; background: linear-gradient(90deg, var(--tt-sky), var(--tt-vio)); }
-.tt-h2 { color: var(--text); font-family: var(--font-display); font-size: clamp(30px, 4.4vw, 48px); line-height: 1.08; letter-spacing: -.03em; font-weight: 800; margin: 12px 0 12px; }
-.tt-grad { background: linear-gradient(90deg, var(--tt-sky), var(--tt-vio)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.tt-eyebrow { display: none; }
+.tt-h2 { color: var(--text); font-family: var(--font-display); font-size: clamp(30px, 4.4vw, 48px); line-height: 1.12; font-weight: 800; text-wrap: balance; margin: 12px 0 12px; }
+.tt-grad { color: var(--text); }
 .tt-lede { font-size: 17px; line-height: 1.65; max-width: 640px; margin: 0; }
 .tt-head { text-align: center; margin-bottom: 40px; }
 .tt-head .tt-lede { margin: 0 auto; }
@@ -24,10 +23,10 @@
 .tt-step strong { color: var(--text); font-size: 17.5px; font-weight: 700; align-self: center; }
 .tt-step span { font-size: 15px; line-height: 1.55; }
 .tt-step.is-on { border-color: color-mix(in srgb, var(--tt-sky) 55%, transparent); box-shadow: 0 18px 50px -24px color-mix(in srgb, var(--tt-vio) 70%, transparent); }
-.tt-step.is-on button::before { color: #fff; background: linear-gradient(135deg, var(--tt-sky), var(--tt-vio)); }
+.tt-step.is-on button::before { color: #fff; background: var(--tt-vio); }
 .tt-bar { grid-column: 2; height: 3px; margin-top: 10px; border-radius: 3px; background: var(--line); overflow: hidden; display: none; }
 .tt-step.is-on .tt-bar { display: block; }
-.tt-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--tt-sky), var(--tt-vio)); }
+.tt-bar i { display: block; height: 100%; width: 0; background: var(--text); }
 .tt-step.is-on.is-auto .tt-bar i { animation: tt-fill var(--tt-dur, 6s) linear forwards; }
 @keyframes tt-fill { to { width: 100%; } }
 .js-tt .tt-step:not(.is-on) span { display: none; }
@@ -50,17 +49,17 @@
 .tt-feat-img { border-radius: 22px; overflow: hidden; border: 1px solid var(--line); background: #0e1324; box-shadow: 0 30px 80px -36px rgba(0, 0, 0, .8); transition: transform .5s cubic-bezier(.2, .7, .2, 1); }
 .tt-feat-img:hover { transform: translateY(-5px); }
 .tt-ico { display: inline-grid; place-items: center; width: 46px; height: 46px; border-radius: 14px; font-size: 22px; background: color-mix(in srgb, var(--tt-vio) 18%, transparent); border: 1px solid color-mix(in srgb, var(--tt-vio) 35%, transparent); }
-.tt-feat h3 { color: var(--text); font-size: clamp(24px, 3vw, 32px); letter-spacing: -.02em; line-height: 1.15; font-weight: 800; margin: 16px 0 12px; }
+.tt-feat h3 { color: var(--text); font-size: clamp(24px, 3vw, 32px); text-wrap: balance; line-height: 1.15; font-weight: 800; margin: 16px 0 12px; }
 .tt-feat p { font-size: 16.5px; line-height: 1.7; margin: 0 0 14px; }
 .tt-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
 .tt-tags span { padding: 7px 13px; border-radius: 999px; font-size: 13.5px; font-weight: 600; color: var(--text); background: color-mix(in srgb, var(--text) 6%, transparent); border: 1px solid var(--line); }
 
 /* Story card + guides. */
 .tt-story { display: grid; grid-template-columns: 1.2fr 1fr; align-items: center; gap: 0; margin: 90px 0 0; border-radius: 26px; overflow: hidden; border: 1px solid var(--line); text-decoration: none; color: inherit;
-  background: radial-gradient(500px 300px at 100% 0%, color-mix(in srgb, var(--tt-vio) 22%, transparent), transparent 70%), var(--bg-2); transition: transform .3s, box-shadow .3s; }
+  background: var(--bg-2); transition: transform .3s, box-shadow .3s; }
 .tt-story:hover { transform: translateY(-4px); box-shadow: 0 30px 80px -40px rgba(124, 92, 255, .6); }
 .tt-story-body { padding: 36px 40px; }
-.tt-story-body h3 { color: var(--text); font-size: clamp(24px, 3vw, 34px); letter-spacing: -.02em; font-weight: 800; margin: 12px 0 10px; line-height: 1.12; }
+.tt-story-body h3 { color: var(--text); font-size: clamp(24px, 3vw, 34px); text-wrap: balance; font-weight: 800; margin: 12px 0 10px; line-height: 1.12; }
 .tt-story-body p { margin: 0 0 18px; line-height: 1.65; }
 .tt-more { color: var(--tt-sky); font-weight: 700; }
 .tt-guides { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 18px; }
@@ -74,8 +73,8 @@
 .tt-btns { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; }
 .tt-btn { display: inline-flex; align-items: center; gap: 10px; padding: 15px 24px; border-radius: 16px; font-weight: 700; font-size: 16.5px; color: #fff; text-decoration: none; border: 0; cursor: pointer; font-family: inherit; transition: transform .2s; }
 .tt-btn:hover { transform: translateY(-2px); }
-.tt-btn.talk { background: linear-gradient(135deg, #34d399, #16a34a); box-shadow: 0 14px 34px -12px rgba(52, 211, 153, .6); }
-.tt-btn.chat { background: linear-gradient(135deg, #8b7bff, #6d4dff); box-shadow: 0 14px 34px -12px rgba(139, 123, 255, .6); }
+.tt-btn.talk { background: #16a34a; }
+.tt-btn.chat { background: #6d4dff; }
 
 /* Reveal on scroll (content is visible without JS). */
 .js-tt .tt-rv { opacity: 0; transform: translateY(26px); transition: opacity .7s ease, transform .7s cubic-bezier(.2, .7, .2, 1); }

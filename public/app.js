@@ -3242,6 +3242,39 @@ function syncAuthTitle() {
   document.title = `${t(AUTH_COPY[authTab][2])} · TalkLive`;
 }
 
+// Account sheets, code tiles and the birthday wheel load on first need, so
+// they cost nothing on a page that never signs in or out.
+let accountUiP = null;
+function accountUi() {
+  if (!accountUiP) {
+    accountUiP = new Promise((resolve, reject) => {
+      const css = document.createElement('link');
+      css.rel = 'stylesheet';
+      css.href = '/account-ui.css?v=20261109';
+      document.head.appendChild(css);
+      const js = document.createElement('script');
+      js.src = '/account-ui.js?v=20261109';
+      js.onload = () => resolve(window.AccountUI);
+      js.onerror = (e) => { accountUiP = null; reject(e); };
+      document.head.appendChild(js);
+    });
+  }
+  return accountUiP;
+}
+function savedDob() {
+  try { return localStorage.getItem('talklive_dob') || null; } catch (_) { return null; }
+}
+// The date of birth new accounts need: the one given before, or ask now.
+async function ensureDob() {
+  try {
+    const ui = await accountUi();
+    return ui.dob() || await ui.askDob();
+  } catch (_) { return null; }
+}
+function blockUnderage() {
+  accountUi().then((ui) => ui.blocked(true)).catch(() => {});
+}
+
 function openAuthPage(tab) {
   // Signed in, there is nothing to log in to: the account lives in Settings.
   if (accountNickname) { openAppSettings('profile'); return; }
@@ -3259,6 +3292,15 @@ function openAuthPage(tab) {
   authPage.classList.remove('hidden');
   document.documentElement.classList.add('auth-route');
   selectAccountTab(tab);
+  accountUi().then((ui) => {
+    if (ui.isBlocked()) ui.blocked();
+    ui.otp(signupCode, signupVerifyBtn);
+    ui.otp(forgotCode, forgotVerifyBtn);
+    ui.savedCard(loginTab, (acc) => {
+      loginUsername.value = acc.email || acc.name || '';
+      loginPassword.focus();
+    });
+  }).catch(() => {});
   authPage.scrollTop = 0;
   updateScrollLock();
   // Google's button can only be sized once the page has a layout; a phone
@@ -3309,6 +3351,8 @@ function finishAuth(message) {
     accountLoggedOut.classList.add('hidden');
     document.getElementById('authDoneTitle').textContent = message;
     authDone.classList.remove('hidden');
+    authPage.classList.remove('is-code');
+    authPage.classList.add('is-done');
   }
   goHomeAfterAuth(message, 900);
 }
@@ -3685,18 +3729,22 @@ function signupDetailsOk() {
 
 // Back to step 1, e.g. to fix a typo in the email.
 function resetSignupStep() {
+  authPage.classList.remove('is-code');
   signupStepCode.classList.add('hidden');
   signupSubmitBtn.classList.remove('hidden');
   [signupUsername, signupEmail].forEach((el) => { el.readOnly = false; });
   signupCode.value = '';
 }
 
-function requestSignupCode() {
+async function requestSignupCode() {
   if (signupSubmitBtn.disabled || !signupDetailsOk()) return;
+  const dob = await ensureDob();
+  if (!dob) return;
   if (!beginAccountRequest(signupSubmitBtn)) return;
   socket.emit('signup-send-code', {
     username: signupUsername.value.trim(),
     email: signupEmail.value.trim(),
+    dob,
   });
 }
 signupSubmitBtn.addEventListener('click', requestSignupCode);
@@ -3705,6 +3753,7 @@ document.getElementById('signupResendBtn').addEventListener('click', () => {
   socket.emit('signup-send-code', {
     username: signupUsername.value.trim(),
     email: signupEmail.value.trim(),
+    dob: savedDob(),
   });
 });
 document.getElementById('signupChangeEmailBtn').addEventListener('click', () => {
@@ -3715,6 +3764,7 @@ document.getElementById('signupChangeEmailBtn').addEventListener('click', () => 
 
 socket.on('signup-code-result', ({ ok, email, error, errorKey } = {}) => {
   endAccountRequest();
+  if (errorKey === 'underage') { blockUnderage(); return; }
   if (!ok) {
     showAccountStatus(errorKey === 'modeSignupsPaused' ? t(errorKey) : error, 'error');
     const about = /email/i.test(error || '') ? signupEmail : /username/i.test(error || '') ? signupUsername : null;
@@ -3726,6 +3776,7 @@ socket.on('signup-code-result', ({ ok, email, error, errorKey } = {}) => {
   signupSubmitBtn.classList.add('hidden');
   signupStepCode.classList.remove('hidden');
   signupCodeSentNote.textContent = t('signupCodeSent', { email: email || signupEmail.value.trim() });
+  authPage.classList.add('is-code');
   accountStatus.classList.add('hidden');
   signupCode.focus();
 });
@@ -3744,6 +3795,7 @@ signupVerifyBtn.addEventListener('click', () => {
     password: signupPassword.value,
     email: signupEmail.value.trim(),
     code: signupCode.value,
+    dob: savedDob(),
   });
 });
 signupCode.addEventListener('keydown', (e) => {
@@ -3767,8 +3819,10 @@ function handleGoogleCredential(response) {
   loginSubmitBtn.disabled = true;
   signupSubmitBtn.disabled = true;
   showAccountStatus(t('statusSigningIn'), 'info');
-  socket.emit('google-auth', { credential: response.credential });
+  lastGoogleCredential = response.credential;
+  socket.emit('google-auth', { credential: response.credential, dob: savedDob() || undefined });
 }
+let lastGoogleCredential = null;
 
 // Google only accepts a pixel width, so the button is rendered at the width of
 // the form it sits in - a hardcoded 280px left it visibly narrower than the
@@ -3896,6 +3950,16 @@ setTimeout(consumeRedirectedGoogleCredential, 0);
 
 socket.on('google-auth-result', ({ ok, nickname, email, error, errorKey, sessionToken: token, profileClientId, identityToken }) => {
   endAccountRequest();
+  // A new Google account needs a date of birth: ask, then send the same credential again.
+  if (!ok && errorKey === 'needDob' && lastGoogleCredential) {
+    accountStatus.classList.add('hidden');
+    ensureDob().then((dob) => {
+      if (!dob || !beginAccountRequest(authTab === 'signup' ? signupSubmitBtn : loginSubmitBtn)) return;
+      socket.emit('google-auth', { credential: lastGoogleCredential, dob });
+    });
+    return;
+  }
+  if (!ok && errorKey === 'underage') { blockUnderage(); return; }
   if (!ok) {
     // Let the user try a different Google account instead of being stuck with
     // the one the failed attempt remembered.
@@ -3933,6 +3997,7 @@ function showForgotStep(step) {
   forgotStepCode.classList.toggle('hidden', step !== 'code');
   forgotStepPassword.classList.toggle('hidden', step !== 'password');
   forgotTab.dataset.step = step;
+  authPage.classList.toggle('is-code', step === 'code');
   const focus = { email: forgotEmail, code: forgotCode, password: forgotNewPassword }[step];
   if (focus) setTimeout(() => focus.focus(), 50);
 }
@@ -4003,7 +4068,8 @@ socket.on('forgot-password-result', ({ ok, message, error }) => {
 
 socket.on('verify-reset-code-result', ({ ok, resetToken: token, error }) => {
   forgotVerifyBtn.disabled = false;
-  if (!ok) return showAccountStatus(error, 'error');
+  if (window.AccountUI) window.AccountUI.otpResult(!!ok, error);
+  if (!ok) return window.AccountUI ? undefined : showAccountStatus(error, 'error');
   resetToken = token;
   showAccountStatus(t('codeVerified'), 'success');
   showForgotStep('password');
@@ -4061,17 +4127,10 @@ socket.on('update-recovery-email-result', ({ ok, email, error }) => {
   showAccountStatus(t('statusRecoveryEmailSaved'), 'success');
 });
 
-// Asked first - it is one tap from the profile sheet, and a mis-tap used to
-// sign you out on the spot. Then straight to the home screen, signed out.
-logoutBtn.addEventListener('click', async () => {
-  const ok = await showConfirm({
-    title: 'confirmLogoutTitle', text: 'confirmLogoutText',
-    okKey: 'logOut', cancelKey: 'cancel', okClass: 'btn-danger',
-  });
-  if (!ok) return;
-  logoutBtn.disabled = true;
-  logoutBtn.textContent = t('loggingOut');
-  socket.emit('logout', { token: sessionToken });
+// Like the big apps: confirm who is signing out, wait for the server to end
+// the session (and unlink this browser's push), then remember the account so
+// the sign-in page can offer "Continue as".
+function forgetLocalAccount() {
   sessionToken = null;
   accountNickname = null;
   storeAccountEmail('');
@@ -4081,8 +4140,21 @@ logoutBtn.addEventListener('click', async () => {
   // guest (signing in again brings the profile back).
   localStorage.removeItem('talklive_client_id');
   localStorage.removeItem('talklive_identity_token');
-  // Give the logout packet a moment to flush before the page goes.
-  goHomeAfterAuth(t('loggedOutToast'), 250);
+}
+logoutBtn.addEventListener('click', () => accountUi().then((ui) => ui.signOut({
+  name: accountNickname, email: accountEmail, animal: myAnimal, avatarHtml: myAvatarIcon(64),
+  send: (extra) => new Promise((resolve) => {
+    const timer = setTimeout(resolve, 4000);
+    socket.once('logout-result', () => { clearTimeout(timer); resolve(); });
+    socket.emit('logout', { token: sessionToken, ...extra });
+  }),
+  done: () => { forgetLocalAccount(); goHomeAfterAuth(t('loggedOutToast'), 0); },
+})).catch(() => {}));
+// Signed out from another device ("Sign out on all devices").
+socket.on('signed-out', () => {
+  if (!sessionToken) return;
+  forgetLocalAccount();
+  goHomeAfterAuth(t('loggedOutToast'), 0);
 });
 
 changePasswordBtn.addEventListener('click', () => {
@@ -4115,6 +4187,10 @@ socket.on('login-result', ({ ok, nickname, email, error, sessionToken: token, pr
 
 socket.on('signup-result', ({ ok, nickname, email, error, errorKey, sessionToken: token, profileClientId, identityToken }) => {
   endAccountRequest();
+  if (window.AccountUI) window.AccountUI.otpResult(!!ok, error);
+  if (errorKey === 'underage') { blockUnderage(); return; }
+  // A wrong code is said under the code tiles, not twice.
+  if (!ok && errorKey === 'signupCode' && window.AccountUI) return;
   if (!ok) {
     showAccountStatus(errorKey === 'modeSignupsPaused' ? t(errorKey) : error, 'error');
     if (errorKey === 'signupCode') { markInvalidField(signupCode); return; }

@@ -55,13 +55,13 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=20260922type" crossorigin />
 <link rel="stylesheet" href="style.css?v=20261028nocoins" />
-<link rel="stylesheet" href="chat-extras.css?v=20261108like" />
+<link rel="stylesheet" href="chat-extras.css?v=20261109acct" />
 <link rel="stylesheet" href="games.css?v=20261006fix" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
 <link rel="stylesheet" href="ui.css?v=20261106passes" />
-<link rel="stylesheet" href="auth.css?v=20260924auth" />
+<link rel="stylesheet" href="auth.css?v=20261109acct" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
      on every screen of the product. -->
@@ -239,17 +239,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      from the first paint (the auth-route class, set in <head>), so the home
      screen never flashes first. Success always lands on the home screen. -->
 <section id="authPage" class="tl-authpage hidden" aria-labelledby="authTitle">
-  <aside class="tl-authpage-aside" aria-hidden="true">
-    <div class="tl-authpage-aside-in">
-      <span class="tl-authpage-logo"><img src="/favicon.svg?v=20260923logo" width="44" height="44" alt="TalkLive logo" decoding="async" /></span>
-      <p class="tl-authpage-pitch" data-i18n="authAsideTitle">Talk to the world. Keep the people you meet.</p>
-      <ul class="tl-authpage-perks">
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span data-i18n="authPerkFriends">Your friends and chats, saved</span></li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg><span data-i18n="authPerkDevices">Same name and avatar on every device</span></li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span data-i18n="authPerkCall">Call people you met, any time</span></li>
-      </ul>
-    </div>
-  </aside>
+  <div class="tl-aurora" aria-hidden="true"><i></i><i></i><i></i></div>
 
   <div class="tl-authpage-main">
     <header class="tl-authpage-top">
@@ -391,7 +381,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
       <!-- Signed in: a clear moment of success before the home screen. -->
       <div id="authDone" class="tl-authpage-done hidden" role="status" aria-live="polite">
-        <span class="tl-authpage-check" aria-hidden="true"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" fill="none"/><path fill="none" d="M15 27l7 7 15-15"/></svg></span>
+        <span class="tl-authpage-check" aria-hidden="true"><i class="tl-burst"></i><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" fill="none"/><path fill="none" d="M15 27l7 7 15-15"/></svg></span>
         <div role="heading" aria-level="2" id="authDoneTitle" class="ui-h2 tl-authpage-title"></div>
         <p class="tl-authpage-sub" data-i18n="authTakingHome">Taking you home…</p>
       </div>
@@ -2169,12 +2159,11 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        stage in the middle column, so it starts right below the hero instead of
        below the (taller) activity rail. Its stylesheet loads without blocking first paint (all of this is below
        the fold); the inline script at the end drives the stepper. -->
-  <link rel="preload" href="/home-tour.css?v=20261015lite" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-  <noscript><link rel="stylesheet" href="/home-tour.css?v=20261015lite" /></noscript>
+  <link rel="preload" href="/home-tour.css?v=20261109acct" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="/home-tour.css?v=20261109acct" /></noscript>
   <section id="tour" class="tt" aria-labelledby="ttTitle">
     <div class="tt-in">
       <header class="tt-head tt-rv">
-        <span class="tt-eyebrow">Tutorial</span>
         <h2 class="tt-h2" id="ttTitle">How to use TalkLive <span class="tt-grad">in 5 steps</span></h2>
         <p class="tt-lede">From opening the page to your first hello takes under a minute. No download, no account.</p>
       </header>
@@ -2198,7 +2187,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
       <div class="tt-feats">
         <header class="tt-head tt-rv">
-          <span class="tt-eyebrow">Features</span>
           <h2 class="tt-h2">More than a <span class="tt-grad">random call</span></h2>
         </header>
         <article class="tt-feat tt-rv">
@@ -2229,7 +2217,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
       <a class="tt-story tt-rv" href="/what-is-talklive">
         <picture><source type="image/avif" srcset="/images/what-is-talklive/cover-800.avif?v=20261007a 800w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/what-is-talklive/cover-800.webp?v=20261007a" srcset="/images/what-is-talklive/cover-800.webp?v=20261007a 800w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1600" height="900" alt="TalkLive on desktop and phone" loading="lazy" decoding="async" /></picture>
-        <div class="tt-story-body"><span class="tt-eyebrow">The TalkLive story</span><h3>What is TalkLive?</h3><p>The why behind one-tap voice chat, avatars and a camera-free internet.</p><span class="tt-more">Read the article →</span></div>
+        <div class="tt-story-body"><h3>What is TalkLive?</h3><p>The why behind one-tap voice chat, avatars and a camera-free internet.</p><span class="tt-more">Read the article →</span></div>
       </a>
       <div class="tt-guides tt-rv">
         <a class="tt-guide" href="/blog/what-to-talk-about-with-a-stranger"><b>Questions that get past small talk</b><small>Read guide →</small></a>
@@ -2614,18 +2602,18 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.min.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20261109plus"></script>
+  <script defer src="i18n.js?v=20261109acct"></script>
   <script defer src="chat-time.js?v=20260916navbar"></script>
   <script defer src="animals.js?v=20261008more"></script>
   <script defer src="characters.js?v=20261008more"></script>
   <script defer src="social-kit.js?v=20261006chars"></script>
   <script defer src="moderation.js?v=20261027tg"></script>
   <script defer src="error-reporter.js?v=20260928err"></script>
-  <script defer src="chat-extras.js?v=20261108like"></script>
+  <script defer src="chat-extras.js?v=20261109acct"></script>
   <script defer src="voice-notes.js?v=20261001mic"></script>
   <script defer src="games.js?v=20261101rr"></script>
   <script defer src="nickname-rules.js?v=20261101nick"></script>
-  <script defer src="app.js?v=20261108plus"></script>
+  <script defer src="app.js?v=20261109acct"></script>
 
 <!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

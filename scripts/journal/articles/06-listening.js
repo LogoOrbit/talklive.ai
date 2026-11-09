@@ -4,7 +4,7 @@
 module.exports = {
   slug: 'how-to-be-a-good-listener',
   tag: 'Conversation',
-  h1: 'Listening Is a Skill. Most of Us Were Never Taught It.',
+  h1: 'Listening Is a Skill. Most of Us Were Never Taught It',
   title: 'How to Be a Good Listener: Ten Questions, Answered | TalkLive Journal',
   description: 'Why we interrupt, the "shift response" that quietly steals conversations, and what research says about the single habit that makes people like you more. Ten questions about listening.',
   date: '2026-10-02',

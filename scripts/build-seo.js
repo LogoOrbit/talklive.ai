@@ -176,7 +176,7 @@ function localeHome(loc) {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<link rel="stylesheet" href="/seo.css?v=20261019noads" />
+<link rel="stylesheet" href="/seo.css?v=20261109acct" />
 <title>${esc(loc.title)}</title>
 <meta name="description" content="${esc(loc.description)}" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
@@ -204,7 +204,7 @@ ${alternates}
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/favicon-192.png" />
 <link rel="manifest" href="/site.webmanifest" />
-<script defer src="/pwa.js?v=20261101help"></script>
+<script defer src="/pwa.js?v=20261109push"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>
 <body>

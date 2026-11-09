@@ -154,7 +154,7 @@ ${SLANG.map(([w, m]) => `      <div><b>${w}</b><span>${m}</span></div>`).join('\
 
 ${c.faq('Questions, eish')}
 <section class="za-end"><div class="za-end-in">
-  <h2>Howzit? Let's talk.</h2>
+  <h2>Howzit? Let's talk</h2>
   <p>Someone in Joburg, Cape Town or Durban is up for a chat. Sharp sharp.</p>
   ${c.ctas('Tap to Talk', 'Tap to Chat')}
 </div></section>

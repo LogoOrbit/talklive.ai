@@ -30,7 +30,7 @@ html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Noto Sans", sans-serif;
-  background: radial-gradient(circle at 50% -10%, var(--bg-glow) 0%, var(--bg-1) 55%) fixed;
+  background: var(--bg-1);
   color: var(--text);
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
@@ -90,7 +90,7 @@ img { max-width: 100%; height: auto; }
   border: 1px solid transparent; cursor: pointer; transition: transform .12s ease, box-shadow .2s ease;
 }
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  background: var(--accent);
   color: #fff; box-shadow: 0 10px 30px -10px var(--accent);
 }
 .btn-primary:hover { transform: translateY(-2px); text-decoration: none; }
@@ -98,12 +98,12 @@ img { max-width: 100%; height: auto; }
 .btn-ghost:hover { text-decoration: none; border-color: var(--accent); }
 /* Voice CTA (green) and text-chat CTA (blue) - the two ways into the app. */
 .btn-talk {
-  background: linear-gradient(135deg, #4ade80, #16a34a);
+  background: #16a34a;
   color: #fff; box-shadow: 0 10px 30px -10px #16a34a;
 }
 .btn-talk:hover { transform: translateY(-2px); text-decoration: none; }
 .btn-chat {
-  background: linear-gradient(135deg, #7cb3ff, #2f66f4);
+  background: #2f66f4;
   color: #fff; box-shadow: 0 10px 30px -10px #2f66f4;
 }
 .btn-chat:hover { transform: translateY(-2px); text-decoration: none; }
@@ -145,7 +145,7 @@ h1 { font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.1; margin: 22px 0 16px;
 .card-with-art { overflow: hidden; }
 .card-art {
   margin: -22px -22px 16px; padding: 18px 22px; height: 150px; display: grid; place-items: center;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 14%, transparent), color-mix(in srgb, var(--accent-2) 8%, transparent));
+  background: color-mix(in srgb, var(--text) 5%, transparent);
   border-bottom: 1px solid var(--border);
 }
 .card-art .art { width: auto; max-width: 100%; height: 114px; object-fit: contain; }
@@ -167,7 +167,7 @@ h3 { font-size: 1.15rem; margin: 0 0 6px; }
 .card:hover { border-color: color-mix(in srgb, var(--accent) 60%, var(--border)); transform: translateY(-3px); }
 .card .ico {
   width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; margin-bottom: 14px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff;
+  background: var(--accent); color: #fff;
 }
 .card p { color: var(--muted); margin: 0; }
 
@@ -178,7 +178,7 @@ h3 { font-size: 1.15rem; margin: 0 0 6px; }
   counter-increment: step; content: counter(step);
   position: absolute; left: 20px; top: 20px; width: 34px; height: 34px; border-radius: 50%;
   display: grid; place-items: center; font-weight: 800; color: #fff;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  background: var(--accent);
 }
 .step p { color: var(--muted); margin: 0; }
 
@@ -208,7 +208,7 @@ h3 { font-size: 1.15rem; margin: 0 0 6px; }
 .faq details p { color: var(--muted); margin: 0 0 16px; }
 
 /* CTA band */
-.cta-band { text-align: center; background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 20%, transparent), color-mix(in srgb, var(--accent-2) 16%, transparent)); border: 1px solid var(--border); border-radius: 24px; padding: 48px 24px; margin: 40px 0; }
+.cta-band { text-align: center; background: color-mix(in srgb, var(--text) 5%, transparent); border-radius: 24px; padding: 48px 24px; margin: 40px 0; }
 .cta-band h2 { margin-bottom: 8px; }
 .cta-band p { color: var(--muted); margin: 0 0 24px; }
 
@@ -333,7 +333,7 @@ table.compare tbody tr:last-child th, table.compare tbody tr:last-child td { bor
   font-weight: 700;
   cursor: pointer;
 }
-.pwa-prompt-yes { background: linear-gradient(90deg, #7c3aed, #22d3ee); color: #fff; flex: 1; }
+.pwa-prompt-yes { background: var(--accent); color: #fff; flex: 1; }
 .pwa-prompt-no { background: rgba(255, 255, 255, 0.08); color: #aab3c8; }
 
 /* ===========================================================================
@@ -372,3 +372,14 @@ summary:active {
   .btn:active:hover,
   summary:active { transform: none; }
 }
+
+/* Plain: one sans family; no serif display faces, italics, caps labels,
+   tight tracking or eyebrow labels over headings. Titles wrap evenly. */
+body, body h1, body h2, body h3, body h4, body p, body li, body blockquote, body figcaption, body q, body cite, body small, body nav, body button {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif !important;
+}
+body * { text-transform: none !important; }
+h1, h2, h3, h4 { letter-spacing: normal !important; font-style: normal !important; text-wrap: balance; }
+p, li, dd, figcaption { text-wrap: pretty; }
+em, i, cite, blockquote, q, figcaption { font-style: normal !important; }
+[class*="eyebrow"], [class*="kicker"] { display: none !important; }

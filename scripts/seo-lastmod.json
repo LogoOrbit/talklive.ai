@@ -1,17 +1,17 @@
 {
   "/": {
-    "hash": "55910d1c72ff2e45",
-    "date": "2026-10-19",
+    "hash": "9aae5021de7d0485",
+    "date": "2026-11-09",
     "v": 3
   },
   "/about": {
-    "hash": "73bd0b1f0c70fad6",
-    "date": "2026-10-19",
+    "hash": "247cf6ee2d3ba54b",
+    "date": "2026-11-09",
     "v": 3
   },
   "/anonymous-chat": {
-    "hash": "b0d014ea833cc85e",
-    "date": "2026-10-19",
+    "hash": "418d6690165a94a3",
+    "date": "2026-11-09",
     "v": 3
   },
   "/ar/": {
@@ -20,8 +20,8 @@
     "v": 3
   },
   "/blog/": {
-    "hash": "6dca443a2d692ad0",
-    "date": "2026-10-19",
+    "hash": "7981b57b2c1827a4",
+    "date": "2026-11-09",
     "v": 3
   },
   "/blog/english-speaking-practice-guide-zh": {
@@ -35,13 +35,13 @@
     "v": 3
   },
   "/blog/how-random-matchmaking-works": {
-    "hash": "945f4f37f63d8668",
-    "date": "2026-10-19",
+    "hash": "8a3ea9a67a774406",
+    "date": "2026-11-09",
     "v": 3
   },
   "/blog/how-to-be-a-good-listener": {
-    "hash": "79ddde2b9914e1b5",
-    "date": "2026-10-19",
+    "hash": "67358b81794c02ed",
+    "date": "2026-11-09",
     "v": 3
   },
   "/blog/how-to-end-a-conversation": {
@@ -65,8 +65,8 @@
     "v": 3
   },
   "/blog/loneliness-what-actually-helps": {
-    "hash": "9ac04092d3e21fff",
-    "date": "2026-10-19",
+    "hash": "6a05927ca13c111d",
+    "date": "2026-11-09",
     "v": 3
   },
   "/blog/lonely-after-moving-abroad": {
@@ -80,8 +80,8 @@
     "v": 3
   },
   "/blog/science-of-talking-to-strangers": {
-    "hash": "534ff7dc503621d9",
-    "date": "2026-10-19",
+    "hash": "fa930416ec68f2be",
+    "date": "2026-11-09",
     "v": 3
   },
   "/blog/small-talk-around-the-world": {
@@ -90,8 +90,8 @@
     "v": 3
   },
   "/blog/spotlight-effect-nobody-noticed": {
-    "hash": "9ec4c652e6d8ac2a",
-    "date": "2026-10-19",
+    "hash": "2770efce6f889033",
+    "date": "2026-11-09",
     "v": 3
   },
   "/blog/what-happened-to-omegle": {
@@ -105,8 +105,8 @@
     "v": 3
   },
   "/blog/why-a-call-beats-texting": {
-    "hash": "3d681aaec5f08aef",
-    "date": "2026-10-19",
+    "hash": "047db45496457c23",
+    "date": "2026-11-09",
     "v": 3
   },
   "/blog/why-am-i-so-bored": {
@@ -135,13 +135,13 @@
     "v": 3
   },
   "/community-guidelines": {
-    "hash": "ce3d8ae8ac66a34e",
-    "date": "2026-10-19",
+    "hash": "063a550b659454d1",
+    "date": "2026-11-09",
     "v": 3
   },
   "/contact": {
-    "hash": "88fb85a257b35f62",
-    "date": "2026-10-19",
+    "hash": "15daf070f2adcbef",
+    "date": "2026-11-09",
     "v": 3
   },
   "/countries/algeria": {
@@ -195,8 +195,8 @@
     "v": 3
   },
   "/countries/indonesia": {
-    "hash": "000a7fa071d91d01",
-    "date": "2026-10-19",
+    "hash": "04a539f0b67fcf64",
+    "date": "2026-11-09",
     "v": 3
   },
   "/countries/iran": {
@@ -220,8 +220,8 @@
     "v": 3
   },
   "/countries/kenya": {
-    "hash": "b5220ca140590763",
-    "date": "2026-10-19",
+    "hash": "4ed3ba59f0b36e40",
+    "date": "2026-11-09",
     "v": 3
   },
   "/countries/malaysia": {
@@ -245,13 +245,13 @@
     "v": 3
   },
   "/countries/nigeria": {
-    "hash": "4b7561fcf8894e95",
-    "date": "2026-10-19",
+    "hash": "141e367b87fef8fb",
+    "date": "2026-11-09",
     "v": 3
   },
   "/countries/pakistan": {
-    "hash": "ce93f01771895725",
-    "date": "2026-10-19",
+    "hash": "7597f562b7907468",
+    "date": "2026-11-09",
     "v": 3
   },
   "/countries/philippines": {
@@ -270,8 +270,8 @@
     "v": 3
   },
   "/countries/south-africa": {
-    "hash": "0396cf666c81bfd3",
-    "date": "2026-10-19",
+    "hash": "4c32c67067c72dcb",
+    "date": "2026-11-09",
     "v": 3
   },
   "/countries/turkey": {
@@ -285,8 +285,8 @@
     "v": 3
   },
   "/countries/united-kingdom": {
-    "hash": "13e89f472e2e0f8a",
-    "date": "2026-10-19",
+    "hash": "7c424eefea55bddb",
+    "date": "2026-11-09",
     "v": 3
   },
   "/countries/united-states": {
@@ -302,6 +302,11 @@
   "/de/": {
     "hash": "c34e0911a4787e54",
     "date": "2026-10-18",
+    "v": 3
+  },
+  "/delete-account": {
+    "hash": "951e28ab9ae9dbbb",
+    "date": "2026-11-09",
     "v": 3
   },
   "/es/": {
@@ -325,8 +330,8 @@
     "v": 3
   },
   "/how-it-works": {
-    "hash": "6b72ebf77c6d2a85",
-    "date": "2026-10-19",
+    "hash": "ca762e3bb46e215a",
+    "date": "2026-11-09",
     "v": 3
   },
   "/id/": {
@@ -365,8 +370,8 @@
     "v": 3
   },
   "/late-night-chat": {
-    "hash": "95c2781534d592e5",
-    "date": "2026-10-19",
+    "hash": "c7c883df19cf672b",
+    "date": "2026-11-09",
     "v": 3
   },
   "/make-friends-online": {
@@ -385,13 +390,13 @@
     "v": 3
   },
   "/pricing": {
-    "hash": "1b32f78551be9f23",
-    "date": "2026-10-19",
+    "hash": "8d9fa51d2882a254",
+    "date": "2026-11-09",
     "v": 3
   },
   "/privacy": {
-    "hash": "d2b7e31fa21caa7f",
-    "date": "2026-10-19",
+    "hash": "8e52e3d609b33e39",
+    "date": "2026-11-09",
     "v": 3
   },
   "/pt/": {
@@ -405,8 +410,8 @@
     "v": 3
   },
   "/random-text-chat": {
-    "hash": "1478ada5eb6bd6d1",
-    "date": "2026-10-19",
+    "hash": "9881d69220a8757e",
+    "date": "2026-11-09",
     "v": 3
   },
   "/random-voice-chat": {
@@ -415,8 +420,8 @@
     "v": 3
   },
   "/refund": {
-    "hash": "20564673f5a21cf1",
-    "date": "2026-10-19",
+    "hash": "a03ff37630308379",
+    "date": "2026-11-09",
     "v": 3
   },
   "/regions/africa": {
@@ -460,8 +465,8 @@
     "v": 3
   },
   "/safety": {
-    "hash": "dbf36f9e6138bc57",
-    "date": "2026-10-19",
+    "hash": "4b72b13c1b8fe452",
+    "date": "2026-11-09",
     "v": 3
   },
   "/talk-to-someone": {
@@ -475,8 +480,8 @@
     "v": 3
   },
   "/terms": {
-    "hash": "bb9fac0c22ea72c7",
-    "date": "2026-10-19",
+    "hash": "a597a7cee4e43711",
+    "date": "2026-11-09",
     "v": 3
   },
   "/tr/": {
@@ -495,8 +500,8 @@
     "v": 3
   },
   "/what-is-talklive": {
-    "hash": "5a5015ca7d65a067",
-    "date": "2026-10-19",
+    "hash": "866f6c4914198d44",
+    "date": "2026-11-09",
     "v": 3
   },
   "/zh/": {

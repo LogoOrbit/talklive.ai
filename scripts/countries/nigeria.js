@@ -177,7 +177,7 @@ ${c.faq('Wetin people dey ask')}
 </section>
 
 <section class="ng-end">
-  <h2>Wole! Get in.</h2>
+  <h2>Wole! Get in</h2>
   <p>Lagos, Abuja, Ibadan, Kano, Port Harcourt - the bus is loading.</p>
   ${c.ctas('Tap to Talk', 'Tap to Chat')}
 </section>

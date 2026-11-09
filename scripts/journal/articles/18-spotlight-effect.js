@@ -88,7 +88,7 @@ body{font-family:"Source Serif 4",Georgia,serif}
 <p class="sp-src">Sources: Gilovich, T., Medvec, V. H. &amp; Savitsky, K. (2000), "The spotlight effect in social judgment: An egocentric bias in estimates of the salience of one's own actions and appearance", <em>Journal of Personality and Social Psychology</em>; Gilovich, T., Savitsky, K. &amp; Medvec, V. H. (1998), "The illusion of transparency: Biased assessments of others' ability to read one's emotional states", <em>Journal of Personality and Social Psychology</em>; Savitsky, K. &amp; Gilovich, T. (2003), "The illusion of transparency and the alleviation of speech anxiety", <em>Journal of Experimental Social Psychology</em>.</p>
 </div>
 ${ctx.faq('Questions about the spotlight effect')}
-${ctx.cta({ title: 'Nobody is watching. Just talk.', sub: 'One tap connects you with a real person for a voice call or a text chat. No camera, no profile, no audience.' })}
+${ctx.cta({ title: 'Nobody is watching. Just talk', sub: 'One tap connects you with a real person for a voice call or a text chat. No camera, no profile, no audience.' })}
 ${ctx.more}
 </main>`;
   },

@@ -1,0 +1,132 @@
+/* Styles for account-ui.js. Loaded with it, on demand. */
+.tlx-scrim {
+  position: fixed; inset: 0; z-index: 3000;
+  display: flex; align-items: flex-end; justify-content: center;
+  padding: 16px; padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  background: rgba(6, 8, 16, 0); transition: background .22s ease;
+}
+.tlx-scrim.in { background: rgba(6, 8, 16, .55); }
+.tlx-scrim.solid.in { background: var(--bg-1); }
+@media (min-width: 640px) { .tlx-scrim { align-items: center; } }
+/* Concentric: card radius 28 with 8px of inner inset, so controls use 20. */
+.tlx-sheet {
+  width: 100%; max-width: 400px;
+  padding: 28px 20px 12px;
+  border-radius: 28px;
+  background: var(--bg-2);
+  color: var(--text);
+  text-align: center;
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--bg-1) 60%, #000),
+              0 12px 32px -8px color-mix(in srgb, var(--bg-1) 70%, #000),
+              0 32px 80px -24px color-mix(in srgb, var(--bg-1) 80%, #000);
+  transform: translateY(24px) scale(.98); opacity: 0;
+  transition: transform .32s cubic-bezier(.2, 1.3, .4, 1), opacity .2s ease;
+}
+.tlx-scrim.in .tlx-sheet { transform: none; opacity: 1; }
+.tlx-title { margin: 0 0 6px; font-size: 22px; line-height: 1.25; font-weight: 800; text-wrap: balance; }
+.tlx-note { margin: 0 0 20px; font-size: 15px; line-height: 1.5; color: var(--muted); text-wrap: pretty; }
+.tlx-primary { width: 100%; min-height: 52px; border-radius: 20px; }
+.tlx-danger { background: var(--danger) !important; color: #fff; }
+.tlx-link {
+  display: block; width: 100%; min-height: 44px; margin-top: 4px;
+  border: 0; border-radius: 20px; background: none;
+  color: var(--muted); font: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+}
+.tlx-link:hover { color: var(--text); }
+.tlx-avatar { display: grid; place-items: center; margin: 0 auto 12px; }
+.tlx-avatar svg, .tlx-avatar img { width: 64px; height: 64px; border-radius: 50%; }
+
+/* Wheels */
+.tlx-wheels { position: relative; display: flex; gap: 4px; margin: 0 -8px 20px; }
+.tlx-band {
+  position: absolute; left: 0; right: 0; top: 50%; height: 44px; margin-top: -22px;
+  border-radius: 14px; background: color-mix(in srgb, var(--text) 8%, transparent); pointer-events: none;
+}
+.tlw { position: relative; flex: 1 1 0; }
+.tlw-month { flex: 1.3 1 0; }
+.tlw-year { flex: 1.3 1 0; }
+.tlw-list {
+  height: 220px; padding: 88px 0; box-sizing: border-box;
+  overflow-y: auto; scroll-snap-type: y mandatory; scrollbar-width: none;
+  overscroll-behavior: contain; outline: none; cursor: grab; touch-action: pan-y;
+  -webkit-mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+  mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+}
+.tlw-list::-webkit-scrollbar { display: none; }
+.tlw-list.drag { scroll-snap-type: none; cursor: grabbing; }
+.tlw-row {
+  height: 44px; line-height: 44px; scroll-snap-align: center;
+  font-size: 20px; font-variant-numeric: tabular-nums; letter-spacing: 0;
+  color: var(--text); user-select: none; will-change: transform, opacity, filter;
+}
+.tlw-row.on { font-weight: 700; }
+.tlw-list:focus-visible + .tlx-band, .tlw-list:focus-visible { box-shadow: inset 0 0 0 2px var(--accent); border-radius: 14px; }
+
+/* Code tiles */
+.tlo { position: relative; display: flex; gap: 8px; justify-content: center; margin: 4px 0 8px; cursor: text; }
+.tlo > input {
+  position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0;
+  opacity: 0; border: 0; font-size: 16px; color: transparent; caret-color: transparent;
+}
+.tlo-t {
+  position: relative; display: grid; place-items: center;
+  width: 48px; height: 58px; border-radius: 14px;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums;
+  transition: background .2s ease, transform .2s ease;
+}
+.tlo-t.full { background: color-mix(in srgb, var(--text) 13%, transparent); }
+.tlo-t.cur::after {
+  content: ""; width: 2px; height: 26px; border-radius: 1px; background: var(--text);
+  animation: tlo-blink 1s steps(1) infinite;
+}
+.tlo-t.pop { animation: tlo-pop .26s cubic-bezier(.2, 1.6, .4, 1); }
+.tlo.checking .tlo-t { animation: tlo-pulse 1s ease-in-out infinite; }
+.tlo.checking .tlo-t:nth-child(2) { animation-delay: .08s; } .tlo.checking .tlo-t:nth-child(3) { animation-delay: .16s; }
+.tlo.checking .tlo-t:nth-child(4) { animation-delay: .24s; } .tlo.checking .tlo-t:nth-child(5) { animation-delay: .32s; }
+.tlo.checking .tlo-t:nth-child(6) { animation-delay: .4s; }
+.tlo.err { animation: tlo-shake .36s ease; }
+.tlo.err .tlo-t { background: color-mix(in srgb, var(--danger) 22%, transparent); }
+.tlo.ok .tlo-t { background: color-mix(in srgb, #2ed47a 26%, transparent); transform: scale(1.04); }
+.tlo-state { min-height: 20px; margin: 0 0 8px; text-align: center; font-size: 14px; color: var(--muted); }
+.tlo-state.is-err { color: var(--danger); font-weight: 600; }
+.tlo-paste {
+  display: block; margin: 0 auto 12px; padding: 8px 16px; min-height: 36px;
+  border: 0; border-radius: 999px; background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--text); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.tlo-paste[hidden] { display: none; }
+@keyframes tlo-pop { from { transform: scale(.6) translateY(6px); opacity: .2; } }
+@keyframes tlo-blink { 50% { opacity: 0; } }
+@keyframes tlo-pulse { 50% { background: color-mix(in srgb, var(--accent) 24%, transparent); } }
+@keyframes tlo-shake { 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+@media (max-width: 380px) { .tlo-t { width: 42px; height: 52px; } }
+
+/* Continue as */
+.tlx-saved { margin: 0 0 16px; }
+.tlx-saved-go {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 12px; border: 0; border-radius: 20px; text-align: start;
+  background: color-mix(in srgb, var(--text) 7%, transparent); color: var(--text);
+  font: inherit; cursor: pointer; transition: transform .2s cubic-bezier(.2, 1.5, .4, 1);
+}
+.tlx-saved-go:active { transform: scale(.97); }
+.tlx-saved.used .tlx-saved-go { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.tlx-saved-av svg { width: 44px; height: 44px; border-radius: 50%; display: block; }
+.tlx-saved-txt { display: flex; flex-direction: column; min-width: 0; }
+.tlx-saved-txt strong { font-size: 16px; }
+.tlx-saved-txt span { font-size: 13.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Signing out */
+.tlx-busy { background: none; box-shadow: none; }
+.tlx-spin {
+  display: inline-block; width: 32px; height: 32px; margin-bottom: 16px;
+  border: 3px solid color-mix(in srgb, var(--text) 18%, transparent); border-top-color: var(--text);
+  border-radius: 50%; animation: tlx-spin .7s linear infinite;
+}
+@keyframes tlx-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .tlx-sheet, .tlx-scrim { transition: none; }
+  .tlo-t.pop, .tlo.err, .tlo.checking .tlo-t, .tlo-t.cur::after { animation: none; }
+}

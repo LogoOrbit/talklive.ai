@@ -178,7 +178,7 @@ ${c.faq('Sawal jawab - questions')}
 
 <div class="pk-band" aria-hidden="true"></div>
 <section class="pk-end">
-  <h2>Bol. Someone is listening.</h2>
+  <h2>Bol. Someone is listening</h2>
   <p>Karachi, Lahore, Islamabad, Peshawar - and Pakistanis everywhere else - are a tap away.</p>
   ${c.ctas('Tap to Talk', 'Tap to Chat')}
 </section>

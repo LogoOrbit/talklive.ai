@@ -185,7 +185,7 @@ ${c.faq('Tanya jawab')}
 </section>
 
 <section class="id-end id-batik">
-  <h2>Ayo ngobrol.</h2>
+  <h2>Ayo ngobrol</h2>
   <p>Someone in Surabaya, Makassar or Medan just asked if you have eaten yet.</p>
   ${c.ctas('Tap to Talk', 'Tap to Chat')}
 </section>

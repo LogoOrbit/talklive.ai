@@ -137,7 +137,7 @@ ${c.faq('Maswali - questions people ask')}
 <section class="ke-end">
   <div class="ke-flag" role="presentation"></div>
   <div class="ke-end-in">
-    <h2>Sasa? Tuongee.</h2>
+    <h2>Sasa? Tuongee</h2>
     <p>Let's talk. Someone in Nairobi, Mombasa or Kisumu is up for a chat.</p>
     ${c.ctas('Tap to Talk', 'Tap to Chat')}
   </div>

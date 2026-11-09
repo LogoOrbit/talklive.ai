@@ -3405,7 +3405,16 @@ const DOB_ERRORS = {
   needDob: 'Enter your date of birth to create an account.',
   underage: 'TalkLive is only for people aged 18 and over.',
 };
-function dobProblem(dob) {
+// Android builds before 3.8.0 have no date-of-birth step (they show an 18+
+// confirmation instead), so they are let through without one until updated.
+function legacyAppWithoutDob(socket, dob) {
+  if (dob) return false;
+  const ua = String((socket && socket.handshake && socket.handshake.headers['user-agent']) || '');
+  const m = /^TalkLive-Android\/(\d+)\.(\d+)/.exec(ua);
+  return !!m && (+m[1] < 3 || (+m[1] === 3 && +m[2] < 8));
+}
+function dobProblem(dob, socket) {
+  if (legacyAppWithoutDob(socket, dob)) return null;
   const age = ageFromDob(dob);
   if (age === null) return 'needDob';
   if (age < 18) return 'underage';
@@ -3805,7 +3814,7 @@ function modeRefusal(socket, mode) {
   return null;
 }
 
-async function findOrCreateGoogleAccount(idToken, { dob } = {}) {
+async function findOrCreateGoogleAccount(idToken, { dob, socket } = {}) {
   const ticket = await googleClient.verifyIdToken({ idToken, audience: GOOGLE_CLIENT_ID });
   const payload = ticket.getPayload();
   if (!payload || !payload.sub || !payload.email_verified) {
@@ -3854,7 +3863,7 @@ async function findOrCreateGoogleAccount(idToken, { dob } = {}) {
   }
   // A brand-new account needs a date of birth showing 18 or over.
   if (!username) {
-    const dobErr = dobProblem(dob);
+    const dobErr = dobProblem(dob, socket);
     if (dobErr) throw Object.assign(new Error(DOB_ERRORS[dobErr]), { errorKey: dobErr });
   }
   if (!username) {
@@ -5208,7 +5217,7 @@ io.on('connection', (socket) => {
   // Sign-up step 1: check the details and email a 6-digit code.
   socket.on('signup-send-code', async ({ username, nickname, email, dob } = {}) => {
     const reply = (r) => socket.emit('signup-code-result', r);
-    const dobErr = dobProblem(dob);
+    const dobErr = dobProblem(dob, socket);
     if (dobErr) return reply({ ok: false, error: DOB_ERRORS[dobErr], errorKey: dobErr });
     const checked = checkSignup({ username, nickname, email }, { needPassword: false });
     if (checked.error) return reply({ ok: false, ...checked });
@@ -5252,7 +5261,7 @@ io.on('connection', (socket) => {
   // Sign-up step 2: the same details plus the emailed code. The account is
   // only created once the code matches.
   socket.on('signup', async ({ username, password, nickname, email, code, dob } = {}) => {
-    const dobErr = dobProblem(dob);
+    const dobErr = dobProblem(dob, socket);
     if (dobErr) return socket.emit('signup-result', { ok: false, error: DOB_ERRORS[dobErr], errorKey: dobErr });
     const checked = checkSignup({ username, password, nickname, email }, { needPassword: true });
     if (checked.error) return socket.emit('signup-result', { ok: false, ...checked });
@@ -5409,7 +5418,7 @@ io.on('connection', (socket) => {
       return socket.emit('google-auth-result', { ok: false, error: 'Missing Google credential.' });
     }
     try {
-      const { username, account, profile, created } = await findOrCreateGoogleAccount(credential, { dob });
+      const { username, account, profile, created } = await findOrCreateGoogleAccount(credential, { dob, socket });
       socketAuth.set(socket.id, username.toLowerCase());
       store.recordFeature('google_signin');
       store.upsertAccount(username.toLowerCase(), {

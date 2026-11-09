@@ -600,6 +600,15 @@ body{background:var(--bg-1)!important}
 header h1 .grad-text{background:none!important;color:var(--text)!important}
 .spin{border-top-color:var(--muted)}
 :focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+/* No caps labels, letter-spaced text, breadcrumbs or decorative gradients. */
+*{text-transform:none!important;letter-spacing:normal!important;font-style:normal!important}
+.phead .crumb{display:none}
+.rankrow .medal{background:var(--surface-2)!important;color:var(--text)!important}
+.rankrow:nth-child(1) .medal{background:var(--warn)!important;color:#1f1300!important}
+.hours .hcol.now .hfill{background:var(--good)!important}
+.concl::before{display:none}
+.fl,.sp-tag,.botconfirm .atag{border:0!important;background:var(--surface-2)}
+th,.tile .k,.sechead,.side .grp,.livecard .lbox .k,.cmp .box .k,.dlgrid span,.sgroup{font-size:.78rem!important}
 
 /* ===== Support inbox ===== */
 .sp{display:flex;height:calc(100dvh - 150px);min-height:480px;border:1px solid var(--ring);border-radius:10px;overflow:hidden;background:var(--bg-2)}

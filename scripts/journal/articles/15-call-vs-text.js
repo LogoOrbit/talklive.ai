@@ -63,7 +63,7 @@ body{font-family:"IBM Plex Serif",Georgia,serif}
 <div class="cv-body">
 <p>Most people now send far more messages than they make calls, and many dread the phone ringing. The usual explanation is convenience. Text is quiet, asynchronous and easy to fit around other things. All true. But there is a second reason, and it turns out to be a mistake.</p>
 
-<h2>We expect calls to be awkward. They are not.</h2>
+<h2>We expect calls to be awkward. They are not</h2>
 <p>In 2021 the psychologists Amit Kumar and Nicholas Epley published a set of experiments with a title that gives away the ending: "It's surprisingly nice to hear you". They asked people to reconnect with an old friend, or to talk with a stranger, either by voice or by text, and before they did, to predict how it would go.</p>
 <p>People expected voice to feel more awkward, and they did not expect it to make them feel much closer than text. When they actually did it, voice created a noticeably stronger sense of connection, and it was not more awkward. Yet when asked how they would prefer to get in touch, most still chose text. The fear of awkwardness steered them away from the option that would have made them feel better.</p>
 

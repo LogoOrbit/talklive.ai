@@ -246,7 +246,13 @@
   cursor: pointer;
 }
 [data-theme="light"] .cx-reaction { background: rgba(0, 0, 0, 0.08); }
-.cx-reaction.own { border-color: currentColor; }
+/* Yours is filled, theirs is quiet. Pressing shrinks it; letting go springs past full size. */
+.cx-reaction.own { background: color-mix(in srgb, var(--accent) 55%, transparent); font-weight: 700; }
+.cx-reaction { transition: transform .32s cubic-bezier(.2, 1.8, .4, 1), background .2s ease; }
+.cx-reaction:active { transform: scale(.85); transition-duration: .08s; }
+.cx-pop { animation: cxPop .42s cubic-bezier(.2, 1.8, .4, 1); }
+@keyframes cxPop { 0% { transform: scale(.4); } 60% { transform: scale(1.18); } 100% { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .cx-pop { animation: none; } .cx-reaction { transition: none; } }
 
 /* --- gestures: swipe to reply, double tap to heart ------------------------ */
 /* Every decorated bubble, and only those: system lines are never registered,
