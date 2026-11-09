@@ -69,7 +69,7 @@ fun PlusTag(modifier: Modifier = Modifier) {
             .background(PlusGold.copy(alpha = 0.14f), RoundedCornerShape(50))
             .border(1.dp, PlusGold.copy(alpha = 0.55f), RoundedCornerShape(50))
             .padding(horizontal = 8.dp, vertical = 2.dp),
-        color = PlusGold, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1,
+        color = app.talklive.ui.theme.GoldText, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1,
     )
 }
 

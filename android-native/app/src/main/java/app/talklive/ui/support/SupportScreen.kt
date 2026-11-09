@@ -148,7 +148,7 @@ fun SupportScreen(onBack: () -> Unit, vm: SupportViewModel = hiltViewModel()) {
                     Text(stringResource(R.string.support_title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
                     Text(
                         stringResource(if (online) R.string.support_online else R.string.support_offline),
-                        style = MaterialTheme.typography.labelMedium, color = if (online) Success else MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.labelMedium, color = if (online) app.talklive.ui.theme.SuccessText else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -170,7 +170,7 @@ fun SupportScreen(onBack: () -> Unit, vm: SupportViewModel = hiltViewModel()) {
                     Text(stringResource(R.string.support_quick), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     app.talklive.support.SupportBot.FAQ.take(6).forEach { f ->
                         Surface(onClick = { vm.ask(f) }, shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)) {
-                            Text(f.question, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp))
+                            Text(f.question, style = MaterialTheme.typography.bodyMedium, color = app.talklive.ui.theme.AccentText, modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp))
                         }
                     }
                 }

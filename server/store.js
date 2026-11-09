@@ -232,6 +232,9 @@ function defaults() {
     // Apple's CDN, never by us.
     favFilms: {},
     plusLook: {},
+    // Account settings saved in the cloud (theme, sounds, privacy switches):
+    // username (lowercase) -> { key: boolean | number | short string }.
+    accountSettings: {},
     // "Get email updates" sign-ups from the public site footer, double opt-in:
     // lowercased email -> { email, status: 'pending'|'confirmed', tokenHash,
     // createdAt, confirmedAt, source, country }. Only 'confirmed' rows are
@@ -312,6 +315,7 @@ function applyParsed(parsed) {
   data.contactCapture = parsed.contactCapture || {};
   data.favFilms = parsed.favFilms || {};
   data.plusLook = parsed.plusLook || {};
+  data.accountSettings = parsed.accountSettings || {};
   data.subscribers = parsed.subscribers || {};
   for (const [id, c] of Object.entries(data.contactConsent)) {
     if (!c || c.on !== true) delete data.contactConsent[id];
@@ -2381,6 +2385,26 @@ function isPremiumClient(clientId) {
 // --- Plus look: the invite reward ------------------------------------------
 // Three verified friends earn the gold profile ring and one legendary avatar
 // (picked once) for a while. Nothing else of Plus.
+const SETTING_KEY = /^[a-zA-Z][a-zA-Z0-9_]{0,39}$/;
+function getAccountSettings(usernameLower) {
+  return (data.accountSettings && data.accountSettings[usernameLower]) || {};
+}
+// Merges a few validated values; anything that is not a plain small value is dropped.
+function mergeAccountSettings(usernameLower, incoming) {
+  if (!usernameLower || !incoming || typeof incoming !== 'object') return getAccountSettings(usernameLower);
+  if (!data.accountSettings) data.accountSettings = {};
+  const cur = { ...getAccountSettings(usernameLower) };
+  for (const [k, v] of Object.entries(incoming).slice(0, 60)) {
+    if (!SETTING_KEY.test(k)) continue;
+    if (v === null) { delete cur[k]; continue; }
+    if (typeof v === 'boolean' || (typeof v === 'number' && Number.isFinite(v)) || (typeof v === 'string' && v.length <= 60)) cur[k] = v;
+  }
+  if (Object.keys(cur).length > 60) return getAccountSettings(usernameLower);
+  data.accountSettings[usernameLower] = cur;
+  save();
+  return cur;
+}
+
 function plusLook(clientId) {
   const rec = data.plusLook && data.plusLook[clientId];
   return rec && rec.expiresAt > Date.now() ? rec : null;
@@ -2478,6 +2502,7 @@ function deleteAccount(usernameLower) {
   if (acc.email) delete data.emailIndex[String(acc.email).toLowerCase()];
   if (acc.googleId && data.googleIndex[acc.googleId] === usernameLower) delete data.googleIndex[acc.googleId];
   if (acc.handle) handleIndex.delete(String(acc.handle).toLowerCase());
+  if (data.accountSettings) delete data.accountSettings[usernameLower];
   const clientId = acc.clientId || null;
   delete data.accounts[usernameLower];
   deleteAuthSessionsForUser(usernameLower, null);
@@ -3062,6 +3087,16 @@ function claimReferral(clientId, code, info = {}) {
   if (rec) rec.joined = (rec.joined || 0) + 1;
   save();
   return owner;
+}
+
+// A new account gets its own fresh profile; the invite link its guest opened
+// still counts for the inviter, so the claim moves with it (nothing else does).
+function moveReferralClaim(fromClientId, toClientId) {
+  const claim = fromClientId && data.referrals.claims[fromClientId];
+  if (!claim || !toClientId || data.referrals.claims[toClientId]) return;
+  data.referrals.claims[toClientId] = claim;
+  delete data.referrals.claims[fromClientId];
+  save();
 }
 
 // A brand-new account was just created on `clientId`. Only an account made
@@ -3677,6 +3712,9 @@ function publicModes() {
 
 module.exports = {
   plusLook,
+  getAccountSettings,
+  moveReferralClaim,
+  mergeAccountSettings,
   extendPlusLook,
   setPlusLookFace,
   trialUsed,

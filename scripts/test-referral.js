@@ -94,7 +94,15 @@ async function signUp(state) {
   }, 3000);
   const done = new Promise((res) => state.socket.once('signup-result', res));
   state.socket.emit('signup', { dob: '1990-01-01',  username, password: 'secret123', email, code });
-  return done;
+  const res = await done;
+  // Like the real clients: move onto the account's own (fresh) profile.
+  if (res.ok && res.profileClientId) {
+    state.clientId = res.profileClientId;
+    state.referral = null;
+    state.socket.emit('register', { clientId: res.profileClientId, identityToken: res.identityToken });
+    await until(() => state.referral !== null);
+  }
+  return res;
 }
 
 let strangerIp = 50;

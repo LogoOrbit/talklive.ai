@@ -92,7 +92,7 @@ class AuthViewModel @Inject constructor(private val auth: AuthRepository) : View
 
     /** The account signed out last on this phone, offered back in one tap. */
     val saved get() = auth.savedAccount()
-    fun useSaved() { auth.savedAccount()?.let { loginUser = it.username } }
+    fun useSaved() { auth.savedAccount()?.let { loginUser = it.email.ifBlank { it.username } } }
 
     fun next() {
         error = null

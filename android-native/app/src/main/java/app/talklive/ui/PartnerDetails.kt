@@ -115,7 +115,7 @@ fun PartnerSheet(
                     modifier = Modifier.weight(1f),
                 )
                 androidx.compose.material3.OutlinedButton(onClick = { onDismiss(); onReport() }, modifier = Modifier.height(56.dp)) {
-                    androidx.compose.material3.Text(androidx.compose.ui.res.stringResource(app.talklive.R.string.report), color = app.talklive.ui.theme.Danger)
+                    androidx.compose.material3.Text(androidx.compose.ui.res.stringResource(app.talklive.R.string.report), color = app.talklive.ui.theme.DangerText)
                 }
             }
         }

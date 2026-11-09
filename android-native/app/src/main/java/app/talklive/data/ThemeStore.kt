@@ -21,6 +21,11 @@ class ThemeStore @Inject constructor(@ApplicationContext context: Context) {
     val theme: StateFlow<AppTheme> = _theme
     val dark: StateFlow<Boolean> = _theme.map { it.isDark }.stateIn(CoroutineScope(Dispatchers.Main.immediate), SharingStarted.Eagerly, _theme.value.isDark)
 
+    // A theme saved to the account (CloudSettings) arriving after sign-in.
+    private val watch = android.content.SharedPreferences.OnSharedPreferenceChangeListener { p, k ->
+        if (k == KEY_THEME) _theme.value = AppTheme.of(p.getString(KEY_THEME, null))
+    }.also { prefs.registerOnSharedPreferenceChangeListener(it) }
+
     fun set(t: AppTheme) { prefs.edit().putString(KEY_THEME, t.wire).apply(); _theme.value = t }
 
     /** The quick moon/sun button: Light <-> the last dark theme. */

@@ -157,7 +157,8 @@ fun ProfileScreen(
                         modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { vm.open(ProfileSheet.Edit) }.padding(horizontal = 6.dp),
                     )
                     Text(
-                        account?.let { "@${it.username}" } ?: (animalById(animal)?.trait ?: ""),
+                        // The Friend ID people add you by (name#1234), not the internal username.
+                        vm.myFriendId.collectAsStateWithLifecycle().value ?: (animalById(animal)?.trait ?: ""),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -346,7 +347,7 @@ fun ProfileScreen(
                     Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.AutoMirrored.Rounded.Logout, null, tint = Danger)
                         Spacer(Modifier.size(14.dp))
-                        Text(stringResource(R.string.sign_out), style = MaterialTheme.typography.titleMedium, color = Danger)
+                        Text(stringResource(R.string.sign_out), style = MaterialTheme.typography.titleMedium, color = app.talklive.ui.theme.DangerText)
                     }
                 }
                 Spacer(Modifier.height(10.dp))
@@ -359,7 +360,7 @@ fun ProfileScreen(
                     Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Rounded.DeleteForever, null, tint = Danger)
                         Spacer(Modifier.size(14.dp))
-                        Text(stringResource(R.string.delete_account), style = MaterialTheme.typography.titleMedium, color = Danger)
+                        Text(stringResource(R.string.delete_account), style = MaterialTheme.typography.titleMedium, color = app.talklive.ui.theme.DangerText)
                     }
                 }
             }
@@ -439,7 +440,7 @@ private fun ThemePicker(current: app.talklive.ui.theme.AppTheme, premium: Boolea
                 Text(
                     stringResource(when (t) { app.talklive.ui.theme.AppTheme.Dark -> R.string.theme_dark; app.talklive.ui.theme.AppTheme.Light -> R.string.theme_light; app.talklive.ui.theme.AppTheme.Ocean -> R.string.theme_ocean; app.talklive.ui.theme.AppTheme.Sunset -> R.string.theme_sunset }),
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (selected) app.talklive.ui.theme.AccentText else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -610,7 +611,7 @@ private fun ProfileSheetHost(sheet: ProfileSheet, vm: ProfileViewModel, animal: 
                             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Text, imeAction = ImeAction.Next, autoCorrectEnabled = false),
                             keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { runCatching { tagFocus.requestFocus() } }),
                         )
-                        Text("#", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 8.dp))
+                        Text("#", style = MaterialTheme.typography.headlineMedium, color = app.talklive.ui.theme.AccentText, modifier = Modifier.padding(horizontal = 8.dp))
                         androidx.compose.material3.OutlinedTextField(
                             idTag, { v -> idTag = v.filter { it.isDigit() }.take(4) },
                             label = { Text(stringResource(R.string.id_numbers)) },

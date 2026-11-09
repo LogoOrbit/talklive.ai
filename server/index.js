@@ -2192,26 +2192,17 @@ function linkAccountProfile(usernameLower, socketId) {
   const profile = profiles.get(socketId);
   const currentClientId = profile ? profile.clientId : null;
   let linked = store.getAccountClientId(usernameLower);
+  // Like any big app, an account has its own profile: a guest's friends,
+  // history, streak, stamps and avatar never move into it. A new account (or
+  // one that never had a profile) starts fresh.
   if (!linked) {
-    // A device that is still on another account's profile (signed out, then
-    // created a new account) must not hand that profile - its friends, history
-    // and Plus - to the new account. The new account gets a fresh one.
-    const owner = currentClientId ? store.findUsernameByClientId(currentClientId) : null;
-    const donate = owner && owner !== usernameLower
-      ? 'a_' + crypto.randomBytes(16).toString('hex')
-      : currentClientId;
-    linked = store.setAccountClientId(usernameLower, donate);
+    linked = store.setAccountClientId(usernameLower, 'a_' + crypto.randomBytes(16).toString('hex'));
+    if (linked && currentClientId) store.moveReferralClaim(currentClientId, linked);
   }
-  // Nothing linked and nothing to link (the socket authenticated before it
-  // registered a profile): leave the browser on the clientId it already has.
-  if (!linked || linked === currentClientId) return {};
-  // Signing in moves this browser onto the account's profile. Whatever streak
-  // and stamps it earned as a guest go with it rather than staying behind.
-  const guest = currentClientId && store.engageGet(currentClientId);
-  if (guest) {
-    store.engageSet(linked, Engage.merge(store.engageGet(linked), guest, { trusted: true, tz: profile && profile.timezone }));
-  }
-  return { profileClientId: linked, identityToken: signIdentity(linked) };
+  // The account's settings travel with every sign-in, on any device.
+  const settings = store.getAccountSettings(usernameLower);
+  if (!linked || linked === currentClientId) return { settings };
+  return { profileClientId: linked, identityToken: signIdentity(linked), settings };
 }
 
 // Persist the live accounts Map back to the durable store.
@@ -3766,6 +3757,16 @@ async function verifyAccount(username, password) {
   return account;
 }
 
+// Email sign-up has no username step: the account gets an internal one made
+// from the email (people find each other by Friend ID, name#1234).
+function usernameFromEmail(email) {
+  let base = String(email || '').split('@')[0].replace(/[^a-zA-Z0-9]/g, '').slice(0, 16);
+  if (base.length < 3) base = 'user' + base;
+  let name = uniqueUsernameFromBase(base);
+  while (pendingSignups.has(name.toLowerCase())) name = uniqueUsernameFromBase(base + crypto.randomInt(10, 99));
+  return name;
+}
+
 function uniqueUsernameFromBase(base) {
   const cleanBase = base.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16) || 'user';
   let candidate = cleanBase;
@@ -5219,6 +5220,8 @@ io.on('connection', (socket) => {
     const reply = (r) => socket.emit('signup-code-result', r);
     const dobErr = dobProblem(dob, socket);
     if (dobErr) return reply({ ok: false, error: DOB_ERRORS[dobErr], errorKey: dobErr });
+    const autoName = typeof username !== 'string' || !username.trim();
+    if (autoName) username = usernameFromEmail(normalizeEmail(email) || '');
     const checked = checkSignup({ username, nickname, email }, { needPassword: false });
     if (checked.error) return reply({ ok: false, ...checked });
     const address = checked.email;
@@ -5235,6 +5238,7 @@ io.on('connection', (socket) => {
     signupCodes.set(address, {
       codeHash: hashToken(code),
       username: username.toLowerCase(),
+      name: username,
       expiresAt: Date.now() + RESET_CODE_TTL_MS,
       attempts: 0,
     });
@@ -5263,6 +5267,12 @@ io.on('connection', (socket) => {
   socket.on('signup', async ({ username, password, nickname, email, code, dob } = {}) => {
     const dobErr = dobProblem(dob, socket);
     if (dobErr) return socket.emit('signup-result', { ok: false, error: DOB_ERRORS[dobErr], errorKey: dobErr });
+    // No username given: use the one made for this email when the code was sent.
+    if (typeof username !== 'string' || !username.trim()) {
+      const pending = signupCodes.get(normalizeEmail(email) || '');
+      username = pending ? pending.name : '';
+      if (!username) return socket.emit('signup-result', { ok: false, error: 'That code is not valid or has expired. Request a new one.', errorKey: 'signupCode' });
+    }
     const checked = checkSignup({ username, password, nickname, email }, { needPassword: true });
     if (checked.error) return socket.emit('signup-result', { ok: false, ...checked });
     nickname = checked.nickname;
@@ -5298,8 +5308,7 @@ io.on('connection', (socket) => {
       lastSeen: Date.now(),
     });
     rememberLoginNetwork(ip, username.toLowerCase());
-    // The brand-new account adopts the profile this browser has been using,
-    // so the friends made before signing up stay put.
+    // The brand-new account gets its own fresh profile.
     const linked = linkAccountProfile(username.toLowerCase(), socket.id);
     noteNewAccountForReferral(username.toLowerCase());
     socket.emit('signup-result', {
@@ -5379,6 +5388,13 @@ io.on('connection', (socket) => {
       ...linkAccountProfile(usernameLower, socket.id),
     });
     sendFriendId(socket);
+  });
+
+  // Settings changed on a signed-in device are saved to the account.
+  socket.on('settings-save', ({ settings } = {}) => {
+    const usernameLower = socketAuth.get(socket.id);
+    if (!usernameLower) return;
+    store.mergeAccountSettings(usernameLower, settings);
   });
 
   socket.on('logout', ({ token, pushToken, pushEndpoint, all } = {}) => {

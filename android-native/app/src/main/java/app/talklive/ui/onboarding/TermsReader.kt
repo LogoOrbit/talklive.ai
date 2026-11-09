@@ -95,7 +95,7 @@ internal fun TermsReader(onDismiss: () -> Unit, onAgree: () -> Unit) {
                 Row(Modifier.padding(top = 4.dp, bottom = 16.dp)) {
                     listOf(R.string.terms to "terms", R.string.privacy_policy to "privacy", R.string.community_guidelines to "community-guidelines").forEach { (label, page) ->
                         Text(
-                            stringResource(label), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary,
+                            stringResource(label), style = MaterialTheme.typography.labelLarge, color = app.talklive.ui.theme.AccentText,
                             modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { open(page) }.padding(horizontal = 6.dp, vertical = 8.dp),
                         )
                     }

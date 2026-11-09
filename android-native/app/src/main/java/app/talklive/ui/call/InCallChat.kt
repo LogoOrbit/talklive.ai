@@ -84,7 +84,7 @@ fun InCallChat(
                 }
                 items(messages, key = { it.id }) { m -> Bubble(m) }
                 if (partnerTyping) item(key = "typing") {
-                    Text(stringResource(R.string.typing), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    Text(stringResource(R.string.typing), style = MaterialTheme.typography.labelMedium, color = app.talklive.ui.theme.AccentText)
                 }
             }
             app.talklive.ui.chat.Composer(

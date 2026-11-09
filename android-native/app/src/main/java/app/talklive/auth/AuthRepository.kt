@@ -45,6 +45,7 @@ class AuthRepository(
     private val prefs = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
     private val appContext: Context = context.applicationContext ?: context
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val cloudSettings = app.talklive.data.CloudSettings(appContext, socket)
 
     private val _account = MutableStateFlow(loadAccount())
     val account: StateFlow<Account?> = _account
@@ -203,10 +204,14 @@ class AuthRepository(
         // The account's notifications leave the shade with it.
         runCatching { androidx.core.app.NotificationManagerCompat.from(appContext).cancelAll() }
         _account.value = null
+        cloudSettings.onSignedOut()
         // The profile belongs to the account: a signed-out device starts as a
         // fresh guest, so the next person (or account) never inherits its
         // friends, history or Plus. Signing back in adopts the profile again.
         identity.reset()
+        // The account's face stays with the account; the guest gets a new one.
+        identity.animalDirty = false
+        identity.animal = app.talklive.ui.animals.Animals.random().id
         socket.register()
     }
 
@@ -242,6 +247,7 @@ class AuthRepository(
     }
 
     private fun onSignedIn(res: JSONObject) {
+        val freshSignIn = _account.value == null
         val acc = Account(
             username = res.optString("username"),
             nickname = res.optString("nickname").ifBlank { res.optString("username") },
@@ -256,13 +262,18 @@ class AuthRepository(
         _account.value = acc
         // The avatar saved with the account follows it to this device.
         val saved = res.optString("animal").takeIf { it.isNotBlank() && it != "null" }
-        if (identity.animalDirty && identity.animal != null) {
+        if (freshSignIn) {
+            // A face picked as a guest stays with the guest: the account shows its own.
+            identity.animalDirty = false
+            identity.animal = saved ?: app.talklive.ui.animals.Animals.random().id
+        } else if (identity.animalDirty && identity.animal != null) {
             // A face picked here that the server has not saved yet wins: send it now
             // that this socket is signed in (the register saves it to the account).
             if (saved == identity.animal) identity.animalDirty = false else socket.register()
         } else if (saved != null) { if (saved != identity.animal) identity.animal = saved }
         // An older account with no avatar saved: give it one instead of asking.
         else if (identity.animal == null) identity.animal = app.talklive.ui.animals.Animals.random().id
+        cloudSettings.onSignedIn(res.optJSONObject("settings"))
         finishOnboarding()
         adoptProfile(res)
         syncNickname()

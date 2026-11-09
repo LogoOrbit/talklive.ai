@@ -2555,7 +2555,9 @@ function renderLinkProfileCard() {
 }
 
 function renderLinkProfilePrompts() {
-  const show = profileWorthLinking();
+  // A guest's friends and history no longer move into an account (accounts
+  // keep their own profile), so there is nothing to "save" by signing up.
+  const show = false;
   if (headerLinkProfileBtn) {
     // The header pill belongs to the landing screen only - mid-call the top
     // bar is the conversation's, exactly as the sign-in buttons are.
@@ -3308,7 +3310,7 @@ function openAuthPage(tab) {
   requestAnimationFrame(() => {
     renderGoogleButtons();
     if (!wasOpen && window.matchMedia && matchMedia('(pointer: fine)').matches) {
-      const first = (tab === 'signup' ? signupUsername : loginUsername);
+      const first = (tab === 'signup' ? signupEmail : loginUsername);
       try { first.focus({ preventScroll: true }); } catch (_) { /* old browser */ }
     }
   });
@@ -3699,21 +3701,6 @@ function markInvalidField(input) {
 // emails a 6-digit code; step 2 sends it back with the details, and only then
 // does the server create the account.
 function signupDetailsOk() {
-  const username = signupUsername.value.trim();
-  // The username box is first and the email last, so an email typed into the
-  // first one is the obvious slip - and the server could only answer it with
-  // "username may only contain letters, numbers, dot, dash or underscore",
-  // which does not explain anything. Say what happened instead.
-  if (username.includes('@')) {
-    showAccountStatus(t('errUsernameIsEmail'), 'error');
-    markInvalidField(signupUsername);
-    return false;
-  }
-  if (!USERNAME_RE.test(username)) {
-    showAccountStatus(t('usernameRules'), 'error');
-    markInvalidField(signupUsername);
-    return false;
-  }
   if (signupPassword.value.length < 8) {
     showAccountStatus(t('authPasswordShort'), 'error');
     markInvalidField(signupPassword);
@@ -3948,7 +3935,7 @@ function loadGoogleSignIn() {
 // After the rest of this script has run, so the /login page is already open.
 setTimeout(consumeRedirectedGoogleCredential, 0);
 
-socket.on('google-auth-result', ({ ok, nickname, email, error, errorKey, sessionToken: token, profileClientId, identityToken }) => {
+socket.on('google-auth-result', ({ ok, nickname, email, error, errorKey, sessionToken: token, profileClientId, identityToken, animal, settings }) => {
   endAccountRequest();
   // A new Google account needs a date of birth: ask, then send the same credential again.
   if (!ok && errorKey === 'needDob' && lastGoogleCredential) {
@@ -3967,6 +3954,8 @@ socket.on('google-auth-result', ({ ok, nickname, email, error, errorKey, session
     return showAccountStatus(errorKey ? t(errorKey) : (error || t('errGoogleSignIn')), 'error');
   }
   storeLogin(nickname, token, profileClientId, identityToken);
+  applyAccountFace(animal);
+  applyCloudSettings(settings);
   storeAccountEmail(email);
   finishAuth(t('authWelcome', { name: nickname }));
 });
@@ -4140,6 +4129,7 @@ function forgetLocalAccount() {
   // guest (signing in again brings the profile back).
   localStorage.removeItem('talklive_client_id');
   localStorage.removeItem('talklive_identity_token');
+  applyAccountFace(null);
 }
 logoutBtn.addEventListener('click', () => accountUi().then((ui) => ui.signOut({
   name: accountNickname, email: accountEmail, animal: myAnimal, avatarHtml: myAvatarIcon(64),
@@ -4166,6 +4156,52 @@ changePasswordBtn.addEventListener('click', () => {
 
 // Persist the login locally (nickname for instant UI, token for the server-side
 // session), then reload - the token signs the reloaded page straight back in.
+// Settings that belong to the account (same names as the app). Signing in
+// writes the account's values here; changing one while signed in saves it.
+const CLOUD_KEYS = {
+  theme: 'talklive_theme', sounds: 'talklive_sound', vibration: 'talklive_vibration',
+  autoConnect: 'talklive_autocall', acceptCalls: 'talklive_accept_calls', hideStatus: 'talklive_status_visible',
+};
+function applyCloudSettings(s) {
+  if (!s || !Object.keys(s).length) { pushCloudSettings(); return; }
+  for (const [k, key] of Object.entries(CLOUD_KEYS)) {
+    if (!(k in s)) continue;
+    const on = k === 'hideStatus' ? !s[k] : !!s[k];
+    localStorage.setItem(key, k === 'theme' ? String(s[k]) : (on ? 'on' : 'off'));
+  }
+}
+let cloudTimer = 0;
+function pushCloudSettings() {
+  clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(() => {
+    if (!sessionToken) return;
+    const out = {};
+    for (const [k, key] of Object.entries(CLOUD_KEYS)) {
+      const v = localStorage.getItem(key);
+      if (v != null) out[k] = k === 'theme' ? v : (k === 'hideStatus' ? v === 'off' : v !== 'off');
+    }
+    socket.emit('settings-save', { settings: out });
+  }, 600);
+}
+{
+  const set = Storage.prototype.setItem;
+  const watched = new Set(Object.values(CLOUD_KEYS));
+  Storage.prototype.setItem = function (k, v) {
+    set.call(this, k, v);
+    if (this === window.localStorage && sessionToken && watched.has(k)) pushCloudSettings();
+  };
+}
+// The account's own face: a guest's avatar never carries into it.
+function applyAccountFace(animal) {
+  if (animal) {
+    localStorage.setItem('talklive_avatar', ANIMAL_AVATAR_PREFIX + animal);
+    localStorage.setItem('talklive_animal', animal);
+  } else {
+    localStorage.removeItem('talklive_avatar');
+    localStorage.removeItem('talklive_animal');
+  }
+}
+
 function storeLogin(nickname, token, profileClientId, identityToken) {
   localStorage.setItem('talklive_nickname', nickname);
   if (token) {
@@ -4177,15 +4213,17 @@ function storeLogin(nickname, token, profileClientId, identityToken) {
   adoptLinkedProfile(profileClientId, identityToken);
 }
 
-socket.on('login-result', ({ ok, nickname, email, error, sessionToken: token, profileClientId, identityToken }) => {
+socket.on('login-result', ({ ok, nickname, email, error, sessionToken: token, profileClientId, identityToken, animal, settings }) => {
   endAccountRequest();
   if (!ok) return showAccountStatus(error, 'error');
   storeLogin(nickname, token, profileClientId, identityToken);
+  applyAccountFace(animal);
+  applyCloudSettings(settings);
   storeAccountEmail(email);
   finishAuth(t('authWelcomeBack', { name: nickname }));
 });
 
-socket.on('signup-result', ({ ok, nickname, email, error, errorKey, sessionToken: token, profileClientId, identityToken }) => {
+socket.on('signup-result', ({ ok, nickname, email, error, errorKey, sessionToken: token, profileClientId, identityToken, settings }) => {
   endAccountRequest();
   if (window.AccountUI) window.AccountUI.otpResult(!!ok, error);
   if (errorKey === 'underage') { blockUnderage(); return; }
@@ -4206,6 +4244,8 @@ socket.on('signup-result', ({ ok, nickname, email, error, errorKey, sessionToken
   }
   resetSignupStep();
   storeLogin(nickname, token, profileClientId, identityToken);
+  applyAccountFace(null);
+  applyCloudSettings(settings);
   storeAccountEmail(email);
   finishAuth(t('statusAccountCreated', { name: nickname }));
 });
@@ -4213,8 +4253,9 @@ socket.on('signup-result', ({ ok, nickname, email, error, errorKey, sessionToken
 // Answer to the silent re-login sent on every (re)connect. Success refreshes
 // the signed-in UI; failure (expired/revoked token) cleans up so the app never
 // pretends to be signed in when the server disagrees.
-socket.on('resume-session-result', ({ ok, nickname, email, profileClientId, identityToken }) => {
+socket.on('resume-session-result', ({ ok, nickname, email, profileClientId, identityToken, settings }) => {
   if (ok) {
+    if (settings && Object.keys(settings).length) applyCloudSettings(settings);
     // This device signed in elsewhere since it last loaded (or signed in
     // before profiles were linked at all), so it is holding the wrong profile.
     // Reload once on the right one; the guard keeps a server that keeps

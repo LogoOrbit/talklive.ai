@@ -104,7 +104,7 @@ fun StreakChip(engage: Engage?, onClick: () -> Unit) {
             val lost = s.count == 0 && s.restorable && s.lostCount >= 2
             Text(if (s.doneToday) "🔥" else if (lost) "💔" else "🕯️", style = MaterialTheme.typography.labelLarge)
             Spacer(Modifier.width(4.dp))
-            Text(if (lost) s.lostCount.toString() else s.count.toString(), style = MaterialTheme.typography.labelLarge, color = if (s.doneToday) Color(0xFFC2410C) else MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (lost) s.lostCount.toString() else s.count.toString(), style = MaterialTheme.typography.labelLarge, color = if (s.doneToday) if (app.talklive.ui.theme.LocalAppTheme.current.isDark) Color(0xFFFF8A4C) else Color(0xFFC2410C) else MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -141,7 +141,7 @@ fun StreakSheet(engage: Engage, onDismiss: () -> Unit, premium: Boolean = false,
                     if (premium) stringResource(R.string.streak_freezes_left, engage.streak.freezesLeft ?: 2) else stringResource(R.string.streak_freezes_plus),
                     style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f),
                 )
-                if (!premium) Text("Plus", color = app.talklive.ui.components.PlusGold, style = MaterialTheme.typography.labelLarge)
+                if (!premium) Text("Plus", color = app.talklive.ui.theme.GoldText, style = MaterialTheme.typography.labelLarge)
             }
             // A streak that just broke: Plus brings it back.
             if (engage.streak.count == 0 && engage.streak.lostCount >= 2 && engage.streak.restorable) {
@@ -251,7 +251,7 @@ fun FilmsSheet(vm: EngageViewModel, current: List<Film>, premium: Boolean = fals
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Icon(Icons.Rounded.Lock, null, tint = androidx.compose.ui.graphics.Color(0xFFF5C451), modifier = Modifier.size(20.dp))
                                 Spacer(Modifier.height(4.dp))
-                                Text("Plus", style = MaterialTheme.typography.labelMedium, color = androidx.compose.ui.graphics.Color(0xFFF5C451))
+                                Text("Plus", style = MaterialTheme.typography.labelMedium, color = app.talklive.ui.theme.GoldText)
                             }
                         }
                         return@forEachIndexed
@@ -470,7 +470,7 @@ private fun CountryPicker(
             Column(Modifier.padding(top = 20.dp)) {
                 Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.weight(1f))
-                    Text(if (limit != null) "${picked.size}/$limit" else "${picked.size}", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                    Text(if (limit != null) "${picked.size}/$limit" else "${picked.size}", style = MaterialTheme.typography.labelLarge, color = app.talklive.ui.theme.AccentText)
                 }
                 Spacer(Modifier.height(12.dp))
                 Box(Modifier.padding(horizontal = 16.dp)) { InlineField(query, { query = it }, stringResource(R.string.find_country), onDone = null) }
@@ -523,7 +523,7 @@ private fun FilterCard(emoji: String, title: String, hint: String?, onClear: (()
                 Spacer(Modifier.width(10.dp))
                 Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
                 if (onClear != null) Text(
-                    stringResource(R.string.clear), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary,
+                    stringResource(R.string.clear), style = MaterialTheme.typography.labelLarge, color = app.talklive.ui.theme.AccentText,
                     modifier = Modifier.clip(CircleShape).clickable(onClick = onClear).padding(horizontal = 10.dp, vertical = 4.dp),
                 )
             }
@@ -706,7 +706,7 @@ fun LikesSheet(vm: EngageViewModel, onPlus: (() -> Unit)? = null, onDismiss: () 
                         AnimalAvatar(null, l.username, 40.dp)
                         Spacer(Modifier.width(12.dp))
                         Text("${l.username}  ${flag(l.countryCode) ?: ""}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.weight(1f))
-                        if (l.online) Text(stringResource(R.string.online), color = app.talklive.ui.theme.Success, style = MaterialTheme.typography.labelMedium)
+                        if (l.online) Text(stringResource(R.string.online), color = app.talklive.ui.theme.SuccessText, style = MaterialTheme.typography.labelMedium)
                     }
                 }
             }

@@ -437,7 +437,7 @@ private fun PlusPriority() {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(6.dp).clip(CircleShape).background(Color(0xFFF5C451)))
         Spacer(Modifier.width(8.dp))
-        Text(stringResource(R.string.plus_priority), style = MaterialTheme.typography.labelLarge, color = Color(0xFFF5C451).copy(alpha = 0.9f))
+        Text(stringResource(R.string.plus_priority), style = MaterialTheme.typography.labelLarge, color = app.talklive.ui.theme.GoldText)
     }
 }
 

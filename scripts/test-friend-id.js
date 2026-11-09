@@ -192,7 +192,7 @@ async function waitUp() {
     ok('account gets a name#1234 ID it can edit', aSigned.id.temporary === false && aSigned.id.editable === true && /^[a-z]{3,16}#\d{4}$/.test(accountId), JSON.stringify(aSigned.id));
     ok('the old guest ID is released on sign-in', (await search(bRelaunch.sock, a.id.friendId)).ok === false);
     const foundAccount = await search(bRelaunch.sock, accountId);
-    ok('account is found by its ID', foundAccount.ok && foundAccount.user.clientId === 'c_fid_alpha' && !foundAccount.user.temporary, JSON.stringify(foundAccount));
+    ok('account is found by its ID', foundAccount.ok && foundAccount.user.clientId === account.profileClientId && !foundAccount.user.temporary, JSON.stringify(foundAccount));
 
     // Restart: the account keeps the same ID.
     aSigned.sock.disconnect();
@@ -206,7 +206,7 @@ async function waitUp() {
     ok('account ID survives a restart', aAfter.id.friendId === accountId, `${aAfter.id.friendId} vs ${accountId}`);
     const c = await connect('c_fid_charlie', { freshSession: true });
     const offlineFound = await search(c.sock, accountId);
-    ok('account is findable after restart', offlineFound.ok && offlineFound.user.clientId === 'c_fid_alpha', JSON.stringify(offlineFound));
+    ok('account is findable after restart', offlineFound.ok && offlineFound.user.clientId === account.profileClientId, JSON.stringify(offlineFound));
 
 
     // --- Choosing an ID ----------------------------------------------------

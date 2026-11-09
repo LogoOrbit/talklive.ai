@@ -126,7 +126,7 @@ private fun Picker(declined: Boolean, partnerName: String, onInvite: (GameKind) 
     Text(stringResource(R.string.games_body, partnerName), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     if (declined) {
         Spacer(Modifier.height(8.dp))
-        Text(stringResource(R.string.game_declined, partnerName), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(R.string.game_declined, partnerName), color = app.talklive.ui.theme.DangerText, style = MaterialTheme.typography.bodyMedium)
     }
     Spacer(Modifier.height(16.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -142,7 +142,7 @@ private fun GameCard(emoji: String, title: String, modifier: Modifier, onClick: 
             Text(emoji, style = MaterialTheme.typography.headlineMedium)
             Spacer(Modifier.height(8.dp))
             Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-            Text(stringResource(R.string.invite), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+            Text(stringResource(R.string.invite), style = MaterialTheme.typography.labelMedium, color = app.talklive.ui.theme.AccentText)
         }
     }
 }

@@ -186,7 +186,7 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                     Text(
                         if (typing) stringResource(R.string.typing) else presence(person),
                         style = MaterialTheme.typography.labelMedium,
-                        color = if (typing || person.online) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (typing || person.online) app.talklive.ui.theme.AccentText else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 }
@@ -209,8 +209,8 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                             onClick = { menuOpen = false; vm.setMuted(clientId, !isMuted) },
                         )
                         androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.clear_chat)) }, onClick = { menuOpen = false; confirm = "clear" })
-                        androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.report), color = Danger) }, onClick = { menuOpen = false; confirm = "report" })
-                        androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.block), color = Danger) }, onClick = { menuOpen = false; confirm = "block" })
+                        androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.report), color = app.talklive.ui.theme.DangerText) }, onClick = { menuOpen = false; confirm = "report" })
+                        androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.block), color = app.talklive.ui.theme.DangerText) }, onClick = { menuOpen = false; confirm = "block" })
                     }
                 }
             }
@@ -280,7 +280,7 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                 ) {
                     Icon(Icons.Rounded.Edit, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(10.dp))
-                    Text(stringResource(R.string.editing_message), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f))
+                    Text(stringResource(R.string.editing_message), style = MaterialTheme.typography.labelMedium, color = app.talklive.ui.theme.AccentText, modifier = Modifier.weight(1f))
                     IconButton(onClick = { editing = null; draft = "" }) { Icon(Icons.Rounded.Close, null) }
                 }
             }
@@ -293,7 +293,7 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                         Box(Modifier.width(3.dp).height(36.dp).clip(CircleShape).background(BrandGradient))
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(if (r.mine) stringResource(R.string.you) else person.displayName, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                            Text(if (r.mine) stringResource(R.string.you) else person.displayName, style = MaterialTheme.typography.labelMedium, color = app.talklive.ui.theme.AccentText)
                             Text(preview(r), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                         IconButton(onClick = { replyTo = null }) { Icon(Icons.Rounded.Close, null) }
@@ -455,7 +455,7 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                 }) {
                     Text(
                         when (what) { "clear" -> stringResource(R.string.clear_chat); "report" -> stringResource(R.string.report); else -> stringResource(R.string.block) },
-                        color = Danger,
+                        color = app.talklive.ui.theme.DangerText,
                     )
                 }
             },
@@ -682,7 +682,7 @@ internal fun MessageBubble(
                     MsgStatus.Failed -> {
                         Icon(Icons.Rounded.ErrorOutline, null, Modifier.size(14.dp), tint = Danger)
                         Spacer(Modifier.width(4.dp))
-                        Text((m.failReason?.get() ?: stringResource(R.string.not_sent)) + " · " + stringResource(R.string.tap_retry), style = MaterialTheme.typography.labelMedium, color = Danger)
+                        Text((m.failReason?.get() ?: stringResource(R.string.not_sent)) + " · " + stringResource(R.string.tap_retry), style = MaterialTheme.typography.labelMedium, color = app.talklive.ui.theme.DangerText)
                     }
                     else -> {
                         Text(timeOf(m.ts), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -790,7 +790,7 @@ internal fun PersonSheet(
             if (person.nickname != null && person.nickname != person.username) {
                 Text(person.username, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text(presence(person), style = MaterialTheme.typography.labelLarge, color = if (person.online) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
+            Text(presence(person), style = MaterialTheme.typography.labelLarge, color = if (person.online) app.talklive.ui.theme.AccentText else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
             Spacer(Modifier.height(16.dp))
             Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(vertical = 6.dp)) {

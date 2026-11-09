@@ -165,7 +165,7 @@ fun TextChatScreen(
                                         else -> listOfNotNull(app.talklive.ui.social.flag(p.countryCode), p.country).joinToString(" ").ifBlank { partnerLine(p) }
                                     },
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = if (state.partnerTyping) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = if (state.partnerTyping) app.talklive.ui.theme.AccentText else MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                                 )
                             }
@@ -333,7 +333,7 @@ fun TextChatScreen(
             text = {
                 Column {
                     Text(stringResource(R.string.report_body), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    reasons.forEach { (key, label) -> TextButton(onClick = { reporting = false; onReport(key) }) { Text(stringResource(label), color = Danger) } }
+                    reasons.forEach { (key, label) -> TextButton(onClick = { reporting = false; onReport(key) }) { Text(stringResource(label), color = app.talklive.ui.theme.DangerText) } }
                 }
             },
             confirmButton = {},

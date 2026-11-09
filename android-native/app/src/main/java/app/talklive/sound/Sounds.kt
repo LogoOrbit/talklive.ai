@@ -39,6 +39,10 @@ class Sounds @Inject constructor(@ApplicationContext context: Context) {
     val vibration: StateFlow<Boolean> = _vibration
     fun setVibration(on: Boolean) { prefs.edit().putBoolean("vibration", on).apply(); _vibration.value = on }
 
+    private val watch = android.content.SharedPreferences.OnSharedPreferenceChangeListener { p, k ->
+        when (k) { "sounds" -> _enabled.value = p.getBoolean(k, true); "vibration" -> _vibration.value = p.getBoolean(k, true) }
+    }.also { prefs.registerOnSharedPreferenceChangeListener(it) }
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val cache = HashMap<Fx, ShortArray>()
 

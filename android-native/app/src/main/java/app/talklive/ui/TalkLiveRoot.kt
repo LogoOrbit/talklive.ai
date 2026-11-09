@@ -394,7 +394,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { confirmLeave = false },
             title = { Text(stringResource(if (live) (if (state.mode == CallMode.Chat) R.string.leave_chat_q else R.string.leave_call_q) else R.string.stop_search_q)) },
-            confirmButton = { TextButton(onClick = { confirmLeave = false; vm.end() }) { Text(stringResource(if (live) R.string.leave else R.string.tap_to_stop), color = MaterialTheme.colorScheme.error) } },
+            confirmButton = { TextButton(onClick = { confirmLeave = false; vm.end() }) { Text(stringResource(if (live) R.string.leave else R.string.tap_to_stop), color = app.talklive.ui.theme.DangerText) } },
             dismissButton = { TextButton(onClick = { confirmLeave = false }) { Text(stringResource(R.string.stay)) } },
         )
     }

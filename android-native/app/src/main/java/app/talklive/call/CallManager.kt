@@ -117,6 +117,9 @@ class CallManager @Inject constructor(
     private val _speakerDefault = MutableStateFlow(uiPrefs.getBoolean("speaker_default", true))
     /** Settings > Calls: start each call on the loudspeaker (off: the earpiece). */
     val speakerDefault: StateFlow<Boolean> = _speakerDefault
+    private val uiWatch = android.content.SharedPreferences.OnSharedPreferenceChangeListener { p, k ->
+        when (k) { "auto_connect" -> _autoConnect.value = p.getBoolean(k, true); "speaker_default" -> _speakerDefault.value = p.getBoolean(k, true) }
+    }.also { uiPrefs.registerOnSharedPreferenceChangeListener(it) }
     fun setSpeakerDefault(on: Boolean) { uiPrefs.edit().putBoolean("speaker_default", on).apply(); _speakerDefault.value = on }
 
     /** Live spectrum of the other person's voice (call screen visualiser). */

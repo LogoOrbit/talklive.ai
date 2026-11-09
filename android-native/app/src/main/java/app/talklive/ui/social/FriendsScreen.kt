@@ -219,7 +219,7 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
                         stringResource(R.string.history_locked, historyHidden),
                         style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f),
                     )
-                    Text("Plus", color = app.talklive.ui.components.PlusGold, style = MaterialTheme.typography.labelLarge)
+                    Text("Plus", color = app.talklive.ui.theme.GoldText, style = MaterialTheme.typography.labelLarge)
                 }
             }
             // Online first, then offline, each under its own heading.
@@ -354,7 +354,7 @@ private fun MetCard(
                         Text(
                             stringResource(if (pending) R.string.requested else R.string.add),
                             style = MaterialTheme.typography.labelMedium, maxLines = 1,
-                            color = if (pending) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
+                            color = if (pending) MaterialTheme.colorScheme.onSurfaceVariant else app.talklive.ui.theme.AccentText,
                         )
                     }
                 }
@@ -379,7 +379,7 @@ private fun FriendRow(p: Person, modifier: Modifier, onCall: () -> Unit, onChat:
             Text(
                 listOfNotNull(flag(p.countryCode), presence(p)).joinToString(" "),
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (p.online) app.talklive.ui.theme.Success else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (p.online) app.talklive.ui.theme.SuccessText else MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
             )
             if (!p.online) usualOnline(p)?.let {
@@ -549,7 +549,7 @@ private fun FriendActionsSheet(vm: SocialViewModel, p: Person, onDismiss: () -> 
                 }) {
                     Text(
                         stringResource(when (what) { "block" -> R.string.block; "report" -> R.string.report; else -> R.string.remove_friend }),
-                        color = Danger,
+                        color = app.talklive.ui.theme.DangerText,
                     )
                 }
             },

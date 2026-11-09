@@ -8,6 +8,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -140,3 +141,22 @@ fun TalkLiveTheme(theme: AppTheme = AppTheme.Dark, content: @Composable () -> Un
 /** Kept for screenshots and previews. */
 @Composable
 fun TalkLiveTheme(dark: Boolean, content: @Composable () -> Unit) = TalkLiveTheme(if (dark) AppTheme.Dark else AppTheme.Light, content)
+
+/*
+ * Text colours that keep at least 4.5:1 contrast on every theme. Brand reds,
+ * greens, golds and violets are tuned for buttons and fills; as small text they
+ * wash out on the light theme (too bright) or the dark ones (too deep), so text
+ * uses these instead.
+ */
+@Composable @androidx.compose.runtime.ReadOnlyComposable
+private fun lightBg() = MaterialTheme.colorScheme.background.luminance() > 0.5f
+
+val DangerText: Color @Composable @androidx.compose.runtime.ReadOnlyComposable
+    get() = if (lightBg()) Color(0xFFB4182F) else Color(0xFFFF7088)
+val SuccessText: Color @Composable @androidx.compose.runtime.ReadOnlyComposable
+    get() = if (lightBg()) Color(0xFF0B6E3D) else Color(0xFF45DB8C)
+val GoldText: Color @Composable @androidx.compose.runtime.ReadOnlyComposable
+    get() = if (lightBg()) Color(0xFF7A5100) else Color(0xFFF5C451)
+val AccentText: Color @Composable @androidx.compose.runtime.ReadOnlyComposable
+    get() = if (lightBg()) Color(0xFF4A3AC8)
+        else androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.primary, Color.White, 0.38f)

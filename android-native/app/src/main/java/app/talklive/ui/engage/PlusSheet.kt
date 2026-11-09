@@ -280,13 +280,13 @@ fun PlusContent(
                                 Spacer(Modifier.width(14.dp))
                                 Column(Modifier.weight(1f)) {
                                     Text("TalkLive Plus", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
-                                    Text(stringResource(R.string.plus_monthly), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.65f))
+                                    Text(stringResource(R.string.plus_monthly), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.72f))
                                 }
                                 Text(stringResource(R.string.plus_price_month, "$10"), style = MaterialTheme.typography.titleMedium.copy(brush = GoldBrush), fontWeight = FontWeight.Black)
                             }
                         }
                         Text(stringResource(R.string.pass_heading), style = MaterialTheme.typography.titleSmall, color = Color.White.copy(alpha = 0.8f), modifier = Modifier.fillMaxWidth().padding(top = 10.dp), textAlign = TextAlign.Center)
-                        Text(stringResource(R.string.pass_sub), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.55f), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                        Text(stringResource(R.string.pass_sub), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.72f), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                             listOf(app.talklive.billing.PlusPass("pass_1d", 1, "$2", 0), app.talklive.billing.PlusPass("pass_7d", 7, "$5", 0), app.talklive.billing.PlusPass("pass_15d", 15, "$7", 0)).forEachIndexed { i, pass ->
                                 PassCard(pass, badge = when (i) { 1 -> stringResource(R.string.pass_popular); 2 -> stringResource(R.string.pass_best); else -> null }, selected = shownPick == i) { shownPick = i }
@@ -304,7 +304,7 @@ fun PlusContent(
                                 modifier = Modifier.fillMaxWidth().padding(top = 10.dp), textAlign = TextAlign.Center,
                             )
                             Text(
-                                stringResource(R.string.pass_sub), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.55f),
+                                stringResource(R.string.pass_sub), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.72f),
                                 modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
                             )
                             Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
@@ -366,7 +366,7 @@ fun PlusContent(
                         }
                         Text(line, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = Color.White, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 10.dp))
                     }
-                    Text(stringResource(R.string.plus_terms), style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.55f), textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
+                    Text(stringResource(R.string.plus_terms), style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.72f), textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
                 }
             }
             onFreeOption?.let { (label, go) -> TextButton(onClick = go) { Text(label, color = Color.White.copy(alpha = 0.7f)) } }
@@ -414,7 +414,7 @@ private fun YouWithPlus(animal: String?, name: String?) {
                     Box(Modifier.size(84.dp), contentAlignment = Alignment.Center) { app.talklive.ui.animals.AnimalAvatar(animal, name, 64.dp) }
                     Spacer(Modifier.height(6.dp))
                     Text(shown, style = MaterialTheme.typography.labelLarge, color = Color.White.copy(alpha = 0.75f), maxLines = 1)
-                    Text(stringResource(R.string.cmp_free), style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.5f))
+                    Text(stringResource(R.string.cmp_free), style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.72f))
                 }
                 Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = Gold1, modifier = Modifier.size(26.dp))
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -503,7 +503,7 @@ private fun PerkPreview(page: Int) {
         }
         4 -> Row(verticalAlignment = Alignment.CenterVertically) {
             Text("💔", fontSize = 34.sp)
-            Text("  →  ", style = MaterialTheme.typography.titleLarge, color = Color.White.copy(alpha = 0.5f))
+            Text("  →  ", style = MaterialTheme.typography.titleLarge, color = Color.White.copy(alpha = 0.72f))
             Text("🔥", fontSize = 40.sp)
             Text(" 12", style = MaterialTheme.typography.headlineMedium.copy(brush = GoldBrush), fontWeight = FontWeight.Black)
         }
@@ -552,7 +552,7 @@ private fun CompareTable(modifier: Modifier = Modifier) {
         Column(Modifier.padding(vertical = 8.dp)) {
             Row(Modifier.padding(horizontal = 18.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Spacer(Modifier.weight(1f))
-                Text(stringResource(R.string.cmp_free), color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
+                Text(stringResource(R.string.cmp_free), color = Color.White.copy(alpha = 0.72f), style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
                 Text("PLUS", style = MaterialTheme.typography.labelLarge.copy(brush = GoldBrush), fontWeight = FontWeight.Black, modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
             }
             rows.forEachIndexed { i, (label, free, plus) ->
@@ -680,7 +680,7 @@ private fun PassCard(pass: app.talklive.billing.PlusPass, badge: String?, select
                     }
                     Text(
                         if (perDay != null) stringResource(R.string.pass_per_day, perDay) else stringResource(R.string.pass_once),
-                        style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.6f),
+                        style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.72f),
                     )
                 }
                 Text(pass.price, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = if (selected) Gold1 else Color.White)

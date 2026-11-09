@@ -157,7 +157,7 @@ fun ChatsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalkin
                 androidx.compose.material3.TextButton(onClick = {
                     if (what == "block") vm.block(c.person.clientId) else { vm.clearChat(c.person.clientId); vm.setArchived(c.person.clientId, false) }
                     confirm = null
-                }) { Text(stringResource(if (what == "block") R.string.block else R.string.delete), color = app.talklive.ui.theme.Danger) }
+                }) { Text(stringResource(if (what == "block") R.string.block else R.string.delete), color = app.talklive.ui.theme.DangerText) }
             },
             dismissButton = { androidx.compose.material3.TextButton(onClick = { confirm = null }) { Text(stringResource(R.string.cancel)) } },
         )
@@ -189,13 +189,13 @@ private fun ConversationRow(c: Conversation, modifier: Modifier, onLongClick: ()
                 Spacer(Modifier.width(8.dp))
                 Text(
                     shortTime(last?.ts ?: 0), style = MaterialTheme.typography.labelMedium,
-                    color = if (bold) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (bold) app.talklive.ui.theme.AccentText else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Spacer(Modifier.height(2.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (c.typing) {
-                    Text(stringResource(R.string.typing), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f))
+                    Text(stringResource(R.string.typing), style = MaterialTheme.typography.bodyMedium, color = app.talklive.ui.theme.AccentText, modifier = Modifier.weight(1f))
                 } else {
                     if (last?.mine == true) {
                         Icon(

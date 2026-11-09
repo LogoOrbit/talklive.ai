@@ -489,7 +489,7 @@ internal fun ChooseScreen(vm: AuthViewModel, onSignup: () -> Unit, onLogin: () -
         Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             listOf(R.string.terms to "terms", R.string.privacy_policy to "privacy", R.string.community_guidelines to "community-guidelines").forEach { (label, page) ->
                 Text(
-                    stringResource(label), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary,
+                    stringResource(label), style = MaterialTheme.typography.labelMedium, color = app.talklive.ui.theme.AccentText,
                     modifier = Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
                         .clickable { runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("${app.talklive.net.ServerConfig.url}/$page"))) } }
                         .padding(horizontal = 6.dp, vertical = 6.dp),
@@ -576,25 +576,21 @@ private fun EmailStep(vm: AuthViewModel) {
 @Composable
 private fun AccountStep(vm: AuthViewModel) {
     val focus = remember { FocusRequester() }
-    val passFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { focus.requestFocus() }
     ScreenTitle(stringResource(R.string.signup_account_title), stringResource(R.string.signup_account_body))
     Spacer(Modifier.height(28.dp))
-    TalkTextField(
-        value = vm.username, onValueChange = { vm.username = it.take(24) }, label = stringResource(R.string.username),
-        supporting = stringResource(R.string.username_hint), focusRequester = focus, onIme = { passFocus.requestFocus() },
-    )
-    Spacer(Modifier.height(8.dp))
+    // Email and password only: the server makes the internal username, and
+    // people find each other by Friend ID.
     TalkTextField(
         value = vm.password, onValueChange = { vm.password = it }, label = stringResource(R.string.password),
         password = true, imeAction = ImeAction.Done, onIme = vm::next,
-        supporting = stringResource(R.string.password_hint), focusRequester = passFocus,
+        supporting = stringResource(R.string.password_hint), focusRequester = focus,
     )
     ErrorBanner(vm.error)
     Spacer(Modifier.height(24.dp))
     PrimaryButton(
         stringResource(R.string.send_code), onClick = vm::next,
-        enabled = vm.usernameValid && vm.passwordValid, loading = vm.busy,
+        enabled = vm.passwordValid, loading = vm.busy,
     )
 }
 
@@ -614,7 +610,7 @@ private fun ColumnScope.CodeStep(vm: AuthViewModel) {
         ) { st ->
             when (st) {
                 1 -> Text(stringResource(R.string.code_checking), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                2 -> Text(vm.error.orEmpty(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                2 -> Text(vm.error.orEmpty(), style = MaterialTheme.typography.bodySmall, color = app.talklive.ui.theme.DangerText)
                 else -> PasteCode { vm.code = it; vm.verify(it) }
             }
         }
@@ -640,7 +636,7 @@ private fun PasteCode(onPaste: (String) -> Unit) {
     }
     code?.let { c ->
         Text(
-            stringResource(R.string.code_paste, c), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary,
+            stringResource(R.string.code_paste, c), style = MaterialTheme.typography.labelLarge, color = app.talklive.ui.theme.AccentText,
             modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { onPaste(c) }.padding(vertical = 2.dp),
         )
     }

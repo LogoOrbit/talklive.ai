@@ -61,7 +61,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
 <link rel="stylesheet" href="ui.css?v=20261106passes" />
-<link rel="stylesheet" href="auth.css?v=20261109acct" />
+<link rel="stylesheet" href="auth.css?v=20261109cloud" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
      on every screen of the product. -->
@@ -271,8 +271,8 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           </div>
           <div class="tl-or google-block hidden"><span data-i18n="orDivider">or</span></div>
           <div class="tl-field">
-            <label for="loginUsername" data-i18n="usernameOrEmail">Username or email</label>
-            <input type="text" id="loginUsername" class="account-input" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next" />
+            <label for="loginUsername" data-i18n="usernameOrEmail">Email</label>
+            <input type="text" id="loginUsername" class="account-input" autocomplete="username" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next" />
           </div>
           <div class="tl-field">
             <div class="tl-field-row">
@@ -290,43 +290,24 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         </form>
 
         <form id="signupTab" class="account-tab-panel hidden" autocomplete="on" onsubmit="return false;">
-          <!-- What the new account inherits, so signing up reads as keeping
-               this profile rather than starting an empty one. Hidden when
-               there is nothing to link. -->
-          <div id="linkProfileCard" class="link-profile-card hidden">
-            <span id="linkProfileAvatar" class="link-profile-avatar" aria-hidden="true"></span>
-            <div class="link-profile-card-text">
-              <p class="link-profile-kicker" data-i18n="linkProfileKicker">Link your current profile</p>
-              <p id="linkProfileName" class="link-profile-name"></p>
-              <p class="link-profile-body" data-i18n="linkProfileCardBody">This profile is linked to the account you create now. Your name, friends and history stay with you.</p>
-              <div class="link-profile-chips">
-                <span id="linkProfileCreated" class="link-profile-chip hidden"></span>
-                <span id="linkProfileFriends" class="link-profile-chip"></span>
-              </div>
-            </div>
-          </div>
           <div id="googleBtnSignup" class="google-btn-slot google-block hidden">
             <div class="google-btn-real"></div>
           </div>
           <div class="tl-or google-block hidden"><span data-i18n="orDivider">or</span></div>
+          <input type="hidden" id="signupUsername" value="" />
           <div class="tl-field">
-            <label for="signupUsername" data-i18n="labelUsername">Username</label>
-            <input type="text" id="signupUsername" class="account-input" maxlength="24" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next" aria-describedby="signupUsernameNote" />
-            <p id="signupUsernameNote" class="tl-field-note" data-i18n="usernameRules">3-24 letters, numbers, dots, dashes or underscores.</p>
+            <label for="signupEmail" data-i18n="email">Email</label>
+            <input type="email" id="signupEmail" class="account-input" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" enterkeyhint="next" required />
+            <p class="tl-field-note" data-i18n="signupEmailHint">We send a 6-digit code here to confirm it's you. Also used to reset your password. Never shown to anyone.</p>
           </div>
           <div class="tl-field">
             <label for="signupPassword" data-i18n="labelPassword">Password</label>
             <div class="tl-pw">
-              <input type="password" id="signupPassword" class="account-input" autocomplete="new-password" enterkeyhint="next" aria-describedby="signupPwMeter" />
+              <input type="password" id="signupPassword" class="account-input" autocomplete="new-password" enterkeyhint="go" aria-describedby="signupPwMeter" />
               <button type="button" class="tl-pw-toggle" data-i18n-aria="showPassword" aria-label="Show password" aria-pressed="false"></button>
             </div>
             <div id="signupPwMeter" class="tl-pw-meter" data-level="0" aria-live="polite"><span class="tl-pw-bars" aria-hidden="true"><i></i><i></i><i></i></span><span class="tl-pw-label"></span></div>
             <p class="tl-caps hidden" data-i18n="capsLockOn">Caps Lock is on</p>
-          </div>
-          <div class="tl-field">
-            <label for="signupEmail" data-i18n="email">Email</label>
-            <input type="email" id="signupEmail" class="account-input" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" enterkeyhint="go" required />
-            <p class="tl-field-note" data-i18n="signupEmailHint">We send a 6-digit code here to confirm it's you. Also used to reset your password. Never shown to anyone.</p>
           </div>
           <button type="button" id="signupSubmitBtn" class="tl-submit"><span data-i18n="createAccount">Create Account</span></button>
           <!-- Step 2: the 6-digit code emailed to the address above. -->
@@ -2602,7 +2583,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.min.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20261109acct"></script>
+  <script defer src="i18n.js?v=20261109cloud"></script>
   <script defer src="chat-time.js?v=20260916navbar"></script>
   <script defer src="animals.js?v=20261008more"></script>
   <script defer src="characters.js?v=20261008more"></script>
@@ -2613,7 +2594,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="voice-notes.js?v=20261001mic"></script>
   <script defer src="games.js?v=20261101rr"></script>
   <script defer src="nickname-rules.js?v=20261101nick"></script>
-  <script defer src="app.js?v=20261109acct"></script>
+  <script defer src="app.js?v=20261109cloud"></script>
 
 <!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

@@ -300,7 +300,7 @@ private fun ModeSwitch(mode: app.talklive.call.CallMode, onMode: (app.talklive.c
                     Text(
                         stringResource(if (m == app.talklive.call.CallMode.Chat) R.string.mode_text else R.string.mode_voice),
                         style = MaterialTheme.typography.labelLarge,
-                        color = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (on) app.talklive.ui.theme.AccentText else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }

@@ -37,6 +37,14 @@ class PrivacyStore(context: Context, name: String) {
         prefs.edit().putStringSet("archived", next).apply(); _archived.value = next
     }
 
+    private val watch = android.content.SharedPreferences.OnSharedPreferenceChangeListener { p, k ->
+        when (k) {
+            "hide_status" -> _hideStatus.value = p.getBoolean(k, false)
+            "accept_calls" -> _acceptCalls.value = p.getBoolean(k, true)
+            "read_receipts" -> _readReceipts.value = p.getBoolean(k, true)
+        }
+    }.also { prefs.registerOnSharedPreferenceChangeListener(it) }
+
     fun setHideStatus(v: Boolean) { prefs.edit().putBoolean("hide_status", v).apply(); _hideStatus.value = v }
     fun setAcceptCalls(v: Boolean) { prefs.edit().putBoolean("accept_calls", v).apply(); _acceptCalls.value = v }
 }

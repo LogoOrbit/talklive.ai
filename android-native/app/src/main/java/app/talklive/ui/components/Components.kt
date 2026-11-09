@@ -268,7 +268,7 @@ fun OtpField(value: String, onValueChange: (String) -> Unit, onComplete: (String
                     ) {
                         if (ch.isNotEmpty()) Text(
                             ch, style = TextStyle(fontSize = 26.sp, fontWeight = FontWeight.SemiBold, fontFeatureSettings = "tnum"),
-                            color = if (error) Danger else MaterialTheme.colorScheme.onSurface,
+                            color = if (error) app.talklive.ui.theme.DangerText else MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.graphicsLayer { scaleX = pop.value; scaleY = pop.value; alpha = pulse },
                         ) else if (active) {
                             // A blinking caret in the next box.
