@@ -55,6 +55,10 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.Column
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -125,7 +129,11 @@ fun CallBackdrop(connected: Boolean, tiltOf: () -> Offset, content: @Composable 
     }
     val bg = MaterialTheme.colorScheme.background
     Box(
-        Modifier.fillMaxSize().background(bg).drawBehind {
+        Modifier.fillMaxSize()
+            // The call covers Home completely: taps on empty space stop here
+            // instead of reaching the buttons underneath.
+            .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null) {}
+            .background(bg).drawBehind {
             // Read here, in the draw pass: tilt changes many times a second and
             // only the glow needs redrawing, not the whole call screen.
             val tilt = tiltOf()
@@ -338,13 +346,65 @@ fun LeaveButton(onClick: () -> Unit) {
     ) { Icon(Icons.Rounded.Close, stringResource(R.string.end), tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(20.dp)) }
 }
 
-/** Link quality as three small bars (like a phone's signal icon), no words. */
+/**
+ * Link quality as three small bars (like a phone's signal icon). Tapped, the
+ * bars ripple up one after another and a small card says how the line is:
+ * quality, round trip and loss, then it tucks itself away.
+ */
 @Composable
-fun SignalBars(level: Int, color: Color, modifier: Modifier = Modifier) {
+fun SignalBars(level: Int, color: Color, modifier: Modifier = Modifier, rttMs: Int? = null, lossPct: Float? = null) {
     val dim = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-    Row(modifier.height(16.dp), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.Bottom) {
-        listOf(6.dp, 11.dp, 16.dp).forEachIndexed { i, h ->
-            Box(Modifier.width(4.dp).height(h).clip(RoundedCornerShape(2.dp)).background(if (i < level) color else dim))
+    val wave = remember { Animatable(1f) }
+    var open by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+    LaunchedEffect(open) { if (open) { kotlinx.coroutines.delay(3200); open = false } }
+    Box(modifier) {
+        Row(
+            Modifier.clip(RoundedCornerShape(10.dp))
+                .clickable {
+                    haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                    open = !open
+                    scope.launch { wave.snapTo(0f); wave.animateTo(1f, tween(900, easing = FastOutSlowInEasing)) }
+                }
+                .padding(8.dp)
+                .height(16.dp),
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(3.dp),
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            listOf(6.dp, 11.dp, 16.dp).forEachIndexed { i, h ->
+                Box(
+                    Modifier.width(4.dp).height(h)
+                        .graphicsLayer {
+                            // Each bar jumps in turn: a small wave running up the bars.
+                            val local = ((wave.value * 3f) - i).coerceIn(0f, 1f)
+                            val bump = kotlin.math.sin(local * Math.PI).toFloat()
+                            scaleY = 1f + bump * 0.45f
+                            transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f)
+                        }
+                        .clip(RoundedCornerShape(2.dp)).background(if (i < level) color else dim),
+                )
+            }
+        }
+        androidx.compose.animation.AnimatedVisibility(
+            visible = open,
+            enter = androidx.compose.animation.fadeIn(tween(160)) + androidx.compose.animation.scaleIn(spring(dampingRatio = 0.6f, stiffness = 500f), initialScale = 0.7f, transformOrigin = androidx.compose.ui.graphics.TransformOrigin(1f, 0f)),
+            exit = androidx.compose.animation.fadeOut(tween(140)) + androidx.compose.animation.scaleOut(targetScale = 0.85f, transformOrigin = androidx.compose.ui.graphics.TransformOrigin(1f, 0f)),
+            modifier = Modifier.align(Alignment.TopEnd).offset(y = 36.dp),
+        ) {
+            androidx.compose.material3.Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 6.dp) {
+                Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+                    Text(
+                        stringResource(when (level) { 3 -> R.string.line_great; 2 -> R.string.line_ok; else -> R.string.line_weak }),
+                        style = MaterialTheme.typography.titleSmall, color = color,
+                    )
+                    val bits = listOfNotNull(
+                        rttMs?.takeIf { it > 0 }?.let { stringResource(R.string.line_delay, it) },
+                        lossPct?.let { stringResource(R.string.line_loss, kotlin.math.round(it * 10f) / 10f) },
+                    )
+                    if (bits.isNotEmpty()) Text(bits.joinToString(" · "), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
         }
     }
 }

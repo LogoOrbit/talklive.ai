@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Call
 import androidx.compose.foundation.clickable
@@ -192,6 +193,15 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     var showFilters by remember { mutableStateOf(false) }
     // The Plus page; from a free feature it offers to carry on free.
     var showPlus by remember { mutableStateOf<String?>(null) }
+    // Tapped "Get TalkLive Plus" on the first-launch intro: open Plus once home.
+    LaunchedEffect(Unit) {
+        val ui = context.getSharedPreferences("ui", android.content.Context.MODE_PRIVATE)
+        if (ui.getBoolean("plus_after_intro", false)) {
+            ui.edit().remove("plus_after_intro").apply()
+            kotlinx.coroutines.delay(600)
+            showPlus = "home"
+        }
+    }
     // Plus is only ever suggested gently, at most once a day, never mid-call
     // and never at launch: after a call that clearly went well (10+ minutes,
     // or both tapped the heart), and a guest's 3rd good call suggests an
@@ -278,16 +288,35 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         }
     }
 
-    // Ask once for notifications, so friends' messages and calls can reach this phone.
-    val notifPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
+    // The first time someone reaches Home: a friendly ask to turn notifications
+    // on (once), then the system prompt. Settings > Notifications has the rest.
+    val notifPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (!granted) app.talklive.ui.profile.openSystemNotificationSettings(context)
+    }
+    var notifPrompt by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         val prefs = context.getSharedPreferences("ui", android.content.Context.MODE_PRIVATE)
-        if (Build.VERSION.SDK_INT >= 33 && !prefs.getBoolean("asked_notifications", false) &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) {
-            prefs.edit().putBoolean("asked_notifications", true).apply()
-            notifPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-        }
+        if (prefs.getBoolean("notif_prompted", false)) return@LaunchedEffect
+        if (androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()) return@LaunchedEffect
+        kotlinx.coroutines.delay(1500)
+        prefs.edit().putBoolean("notif_prompted", true).putBoolean("asked_notifications", true).apply()
+        notifPrompt = true
+    }
+    if (notifPrompt) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { notifPrompt = false },
+            icon = { androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Notifications, null, tint = MaterialTheme.colorScheme.primary) },
+            title = { Text(stringResource(R.string.notif_prompt_title), textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
+            text = { Text(stringResource(R.string.notif_prompt_body), textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
+            confirmButton = {
+                androidx.compose.material3.Button(onClick = {
+                    notifPrompt = false
+                    if (Build.VERSION.SDK_INT >= 33) notifPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    else app.talklive.ui.profile.openSystemNotificationSettings(context)
+                }) { Text(stringResource(R.string.notif_prompt_yes)) }
+            },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { notifPrompt = false }) { Text(stringResource(R.string.notif_prompt_no)) } },
+        )
     }
 
     fun begin() {

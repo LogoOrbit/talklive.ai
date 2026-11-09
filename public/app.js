@@ -272,6 +272,7 @@ const loginUsername = document.getElementById('loginUsername');
 const loginPassword = document.getElementById('loginPassword');
 const loginSubmitBtn = document.getElementById('loginSubmitBtn');
 const signupUsername = document.getElementById('signupUsername');
+const signupName = document.getElementById('signupName');
 const signupPassword = document.getElementById('signupPassword');
 const signupEmail = document.getElementById('signupEmail');
 const signupSubmitBtn = document.getElementById('signupSubmitBtn');
@@ -3281,7 +3282,7 @@ function openAuthPage(tab) {
   requestAnimationFrame(() => {
     renderGoogleButtons();
     if (!wasOpen && window.matchMedia && matchMedia('(pointer: fine)').matches) {
-      const first = (tab === 'signup' ? signupEmail : loginUsername);
+      const first = (tab === 'signup' ? (signupName || signupEmail) : loginUsername);
       try { first.focus({ preventScroll: true }); } catch (_) { /* old browser */ }
     }
   });
@@ -3687,6 +3688,11 @@ function markInvalidField(input) {
 // emails a 6-digit code; step 2 sends it back with the details, and only then
 // does the server create the account.
 function signupDetailsOk() {
+  if (signupName && signupName.value.replace(/[^\p{L}\p{N}]/gu, '').length < 2) {
+    showAccountStatus(t('yourNameNeeded') === 'yourNameNeeded' ? 'Enter your name.' : t('yourNameNeeded'), 'error');
+    markInvalidField(signupName);
+    return false;
+  }
   if (signupPassword.value.length < 8) {
     showAccountStatus(t('authPasswordShort'), 'error');
     markInvalidField(signupPassword);
@@ -3717,6 +3723,7 @@ async function requestSignupCode() {
   socket.emit('signup-send-code', {
     username: signupUsername.value.trim(),
     email: signupEmail.value.trim(),
+    nickname: signupName ? signupName.value.trim() : undefined,
     dob,
   });
 }
@@ -3726,6 +3733,7 @@ document.getElementById('signupResendBtn').addEventListener('click', () => {
   socket.emit('signup-send-code', {
     username: signupUsername.value.trim(),
     email: signupEmail.value.trim(),
+    nickname: signupName ? signupName.value.trim() : undefined,
     dob: savedDob(),
   });
 });
@@ -3768,6 +3776,7 @@ signupVerifyBtn.addEventListener('click', () => {
     password: signupPassword.value,
     email: signupEmail.value.trim(),
     code: signupCode.value,
+    nickname: signupName ? signupName.value.trim() : undefined,
     dob: savedDob(),
   });
 });

@@ -118,7 +118,8 @@ fun HomeScreen(
         // The orb starts a conversation too: the biggest thing on screen should do something.
         androidx.compose.foundation.layout.BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
             val fit = (maxHeight / 230.dp).coerceIn(0.45f, 1f)
-            Box(Modifier.clip(CircleShape).clickable(enabled = connected, onClick = onStart)) {
+            // Never disabled: a tap while reconnecting starts as soon as the line is back.
+            Box(Modifier.clip(CircleShape).clickable(onClick = onStart)) {
                 MicOrb(mode == app.talklive.call.CallMode.Chat, fit)
             }
         }
@@ -174,7 +175,6 @@ fun HomeScreen(
         PrimaryButton(
             text = stringResource(if (mode == app.talklive.call.CallMode.Chat) R.string.start_chatting else R.string.start_talking),
             onClick = onStart,
-            enabled = connected,
             icon = if (mode == app.talklive.call.CallMode.Chat) Icons.AutoMirrored.Rounded.Chat else Icons.Rounded.Mic,
         )
     }

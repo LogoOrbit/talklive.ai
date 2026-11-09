@@ -36,6 +36,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Mail
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.Public
@@ -169,7 +171,11 @@ fun OnboardingFlow(vm: AuthViewModel, start: AuthRoute = AuthRoute.Choose, onClo
         label = "auth",
     ) { r ->
         when (r) {
-            AuthRoute.Welcome -> WelcomeScreen(onDone = { introPrefs.edit().putBoolean("intro_seen", true).apply(); go(AuthRoute.Choose) })
+            AuthRoute.Welcome -> WelcomeScreen(
+                onDone = { introPrefs.edit().putBoolean("intro_seen", true).apply(); go(AuthRoute.Choose) },
+                // "Get Plus" on the intro: carry on, and open Plus on arriving home.
+                onPlus = { introPrefs.edit().putBoolean("intro_seen", true).putBoolean("plus_after_intro", true).apply(); go(AuthRoute.Choose) },
+            )
             AuthRoute.Choose -> StartScreen(onStart = { go(AuthRoute.Methods) }, onLogin = { go(AuthRoute.Login) })
             AuthRoute.Age -> AgeScreen(onBack = { vm.cancelGoogle(); guestAfterGate = false; go(AuthRoute.Methods) }) { adult ->
                 when {
@@ -199,14 +205,15 @@ fun OnboardingFlow(vm: AuthViewModel, start: AuthRoute = AuthRoute.Choose, onClo
 private data class Slide(val icon: ImageVector, val title: Int, val body: Int, val faces: List<String>)
 
 @Composable
-internal fun WelcomeScreen(onDone: () -> Unit) {
+internal fun WelcomeScreen(onDone: () -> Unit, onPlus: () -> Unit = onDone) {
     val slides = remember {
         val all = app.talklive.ui.animals.Animals.map { it.id }.shuffled()
         listOf(
             // Page 0 is the welcome page (WelcomeHero); its slide is a placeholder.
             Slide(Icons.Rounded.Mic, R.string.welcome_hero_title, R.string.welcome_hero_body, all.take(2)),
-            Slide(Icons.Rounded.Public, R.string.welcome_2_title, R.string.welcome_2_body, all.drop(4).take(6)),
             Slide(Icons.Rounded.Shield, R.string.welcome_3_title, R.string.welcome_3_body, all.drop(10).take(3)),
+            // Last page: TalkLive Plus (PlusIntroPage); its slide is a placeholder.
+            Slide(Icons.Rounded.Public, R.string.intro_plus_title, R.string.intro_plus_title, emptyList()),
         )
     }
     val pager = rememberPagerState { slides.size }
@@ -233,6 +240,7 @@ internal fun WelcomeScreen(onDone: () -> Unit) {
             val offset = (pager.currentPage - page + pager.currentPageOffsetFraction).absoluteValue
             val s = slides[page]
             if (page == 0) { WelcomeHero(s.faces, Modifier.graphicsLayer { alpha = 1f - offset.coerceIn(0f, 1f) * 0.6f }); return@HorizontalPager }
+            if (page == slides.lastIndex) { PlusIntroPage(Modifier.graphicsLayer { alpha = 1f - offset.coerceIn(0f, 1f) * 0.6f }); return@HorizontalPager }
             Column(
                 Modifier.fillMaxSize().graphicsLayer {
                     alpha = 1f - offset.coerceIn(0f, 1f) * 0.6f
@@ -280,9 +288,66 @@ internal fun WelcomeScreen(onDone: () -> Unit) {
                 )
             }
         }
-        PrimaryButton(
-            text = stringResource(if (last) R.string.get_started else R.string.continue_),
-            onClick = { if (last) onDone() else scope.launch { pager.animateScrollToPage(pager.currentPage + 1) } },
+        if (last) {
+            app.talklive.ui.engage.GoldButton(stringResource(R.string.intro_plus_cta), busy = false, onClick = onPlus)
+            TextButton(onClick = onDone, modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) { Text(stringResource(R.string.not_now)) }
+        } else PrimaryButton(
+            text = stringResource(R.string.continue_),
+            onClick = { scope.launch { pager.animateScrollToPage(pager.currentPage + 1) } },
+        )
+    }
+}
+
+/**
+ * The intro's last page: what Plus adds, side by side with free, and the price
+ * in the person's own money. Shown once, on the first launch.
+ */
+@Composable
+private fun PlusIntroPage(modifier: Modifier = Modifier) {
+    val ctx = LocalContext.current
+    val gold = Brush.linearGradient(listOf(Color(0xFFFFE08A), Color(0xFFF2C14E), Color(0xFFD97706)))
+    Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        Box(
+            Modifier.size(84.dp).clip(RoundedCornerShape(26.dp)).background(gold),
+            contentAlignment = Alignment.Center,
+        ) { Text("+", style = MaterialTheme.typography.displaySmall, color = Color(0xFF2B1D00), fontWeight = androidx.compose.ui.text.font.FontWeight.Black) }
+        Spacer(Modifier.height(20.dp))
+        Text(stringResource(R.string.intro_plus_title), style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onBackground, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(20.dp))
+        // Free vs Plus, one row per perk.
+        val rows = listOf(
+            Triple(R.string.intro_plus_row_priority, null, null),
+            Triple(R.string.intro_plus_row_countries, "2", stringResource(R.string.intro_plus_all)),
+            Triple(R.string.intro_plus_row_gender, null, null),
+            Triple(R.string.intro_plus_row_undo, null, null),
+            Triple(R.string.intro_plus_row_gold, null, null),
+        )
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surface)) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Spacer(Modifier.weight(1f))
+                Text(stringResource(R.string.intro_plus_free), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
+                Text("Plus", style = MaterialTheme.typography.labelLarge, color = app.talklive.ui.theme.GoldText, modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
+            }
+            rows.forEach { (label, free, plus) ->
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 11.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(label), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+                    Box(Modifier.width(56.dp), contentAlignment = Alignment.Center) {
+                        if (free != null) Text(free, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        else Icon(Icons.Rounded.Close, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                    }
+                    Box(Modifier.width(56.dp), contentAlignment = Alignment.Center) {
+                        if (plus != null) Text(plus, style = MaterialTheme.typography.titleMedium, color = app.talklive.ui.theme.GoldText)
+                        else Box(Modifier.size(24.dp).clip(CircleShape).background(gold), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Rounded.Check, null, tint = Color(0xFF2B1D00), modifier = Modifier.size(16.dp))
+                        }
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(14.dp))
+        Text(
+            stringResource(R.string.intro_plus_price, app.talklive.billing.LocalPrice.of(ctx, 10.0), app.talklive.billing.LocalPrice.of(ctx, 2.0)),
+            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center,
         )
     }
 }
@@ -602,18 +667,24 @@ private fun AccountStep(vm: AuthViewModel) {
     LaunchedEffect(Unit) { focus.requestFocus() }
     ScreenTitle(stringResource(R.string.signup_account_title), stringResource(R.string.signup_account_body))
     Spacer(Modifier.height(28.dp))
-    // Email and password only: the server makes the internal username, and
-    // people find each other by Friend ID.
+    // A name people will see and a password: the server makes the internal
+    // username, and people find each other by Friend ID (made from the name).
+    val passFocus = remember { FocusRequester() }
+    TalkTextField(
+        value = vm.nickname, onValueChange = { vm.nickname = it.take(20) }, label = stringResource(R.string.your_name),
+        supporting = stringResource(R.string.your_name_hint), focusRequester = focus, onIme = { passFocus.requestFocus() },
+    )
+    Spacer(Modifier.height(8.dp))
     TalkTextField(
         value = vm.password, onValueChange = { vm.password = it }, label = stringResource(R.string.password),
         password = true, imeAction = ImeAction.Done, onIme = vm::next,
-        supporting = stringResource(R.string.password_hint), focusRequester = focus,
+        supporting = stringResource(R.string.password_hint), focusRequester = passFocus,
     )
     ErrorBanner(vm.error)
     Spacer(Modifier.height(24.dp))
     PrimaryButton(
         stringResource(R.string.send_code), onClick = vm::next,
-        enabled = vm.passwordValid, loading = vm.busy,
+        enabled = vm.nicknameValid && vm.passwordValid, loading = vm.busy,
     )
 }
 

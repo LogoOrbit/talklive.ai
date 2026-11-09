@@ -39,6 +39,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.Movie
+import androidx.compose.material.icons.rounded.NotificationsOff
+import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.CardGiftcard
 import androidx.compose.material.icons.rounded.WorkspacePremium
@@ -236,6 +238,7 @@ fun ProfileScreen(
                 "films" -> app.talklive.ui.engage.FilmsSheet(engageVm, films, premium.active, onPlus = { youSheet = "plus-locked" }) { youSheet = null }
                 "likes" -> app.talklive.ui.engage.LikesSheet(engageVm, onPlus = { youSheet = "plus-locked" }) { youSheet = null }
                 "invite" -> app.talklive.ui.engage.InviteSheet(engageVm) { youSheet = null }
+                "notifications" -> NotificationSettingsSheet(vm.notif) { youSheet = null }
                 "feedback" -> app.talklive.ui.engage.FeedbackSheet(onSend = { engageVm.sendFeedback(it); vm.saved = context.getString(R.string.feedback_thanks) }) { youSheet = null }
                 "problem" -> app.talklive.ui.engage.FeedbackSheet(problem = true, onSend = { engageVm.sendFeedback(it, problem = true); vm.saved = context.getString(R.string.problem_thanks) }) { youSheet = null }
                 "support" -> androidx.compose.ui.window.Dialog(
@@ -305,6 +308,17 @@ fun ProfileScreen(
                 SettingRow(Icons.Rounded.Block, stringResource(R.string.blocked_people), if (blocked.isEmpty()) stringResource(R.string.none) else blocked.size.toString()) {
                     vm.open(ProfileSheet.Blocked)
                 }
+            }
+
+            Section(stringResource(R.string.notif_settings_title)) {
+                val notifOn = rememberNotificationsAllowed()
+                val notifState by vm.notif.state.collectAsStateWithLifecycle()
+                val offCount = notifState.values.count { !it }
+                SettingRow(
+                    if (notifOn) Icons.Rounded.Notifications else Icons.Rounded.NotificationsOff,
+                    stringResource(R.string.notif_settings_title),
+                    when { !notifOn -> stringResource(R.string.notif_row_blocked); offCount == 0 -> stringResource(R.string.notif_row_all); else -> stringResource(R.string.notif_row_some) },
+                ) { youSheet = "notifications" }
             }
 
             Section(stringResource(R.string.section_appearance)) {

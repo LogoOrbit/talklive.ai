@@ -282,13 +282,18 @@ fun PlusContent(
                                     Text("TalkLive Plus", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
                                     Text(stringResource(R.string.plus_monthly), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.72f))
                                 }
-                                Text(stringResource(R.string.plus_price_month, "$10"), style = MaterialTheme.typography.titleMedium.copy(brush = GoldBrush), fontWeight = FontWeight.Black)
+                                Text(stringResource(R.string.plus_price_month, app.talklive.billing.LocalPrice.of(androidx.compose.ui.platform.LocalContext.current, 10.0)), style = MaterialTheme.typography.titleMedium.copy(brush = GoldBrush), fontWeight = FontWeight.Black)
                             }
                         }
                         Text(stringResource(R.string.pass_heading), style = MaterialTheme.typography.titleSmall, color = Color.White.copy(alpha = 0.8f), modifier = Modifier.fillMaxWidth().padding(top = 10.dp), textAlign = TextAlign.Center)
                         Text(stringResource(R.string.pass_sub), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.72f), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                            listOf(app.talklive.billing.PlusPass("pass_1d", 1, "$2", 0), app.talklive.billing.PlusPass("pass_7d", 7, "$5", 0), app.talklive.billing.PlusPass("pass_15d", 15, "$7", 0)).forEachIndexed { i, pass ->
+                            val ctx = androidx.compose.ui.platform.LocalContext.current
+                            listOf(
+                                app.talklive.billing.LocalPrice.pass(ctx, "pass_1d", 1, 2.0),
+                                app.talklive.billing.LocalPrice.pass(ctx, "pass_7d", 7, 5.0),
+                                app.talklive.billing.LocalPrice.pass(ctx, "pass_15d", 15, 7.0),
+                            ).forEachIndexed { i, pass ->
                                 PassCard(pass, badge = when (i) { 1 -> stringResource(R.string.pass_popular); 2 -> stringResource(R.string.pass_best); else -> null }, selected = shownPick == i) { shownPick = i }
                             }
                         }
@@ -376,7 +381,7 @@ fun PlusContent(
 
 /** Gold, with a slow shine passing across it. */
 @Composable
-private fun GoldButton(text: String, busy: Boolean, onClick: () -> Unit) {
+internal fun GoldButton(text: String, busy: Boolean, onClick: () -> Unit) {
     val still = app.talklive.ui.theme.LocalReduceMotion.current
     val shine = if (still) -9f else rememberInfiniteTransition(label = "shine").animateFloat(-0.4f, 1.4f, infiniteRepeatable(tween(2600, easing = LinearEasing)), label = "x").value
     Box(
@@ -671,12 +676,10 @@ private fun PassCard(pass: app.talklive.billing.PlusPass, badge: String?, select
                         stringResource(R.string.pass_name, pass.days),
                         style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White,
                     )
-                    val perDay = priceMicros(pass.price)?.takeIf { pass.days > 1 }?.let { cents ->
-                        val digits = pass.price.filter { it.isDigit() }.length
-                        val decimals = if (pass.price.contains('.') || pass.price.contains(',')) 2 else 0
-                        val whole = cents / Math.pow(10.0, decimals.toDouble())
-                        val sym = pass.price.takeWhile { !it.isDigit() }.trim()
-                        if (digits > 0) "$sym%.2f".format(whole / pass.days) else null
+                    // Per day from the real amount and currency (formatted text can't be parsed
+                    // safely: "PKR 1,399" and "1.399 €" mean the same number).
+                    val perDay = pass.takeIf { it.days > 1 && it.priceMicros > 0 && it.currency.isNotBlank() }?.let {
+                        app.talklive.billing.LocalPrice.format(it.priceMicros / 1_000_000.0 / it.days, it.currency, 2)
                     }
                     Text(
                         if (perDay != null) stringResource(R.string.pass_per_day, perDay) else stringResource(R.string.pass_once),

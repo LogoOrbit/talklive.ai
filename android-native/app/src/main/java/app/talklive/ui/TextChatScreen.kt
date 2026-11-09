@@ -134,7 +134,8 @@ fun TextChatScreen(
     LaunchedEffect(messages.size, state.partnerTyping) { if (messages.isNotEmpty()) listState.animateScrollToItem(0) }
     LaunchedEffect(partner?.clientId) { draft = ""; replyTo = null }
 
-    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).imePadding()) {
+    // Covers Home completely: taps on empty space must not reach the buttons underneath.
+    Column(Modifier.fillMaxSize().clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null) {}.background(MaterialTheme.colorScheme.background).imePadding()) {
         // While searching the middle of the screen says it all: just a way out up here.
         if (partner == null) Box(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp)) {
             app.talklive.ui.call.LeaveButton(onEnd)

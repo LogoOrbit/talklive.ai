@@ -68,6 +68,9 @@ data class CallState(
     /** A phone call or another app took the microphone. */
     val onHold: Boolean = false,
     val quality: LinkQuality = LinkQuality.Good,
+    /** Last measured round trip and packet loss, for the signal bars' card. */
+    val rttMs: Int? = null,
+    val lossPct: Float? = null,
     /** A call with a friend (started from Friends), not a random match. */
     val friendCall: Boolean = false,
     val mode: CallMode = CallMode.Talk,
@@ -348,7 +351,8 @@ class CallManager @Inject constructor(
         }
         scope.launch(Dispatchers.Default) { runCatching { rtc.factory } }
         setPhase(CallPhase.Searching())
-        socket.emit("find-partner", searchOpts())
+        if (socket.isConnected()) socket.emit("find-partner", searchOpts())
+        else socket.reconnectNow() // the search is sent once registered (ServerEvent.Registered)
     }
 
     private fun resetPartnerState() {
@@ -403,7 +407,9 @@ class CallManager @Inject constructor(
                 audio.stop()
                 _state.update { CallState(notice = CallNotice.Banned) }
             }
-            ServerEvent.Registered -> Unit
+            // Back on the line (a reconnect after the background, or Start tapped
+            // while reconnecting): the server lost the old search, so ask again.
+            ServerEvent.Registered -> if (phase is CallPhase.Searching) socket.emit("find-partner", searchOpts())
             is ServerEvent.StrangerMessage -> if (phase is CallPhase.Connected) {
                 _chat.update { list ->
                     if (list.any { it.id == e.id }) list
@@ -611,7 +617,7 @@ class CallManager @Inject constructor(
                             loss > 0.02f || rtt > 300 -> LinkQuality.Fair
                             else -> LinkQuality.Good
                         }
-                        _state.update { it.copy(quality = q) }
+                        _state.update { it.copy(quality = q, rttMs = st.rttMs, lossPct = loss * 100f) }
                         quality.add(st, loss, q == LinkQuality.Poor)
                     }
                 }

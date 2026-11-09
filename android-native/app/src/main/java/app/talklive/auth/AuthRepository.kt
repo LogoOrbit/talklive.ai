@@ -89,18 +89,20 @@ class AuthRepository(
     suspend fun login(user: String, password: String): AuthResult =
         call("login", JSONObject().put("username", user.trim()).put("password", password), "login-result")
 
-    suspend fun sendSignupCode(username: String, email: String): AuthResult =
+    suspend fun sendSignupCode(username: String, email: String, nickname: String = ""): AuthResult =
         call(
             "signup-send-code",
-            JSONObject().put("username", username.trim()).put("email", email.trim()).put("dob", app.talklive.data.AgeGate.dob(appContext)),
+            JSONObject().put("username", username.trim()).put("email", email.trim()).put("dob", app.talklive.data.AgeGate.dob(appContext))
+                .apply { if (nickname.isNotBlank()) put("nickname", nickname.trim()) },
             "signup-code-result",
             signsIn = false,
         )
 
-    suspend fun signup(username: String, email: String, password: String, code: String): AuthResult =
+    suspend fun signup(username: String, email: String, password: String, code: String, nickname: String = ""): AuthResult =
         call(
             "signup",
-            JSONObject().put("username", username.trim()).put("email", email.trim()).put("password", password).put("code", code).put("dob", app.talklive.data.AgeGate.dob(appContext)),
+            JSONObject().put("username", username.trim()).put("email", email.trim()).put("password", password).put("code", code).put("dob", app.talklive.data.AgeGate.dob(appContext))
+                .apply { if (nickname.isNotBlank()) put("nickname", nickname.trim()) },
             "signup-result",
         )
 

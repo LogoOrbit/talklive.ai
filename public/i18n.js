@@ -69,6 +69,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "authFillBoth": "Enter your username (or email) and password.",
     "authPasswordShort": "Password must be at least 8 characters.",
     "usernameOrEmail": "Email",
+    "yourName": "Your name",
     "showPassword": "Show password",
     "hidePassword": "Hide password",
     "capsLockOn": "Caps Lock is on",

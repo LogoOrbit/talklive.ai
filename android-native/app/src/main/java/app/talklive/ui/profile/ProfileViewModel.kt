@@ -25,6 +25,7 @@ class ProfileViewModel @Inject constructor(
     private val privacy: app.talklive.data.PrivacyStore,
     private val socket: app.talklive.net.TalkSocket,
     private val social: app.talklive.social.SocialRepository,
+    val notif: app.talklive.data.NotifSettings,
 ) : ViewModel() {
     val hideStatus = privacy.hideStatus
     val autoConnect = calls.autoConnect

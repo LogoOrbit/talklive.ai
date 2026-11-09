@@ -32,7 +32,9 @@ import javax.inject.Singleton
 class LocalNotifier @Inject constructor(
     @ApplicationContext private val context: Context,
     private val social: SocialRepository,
+    private val notif: app.talklive.data.NotifSettings,
 ) {
+    private fun on(k: app.talklive.data.NotifSettings.Kind) = notif.allows(k)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val nm get() = NotificationManagerCompat.from(context)
 
@@ -46,7 +48,7 @@ class LocalNotifier @Inject constructor(
                 seen?.let { before ->
                     val fresh = list.filter { it.clientId !in before }
                     // A reloaded inbox (several at once) is not news.
-                    if (background() && fresh.size <= 3) fresh.forEach { p ->
+                    if (background() && fresh.size <= 3 && on(app.talklive.data.NotifSettings.Kind.Friends)) fresh.forEach { p ->
                         post("req:${p.clientId}", context.getString(R.string.n_request_title, p.displayName), context.getString(R.string.n_request_body), "requests", social = true)
                     }
                 }
@@ -65,7 +67,7 @@ class LocalNotifier @Inject constructor(
                 seen?.let { before ->
                     val accepted = list.filter { it.clientId !in before && it.clientId in pendingAsked }
                     pendingAsked = pendingAsked - accepted.map { it.clientId }.toSet()
-                    if (background() && accepted.size <= 3) accepted.forEach { p ->
+                    if (background() && accepted.size <= 3 && on(app.talklive.data.NotifSettings.Kind.Friends)) accepted.forEach { p ->
                         post("acc:${p.clientId}", context.getString(R.string.n_accepted_title, p.displayName), context.getString(R.string.n_accepted_body), "chat:${p.clientId}", social = true)
                     }
                 }
@@ -84,7 +86,7 @@ class LocalNotifier @Inject constructor(
                     if (fresh.size in 1..20) fresh.groupBy { it.first }.forEach { (who, msgs) ->
                         // Like a messenger: nothing while that chat is on screen, nothing for muted chats.
                         if (!background() && social.openChat == who) return@forEach
-                        if (who in social.muted.value) return@forEach
+                        if (who in social.muted.value || !on(app.talklive.data.NotifSettings.Kind.Messages)) return@forEach
                         msgs.forEach { (_, m) -> pending.getOrPut(who) { mutableListOf() }.add(Line(textOf(m), m.ts, false)) }
                         if (background()) showConversation(who)
                     }
@@ -103,7 +105,7 @@ class LocalNotifier @Inject constructor(
             social.activity.collect { list ->
                 val ids = list.mapTo(HashSet()) { it.id }
                 seen?.let { before ->
-                    if (background()) list.filter { it.id !in before && it.type == "call_back_request" }.forEach { a ->
+                    if (background() && on(app.talklive.data.NotifSettings.Kind.Calls)) list.filter { it.id !in before && it.type == "call_back_request" }.forEach { a ->
                         post("call:${a.fromClientId}", context.getString(R.string.activity_missed_call, a.username), context.getString(R.string.n_missed_body), "requests", calls = true)
                     }
                 }
@@ -113,6 +115,7 @@ class LocalNotifier @Inject constructor(
         scope.launch {
             social.incoming.collect { inc ->
                 if (inc == null) { nm.cancel(TAG_RING, 0); return@collect }
+                if (!on(app.talklive.data.NotifSettings.Kind.Calls)) return@collect
                 ring(inc.fromClientId, inc.username)
             }
         }

@@ -157,7 +157,23 @@ setInterval(() => {
  * `topic` collapses repeats: ten messages from the same friend while the tab is
  * closed is one notification, not ten. Returns the number of devices reached.
  */
+// Which pushes a person turned off in the app (messages, calls, friends,
+// online). Set by server/index.js; system notifications can only be held back
+// here, never on the phone.
+let allowFn = () => true;
+function setFilter(fn) { allowFn = fn; }
+function categoryOf(topic, kind) {
+  const t = String(topic || '');
+  if (t.startsWith('msg:')) return 'messages';
+  if (t.startsWith('call:') || kind === 'call') return 'calls';
+  if (t.startsWith('req:') || t.startsWith('acc:')) return 'friends';
+  if (t.startsWith('online:')) return 'online';
+  return null;
+}
+
 async function send(clientId, { topic, title, body, url, tag, kind }) {
+  const category = categoryOf(topic, kind);
+  if (category && !allowFn(clientId, category)) return 0;
   if ((!ready && !fcm) || !clientId) return 0;
   if (throttled(clientId, topic || title)) return 0;
   const subs = store.pushSubscriptions(clientId);
@@ -204,4 +220,6 @@ async function send(clientId, { topic, title, body, url, tag, kind }) {
   return delivered;
 }
 
-module.exports = { configured, fcmConfigured, publicKey, send, FCM_PREFIX };
+module.exports = {
+  setFilter,
+  categoryOf, configured, fcmConfigured, publicKey, send, FCM_PREFIX };

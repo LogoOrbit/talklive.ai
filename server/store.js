@@ -235,6 +235,8 @@ function defaults() {
     // Account settings saved in the cloud (theme, sounds, privacy switches):
     // username (lowercase) -> { key: boolean | number | short string }.
     accountSettings: {},
+    // Notification switches per profile: clientId -> { messages, calls, friends, online } (false = off).
+    notifPrefs: {},
     // "Get email updates" sign-ups from the public site footer, double opt-in:
     // lowercased email -> { email, status: 'pending'|'confirmed', tokenHash,
     // createdAt, confirmedAt, source, country }. Only 'confirmed' rows are
@@ -316,6 +318,7 @@ function applyParsed(parsed) {
   data.favFilms = parsed.favFilms || {};
   data.plusLook = parsed.plusLook || {};
   data.accountSettings = parsed.accountSettings || {};
+  data.notifPrefs = parsed.notifPrefs || {};
   data.subscribers = parsed.subscribers || {};
   for (const [id, c] of Object.entries(data.contactConsent)) {
     if (!c || c.on !== true) delete data.contactConsent[id];
@@ -2385,6 +2388,18 @@ function isPremiumClient(clientId) {
 // --- Plus look: the invite reward ------------------------------------------
 // Three verified friends earn the gold profile ring and one legendary avatar
 // (picked once) for a while. Nothing else of Plus.
+const NOTIF_KINDS = ['messages', 'calls', 'friends', 'online'];
+function getNotifPrefs(clientId) { return (data.notifPrefs && data.notifPrefs[clientId]) || {}; }
+function setNotifPrefs(clientId, prefs) {
+  if (!clientId || !prefs || typeof prefs !== 'object') return;
+  if (!data.notifPrefs) data.notifPrefs = {};
+  const off = {};
+  for (const k of NOTIF_KINDS) if (prefs[k] === false) off[k] = false;
+  const before = JSON.stringify(data.notifPrefs[clientId] || {});
+  if (Object.keys(off).length) data.notifPrefs[clientId] = off; else delete data.notifPrefs[clientId];
+  if (JSON.stringify(data.notifPrefs[clientId] || {}) !== before) save();
+}
+
 const SETTING_KEY = /^[a-zA-Z][a-zA-Z0-9_]{0,39}$/;
 function getAccountSettings(usernameLower) {
   return (data.accountSettings && data.accountSettings[usernameLower]) || {};
@@ -3713,6 +3728,8 @@ function publicModes() {
 module.exports = {
   plusLook,
   getAccountSettings,
+  getNotifPrefs,
+  setNotifPrefs,
   moveReferralClaim,
   mergeAccountSettings,
   extendPlusLook,

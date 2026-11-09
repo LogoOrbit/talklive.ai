@@ -42,7 +42,7 @@ import javax.inject.Singleton
 data class PlusPlan(val basePlanId: String, val price: String, val period: String, val offerToken: String, val trial: String?)
 
 /** A one-time pass: Plus for [days] days, no renewal. */
-data class PlusPass(val productId: String, val days: Int, val price: String, val priceMicros: Long)
+data class PlusPass(val productId: String, val days: Int, val price: String, val priceMicros: Long, val currency: String = "")
 
 sealed interface BillingState {
     data object Loading : BillingState
@@ -126,7 +126,7 @@ class PlayBilling @Inject constructor(
         passDetails = passList.associateBy { it.productId }
         val passes = passList.mapNotNull { d ->
             @Suppress("DEPRECATION") val offer = d.oneTimePurchaseOfferDetails ?: return@mapNotNull null
-            PlusPass(d.productId, PASS_DAYS[d.productId] ?: return@mapNotNull null, offer.formattedPrice, offer.priceAmountMicros)
+            PlusPass(d.productId, PASS_DAYS[d.productId] ?: return@mapNotNull null, offer.formattedPrice, offer.priceAmountMicros, offer.priceCurrencyCode)
         }.sortedBy { it.days }
         _state.value = if (plans.isEmpty() && passes.isEmpty()) BillingState.Unavailable else BillingState.Ready(plans, passes)
         restore(quiet = true)

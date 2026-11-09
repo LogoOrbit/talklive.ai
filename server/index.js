@@ -35,6 +35,8 @@ const billing = require('./billing');
 const playBilling = require('./play-billing');
 const play = playBilling.createPlayBilling();
 const push = require('./push');
+// Kinds of push a person turned off in the app are skipped.
+push.setFilter((clientId, category) => store.getNotifPrefs(clientId)[category] !== false);
 const flags = require('./flags');
 const { minifiedScripts } = require('./minified');
 const ageAssurance = require('./age-assurance');
@@ -5427,6 +5429,12 @@ io.on('connection', (socket) => {
   });
 
   // Settings changed on a signed-in device are saved to the account.
+  // Notification switches from the app: pushes of a kind turned off are skipped.
+  socket.on('notif-prefs', ({ prefs } = {}) => {
+    const me = profiles.get(socket.id);
+    if (me) store.setNotifPrefs(me.clientId, prefs);
+  });
+
   socket.on('settings-save', ({ settings } = {}) => {
     const usernameLower = socketAuth.get(socket.id);
     if (!usernameLower) return;
@@ -5888,9 +5896,9 @@ io.on('connection', (socket) => {
           let settled = false;
           const done = (alive) => { if (!settled) { settled = true; resolve(alive); } };
           try {
-            incumbent.timeout(2000).emit('identity-ping', (err) => done(!err));
+            incumbent.timeout(1200).emit('identity-ping', (err) => done(!err));
           } catch (_) { done(false); }
-          setTimeout(() => done(false), 2500);
+          setTimeout(() => done(false), 1500);
         })
         : false;
 
@@ -5920,6 +5928,7 @@ io.on('connection', (socket) => {
       }
       clientSockets.delete(clientId);
     }
+    if (data.notifPrefs && typeof data.notifPrefs === 'object') store.setNotifPrefs(clientId, data.notifPrefs);
     const issuedIdentityToken = signIdentity(clientId);
     identityTokens.set(clientId, issuedIdentityToken);
     identityTokenSeen.set(clientId, Date.now());

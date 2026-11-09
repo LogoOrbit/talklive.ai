@@ -246,6 +246,8 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
         if (!socket.connected()) socket.connect()
     }
 
+    fun isConnected() = socket.connected()
+
     /** Connects if needed and waits up to [ms] for it; true once connected. */
     suspend fun awaitConnected(ms: Long = 10_000): Boolean {
         if (_connected.value) return true
@@ -271,7 +273,7 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
         val answered = java.util.concurrent.atomic.AtomicBoolean(false)
         socket.emit("app-ping", io.socket.client.Ack { answered.set(true) })
         Thread {
-            runCatching { Thread.sleep(3_000) }
+            runCatching { Thread.sleep(1_500) }
             verifying = false
             if (!answered.get()) {
                 Log.i(TAG, "connection stale, reconnecting")

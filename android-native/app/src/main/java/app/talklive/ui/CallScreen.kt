@@ -175,7 +175,7 @@ fun CallScreen(
                     else -> 0 to Success
                 }
                 if (level > 0) {
-                    app.talklive.ui.call.SignalBars(level, tint, Modifier.padding(end = 12.dp))
+                    app.talklive.ui.call.SignalBars(level, tint, Modifier.padding(end = 4.dp), rttMs = state.rttMs, lossPct = state.lossPct)
                 }
             }
             if (onGames != null && live) {

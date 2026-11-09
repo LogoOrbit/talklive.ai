@@ -28,6 +28,9 @@ class AuthViewModel @Inject constructor(private val auth: AuthRepository) : View
     var step by mutableStateOf(SignupStep.Email); internal set
     var email by mutableStateOf("")
     var username by mutableStateOf("")
+    /** The name people see (and the Friend ID is made from), asked at sign-up. */
+    var nickname by mutableStateOf("")
+    val nicknameValid get() = nickname.trim().count { it.isLetterOrDigit() } >= 2
     var password by mutableStateOf("")
     var code by mutableStateOf("")
     var resendIn by mutableStateOf(0); private set
@@ -115,14 +118,14 @@ class AuthViewModel @Inject constructor(private val auth: AuthRepository) : View
     }
 
     fun sendCode() = run {
-        when (val r = auth.sendSignupCode(username, email)) {
+        when (val r = auth.sendSignupCode(username, email, nickname)) {
             AuthResult.Ok -> { step = SignupStep.Code; startResendTimer() }
             is AuthResult.Error -> error = r.message
         }
     }
 
     fun verify(digits: String) = run {
-        val r = auth.signup(username, email, password, digits)
+        val r = auth.signup(username, email, password, digits, nickname)
         if (r is AuthResult.Error) { error = r.message; code = "" }
     }
 
