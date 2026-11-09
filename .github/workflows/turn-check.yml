@@ -1,0 +1,15 @@
+name: Relay check
+on:
+  push:
+    branches: ['claude/**']
+    paths: ['scripts/turn-check.js', '.github/workflows/turn-check.yml']
+  workflow_dispatch:
+jobs:
+  turn:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm i --no-save playwright@1.48.2 && npx playwright install --with-deps chromium
+      - run: node scripts/turn-check.js
