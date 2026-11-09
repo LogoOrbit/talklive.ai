@@ -507,10 +507,12 @@ internal fun ChooseScreen(vm: AuthViewModel, onSignup: () -> Unit, onLogin: () -
         }
         Spacer(Modifier.height(4.dp))
         // The rules are one tap away before anyone talks to a stranger.
-        Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+        @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+        androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.Center) {
             listOf(R.string.terms to "terms", R.string.privacy_policy to "privacy", R.string.community_guidelines to "community-guidelines").forEach { (label, page) ->
                 Text(
                     stringResource(label), style = MaterialTheme.typography.labelMedium, color = app.talklive.ui.theme.AccentText,
+                    maxLines = 1, softWrap = false,
                     modifier = Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
                         .clickable { runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("${app.talklive.net.ServerConfig.url}/$page"))) } }
                         .padding(horizontal = 6.dp, vertical = 6.dp),

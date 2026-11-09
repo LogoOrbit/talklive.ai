@@ -92,10 +92,13 @@ internal fun TermsReader(onDismiss: () -> Unit, onAgree: () -> Unit) {
                 }
                 Spacer(Modifier.height(18.dp))
                 Text(stringResource(R.string.terms_full_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Row(Modifier.padding(top = 4.dp, bottom = 16.dp)) {
+                // Whole links that wrap to the next line, never broken mid-word.
+                @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                androidx.compose.foundation.layout.FlowRow(Modifier.padding(top = 4.dp, bottom = 16.dp)) {
                     listOf(R.string.terms to "terms", R.string.privacy_policy to "privacy", R.string.community_guidelines to "community-guidelines").forEach { (label, page) ->
                         Text(
                             stringResource(label), style = MaterialTheme.typography.labelLarge, color = app.talklive.ui.theme.AccentText,
+                            maxLines = 1, softWrap = false,
                             modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { open(page) }.padding(horizontal = 6.dp, vertical = 8.dp),
                         )
                     }
