@@ -125,9 +125,12 @@ time.sleep(6)
 
 # 1. First launch: three intro swipes, then the ways in.
 step("Welcome page", wait_for(r"welcome to talklive", 40))
-tap(r"^continue$"); tap(r"^continue$")
-step("Intro last slide", wait_for(r"you stay in control", 10))
-tap(r"get started")
+tap(r"^continue$")
+step("Intro middle slide", wait_for(r"you stay in control", 10))
+tap(r"^continue$")
+# The last intro page offers TalkLive Plus; "Not now" carries on to the start screen.
+step("Intro Plus offer", wait_for(r"get more with talklive plus", 10))
+tap(r"^not now$")
 step("Start screen", wait_for(r"talk to someone new", 20))
 tap(r"get started")
 step("Ways in", wait_for(r"continue as guest", 15))
