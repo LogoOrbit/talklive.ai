@@ -4416,12 +4416,79 @@ function churnHeld(profile) {
   return !!rec && rec.holdUntil > Date.now();
 }
 
+// --- Bot quarantine ----------------------------------------------------------
+// November 2026: scripted clients joined the voice queue, stayed about four
+// seconds and left, hundreds of times a day each - by the 9th they were 59% of
+// all call activity, and real people's calls connected a third as often.
+// Pausing them (above) only slows them. A quarantined client keeps "working":
+// it searches and is matched, but only ever with other quarantined clients, so
+// nobody real meets it and it is given no signal to adapt to.
+//
+// A client is quarantined when
+//   - its id is not one our website or app generates (website ids are 'c_' +
+//     lowercase base36, app ids 'a_' + hex): no capital letters either way; or
+//   - nearly every match it had recently, it ended itself within seconds
+//     (QUICK_LIMIT of its last QUICK_SAMPLE), counted per device and, with a
+//     much higher bar because carriers share addresses, per IP.
+// Signed-in accounts and Plus members are never quarantined on behaviour.
+const QUICK_END_MS = 6500;
+// Tests shrink the sample; production always uses 10 of the last 12.
+const QUICK_SAMPLE = (process.env.NODE_ENV !== 'production' && Number(process.env.QUARANTINE_SAMPLE)) || 12;
+const QUICK_LIMIT = (process.env.NODE_ENV !== 'production' && Number(process.env.QUARANTINE_LIMIT)) || 10;
+const IP_SAMPLE = 40;
+const IP_LIMIT = 37;
+const QUARANTINE_MS = 60 * 60 * 1000;
+const QUARANTINE_MAX_MS = 24 * 60 * 60 * 1000;
+const matchEnds = new Map(); // 'c:<clientId>' | 'i:<ip>' -> [quick?]
+const quarantine = new Map(); // same keys -> { until, strikes }
+function foreignClientId(clientId) {
+  return (process.env.NODE_ENV === 'production' || process.env.QUARANTINE_FOREIGN_IDS === '1') && /[A-Z]/.test(String(clientId || ''));
+}
+function noteMatchEnd(socketId, profile, ms) {
+  if (!profile || !profile.clientId) return;
+  if (socketAuth.get(socketId) || isPremium(profile.clientId)) return;
+  const now = Date.now();
+  const sock = io.sockets.sockets.get(socketId);
+  const ip = profile.ip || (sock ? getClientIp(sock) : null);
+  const keys = [['c:' + profile.clientId, QUICK_SAMPLE, QUICK_LIMIT]];
+  if (ip) keys.push(['i:' + ip, IP_SAMPLE, IP_LIMIT]);
+  for (const [key, sample, limit] of keys) {
+    const list = matchEnds.get(key) || [];
+    list.push(ms < QUICK_END_MS ? 1 : 0);
+    while (list.length > sample) list.shift();
+    matchEnds.set(key, list);
+    if (list.length >= sample && list.reduce((n, x) => n + x, 0) >= limit) {
+      const rec = quarantine.get(key) || { until: 0, strikes: 0 };
+      rec.strikes = Math.min(rec.strikes + 1, 6);
+      rec.until = now + Math.min(QUARANTINE_MS * 2 ** (rec.strikes - 1), QUARANTINE_MAX_MS);
+      quarantine.set(key, rec);
+      matchEnds.delete(key);
+      store.recordFeature('bot_quarantine');
+    }
+  }
+  if (matchEnds.size > 20000) matchEnds.clear();
+  if (quarantine.size > 20000) for (const [k, v] of quarantine) if (v.until < now) quarantine.delete(k);
+}
+function quarantined(profile, socketId) {
+  if (!profile) return false;
+  if (foreignClientId(profile.clientId)) return true;
+  const now = Date.now();
+  const byClient = quarantine.get('c:' + profile.clientId);
+  if (byClient && byClient.until > now) return true;
+  const sock = socketId && io.sockets.sockets.get(socketId);
+  const ip = profile.ip || (sock ? getClientIp(sock) : null);
+  const byIp = ip && quarantine.get('i:' + ip);
+  // An address under quarantine does not drag in accounts or Plus members on it.
+  return !!byIp && byIp.until > now && !(socketId && socketAuth.get(socketId)) && !isPremium(profile.clientId);
+}
+
 function disconnectPartner(socketId, opts = {}) {
   const partnerId = partners.get(socketId);
   if (!partnerId) return null;
   {
     const me = profiles.get(socketId);
     if (me && me.matchedAt && Date.now() - me.matchedAt < EARLY_END_MS) noteEarlyEnd(me.clientId);
+    if (me && me.matchedAt) noteMatchEnd(socketId, me, Date.now() - me.matchedAt);
   }
   partners.delete(socketId);
   partners.delete(partnerId);
@@ -4432,7 +4499,7 @@ function disconnectPartner(socketId, opts = {}) {
   const startedAt = (profile && profile.matchedAt) || (partnerProfile && partnerProfile.matchedAt) || 0;
   if (startedAt) {
     const ms = Date.now() - startedAt;
-    store.recordFeature(ms >= REAL_CONVERSATION_MS ? 'conversation_real' : 'conversation_brief');
+    if (!quarantined(profile || partnerProfile, socketId)) store.recordFeature(ms >= REAL_CONVERSATION_MS ? 'conversation_real' : 'conversation_brief');
     if (ms >= REAL_CONVERSATION_MS) {
       if (profile) settleReferral(profile.clientId);
       if (partnerProfile) settleReferral(partnerProfile.clientId);
@@ -4444,7 +4511,8 @@ function disconnectPartner(socketId, opts = {}) {
   if (profile && partnerProfile) {
     notePairParted(profile.clientId, partnerProfile.clientId, opts.failed);
     // A pairing whose media never came up was not a conversation.
-    if (startedAt && !opts.failed) {
+    // Nothing a quarantined pair does is anyone's talk time, streak or stats.
+    if (startedAt && !opts.failed && !quarantined(profile, socketId)) {
       const seconds = Math.round((Date.now() - startedAt) / 1000);
       patterns.onPairEnd({ left: partnerProfile.clientId, leftName: partnerProfile.username, seconds });
       noteCallForAnalytics(socketId, profile, partnerId, partnerProfile, seconds);
@@ -4751,6 +4819,8 @@ function findBestMatch(socketId) {
   pruneQueue();
   // Paused for dropping matches: waits in the queue, matched with nobody.
   if (churnHeld(seeker)) return -1;
+  // Quarantined clients and everyone else are two separate pools.
+  const seekerQuarantined = quarantined(seeker, socketId);
 
   // Prioritize reconnecting with a recent match if both hearted each other last time.
   for (let i = 0; i < waitingQueue.length; i++) {
@@ -4758,6 +4828,7 @@ function findBestMatch(socketId) {
     const candidate = profiles.get(candidateId);
     if (!candidate || !io.sockets.sockets.get(candidateId)) continue;
     if (churnHeld(candidate)) continue;
+    if (quarantined(candidate, candidateId) !== seekerQuarantined) continue;
     if (isBlockedPair(seeker.clientId, candidate.clientId)) continue;
     // A mutual heart may override the preference filters, but never the two
     // hard gates. Mode is one of them: this path used to skip it entirely, so a
@@ -4785,6 +4856,7 @@ function findBestMatch(socketId) {
     const candidate = profiles.get(candidateId);
     if (!candidate || !io.sockets.sockets.get(candidateId)) continue;
     if (churnHeld(candidate)) continue;
+    if (quarantined(candidate, candidateId) !== seekerQuarantined) continue;
     if (!mutuallyCompatible(seeker, candidate)) continue;
 
     const score = matchScore(seeker, candidate);
@@ -4841,7 +4913,8 @@ function pairSockets(socketId, partnerId, opts = {}) {
   }
 
   const mode = seekerProfile.mode || 'talk';
-  store.recordFeature(mode === 'chat' ? 'chat_match' : 'match');
+  // Quarantined pairs are counted on their own, so the dashboard's matches are people.
+  store.recordFeature(quarantined(seekerProfile) ? 'bot_match' : (mode === 'chat' ? 'chat_match' : 'match'));
   const samePersonality = sharedPersonality(seekerProfile, partnerProfile);
   partnerSocket.emit('matched', { initiator: true, partner: publicProfile(seekerProfile), rematched, mode, samePersonality, sameFilms: sharedFilms(partnerProfile, seekerProfile), undo: opts.undo ? 'them' : undefined });
   seekerSocket.emit('matched', { initiator: false, partner: publicProfile(partnerProfile), rematched, mode, samePersonality, sameFilms: sharedFilms(seekerProfile, partnerProfile), undo: opts.undo ? 'me' : undefined });
@@ -6264,7 +6337,7 @@ io.on('connection', (socket) => {
         if (animal) store.recordFeature('animal_picked');
       }
     }
-    store.recordFeature(profile.mode === 'chat' ? 'chat_search' : 'search');
+    store.recordFeature(quarantined(profile, socket.id) ? 'bot_search' : (profile.mode === 'chat' ? 'chat_search' : 'search'));
     // A fresh, explicit search starts with the full set of filters again.
     profile.randomFallbackActive = false;
     profile.keepFilters = false;
