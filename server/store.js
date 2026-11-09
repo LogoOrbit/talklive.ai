@@ -3190,23 +3190,115 @@ function verifyReferral(clientId, { ownerNetsFor = () => [] } = {}) {
 
 const TALK_DAYS = 30;
 
-// Add one finished conversation of `seconds` to `clientId`'s running total.
-// Talk-time records of guests long gone (no account, a couple of calls, not
-// seen for 45 days) are dropped: they were a quarter of the whole store and
-// cost CPU on every save. Accounts' records and regulars are kept.
+// --- Housekeeping ------------------------------------------------------------
+// The store is one document that is rewritten on every save, so its size is
+// CPU and disk on every save. Anything that belongs to a guest who left weeks
+// ago, and detail on old days nobody opens, is dropped here. Accounts, Plus
+// members, friends, chats and every total on the dashboard are left alone.
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function protectedIds() {
+  const ids = new Set(Object.keys(data.premium || {}));
+  for (const a of Object.values(data.accounts || {})) if (a && a.clientId) ids.add(a.clientId);
+  return ids;
+}
+
+// Talk-time records of guests who are gone: no account, not seen for two
+// weeks, only a few calls (or not seen for 45 days and not a regular). The
+// per-day breakdown older than TALK_DAYS goes from everyone.
 function pruneTalkTime() {
-  const cutoff = Date.now() - 45 * 24 * 60 * 60 * 1000;
-  const linked = new Set(Object.values(data.accounts || {}).map((a) => a && a.clientId).filter(Boolean));
+  const now = Date.now();
+  const keep = protectedIds();
   let dropped = 0;
   for (const [cid, rec] of Object.entries(data.talkTime || {})) {
-    if (!rec || linked.has(cid)) continue;
-    const last = Number(rec.lastAt) || 0;
-    if (last < cutoff && (Number(rec.calls) || 0) <= 3) { delete data.talkTime[cid]; dropped++; }
+    if (!rec) { delete data.talkTime[cid]; continue; }
+    const age = now - (Number(rec.lastAt) || 0);
+    const calls = Number(rec.calls) || 0;
+    if (!keep.has(cid) && ((age > 14 * DAY_MS && calls <= 5) || (age > 45 * DAY_MS && calls <= 15))) {
+      delete data.talkTime[cid]; dropped++; continue;
+    }
+    if (rec.days) {
+      const ks = Object.keys(rec.days);
+      if (ks.length > TALK_DAYS) { ks.sort(); for (const k of ks.slice(0, ks.length - TALK_DAYS)) delete rec.days[k]; }
+    }
   }
-  if (dropped) { console.log('[store] pruned', dropped, 'old guest talk-time records'); save(); }
+  if (dropped) console.log('[store] pruned', dropped, 'old guest talk-time records');
   return dropped;
 }
 
+// Streaks and weekly stats of guests whose last call was over 60 days ago: the
+// streak is long over, so there is nothing left to restore.
+function pruneEngage() {
+  const cutoff = new Date(Date.now() - 60 * DAY_MS).toISOString().slice(0, 10);
+  const keep = protectedIds();
+  let dropped = 0;
+  for (const [cid, rec] of Object.entries(data.engage || {})) {
+    if (keep.has(cid)) continue;
+    const last = (rec && rec.streak && rec.streak.last) || (rec && rec.week && rec.week.week) || '';
+    if (last && last < cutoff) { delete data.engage[cid]; dropped++; }
+  }
+  if (dropped) console.log('[store] pruned', dropped, 'old guest streak records');
+  return dropped;
+}
+
+// Mini-game players: the per-day breakdown past 60 days goes (the all-time
+// counters stay), and guests who played once or twice long ago are dropped.
+function pruneGames() {
+  const now = Date.now();
+  const cutoff = new Date(now - 60 * DAY_MS).toISOString().slice(0, 10);
+  const keep = protectedIds();
+  let dropped = 0;
+  for (const [cid, rec] of Object.entries((data.games && data.games.players) || {})) {
+    if (!rec) { delete data.games.players[cid]; continue; }
+    if (!keep.has(cid) && now - (Number(rec.lastAt) || 0) > 60 * DAY_MS && ((rec.t && Number(rec.t.sent)) || 0) <= 3) {
+      delete data.games.players[cid]; dropped++; continue;
+    }
+    for (const k of Object.keys(rec.days || {})) if (k < cutoff) delete rec.days[k];
+  }
+  if (dropped) console.log('[store] pruned', dropped, 'old guest game records');
+  return dropped;
+}
+
+// Old analytics days keep every total and the hourly shape, but only the top
+// of each long list (pages, sources, search terms ...): that is what made each
+// day record several KB.
+const COMPACT_AFTER_DAYS = 45;
+const COMPACT_KEEP = 12;
+const COMPACT_LISTS = ['pages', 'sources', 'mediums', 'landings', 'sourcePages', 'searchTerms', 'termPages', 'cities', 'crawlers', 'sections'];
+function compactAnalytics() {
+  const cutoff = dayKey(Date.now() - COMPACT_AFTER_DAYS * DAY_MS);
+  let touched = 0;
+  for (const [k, d] of Object.entries((data.analytics && data.analytics.days) || {})) {
+    if (!d || k >= cutoff || d.compact) continue;
+    for (const name of COMPACT_LISTS) {
+      const m = d[name];
+      if (!m || typeof m !== 'object') continue;
+      const entries = Object.entries(m);
+      if (entries.length <= COMPACT_KEEP || entries.some(([, v]) => typeof v !== 'number')) continue;
+      entries.sort((a, b) => b[1] - a[1]);
+      d[name] = Object.fromEntries(entries.slice(0, COMPACT_KEEP));
+    }
+    if (d.countries && Object.keys(d.countries).length > 40) {
+      const e = Object.entries(d.countries);
+      if (e.every(([, v]) => typeof v === 'number')) d.countries = Object.fromEntries(e.sort((a, b) => b[1] - a[1]).slice(0, 40));
+    }
+    d.uniqueSet = {};
+    d.compact = 1;
+    touched++;
+  }
+  return touched;
+}
+
+// Run all of it; called after start and then daily.
+function compactStore() {
+  const result = {
+    talkTime: pruneTalkTime(), engage: pruneEngage(), games: pruneGames(), analyticsDays: compactAnalytics(),
+  };
+  if (result.talkTime || result.engage || result.games || result.analyticsDays) save();
+  return result;
+}
+
+// Add one finished conversation of `seconds` to `clientId`'s running total.
 function recordTalkTime(clientId, seconds, info = {}) {
   if (!clientId || !(seconds > 0)) return;
   const now = Date.now();
@@ -3762,6 +3854,10 @@ module.exports = {
   plusLook,
   getAccountSettings,
   pruneTalkTime,
+  pruneEngage,
+  pruneGames,
+  compactAnalytics,
+  compactStore,
   getNotifPrefs,
   setNotifPrefs,
   moveReferralClaim,

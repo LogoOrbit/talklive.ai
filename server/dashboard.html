@@ -1032,10 +1032,10 @@ let tab='overview',timer=null,counts={},paused=false,lastLoadTs=0,loadFailures=0
    renderedTab: which tab #main currently shows (null while loading one).
    quiet: a repaint of the tab already on screen - no entrance animations and no
    counters re-counting from zero every 12 seconds. */
-let loadSeq=0,renderedTab=null,quiet=false;
+let loadSeq=0,renderedTab=null,quiet=false,lastStatusTs=0;
 /* Health and Traffic show Google data cached for 30+ minutes; polling them
    every 12s only repaints the same numbers. */
-const REFRESH_MS=()=>(tab==='live'||tab==='support')?5000:(tab==='ai'||tab==='health'||tab==='traffic'||tab==='settings'||tab==='audit')?60000:12000;
+const REFRESH_MS=()=>(tab==='live'||tab==='support')?10000:(tab==='ai'||tab==='health'||tab==='traffic'||tab==='settings'||tab==='audit')?120000:30000;
 
 function navBadge(id){
   if(id==='support'&&counts.supportWaiting)return `<span class="badge">${counts.supportWaiting}</span>`;
@@ -1245,7 +1245,8 @@ async function load(force){
   scheduleRefresh();
   /* Signed in, the status carries the storage host and error text. Checked on
      every refresh so a database problem shows up, and clears, while you watch. */
-  if(!document.hidden)api('status').then(st=>renderStorage(st.storage)).catch(()=>{});
+  /* The storage line only changes when something breaks: once a minute is plenty. */
+  if(!document.hidden&&Date.now()-lastStatusTs>60000){lastStatusTs=Date.now();api('status').then(st=>renderStorage(st.storage)).catch(()=>{});}
   if(force===false){
     /* Nobody is looking: don't make the server build reports for a hidden tab. */
     if(document.hidden)return;

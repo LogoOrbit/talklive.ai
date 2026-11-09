@@ -468,7 +468,9 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
   });
 
   router.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'dashboard.html'));
+    // Revalidate instead of re-downloading: an unchanged page is a 304.
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(__dirname, 'dashboard.html'), { etag: true, lastModified: true });
   });
 
   // First-run setup: only available while no admin exists.
@@ -591,7 +593,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
   // show up at once. Streams, audio, exports and the Data tab are never cached.
   // The dashboard polls every 12s; a cache shorter than that never hit, so
   // every poll rebuilt every report. Writes still clear it at once.
-  const REPORT_TTL = 45000;
+  const REPORT_TTL = 60000;
   const reportCache = new Map();
   router.use('/api', (req, res, next) => {
     if (req.method !== 'GET') { reportCache.clear(); return next(); }
@@ -726,7 +728,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     // First frame immediately, so the page never shows a blank counter.
     res.write(`retry: 3000\ndata: ${JSON.stringify({ ...getLiveCounts(), ts: Date.now() })}\n\n`);
     req.on('close', () => streams.delete(client));
-    if (!streamTimer) streamTimer = setInterval(streamTick, 1000);
+    if (!streamTimer) streamTimer = setInterval(streamTick, 2000);
   });
 
   // Activity reports: today (hour by hour), yesterday, the last 30 days and the

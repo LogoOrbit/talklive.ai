@@ -38,8 +38,8 @@ const push = require('./push');
 // Kinds of push a person turned off in the app are skipped.
 push.setFilter((clientId, category) => store.getNotifPrefs(clientId)[category] !== false);
 // Old guest talk-time records go once a day (and shortly after start).
-setTimeout(() => { try { store.pruneTalkTime(); } catch (_) { /* store not loaded yet */ } }, 5 * 60 * 1000).unref();
-setInterval(() => { try { store.pruneTalkTime(); } catch (_) { /* ignore */ } }, 24 * 60 * 60 * 1000).unref();
+setTimeout(() => { try { store.compactStore(); } catch (_) { /* store not loaded yet */ } }, 5 * 60 * 1000).unref();
+setInterval(() => { try { store.compactStore(); } catch (_) { /* ignore */ } }, 24 * 60 * 60 * 1000).unref();
 const flags = require('./flags');
 const { minifiedScripts } = require('./minified');
 const ageAssurance = require('./age-assurance');
@@ -2595,6 +2595,22 @@ function sweepDisappearing(now = Date.now()) {
   }
 }
 setInterval(() => { try { sweepDisappearing(); } catch (err) { console.error('[disappearing] sweep failed', err.message); } }, 5 * 60 * 1000).unref();
+
+// Inbox items nobody opened in a month are not coming back for.
+function sweepOldNotifications(now = Date.now()) {
+  const cutoff = now - 30 * 24 * 60 * 60 * 1000;
+  let dropped = 0;
+  for (const [cid, list] of notifications) {
+    const fresh = list.filter((n) => (n.ts || 0) >= cutoff);
+    if (fresh.length === list.length) continue;
+    dropped += list.length - fresh.length;
+    if (fresh.length) notifications.set(cid, fresh); else notifications.delete(cid);
+  }
+  if (dropped) persistSocial();
+  return dropped;
+}
+setTimeout(() => { try { sweepOldNotifications(); } catch (_) { /* ignore */ } }, 6 * 60 * 1000).unref();
+setInterval(() => { try { sweepOldNotifications(); } catch (_) { /* ignore */ } }, 24 * 60 * 60 * 1000).unref();
 
 function dropFromChatHistory(ownerClientId, otherClientId) {
   const list = chatHistory.get(ownerClientId);
