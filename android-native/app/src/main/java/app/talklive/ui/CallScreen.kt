@@ -127,8 +127,13 @@ fun CallScreen(
     onAutoConnect: (Boolean) -> Unit = {},
     bands: () -> FloatArray = { FloatArray(0) },
     premium: Boolean = false,
+    noiseSuppression: Boolean = true,
+    onNoiseSuppression: (Boolean) -> Unit = {},
+    onProblem: (String) -> Unit = {},
 ) {
     var reporting by remember { mutableStateOf(false) }
+    var showSettings by remember { mutableStateOf(false) }
+    var showProblem by remember { mutableStateOf(false) }
     var showPartner by remember { mutableStateOf(false) }
     var showChat by remember { mutableStateOf(false) }
     // Messages from them since the chat was last open: a red dot on the chat button.
@@ -144,6 +149,16 @@ fun CallScreen(
     // Tilt is read only in layout/draw lambdas, so sensor updates do not rebuild
     // the screen; it pauses while the chat sheet covers the call.
     val tiltState = app.talklive.ui.call.rememberTilt(paused = showChat)
+    if (showSettings && partner != null) app.talklive.ui.call.CallSettingsSheet(
+        partner = partner, myAnimal = myAnimal, speakerOn = state.speakerOn, noiseSuppression = noiseSuppression,
+        canAddFriend = friendStatus == FriendStatus.None,
+        onSpeaker = { if (it != state.speakerOn) onSpeaker() }, onNoiseSuppression = onNoiseSuppression,
+        onAddFriend = { onAddFriend(); showSettings = false },
+        onReport = { showSettings = false; reporting = true },
+        onProblem = { showSettings = false; showProblem = true },
+        onDismiss = { showSettings = false },
+    )
+    if (showProblem) app.talklive.ui.engage.FeedbackSheet(problem = true, onSend = { onProblem(it) }) { showProblem = false }
     val live = phase is CallPhase.Connected
     app.talklive.ui.call.CallBackdrop(connected = live, tiltOf = { tiltState.value }) {
     Column(
@@ -177,6 +192,10 @@ fun CallScreen(
                 if (level > 0) {
                     app.talklive.ui.call.SignalBars(level, tint, Modifier.padding(end = 4.dp), rttMs = state.rttMs, lossPct = state.lossPct)
                 }
+            }
+            if (live) {
+                app.talklive.ui.call.CallSettingsButton { showSettings = true }
+                Spacer(Modifier.width(8.dp))
             }
             if (onGames != null && live) {
                 Surface(onClick = onGames, shape = CircleShape, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f), modifier = Modifier.size(40.dp)) {

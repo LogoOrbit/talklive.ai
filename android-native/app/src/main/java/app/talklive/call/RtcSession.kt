@@ -28,26 +28,30 @@ data class LinkStats(
 
 /** One audio-only peer connection to one stranger. */
 class RtcSession(
-    factory: PeerConnectionFactory,
+    private val factory: PeerConnectionFactory,
     ice: IceConfig,
     private val listener: Listener,
     /** Live bands of the remote voice; shared so the screen keeps one flow across calls. */
     val spectrum: Spectrum = Spectrum(),
+    noiseSuppression: Boolean = true,
 ) {
     interface Listener {
         fun onLocalCandidate(candidate: IceCandidate)
         fun onConnectionState(state: PeerConnection.PeerConnectionState)
     }
 
-    private val audioSource = factory.createAudioSource(
+    private fun micSource(ns: Boolean) = factory.createAudioSource(
         MediaConstraints().apply {
             mandatory.add(MediaConstraints.KeyValuePair("googEchoCancellation", "true"))
-            mandatory.add(MediaConstraints.KeyValuePair("googNoiseSuppression", "true"))
+            mandatory.add(MediaConstraints.KeyValuePair("googNoiseSuppression", ns.toString()))
             mandatory.add(MediaConstraints.KeyValuePair("googAutoGainControl", "true"))
-            mandatory.add(MediaConstraints.KeyValuePair("googHighpassFilter", "true"))
+            mandatory.add(MediaConstraints.KeyValuePair("googHighpassFilter", ns.toString()))
         },
     )
-    private val localTrack: AudioTrack = factory.createAudioTrack("mic", audioSource)
+    private var audioSource = micSource(noiseSuppression)
+    private var localTrack: AudioTrack = factory.createAudioTrack("mic", audioSource)
+    private var muted = false
+    private var sender: org.webrtc.RtpSender? = null
     private val pendingRemote = mutableListOf<IceCandidate>()
     private var remoteAudio: AudioTrack? = null
 
@@ -81,12 +85,23 @@ class RtcSession(
     ) { "Could not create peer connection" }
 
     init {
-        pc.addTrack(localTrack, listOf("talklive"))
+        sender = pc.addTrack(localTrack, listOf("talklive"))
+    }
+
+    /** Noise suppression on or off, live: a fresh mic track replaces the old one, no renegotiation. */
+    fun setNoiseSuppression(on: Boolean) = runCatching {
+        val oldTrack = localTrack
+        val oldSource = audioSource
+        audioSource = micSource(on)
+        localTrack = factory.createAudioTrack("mic", audioSource).also { it.setEnabled(!muted) }
+        sender?.setTrack(localTrack, false)
+        oldTrack.dispose(); oldSource.dispose()
     }
 
     val signalingState: PeerConnection.SignalingState get() = pc.signalingState()
 
     fun setMuted(muted: Boolean) {
+        this.muted = muted
         localTrack.setEnabled(!muted)
     }
 

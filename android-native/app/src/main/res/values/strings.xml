@@ -659,4 +659,14 @@
     <string name="line_loss">%1$s%% loss</string>
     <string name="your_name">Your name</string>
     <string name="your_name_hint">What people see. You can change it later.</string>
+    <string name="call_encrypted">Encrypted call</string>
+    <string name="call_people">People</string>
+    <string name="call_settings">Call settings</string>
+    <string name="call_audio_output">Audio output</string>
+    <string name="call_out_phone">Phone</string>
+    <string name="call_out_speaker">Speaker</string>
+    <string name="call_noise">Noise suppression</string>
+    <string name="call_noise_desc">Cut background noise from your mic</string>
+    <string name="call_support">Support</string>
+    <string name="call_tech_problem">Technical problem</string>
 </resources>

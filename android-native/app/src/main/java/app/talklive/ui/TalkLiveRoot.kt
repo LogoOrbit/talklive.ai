@@ -38,6 +38,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.animation.core.spring
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -411,11 +419,6 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     androidx.activity.compose.BackHandler(enabled = showFullCall) {
         if (liveVoice) {
             callMinimized = true
-            val prefs = context.getSharedPreferences("ui", android.content.Context.MODE_PRIVATE)
-            if (!prefs.getBoolean("minimize_hint", false)) {
-                prefs.edit().putBoolean("minimize_hint", true).apply()
-                backScope.launch { snackbar.say(context.getString(R.string.call_minimized_hint)) }
-            }
         } else confirmLeave = true
     }
     if (confirmLeave && inCall) {
@@ -445,8 +448,25 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         }
     }
 
+    val barShown = inCall && callMinimized && state.phase is CallPhase.Connected
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
+        // The minimised call, like WhatsApp: a slim strip across the very top,
+        // the app pushed down beneath it rather than covered.
+        topBar = {
+            AnimatedVisibility(
+                visible = barShown,
+                enter = androidx.compose.animation.expandVertically(tween(280)) + fadeIn(tween(200)),
+                exit = androidx.compose.animation.shrinkVertically(tween(240)) + fadeOut(tween(160)),
+            ) {
+                (state.phase as? CallPhase.Connected)?.let { live ->
+                    app.talklive.ui.call.MiniCallBar(
+                        partner = live.partner, sinceMs = live.sinceMs, muted = state.muted,
+                        onOpen = { callMinimized = false }, onMute = vm::toggleMute, onEnd = vm::end,
+                    )
+                }
+            }
+        },
         bottomBar = {
             AnimatedVisibility(
                 visible = !showFullCall,
@@ -461,7 +481,12 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
             }
         },
     ) { pad ->
-        Box(Modifier.fillMaxSize().padding(bottom = if (showFullCall) 0.dp else pad.calculateBottomPadding())) {
+        Box(
+            Modifier.fillMaxSize()
+                .padding(top = if (barShown) pad.calculateTopPadding() else 0.dp, bottom = if (showFullCall) 0.dp else pad.calculateBottomPadding())
+                // Under the call strip, screens must not add the status bar again.
+                .then(if (barShown) Modifier.consumeWindowInsets(androidx.compose.foundation.layout.WindowInsets.Companion.statusBars) else Modifier),
+        ) {
             val homeAutoConnect by vm.autoConnect.collectAsStateWithLifecycle()
             AnimatedContent(
                 targetState = tab,
@@ -508,15 +533,26 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                 }
             }
         }
+        // Minimising: the call collapses up into the green strip at the top,
+        // turning green on the way, and grows back out of it when opened.
+        // Ending a call just fades.
+        val toBar = callMinimized && inCall
         AnimatedVisibility(
             visible = showFullCall,
-            // Shrinks up into the top bar and grows back out of it.
-            enter = scaleIn(tween(320), initialScale = 0.85f, transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0f)) + fadeIn(tween(240)),
-            exit = scaleOut(tween(280), targetScale = 0.85f, transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0f)) + fadeOut(tween(200)),
+            enter = if (inCall) androidx.compose.animation.expandVertically(spring(dampingRatio = 0.86f, stiffness = 380f), expandFrom = androidx.compose.ui.Alignment.Top) + fadeIn(tween(160))
+                else scaleIn(tween(320), initialScale = 0.92f) + fadeIn(tween(240)),
+            exit = if (toBar) androidx.compose.animation.shrinkVertically(spring(dampingRatio = 0.9f, stiffness = 420f), shrinkTowards = androidx.compose.ui.Alignment.Top) + fadeOut(tween(180, delayMillis = 140))
+                else fadeOut(tween(220)),
         ) {
             val level by vm.remoteLevel.collectAsStateWithLifecycle()
             val chatMessages by vm.chat.collectAsStateWithLifecycle()
-            Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+            // 0 = the call, 1 = the bar: a green wash grows as it collapses.
+            val toGreen by transition.animateFloat(transitionSpec = { tween(260) }, label = "toBar") { st ->
+                if (st == androidx.compose.animation.EnterExitState.Visible || !toBar) 0f else 1f
+            }
+            Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+                .drawWithContent { drawContent(); if (toGreen > 0f) drawRect(Color(0xFF1F8F4E).copy(alpha = toGreen)) }
+                .clip(RoundedCornerShape(bottomStart = (toGreen * 28).dp, bottomEnd = (toGreen * 28).dp))) {
                 val partnerId = (state.phase as? CallPhase.Connected)?.partner?.clientId
                     ?: (state.phase as? CallPhase.Connecting)?.partner?.clientId
                 val friendStatus = when {
@@ -574,6 +610,9 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                     onAutoConnect = vm::setAutoConnect,
                     bands = { voiceBands },
                     premium = premium.active,
+                    noiseSuppression = vm.noiseSuppression.collectAsStateWithLifecycle().value,
+                    onNoiseSuppression = vm::setNoiseSuppression,
+                    onProblem = { engageVm.sendFeedback("[call] $it", problem = true) },
                 )
                 val connectedPartner = (state.phase as? CallPhase.Connected)?.partner
                 app.talklive.ui.components.PlusEntrance(connectedPartner?.clientId, connectedPartner?.premium == true)
@@ -788,20 +827,6 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         }
     }
 
-    // The minimised call, floating at the top over whatever else is open.
-    AnimatedVisibility(
-        visible = inCall && callMinimized,
-        enter = slideInVertically(tween(320)) { -it } + fadeIn(tween(240)),
-        exit = slideOutVertically(tween(260)) { -it } + fadeOut(tween(200)),
-        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 6.dp),
-    ) {
-        (state.phase as? CallPhase.Connected)?.let { live ->
-            app.talklive.ui.call.MiniCallBar(
-                partner = live.partner, sinceMs = live.sinceMs, muted = state.muted,
-                onOpen = { callMinimized = false }, onMute = vm::toggleMute, onEnd = vm::end,
-            )
-        }
-    }
     // Messages show at the top of every screen, clear of the buttons below.
     androidx.compose.foundation.layout.Box(
         androidx.compose.ui.Modifier.fillMaxSize().statusBarsPadding().padding(top = 8.dp, start = 16.dp, end = 16.dp),

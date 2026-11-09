@@ -93,6 +93,8 @@ class TalkViewModel @Inject constructor(
     fun end() = calls.end()
     fun toggleMute() = calls.toggleMute()
     fun toggleSpeaker() = calls.toggleSpeaker()
+    val noiseSuppression = calls.noiseSuppression
+    fun setNoiseSuppression(on: Boolean) = calls.setNoiseSuppression(on)
     fun report(reason: String) = calls.report(reason)
     fun dismissNotice() = calls.dismissNotice()
     fun signOut() = auth.logout()

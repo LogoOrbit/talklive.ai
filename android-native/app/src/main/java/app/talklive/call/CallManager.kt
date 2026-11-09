@@ -123,6 +123,14 @@ class CallManager @Inject constructor(
     private val uiWatch = android.content.SharedPreferences.OnSharedPreferenceChangeListener { p, k ->
         when (k) { "auto_connect" -> _autoConnect.value = p.getBoolean(k, true); "speaker_default" -> _speakerDefault.value = p.getBoolean(k, true) }
     }.also { uiPrefs.registerOnSharedPreferenceChangeListener(it) }
+    private val _noiseSuppression = MutableStateFlow(uiPrefs.getBoolean("noise_suppression", true))
+    /** Filters background noise from this person's mic; applies to a live call at once. */
+    val noiseSuppression: StateFlow<Boolean> = _noiseSuppression
+    fun setNoiseSuppression(on: Boolean) {
+        uiPrefs.edit().putBoolean("noise_suppression", on).apply()
+        _noiseSuppression.value = on
+        session?.setNoiseSuppression(on)
+    }
     fun setSpeakerDefault(on: Boolean) { uiPrefs.edit().putBoolean("speaker_default", on).apply(); _speakerDefault.value = on }
 
     /** Live spectrum of the other person's voice (call screen visualiser). */
@@ -502,7 +510,7 @@ class CallManager @Inject constructor(
             override fun onConnectionState(state: PeerConnection.PeerConnectionState) {
                 scope.launch { if (id == matchId) onConnectionState(state, m.partner) }
             }
-        }, spectrum) }.getOrElse {
+        }, spectrum, noiseSuppression.value) }.getOrElse {
             // WebRTC could not start on this device right now: move on rather than crash.
             Log.w(TAG, "peer connection failed", it)
             failAndRetry()
