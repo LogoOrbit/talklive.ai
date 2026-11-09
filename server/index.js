@@ -4328,9 +4328,41 @@ function emitPremiumStatus(clientId) {
 // `opts.failed` marks a pairing that never became a working call, so the pair is
 // held apart hard (see pairCooldowns) and the other side is told the truth: it
 // was a connection that never came up, not a stranger who hung up on them.
+// A client that ends match after match within seconds of being paired (a
+// broken app, a script, a stuck tab) turns every other searcher's call into
+// "Almost there..." then "left". Such a client is paused from matching for a
+// while, and the pause grows if it keeps happening.
+const EARLY_END_MS = 5000;
+const EARLY_END_LIMIT = 6; // within EARLY_END_WINDOW_MS
+const EARLY_END_WINDOW_MS = 60 * 1000;
+const churn = new Map(); // clientId -> { ends: [ts], holdUntil, strikes }
+function noteEarlyEnd(clientId) {
+  if (!clientId) return;
+  const now = Date.now();
+  const rec = churn.get(clientId) || { ends: [], holdUntil: 0, strikes: 0 };
+  rec.ends = rec.ends.filter((t) => now - t < EARLY_END_WINDOW_MS);
+  rec.ends.push(now);
+  if (rec.ends.length >= EARLY_END_LIMIT) {
+    rec.strikes = Math.min(rec.strikes + 1, 6);
+    rec.holdUntil = now + Math.min(30 * 1000 * 2 ** (rec.strikes - 1), 15 * 60 * 1000);
+    rec.ends = [];
+    store.recordFeature('match_churn_hold');
+  }
+  churn.set(clientId, rec);
+  if (churn.size > 5000) for (const [k, v] of churn) { if (v.holdUntil < now && !v.ends.length) churn.delete(k); }
+}
+function churnHeld(profile) {
+  const rec = profile && churn.get(profile.clientId);
+  return !!rec && rec.holdUntil > Date.now();
+}
+
 function disconnectPartner(socketId, opts = {}) {
   const partnerId = partners.get(socketId);
   if (!partnerId) return null;
+  {
+    const me = profiles.get(socketId);
+    if (me && me.matchedAt && Date.now() - me.matchedAt < EARLY_END_MS) noteEarlyEnd(me.clientId);
+  }
   partners.delete(socketId);
   partners.delete(partnerId);
   gameTracker.onPairEnd(socketId, partnerId);
@@ -4657,12 +4689,15 @@ function findBestMatch(socketId) {
   const seeker = profiles.get(socketId);
   if (!seeker) return -1;
   pruneQueue();
+  // Paused for dropping matches: waits in the queue, matched with nobody.
+  if (churnHeld(seeker)) return -1;
 
   // Prioritize reconnecting with a recent match if both hearted each other last time.
   for (let i = 0; i < waitingQueue.length; i++) {
     const candidateId = waitingQueue[i];
     const candidate = profiles.get(candidateId);
     if (!candidate || !io.sockets.sockets.get(candidateId)) continue;
+    if (churnHeld(candidate)) continue;
     if (isBlockedPair(seeker.clientId, candidate.clientId)) continue;
     // A mutual heart may override the preference filters, but never the two
     // hard gates. Mode is one of them: this path used to skip it entirely, so a
@@ -4689,6 +4724,7 @@ function findBestMatch(socketId) {
     const candidateId = waitingQueue[i];
     const candidate = profiles.get(candidateId);
     if (!candidate || !io.sockets.sockets.get(candidateId)) continue;
+    if (churnHeld(candidate)) continue;
     if (!mutuallyCompatible(seeker, candidate)) continue;
 
     const score = matchScore(seeker, candidate);

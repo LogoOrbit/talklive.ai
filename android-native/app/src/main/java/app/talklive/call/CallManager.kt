@@ -563,10 +563,27 @@ class CallManager @Inject constructor(
     }
 
     /** Media never flowed: tell the server so it keeps this pair apart, then search again. */
+    private var lastFailAt = 0L
+    private var quickFails = 0
     private fun failAndRetry() {
         teardown()
-        socket.emit("skip", JSONObject().put("failed", true))
+        val now = System.currentTimeMillis()
+        quickFails = if (now - lastFailAt < 30_000) quickFails + 1 else 1
+        lastFailAt = now
         setPhase(CallPhase.Searching())
+        if (quickFails < 3) {
+            socket.emit("skip", JSONObject().put("failed", true))
+            return
+        }
+        // Failing again and again (a bad network moment, audio busy): step out
+        // of the queue for a few seconds instead of dropping match after match,
+        // which would spoil other people's calls too.
+        socket.emit("leave")
+        val wait = (quickFails * 2_000L).coerceAtMost(15_000L)
+        scope.launch {
+            delay(wait)
+            if (_state.value.phase is CallPhase.Searching) search()
+        }
     }
 
     /** Polls WebRTC stats: voice level for the ring, round-trip time and loss for the quality dot. */

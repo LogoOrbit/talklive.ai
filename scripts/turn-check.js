@@ -1,3 +1,4 @@
+/* global RTCPeerConnection */
 // Checks the live relay (TURN) credentials from talklive.app: gathers relay
 // candidates and makes a relay-only call between two peers in one browser.
 const { chromium } = require('playwright');
