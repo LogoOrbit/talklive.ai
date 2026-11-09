@@ -130,13 +130,13 @@ step("Intro last slide", wait_for(r"you stay in control", 10))
 tap(r"get started")
 step("Start screen", wait_for(r"talk to someone new", 20))
 tap(r"get started")
-# Date of birth first: the wheels open on an adult year, so Continue goes on.
+step("Ways in", wait_for(r"continue as guest", 15))
+tap(r"continue as guest")
+# A guest gives a date of birth (wheels open on an adult year) and agrees to the rules.
 step("Date of birth", wait_for(r"when were you born", 15))
 tap(r"^continue$")
 step("Rules summary with one agree button", wait_for(r"i.m 18\+ and i agree", 15))
 tap(r"i.m 18\+ and i agree")
-step("Ways in", wait_for(r"continue as guest", 15))
-tap(r"continue as guest")
 
 # 2. Setup: avatar, then about you.
 step("Pick an avatar", wait_for(r"surprise me", 20))

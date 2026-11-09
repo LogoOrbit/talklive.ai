@@ -214,7 +214,7 @@ internal fun BlockedScreen() {
 
 /** How to continue: Google, email, or as a guest. */
 @Composable
-internal fun MethodsScreen(vm: AuthViewModel, onBack: (() -> Unit)?, onEmail: () -> Unit, onLogin: () -> Unit, allowGuest: Boolean) {
+internal fun MethodsScreen(vm: AuthViewModel, onBack: (() -> Unit)?, onEmail: () -> Unit, onLogin: () -> Unit, allowGuest: Boolean, onGuest: () -> Unit = { vm.continueAsGuest() }) {
     val context = LocalContext.current
     AuroraBackground {
         Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -253,7 +253,7 @@ internal fun MethodsScreen(vm: AuthViewModel, onBack: (() -> Unit)?, onEmail: ()
             TextButton(onClick = onLogin, modifier = Modifier.padding(top = 10.dp)) {
                 Text(stringResource(R.string.have_account_login), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            if (allowGuest) TextButton(onClick = { vm.continueAsGuest() }) {
+            if (allowGuest) TextButton(onClick = onGuest) {
                 Text(stringResource(R.string.continue_guest), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Spacer(Modifier.height(12.dp))

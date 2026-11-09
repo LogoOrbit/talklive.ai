@@ -225,7 +225,7 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
             reverseLayout = true,
             modifier = Modifier.weight(1f).fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.Bottom),
         ) {
             if (typing) item(key = "typing") { TypingBubble() }
             itemsIndexed(newestFirst, key = { _, m -> m.id }) { i, m ->
@@ -556,8 +556,24 @@ internal fun MessageBubble(
         RoundedCornerShape(if (firstInGroup) big else small, big, big, if (lastInGroup) small else small)
     }
 
+    // A message that has just been sent or received arrives: it rises from the
+    // composer side, grows from its own corner and settles with a soft spring.
+    // Messages already on screen when the chat opens just appear.
+    val reduce = app.talklive.ui.theme.LocalReduceMotion.current
+    val arrive = remember(m.id) { Animatable(if (!reduce && System.currentTimeMillis() - m.ts < 1500) 0f else 1f) }
+    LaunchedEffect(m.id) {
+        if (arrive.value < 1f) arrive.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = 0.72f, stiffness = 420f))
+    }
     Column(
-        Modifier.fillMaxWidth().padding(top = if (firstInGroup) 8.dp else 0.dp),
+        Modifier.fillMaxWidth().padding(top = if (firstInGroup) 8.dp else 0.dp)
+            .graphicsLayer {
+                val k = arrive.value
+                alpha = (k * 1.6f).coerceAtMost(1f)
+                translationY = (1f - k) * 28.dp.toPx()
+                val sc = 0.86f + 0.14f * k
+                scaleX = sc; scaleY = sc
+                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(if (m.mine) 1f else 0f, 1f)
+            },
         horizontalAlignment = if (m.mine) Alignment.End else Alignment.Start,
     ) {
         Box(contentAlignment = Alignment.CenterStart) {

@@ -227,7 +227,10 @@
     });
   }
 
+  var lastMine = [];
   function paint(box, sock, films) {
+    lastMine = films;
+    try { document.dispatchEvent(new Event('tl-films')); } catch (_) {}
     var slots = '';
     for (var i = 0; i < MAX; i++) {
       if (i >= myMax) {
@@ -415,5 +418,6 @@
     setTimeout(function () { input.focus(); }, 0);
   }
 
-  window.TalkLiveFilms = { ready: ready, show: show, editor: editor, sameLine: sameLine };
+  window.TalkLiveFilms = { ready: ready, show: show, editor: editor, sameLine: sameLine,
+    firstTitle: function () { return lastMine[0] ? lastMine[0].title || '' : ''; } };
 })();

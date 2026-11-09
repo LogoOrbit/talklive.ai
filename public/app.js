@@ -256,11 +256,6 @@ const headerSignupBtn = document.getElementById('headerSignupBtn');
 const headerAccountBtn = document.getElementById('headerAccountBtn');
 const headerLinkProfileBtn = document.getElementById('headerLinkProfileBtn');
 const linkProfileBanner = document.getElementById('linkProfileBanner');
-const linkProfileCard = document.getElementById('linkProfileCard');
-const linkProfileAvatar = document.getElementById('linkProfileAvatar');
-const linkProfileName = document.getElementById('linkProfileName');
-const linkProfileCreated = document.getElementById('linkProfileCreated');
-const linkProfileFriends = document.getElementById('linkProfileFriends');
 const acceptCallsCheckbox = document.getElementById('acceptCallsCheckbox');
 const authPage = document.getElementById('authPage');
 const authTitle = document.getElementById('authTitle');
@@ -2520,8 +2515,7 @@ function profileDisplayName() {
 // A profile worth keeping: one that has friends, or a name the user chose.
 // Prompting someone who has done neither is nagging, not helping.
 function profileWorthLinking() {
-  if (accountNickname) return false;
-  return friendsData.length > 0 || !!tempUsername;
+  return false;
 }
 
 function formatProfileCreated(ts) {
@@ -2530,28 +2524,6 @@ function formatProfileCreated(ts) {
   } catch (e) {
     return new Date(ts).toDateString();
   }
-}
-
-function renderLinkProfileCard() {
-  if (!linkProfileCard) return;
-  // The card describes a profile that is about to be inherited, so it has no
-  // place on the sign-up form of someone who is already signed in.
-  if (accountNickname) {
-    linkProfileCard.classList.add('hidden');
-    return;
-  }
-  linkProfileCard.classList.remove('hidden');
-  const name = profileDisplayName();
-  linkProfileName.textContent = name || t('linkProfileAnonymous');
-  linkProfileAvatar.innerHTML = (myAnimal && typeof Animals !== 'undefined' && Animals)
-    ? Animals.icon(myAnimal, 46)
-    : genderIcon(myAvatar, 46);
-  const created = profileCreatedAt();
-  linkProfileCreated.classList.toggle('hidden', !created);
-  if (created) linkProfileCreated.textContent = t('linkProfileCreated', { date: formatProfileCreated(created) });
-  linkProfileFriends.textContent = friendsData.length === 1
-    ? t('linkProfileFriendsOne')
-    : t('linkProfileFriends', { count: friendsData.length });
 }
 
 function renderLinkProfilePrompts() {
@@ -2564,7 +2536,6 @@ function renderLinkProfilePrompts() {
     headerLinkProfileBtn.classList.toggle('hidden', !show || !onLandingScreen());
   }
   if (linkProfileBanner) linkProfileBanner.classList.toggle('hidden', !show);
-  renderLinkProfileCard();
 }
 
 if (headerLinkProfileBtn) {
@@ -3252,10 +3223,10 @@ function accountUi() {
     accountUiP = new Promise((resolve, reject) => {
       const css = document.createElement('link');
       css.rel = 'stylesheet';
-      css.href = '/account-ui.css?v=20261109';
+      css.href = '/account-ui.css?v=20261109b';
       document.head.appendChild(css);
       const js = document.createElement('script');
-      js.src = '/account-ui.js?v=20261109';
+      js.src = '/account-ui.js?v=20261109b';
       js.onload = () => resolve(window.AccountUI);
       js.onerror = (e) => { accountUiP = null; reject(e); };
       document.head.appendChild(js);
@@ -3491,28 +3462,25 @@ function buildMyProfileSheet() {
       <button type="button" class="my-profile-close">&times;</button>
       <div class="my-profile-scroll">
         <div class="my-profile-card">
-          <div class="my-profile-face"></div>
+          <button type="button" class="mp-face" data-act="edit"><span class="my-profile-face"></span><span class="mp-pencil" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></button>
           <h2 id="myProfileName" class="my-profile-name"></h2>
-          <p class="my-profile-sub"></p>
-          <div class="my-profile-id">
-            <span class="my-profile-id-label"></span><strong class="my-profile-id-value"></strong>
-            <button type="button" class="btn btn-secondary my-profile-copy"></button>
-            <button type="button" class="btn btn-primary my-profile-share"></button>
-          </div>
-          <div class="my-profile-films" hidden></div>
+          <button type="button" class="mp-id my-profile-copy"><span class="my-profile-id-value"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
         </div>
-        <div class="my-profile-body">
+        <button type="button" class="mp-plus" data-act="plus"><span class="mp-plus-gem" aria-hidden="true">\u{1F48E}</span><span class="mp-row-text"><strong></strong><small></small></span><span class="mp-go" aria-hidden="true"></span></button>
+        <p class="mp-legend"></p>
+        <div class="mp-rows mp-you"></div>
+        <div class="my-profile-films" hidden></div>
+        <div class="my-profile-body" hidden>
           <div class="tl-set-group my-profile-controls"></div>
-          <div class="my-profile-actions"></div>
         </div>
+        <div class="mp-rows my-profile-actions"></div>
       </div>
     </section>`;
   document.body.appendChild(myProfileSheet);
   myProfileSheet.querySelector('.my-profile-backdrop').addEventListener('click', closeMyProfile);
   myProfileSheet.querySelector('.my-profile-close').addEventListener('click', closeMyProfile);
   myProfileSheet.querySelector('.my-profile-copy').addEventListener('click', () => copyFriendIdBtn.click());
-  myProfileSheet.querySelector('.my-profile-share').addEventListener('click', () => shareFriendIdBtn.click());
-  myProfileSheet.querySelector('.my-profile-actions').addEventListener('click', onMyProfileAction);
+  myProfileSheet.querySelector('.my-profile-scroll').addEventListener('click', onMyProfileAction);
   // Drag the top of the sheet down to put it away, as a phone sheet does.
   const sheet = myProfileSheet.querySelector('.my-profile-sheet');
   const scroller = myProfileSheet.querySelector('.my-profile-scroll');
@@ -3538,24 +3506,33 @@ function buildMyProfileSheet() {
     if (e.key === 'Escape' && myProfileIsOpen() && !document.querySelector('.modal-overlay:not(.hidden)')) closeMyProfile();
   });
 }
+// Same layout as the app's Profile tab: face and name, Friend ID, the Plus
+// card, a "You" list, then Settings and Sign out.
+function mpText(key, fallback, vars) {
+  const v = t(key, vars);
+  return v && v !== key ? v : fallback;
+}
+let premiumUntil = null;
+document.addEventListener('tl-films', () => { if (myProfileIsOpen()) renderMyProfileCard(); });
 function renderMyProfileCard() {
   if (!myProfileSheet) return;
   const name = accountNickname || (tempUsernameInput && tempUsernameInput.value) || t('you');
-  myProfileSheet.querySelector('.my-profile-face').innerHTML = myAvatar ? avatarFaceHtml(myAvatar, 84) : genderIcon(null, 84);
+  myProfileSheet.querySelector('.my-profile-face').innerHTML = myAvatar ? avatarFaceHtml(myAvatar, 92) : genderIcon(null, 92);
   myProfileSheet.querySelector('.my-profile-name').textContent = name;
-  const n = friendsData.length;
-  myProfileSheet.querySelector('.my-profile-sub').textContent = `${t('friends')}: ${n}`;
-  myProfileSheet.querySelector('.my-profile-id-label').textContent = t('yourFriendId');
   myProfileSheet.querySelector('.my-profile-id-value').textContent = myFriendId || '…';
-  myProfileSheet.querySelector('.my-profile-copy').textContent = t('copyFriendId');
-  myProfileSheet.querySelector('.my-profile-share').textContent = t('shareFriendId');
+  myProfileSheet.querySelector('.my-profile-copy').setAttribute('aria-label', t('copyFriendId'));
   myProfileSheet.querySelector('.my-profile-close').setAttribute('aria-label', t('close'));
-  const actions = myProfileSheet.querySelector('.my-profile-actions');
-  actions.innerHTML = (accountNickname
-    ? `<button type="button" class="btn btn-danger" data-act="logout">${escapeHtml(t('logOut'))}</button>`
-    : `<button type="button" class="btn btn-secondary" data-act="login">${escapeHtml(t('signIn'))}</button>
-       <button type="button" class="btn btn-primary" data-act="signup">${escapeHtml(t('register'))}</button>`)
-    + `<button type="button" class="btn btn-secondary my-profile-more" data-act="more">${escapeHtml(t('moreProfileSettings'))}</button>`;
+  const plus = myProfileSheet.querySelector('.mp-plus');
+  plus.querySelector('strong').textContent = isPremiumUser ? 'TalkLive Plus' : mpText('getPlus', 'Get TalkLive Plus');
+  plus.querySelector('small').textContent = isPremiumUser
+    ? (premiumUntil ? mpText('plusActiveUntil', 'Active until {date}', { date: new Date(premiumUntil).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) }) : mpText('plusActive', 'Active'))
+    : mpText('plusPitchShort', 'Priority matching, every filter, gold ring');
+  plus.classList.toggle('on', isPremiumUser);
+  accountUi().then((ui) => ui.profileRows(myProfileSheet, {
+    t, escapeHtml, signedIn: !!accountNickname,
+    stamps: window.TalkLiveEngage && window.TalkLiveEngage.passportCount ? window.TalkLiveEngage.passportCount() : 0,
+    film: window.TalkLiveFilms && window.TalkLiveFilms.firstTitle ? window.TalkLiveFilms.firstTitle() : '',
+  })).catch(() => {});
 }
 // Leaving the sheet for somewhere else in the app: it closes without sending
 // someone who came from /chat straight back there.
@@ -3567,6 +3544,13 @@ function onMyProfileAction(e) {
   const btn = e.target.closest('[data-act]');
   if (!btn) return;
   const act = btn.dataset.act;
+  const E = window.TalkLiveEngage;
+  if (act === 'edit') { myProfileSheet.querySelector('.my-profile-body').hidden = false; myProfileSheet.querySelector('.my-profile-body').scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+  if (act === 'films') { myProfileSheet.querySelector('.my-profile-films').classList.toggle('open'); return; }
+  if (act === 'passport' && E && E.openPassport) { E.openPassport(); return; }
+  if (act === 'likes' && E && E.openLikes) { E.openLikes(); return; }
+  if (act === 'invite') { showSharePrompt(); return; }
+  if (act === 'plus') { leaveMyProfileFor('settings'); if (isPremiumUser) openBilling(); else showPremiumUpsell(); return; }
   if (act === 'logout') { logoutBtn.click(); return; }
   if (act === 'more') { leaveMyProfileFor('settings'); openAppSettings('profile'); return; }
   if (act === 'login' || act === 'signup') { leaveMyProfileFor('auth'); openAuthPage(act); }
@@ -3594,6 +3578,8 @@ function openMyProfile() {
     controls.appendChild(el);
     return { el, spot };
   });
+  myProfileSheet.querySelector('.my-profile-body').hidden = true;
+  myProfileSheet.querySelector('.my-profile-films').classList.remove('open');
   renderMyProfileCard();
   withFilms((F) => F.editor(myProfileSheet.querySelector('.my-profile-films'), socket));
   myProfileSheet.querySelector('.my-profile-scroll').scrollTop = 0;
@@ -4129,7 +4115,9 @@ function forgetLocalAccount() {
   // guest (signing in again brings the profile back).
   localStorage.removeItem('talklive_client_id');
   localStorage.removeItem('talklive_identity_token');
-  applyAccountFace(null);
+  // The account's face stays with the account.
+  localStorage.removeItem('talklive_avatar');
+  localStorage.removeItem('talklive_animal');
 }
 logoutBtn.addEventListener('click', () => accountUi().then((ui) => ui.signOut({
   name: accountNickname, email: accountEmail, animal: myAnimal, avatarHtml: myAvatarIcon(64),
@@ -4192,14 +4180,16 @@ function pushCloudSettings() {
   };
 }
 // The account's own face: a guest's avatar never carries into it.
-function applyAccountFace(animal) {
-  if (animal) {
-    localStorage.setItem('talklive_avatar', ANIMAL_AVATAR_PREFIX + animal);
-    localStorage.setItem('talklive_animal', animal);
-  } else {
-    localStorage.removeItem('talklive_avatar');
-    localStorage.removeItem('talklive_animal');
-  }
+// An account with no face yet keeps this browser's, which the next register
+// saves to it, so nobody is asked to pick again. Returns true when it changed.
+function applyAccountFace(face) {
+  if (!face) return false;
+  const avatar = String(face).slice(0, 2) === 'c:' ? face : ANIMAL_AVATAR_PREFIX + face;
+  if (!validAvatarId(avatar) || avatar === localStorage.getItem('talklive_avatar')) return false;
+  localStorage.setItem('talklive_avatar', avatar);
+  if (avatar.slice(0, 2) === 'c:') localStorage.removeItem('talklive_animal');
+  else localStorage.setItem('talklive_animal', face);
+  return true;
 }
 
 function storeLogin(nickname, token, profileClientId, identityToken) {
@@ -4244,7 +4234,6 @@ socket.on('signup-result', ({ ok, nickname, email, error, errorKey, sessionToken
   }
   resetSignupStep();
   storeLogin(nickname, token, profileClientId, identityToken);
-  applyAccountFace(null);
   applyCloudSettings(settings);
   storeAccountEmail(email);
   finishAuth(t('statusAccountCreated', { name: nickname }));
@@ -4253,9 +4242,16 @@ socket.on('signup-result', ({ ok, nickname, email, error, errorKey, sessionToken
 // Answer to the silent re-login sent on every (re)connect. Success refreshes
 // the signed-in UI; failure (expired/revoked token) cleans up so the app never
 // pretends to be signed in when the server disagrees.
-socket.on('resume-session-result', ({ ok, nickname, email, profileClientId, identityToken, settings }) => {
+socket.on('resume-session-result', ({ ok, nickname, email, profileClientId, identityToken, settings, animal }) => {
   if (ok) {
     if (settings && Object.keys(settings).length) applyCloudSettings(settings);
+    // A face changed on another device: show it here too (once per load).
+    if (applyAccountFace(animal)) {
+      myAvatar = localStorage.getItem('talklive_avatar');
+      myAnimal = animalAvatarId(myAvatar);
+      renderLinkProfilePrompts();
+      registerProfile();
+    }
     // This device signed in elsewhere since it last loaded (or signed in
     // before profiles were linked at all), so it is holding the wrong profile.
     // Reload once on the right one; the guard keeps a server that keeps
@@ -8493,7 +8489,7 @@ function registerProfile() {
     prefLang: appliedFilters.prefLang || undefined,
     nickname: accountNickname || tempUsername || undefined,
     avatar: myAvatar || undefined,
-    animal: myAnimal || undefined,
+    animal: myAnimal || (characterAvatarId(myAvatar) ? myAvatar : undefined),
     hideStatus: !statusVisible,
     acceptCalls: acceptCallsEnabled,
     // Signed in: the account's permanent friend ID arrives with the resume.
@@ -11552,8 +11548,9 @@ syncFilterReadout();
 updateFiltersBadge();
 renderFilterPresets();
 
-socket.on('premium-status', ({ premium, limits } = {}) => {
+socket.on('premium-status', ({ premium, limits, expiresAt } = {}) => {
   isPremiumUser = !!premium;
+  premiumUntil = premium ? expiresAt || null : null;
   if (limits) {
     freeLimits = {
       countries: limits.countries || 2,

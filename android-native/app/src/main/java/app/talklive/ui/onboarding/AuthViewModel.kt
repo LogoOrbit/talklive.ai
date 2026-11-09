@@ -130,6 +130,31 @@ class AuthViewModel @Inject constructor(private val auth: AuthRepository) : View
         (auth.login(loginUser, loginPassword) as? AuthResult.Error)?.let { error = it.message }
     }
 
+    /** Set when Google says this is a new account: the screen asks for a date of birth, then [retryGoogle]. */
+    var needDob by mutableStateOf(false)
+    var underage by mutableStateOf(false)
+    private var pendingGoogle: String? = null
+
+    private suspend fun googleWith(token: String) {
+        val r = auth.google(token) as? AuthResult.Error ?: return
+        when (r.key) {
+            "needDob" -> { pendingGoogle = token; needDob = true }
+            "underage" -> underage = true
+            else -> error = r.message
+        }
+    }
+
+    /** The date of birth was just given: finish the Google sign-up it was asked for. */
+    fun retryGoogle() {
+        val token = pendingGoogle ?: return
+        pendingGoogle = null
+        needDob = false
+        googleBusy = true
+        viewModelScope.launch { try { googleWith(token) } finally { googleBusy = false } }
+    }
+    val hasPendingGoogle get() = pendingGoogle != null
+    fun cancelGoogle() { pendingGoogle = null; needDob = false }
+
     fun google(activity: Context) {
         if (googleBusy) return
         googleBusy = true
@@ -139,7 +164,7 @@ class AuthViewModel @Inject constructor(private val auth: AuthRepository) : View
             if (clientId == null) {
                 error = "Google sign-in is not available right now."
             } else when (val g = System.currentTimeMillis().let { t0 -> GoogleSignIn.signIn(activity, clientId).let { if (it == GoogleSignIn.Result.Cancelled && System.currentTimeMillis() - t0 < 1500) GoogleSignIn.Result.Failed(GoogleSignIn.NOT_SET_UP) else it } }) {
-                is GoogleSignIn.Result.Token -> (auth.google(g.idToken) as? AuthResult.Error)?.let { error = it.message }
+                is GoogleSignIn.Result.Token -> googleWith(g.idToken)
                 is GoogleSignIn.Result.Failed -> error = g.message
                 GoogleSignIn.Result.Cancelled -> Unit
             }

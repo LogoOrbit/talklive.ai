@@ -223,15 +223,15 @@ fun CallScreen(
                 when (p) {
                     is CallPhase.Searching -> {
                         SearchingTitle()
-                        if (premium) { Spacer(Modifier.height(8.dp)); PlusPriority() }
-                        p.etaSeconds?.takeIf { it > 0 }?.let { Subtitle(stringResource(R.string.searching_eta, it)) }
+                        p.etaSeconds?.takeIf { it > 0 }?.let { Spacer(Modifier.height(8.dp)); Subtitle(stringResource(R.string.searching_eta, it)) }
+                        if (premium) { Spacer(Modifier.height(10.dp)); PlusPriority() }
                     }
                     is CallPhase.Connecting -> {
                         Title(stringResource(R.string.almost_there))
-                        if (premium) { Spacer(Modifier.height(8.dp)); PlusPriority() }
-                        Spacer(Modifier.height(6.dp))
+                        Spacer(Modifier.height(8.dp))
                         val where = listOfNotNull(flag(p.partner.countryCode), p.partner.country).joinToString(" ")
                         Subtitle(if (where.isBlank()) stringResource(R.string.connecting_someone) else stringResource(R.string.connecting_someone_in, where))
+                        if (premium) { Spacer(Modifier.height(10.dp)); PlusPriority() }
                     }
                     is CallPhase.Connected -> {
                         PartnerInfo(p.partner)
@@ -431,13 +431,11 @@ private fun PlusRadar(content: @Composable () -> Unit) {
     ) { content() }
 }
 
-/** Plus: one quiet line under the title, a small gold dot and two words. */
+/** Plus: two quiet words in gold, under the line that says what is happening. */
 @Composable
 private fun PlusPriority() {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(6.dp).clip(CircleShape).background(Color(0xFFF5C451)))
-        Spacer(Modifier.width(8.dp))
-        Text(stringResource(R.string.plus_priority), style = MaterialTheme.typography.labelLarge, color = app.talklive.ui.theme.GoldText)
+        Text(stringResource(R.string.plus_priority), style = MaterialTheme.typography.labelMedium.copy(fontSize = 13.sp), color = app.talklive.ui.theme.GoldText)
     }
 }
 

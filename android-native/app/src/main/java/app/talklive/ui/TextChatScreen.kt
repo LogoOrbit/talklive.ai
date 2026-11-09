@@ -200,7 +200,7 @@ fun TextChatScreen(
                 reverseLayout = true,
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 contentPadding = PaddingValues(12.dp),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.Bottom),
             ) {
                 if (state.partnerTyping) item(key = "typing") { TypingBubble() }
                 itemsIndexed(newestFirst, key = { _, m -> m.id }) { i, m ->

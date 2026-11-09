@@ -805,7 +805,9 @@
     });
   })();
 
-  window.TalkLiveEngage = { onCall: onCall, onReveal: onReveal, offerUndo: offerUndo, render: render };
+  window.TalkLiveEngage = { onCall: onCall, onReveal: onReveal, offerUndo: offerUndo, render: render,
+    openPassport: openPassport, openLikes: openLikes,
+    passportCount: function () { return (state.passport || []).length; } };
   window.addEventListener('i18n-changed', render);
   buildStrip();
   refreshLikes();

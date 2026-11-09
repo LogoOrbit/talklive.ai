@@ -110,22 +110,38 @@ fun OnboardingFlow(vm: AuthViewModel, start: AuthRoute = AuthRoute.Choose, onClo
     var showTerms by remember { mutableStateOf(false) }
 
     fun go(r: AuthRoute) { vm.clearError(); route = r }
-    // Date of birth first (once per phone), then the rules (once), then on.
+    var guestAfterGate by remember { mutableStateOf(false) }
+    // All checks done: carry on to where the person was going.
+    fun passGate(target: AuthRoute) {
+        if (guestAfterGate) { guestAfterGate = false; vm.continueAsGuest() } else go(target)
+    }
+    // Date of birth (once per phone), then the rules (once), then on. Only for
+    // making an account or using the app as a guest: signing in to an existing
+    // account never asks.
     fun gated(target: AuthRoute) {
         afterAge = target
         when {
             app.talklive.data.AgeGate.dob(ctx) == null -> go(AuthRoute.Age)
             !ctx.getSharedPreferences("consent", android.content.Context.MODE_PRIVATE).getBoolean("read_terms", false) -> showTerms = true
-            else -> go(target)
+            else -> passGate(target)
         }
     }
+    // A guest uses the app straight away, so the age check and rules come first.
+    fun gatedGuest() {
+        if (app.talklive.data.AgeGate.dob(ctx) != null &&
+            ctx.getSharedPreferences("consent", android.content.Context.MODE_PRIVATE).getBoolean("read_terms", false)) vm.continueAsGuest()
+        else { guestAfterGate = true; gated(AuthRoute.Methods) }
+    }
+    // Google answered "new account": ask the date of birth, then finish it.
+    LaunchedEffect(vm.needDob) { if (vm.needDob) go(AuthRoute.Age) }
+    LaunchedEffect(vm.underage) { if (vm.underage) { app.talklive.data.AgeGate.block(ctx); go(AuthRoute.Blocked) } }
     if (showTerms) {
         TermsReader(
             onDismiss = { showTerms = false },
             onAgree = {
                 ctx.getSharedPreferences("consent", android.content.Context.MODE_PRIVATE).edit().putBoolean("read_terms", true).putBoolean("adult_terms", true).apply()
                 showTerms = false
-                go(afterAge)
+                passGate(afterAge)
             },
         )
     }
@@ -154,13 +170,18 @@ fun OnboardingFlow(vm: AuthViewModel, start: AuthRoute = AuthRoute.Choose, onClo
     ) { r ->
         when (r) {
             AuthRoute.Welcome -> WelcomeScreen(onDone = { introPrefs.edit().putBoolean("intro_seen", true).apply(); go(AuthRoute.Choose) })
-            AuthRoute.Choose -> StartScreen(onStart = { gated(AuthRoute.Methods) }, onLogin = { gated(AuthRoute.Login) })
-            AuthRoute.Age -> AgeScreen(onBack = { go(AuthRoute.Choose) }) { adult ->
-                if (!adult) go(AuthRoute.Blocked) else gated(afterAge)
+            AuthRoute.Choose -> StartScreen(onStart = { go(AuthRoute.Methods) }, onLogin = { go(AuthRoute.Login) })
+            AuthRoute.Age -> AgeScreen(onBack = { vm.cancelGoogle(); guestAfterGate = false; go(AuthRoute.Methods) }) { adult ->
+                when {
+                    !adult -> go(AuthRoute.Blocked)
+                    vm.hasPendingGoogle -> { go(AuthRoute.Methods); vm.retryGoogle() }
+                    else -> gated(afterAge)
+                }
             }
             AuthRoute.Methods -> MethodsScreen(
                 vm, onBack = if (inApp) onClose else ({ go(AuthRoute.Choose) }),
-                onEmail = { go(AuthRoute.Signup) }, onLogin = { go(AuthRoute.Login) }, allowGuest = !inApp,
+                onEmail = { gated(AuthRoute.Signup) }, onLogin = { go(AuthRoute.Login) }, allowGuest = !inApp,
+                onGuest = { gatedGuest() },
             )
             AuthRoute.Blocked -> BlockedScreen()
             AuthRoute.Signup -> SignupScreen(vm, onExit = { go(AuthRoute.Methods) }, onLogin = { go(AuthRoute.Login) })

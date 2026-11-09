@@ -24,7 +24,7 @@ data class Account(val username: String, val nickname: String, val email: String
 
 sealed interface AuthResult {
     data object Ok : AuthResult
-    data class Error(val message: String) : AuthResult
+    data class Error(val message: String, val key: String? = null) : AuthResult
 }
 
 /**
@@ -241,7 +241,7 @@ class AuthRepository(
             return AuthResult.Error("The server did not answer. Please try again.") to JSONObject()
         }
         if (!res.optBoolean("ok")) {
-            return AuthResult.Error(res.optString("error").ifBlank { "Something went wrong. Please try again." }) to res
+            return AuthResult.Error(res.optString("error").ifBlank { "Something went wrong. Please try again." }, res.optString("errorKey").ifBlank { null }) to res
         }
         return AuthResult.Ok to res
     }
@@ -263,9 +263,14 @@ class AuthRepository(
         // The avatar saved with the account follows it to this device.
         val saved = res.optString("animal").takeIf { it.isNotBlank() && it != "null" }
         if (freshSignIn) {
-            // A face picked as a guest stays with the guest: the account shows its own.
-            identity.animalDirty = false
-            identity.animal = saved ?: app.talklive.ui.animals.Animals.random().id
+            // The account's own face wins. An account with none yet keeps the
+            // face this phone shows and saves it, so nobody is asked to pick again.
+            if (saved != null) { identity.animalDirty = false; identity.animal = saved }
+            else {
+                if (identity.animal == null) identity.animal = app.talklive.ui.animals.Animals.random().id
+                identity.animalDirty = true
+                socket.register()
+            }
         } else if (identity.animalDirty && identity.animal != null) {
             // A face picked here that the server has not saved yet wins: send it now
             // that this socket is signed in (the register saves it to the account).

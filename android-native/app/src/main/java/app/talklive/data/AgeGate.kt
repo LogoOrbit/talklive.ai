@@ -15,6 +15,9 @@ object AgeGate {
     fun blocked(context: Context): Boolean = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean("underage", false)
 
     /** Saves the date and returns true when the person is 18 or over. */
+    /** The server said this person is under 18 (Google sign-up). */
+    fun block(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("underage", true).apply()
+
     fun submit(context: Context, year: Int, month: Int, day: Int): Boolean {
         val ok = age(year, month, day) >= 18
         val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()

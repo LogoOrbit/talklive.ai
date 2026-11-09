@@ -45,6 +45,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Call
+import androidx.compose.material.icons.rounded.PersonAdd
+import androidx.compose.material.icons.rounded.SportsEsports
+import androidx.compose.material.icons.rounded.Lightbulb
+import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.EmojiEmotions
 import androidx.compose.material.icons.rounded.Keyboard
 import androidx.compose.material.icons.rounded.Search
@@ -91,6 +96,16 @@ import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.delay
 
 /** One tile in the "+" tray: a big, labelled button anyone can understand. */
+/** Each kind of action has its own colour: call green, friend blue, games orange, ideas amber. */
+private fun meaningColor(icon: ImageVector): Color? = when (icon) {
+    androidx.compose.material.icons.Icons.Rounded.Call -> Color(0xFF22C55E)
+    androidx.compose.material.icons.Icons.Rounded.PersonAdd -> Color(0xFF3B82F6)
+    androidx.compose.material.icons.Icons.Rounded.SportsEsports -> Color(0xFFF97316)
+    androidx.compose.material.icons.Icons.Rounded.Lightbulb -> Color(0xFFE5A800)
+    androidx.compose.material.icons.Icons.Rounded.Mic -> Color(0xFF8B5CF6)
+    else -> null
+}
+
 data class ChatAction(
     val icon: ImageVector,
     val label: String,
@@ -347,7 +362,7 @@ private fun ActionTray(actions: List<ChatAction>, close: () -> Unit) {
                 val bg = when {
                     a.done -> SolidColor(app.talklive.ui.theme.Success)
                     !a.enabled -> SolidColor(MaterialTheme.colorScheme.surfaceVariant)
-                    else -> a.tint?.let { SolidColor(it) } ?: BrandGradient
+                    else -> (a.tint ?: meaningColor(a.icon))?.let { SolidColor(it) } ?: BrandGradient
                 }
                 Box(
                     Modifier.size(56.dp).graphicsLayer { scaleX = bounce.value; scaleY = bounce.value }.clip(RoundedCornerShape(18.dp)).background(bg),
