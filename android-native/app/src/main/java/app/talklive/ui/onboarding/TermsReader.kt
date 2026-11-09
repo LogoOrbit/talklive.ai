@@ -83,7 +83,7 @@ internal fun TermsReader(onDismiss: () -> Unit, onAgree: () -> Unit) {
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Box(Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
-                                Text(emoji, fontSize = 20.sp)
+                                app.talklive.ui.components.SymbolIcon(emoji, 22.dp)
                             }
                             Spacer(Modifier.width(14.dp))
                             Text(stringResource(text), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)

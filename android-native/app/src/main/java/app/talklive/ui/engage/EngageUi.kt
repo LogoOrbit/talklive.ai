@@ -1,5 +1,6 @@
 package app.talklive.ui.engage
 
+import app.talklive.ui.components.tapOnce
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.shrinkVertically
@@ -102,7 +103,7 @@ fun StreakChip(engage: Engage?, onClick: () -> Unit) {
     Surface(onClick = onClick, shape = CircleShape, color = if (s.doneToday) Color(0xFFFFEDD5) else MaterialTheme.colorScheme.surface) {
         Row(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             val lost = s.count == 0 && s.restorable && s.lostCount >= 2
-            Text(if (s.doneToday) "🔥" else if (lost) "💔" else "🕯️", style = MaterialTheme.typography.labelLarge)
+            app.talklive.ui.components.StreakFlame(18.dp, lit = s.doneToday, broken = lost)
             Spacer(Modifier.width(4.dp))
             Text(if (lost) s.lostCount.toString() else s.count.toString(), style = MaterialTheme.typography.labelLarge, color = if (s.doneToday) if (app.talklive.ui.theme.LocalAppTheme.current.isDark) Color(0xFFFF8A4C) else Color(0xFFC2410C) else MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -116,7 +117,7 @@ fun StreakSheet(engage: Engage, onDismiss: () -> Unit, premium: Boolean = false,
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("🔥", style = MaterialTheme.typography.displaySmall)
+                app.talklive.ui.components.StreakFlame(44.dp, lit = engage.streak.doneToday || engage.streak.count > 0)
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(stringResource(R.string.streak_days, engage.streak.count), style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground)
@@ -131,11 +132,11 @@ fun StreakSheet(engage: Engage, onDismiss: () -> Unit, premium: Boolean = false,
             Row(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
                     .background(app.talklive.ui.components.PlusGold.copy(alpha = 0.10f))
-                    .then(if (premium) Modifier else Modifier.clickable(onClick = onPlus))
+                    .then(if (premium) Modifier else Modifier.tapOnce(windowMs = 700, onClick = onPlus))
                     .padding(horizontal = 14.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("🧊", style = MaterialTheme.typography.titleLarge)
+                app.talklive.ui.components.SymbolIcon("🧊", 24.dp)
                 Spacer(Modifier.width(10.dp))
                 Text(
                     if (premium) stringResource(R.string.streak_freezes_left, engage.streak.freezesLeft ?: 2) else stringResource(R.string.streak_freezes_plus),
@@ -245,7 +246,7 @@ fun FilmsSheet(vm: EngageViewModel, current: List<Film>, premium: Boolean = fals
                             Modifier.weight(1f).aspectRatio(2f / 3f).clip(RoundedCornerShape(14.dp))
                                 .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
                                 .border(1.dp, androidx.compose.ui.graphics.Color(0xFFF5C451).copy(alpha = 0.5f), RoundedCornerShape(14.dp))
-                                .clickable(onClick = onPlus),
+                                .tapOnce(windowMs = 700, onClick = onPlus),
                             contentAlignment = Alignment.Center,
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -519,7 +520,7 @@ private fun FilterCard(emoji: String, title: String, hint: String?, onClear: (()
     Surface(shape = RoundedCornerShape(22.dp), color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth().padding(top = 14.dp)) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(emoji, fontSize = 20.sp)
+                app.talklive.ui.components.SymbolIcon(emoji, 22.dp)
                 Spacer(Modifier.width(10.dp))
                 Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
                 if (onClear != null) Text(
@@ -537,7 +538,7 @@ private fun FilterCard(emoji: String, title: String, hint: String?, onClear: (()
 @Composable
 private fun SelectedChip(label: String, onRemove: () -> Unit) {
     Row(
-        Modifier.clip(CircleShape).background(app.talklive.ui.components.BrandGradient).clickable(onClick = onRemove).padding(start = 12.dp, end = 8.dp, top = 7.dp, bottom = 7.dp),
+        Modifier.clip(CircleShape).background(app.talklive.ui.components.BrandGradient).tapOnce(windowMs = 700, onClick = onRemove).padding(start = 12.dp, end = 8.dp, top = 7.dp, bottom = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label, color = Color.White, style = MaterialTheme.typography.labelLarge)

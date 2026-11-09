@@ -98,6 +98,8 @@ data class ChatMessage(
     val edited: Boolean = false,
     /** Server id of a voice note's audio (fetched with voice-note-get). */
     val voiceId: String? = null,
+    /** Disappearing messages: when this one goes (null = it stays). */
+    val exp: Long? = null,
 ) {
     companion object {
         fun from(o: JSONObject, me: String): ChatMessage {
@@ -123,6 +125,7 @@ data class ChatMessage(
             voiceMs = o.optJSONObject("voice")?.optLong("ms"),
             voiceId = o.optJSONObject("voice")?.optString("id")?.takeIf { it.isNotBlank() },
             status = if (o.optBoolean("seen")) MsgStatus.Seen else MsgStatus.Sent,
+            exp = o.optLong("exp").takeIf { it > 0 },
         )
     }
 }
@@ -149,3 +152,6 @@ data class BlockedPerson(val clientId: String, val username: String, val wasFrie
 
 /** An item in the activity list: a missed friend call or an accepted request. */
 data class ActivityItem(val id: String, val type: String, val fromClientId: String, val username: String, val ts: Long)
+
+/** A conversation's disappearing-messages setting, as this person sees it. */
+data class Disappearing(val on: Boolean, val byMe: Boolean = false, val byName: String? = null)

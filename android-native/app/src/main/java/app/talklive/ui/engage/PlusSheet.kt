@@ -91,6 +91,7 @@ import app.talklive.billing.PlayMessage
 import app.talklive.billing.PlusPlan
 import app.talklive.engage.Premium
 import app.talklive.ui.components.BrandGradient
+import app.talklive.ui.components.tapOnce
 import app.talklive.ui.components.PrimaryButton
 import app.talklive.ui.theme.LocalAccents
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -326,7 +327,7 @@ fun PlusContent(
                     Spacer(Modifier.height(16.dp))
                     Surface(onClick = onInvite, shape = RoundedCornerShape(18.dp), color = Color.White.copy(alpha = 0.06f), modifier = Modifier.fillMaxWidth()) {
                         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("🎁", fontSize = 26.sp)
+                            app.talklive.ui.components.GiftIcon(28.dp)
                             Spacer(Modifier.width(12.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(stringResource(R.string.plus_earn_title), style = MaterialTheme.typography.titleMedium, color = Color.White)
@@ -385,11 +386,10 @@ internal fun GoldButton(text: String, busy: Boolean, onClick: () -> Unit) {
     val still = app.talklive.ui.theme.LocalReduceMotion.current
     val shine = if (still) -9f else rememberInfiniteTransition(label = "shine").animateFloat(-0.4f, 1.4f, infiniteRepeatable(tween(2600, easing = LinearEasing)), label = "x").value
     Box(
-        Modifier.fillMaxWidth().height(58.dp).clip(CircleShape).background(GoldBrush)
+        Modifier.fillMaxWidth().height(58.dp).tapOnce(enabled = !busy) { app.talklive.sound.Tap.pop(); onClick() }.clip(CircleShape).background(GoldBrush)
             .drawBehind {
                 if (shine > -1f) drawRect(Brush.linearGradient(listOf(Color.Transparent, Color.White.copy(alpha = 0.45f), Color.Transparent), start = Offset(size.width * shine - 80f, 0f), end = Offset(size.width * shine + 80f, size.height)))
-            }
-            .clickable(enabled = !busy) { app.talklive.sound.Tap.pop(); onClick() },
+            },
         contentAlignment = Alignment.Center,
     ) {
         if (busy) CircularProgressIndicator(Modifier.size(24.dp), color = Color(0xFF3A2A06), strokeWidth = 2.5.dp)
@@ -425,7 +425,10 @@ private fun YouWithPlus(animal: String?, name: String?) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     app.talklive.ui.components.PlusRing(true, 64.dp) { app.talklive.ui.animals.AnimalAvatar(animal, name, 64.dp) }
                     Spacer(Modifier.height(6.dp))
-                    Text("$shown 💎", style = MaterialTheme.typography.labelLarge, color = Gold1, maxLines = 1, fontWeight = FontWeight.Bold)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(shown, style = MaterialTheme.typography.labelLarge, color = Gold1, maxLines = 1, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.width(4.dp)); app.talklive.ui.components.PlusGem(14.dp)
+                    }
                     Text("PLUS", style = MaterialTheme.typography.labelMedium, color = Gold1, fontWeight = FontWeight.ExtraBold)
                 }
             }
@@ -503,13 +506,13 @@ private fun PerkPreview(page: Int) {
             }
         }
         3 -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Box(Modifier.size(54.dp).clip(CircleShape).background(GoldBrush), contentAlignment = Alignment.Center) { Text("⚡", fontSize = 26.sp) }
+            Box(Modifier.size(54.dp).clip(CircleShape).background(GoldBrush), contentAlignment = Alignment.Center) { app.talklive.ui.components.SymbolIcon("⚡", 28.dp, tint = Color.White) }
             repeat(4) { Box(Modifier.size((40 - it * 6).dp).clip(CircleShape).background(Color.White.copy(alpha = 0.12f - it * 0.02f))) }
         }
         4 -> Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("💔", fontSize = 34.sp)
+            app.talklive.ui.components.StreakFlame(36.dp, lit = false, broken = true)
             Text("  →  ", style = MaterialTheme.typography.titleLarge, color = Color.White.copy(alpha = 0.72f))
-            Text("🔥", fontSize = 40.sp)
+            app.talklive.ui.components.StreakFlame(42.dp)
             Text(" 12", style = MaterialTheme.typography.headlineMedium.copy(brush = GoldBrush), fontWeight = FontWeight.Black)
         }
         // Ocean and Sunset: the two Plus themes, as little screens.
@@ -528,7 +531,7 @@ private fun PerkPreview(page: Int) {
             Spacer(Modifier.width(12.dp))
             Text("Sam", style = MaterialTheme.typography.headlineSmall, color = Color.White)
             Spacer(Modifier.width(6.dp))
-            Text("💎", fontSize = 26.sp)
+            app.talklive.ui.components.PlusGem(28.dp)
         }
     }
 }
@@ -586,7 +589,7 @@ private fun Gem() {
         Modifier.padding(top = 4.dp).offset(y = float.dp).size(104.dp).rotate(tilt).clip(RoundedCornerShape(32.dp)).background(GoldBrush).padding(3.dp)
             .clip(RoundedCornerShape(29.dp)).background(Color(0xFF111522)),
         contentAlignment = Alignment.Center,
-    ) { Text("💎", fontSize = 52.sp) }
+    ) { app.talklive.ui.components.PlusGem(56.dp) }
 }
 
 @Composable

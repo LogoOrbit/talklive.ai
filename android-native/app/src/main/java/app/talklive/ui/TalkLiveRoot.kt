@@ -1,5 +1,6 @@
 package app.talklive.ui
 
+import androidx.compose.foundation.layout.size
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -29,6 +30,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.Build
+import androidx.compose.material.icons.rounded.ChatBubble
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Call
 import androidx.compose.foundation.clickable
@@ -278,7 +281,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     trialUntil?.let {
         AlertDialog(
             onDismissRequest = { trialUntil = null },
-            icon = { Text("🎁", fontSize = 40.sp) },
+            icon = { app.talklive.ui.components.GiftIcon(44.dp) },
             title = { Text(stringResource(R.string.trial_title)) },
             text = { Text(stringResource(R.string.trial_body)) },
             confirmButton = { TextButton(onClick = { trialUntil = null }) { Text(stringResource(R.string.trial_ok)) } },
@@ -731,7 +734,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     replies.firstOrNull()?.let { r ->
         AlertDialog(
             onDismissRequest = {},
-            icon = { Text("💬", fontSize = 32.sp) },
+            icon = { androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.ChatBubble, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(34.dp)) },
             title = { Text(stringResource(R.string.feedback_reply_title)) },
             text = {
                 androidx.compose.foundation.layout.Column {
@@ -772,7 +775,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     maintenance?.let { msg ->
         Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(32.dp), contentAlignment = Alignment.Center) {
             androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("🛠️", style = MaterialTheme.typography.displaySmall)
+                androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Build, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(44.dp))
                 androidx.compose.foundation.layout.Spacer(Modifier.padding(8.dp))
                 Text(stringResource(R.string.maintenance_title), style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground)
                 Text(msg, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
@@ -801,12 +804,12 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     LaunchedEffect(Unit) {
         social.messageEvents.collect { (id, who, text) ->
             // Like a messenger: a quick note unless that chat is already open (or muted).
-            if (openChat != id && id !in social.muted.value) { miniNote = "💬 $who: $text"; kotlinx.coroutines.delay(2000); miniNote = null }
+            if (openChat != id && id !in social.muted.value) { miniNote = "$who: $text"; kotlinx.coroutines.delay(2000); miniNote = null }
         }
     }
     LaunchedEffect(incoming, inCall) {
         val inc = incoming
-        if (inCall && inc != null) { miniNote = "📞 " + context.getString(R.string.is_calling, inc.username); kotlinx.coroutines.delay(2000); miniNote = null }
+        if (inCall && inc != null) { miniNote = context.getString(R.string.is_calling, inc.username); kotlinx.coroutines.delay(2000); miniNote = null }
     }
     androidx.compose.foundation.layout.Box(
         androidx.compose.ui.Modifier.fillMaxSize().statusBarsPadding().padding(top = 6.dp),

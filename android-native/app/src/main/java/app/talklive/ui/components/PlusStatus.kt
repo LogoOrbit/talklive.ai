@@ -1,5 +1,6 @@
 package app.talklive.ui.components
 
+import androidx.compose.foundation.layout.size
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -63,14 +64,17 @@ fun PlusName(
 /** The small "💎 Plus" tag next to a Plus member's name. */
 @Composable
 fun PlusTag(modifier: Modifier = Modifier) {
-    Text(
-        "💎 Plus",
-        modifier = modifier
+    androidx.compose.foundation.layout.Row(
+        modifier
             .background(PlusGold.copy(alpha = 0.14f), RoundedCornerShape(50))
             .border(1.dp, PlusGold.copy(alpha = 0.55f), RoundedCornerShape(50))
             .padding(horizontal = 8.dp, vertical = 2.dp),
-        color = app.talklive.ui.theme.GoldText, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1,
-    )
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        PlusGem(11.dp)
+        androidx.compose.foundation.layout.Spacer(Modifier.size(4.dp))
+        Text("Plus", color = app.talklive.ui.theme.GoldText, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+    }
 }
 
 /**
@@ -105,12 +109,18 @@ fun PlusEntrance(key: Any?, premium: Boolean, modifier: Modifier = Modifier) {
             show, modifier = Modifier.align(Alignment.TopCenter).padding(top = 120.dp),
             enter = scaleIn(spring(dampingRatio = 0.5f), initialScale = 0.6f) + fadeIn(), exit = fadeOut(),
         ) {
-            Text(
-                "💎  Plus member",
-                modifier = Modifier.background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(50))
+            androidx.compose.foundation.layout.Row(
+                Modifier.background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(50))
                     .border(1.dp, PlusGold, RoundedCornerShape(50)).padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+            PlusGem(16.dp)
+            androidx.compose.foundation.layout.Spacer(Modifier.size(8.dp))
+            Text(
+                "Plus member",
                 style = TextStyle(brush = GoldText, fontWeight = FontWeight.Bold, fontSize = 15.sp),
             )
+            }
         }
     }
 }

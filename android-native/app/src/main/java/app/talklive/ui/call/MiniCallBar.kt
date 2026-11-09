@@ -1,5 +1,6 @@
 package app.talklive.ui.call
 
+import app.talklive.ui.components.tapOnce
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -68,7 +69,7 @@ fun MiniCallBar(partner: Partner, sinceMs: Long, muted: Boolean, onOpen: () -> U
                 )
             }
             Box(
-                Modifier.size(36.dp).clip(CircleShape).background(Color(0xFFE5484D)).clickable(onClick = onEnd),
+                Modifier.size(36.dp).clip(CircleShape).background(Color(0xFFE5484D)).tapOnce(windowMs = 700, onClick = onEnd),
                 contentAlignment = Alignment.Center,
             ) { Icon(Icons.Rounded.CallEnd, null, tint = Color.White, modifier = Modifier.size(19.dp)) }
         }

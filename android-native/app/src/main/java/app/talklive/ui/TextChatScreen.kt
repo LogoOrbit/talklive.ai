@@ -1,5 +1,6 @@
 package app.talklive.ui
 
+import app.talklive.ui.components.tapOnce
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
@@ -180,7 +181,7 @@ fun TextChatScreen(
                 }
                 Spacer(Modifier.width(8.dp))
                 Row(
-                    Modifier.height(40.dp).clip(CircleShape).background(BrandGradient).clickable(onClick = onNext).padding(start = 14.dp, end = 10.dp),
+                    Modifier.height(40.dp).clip(CircleShape).background(BrandGradient).tapOnce(windowMs = 700, onClick = onNext).padding(start = 14.dp, end = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(stringResource(R.string.next), color = Color.White, style = MaterialTheme.typography.labelLarge, maxLines = 1)

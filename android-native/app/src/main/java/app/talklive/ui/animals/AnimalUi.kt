@@ -1,5 +1,7 @@
 package app.talklive.ui.animals
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
@@ -225,7 +227,10 @@ fun AnimalGrid(
             ) {
                 Box {
                     Image(painterResource(a.icon), a.name, Modifier.fillMaxWidth(0.72f).aspectRatio(1f))
-                    if (a.id in PLUS_FACES) Text(if (unlocked(a.id)) "💎" else "🔒", fontSize = 13.sp, modifier = Modifier.align(Alignment.TopEnd))
+                    if (a.id in PLUS_FACES) Box(Modifier.align(Alignment.TopEnd)) {
+                        if (unlocked(a.id)) app.talklive.ui.components.PlusGem(14.dp)
+                        else androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Lock, null, tint = app.talklive.ui.theme.GoldText, modifier = Modifier.size(14.dp))
+                    }
                 }
                 Text(
                     a.name,

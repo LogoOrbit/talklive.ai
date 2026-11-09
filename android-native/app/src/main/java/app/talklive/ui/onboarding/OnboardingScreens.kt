@@ -253,11 +253,11 @@ internal fun WelcomeScreen(onDone: () -> Unit, onPlus: () -> Unit = onDone) {
                 Box(Modifier.size(260.dp), contentAlignment = Alignment.Center) {
                     Box(
                         Modifier.size(210.dp).clip(CircleShape)
-                            .background(Brush.linearGradient(listOf(BrandViolet.copy(alpha = 0.14f), BrandTeal.copy(alpha = 0.14f)))),
+                            .background(Brush.linearGradient(listOf(BrandTeal.copy(alpha = 0.14f), BrandTeal.copy(alpha = 0.14f)))),
                     )
                     Box(
                         Modifier.size(116.dp).graphicsLayer { scaleX = pulse; scaleY = pulse }
-                            .clip(CircleShape).background(Brush.linearGradient(listOf(BrandViolet, BrandTeal))),
+                            .clip(CircleShape).background(Brush.linearGradient(listOf(BrandTeal, BrandTeal))),
                         contentAlignment = Alignment.Center,
                     ) { Icon(s.icon, null, tint = Color.White, modifier = Modifier.size(52.dp)) }
                     // People around the circle, drifting slowly.
@@ -407,8 +407,8 @@ private fun WelcomeHero(faces: List<String>, modifier: Modifier = Modifier) {
                 )
                 // The line of light between the two people.
                 val path = androidx.compose.ui.graphics.Path().apply { moveTo(a.x, a.y); quadraticTo(ctrl.x, ctrl.y, b.x, b.y) }
-                drawPath(path, Brush.linearGradient(listOf(BrandViolet, BrandTeal), start = a, end = b), style = Stroke(4.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round))
-                drawPath(path, Brush.linearGradient(listOf(BrandViolet.copy(alpha = 0.35f * glow), BrandTeal.copy(alpha = 0.35f * glow)), start = a, end = b), style = Stroke(12.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round))
+                drawPath(path, Brush.linearGradient(listOf(BrandTeal, BrandTeal), start = a, end = b), style = Stroke(4.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round))
+                drawPath(path, Brush.linearGradient(listOf(BrandTeal.copy(alpha = 0.35f * glow), BrandTeal.copy(alpha = 0.35f * glow)), start = a, end = b), style = Stroke(12.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round))
                 if (!still) {
                     val p = bez(travel)
                     drawCircle(Color.White.copy(alpha = 0.9f), radius = 4.dp.toPx(), center = p)

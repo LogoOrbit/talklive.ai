@@ -86,6 +86,16 @@ class SocialRepository @Inject constructor(
     private val _gates = MutableStateFlow<Map<String, String>>(emptyMap())
     /** The server's latest word on whether a non-friend can be messaged (open, one, accept, request, waiting). */
     val gates: StateFlow<Map<String, String>> = _gates
+    private val _disappearing = MutableStateFlow<Map<String, Disappearing>>(emptyMap())
+    /** Disappearing messages per conversation (friend clientId -> setting). */
+    val disappearing: StateFlow<Map<String, Disappearing>> = _disappearing
+
+    /** Turns disappearing messages on or off for one chat; both people see it in the chat. */
+    fun setDisappearing(friendClientId: String, on: Boolean) {
+        _disappearing.update { it + (friendClientId to Disappearing(on, byMe = true)) }
+        socket.emit("chat-disappearing", JSONObject().put("friendClientId", friendClientId).put("on", on))
+    }
+
     private val _voice = MutableStateFlow<Map<String, String>>(emptyMap())
     /** Voice-message permission per friend: off, sent, received or on. */
     val voice: StateFlow<Map<String, String>> = _voice
@@ -132,6 +142,29 @@ class SocialRepository @Inject constructor(
         socket.on("friend-message-sent") { a -> (a.firstOrNull() as? JSONObject)?.let { scope.launch { onSent(it) } } }
         socket.on("chat-blocked") { a -> (a.firstOrNull() as? JSONObject)?.let { scope.launch { onBlocked(it) } } }
         socket.on("friend-chat-history") { a -> (a.firstOrNull() as? JSONObject)?.let { scope.launch { onHistory(it) } } }
+        socket.on("chat-disappearing") { a ->
+            (a.firstOrNull() as? JSONObject)?.let { o ->
+                val who = o.optString("friendClientId")
+                _disappearing.update { it + (who to Disappearing(o.optBoolean("on"), o.optBoolean("byMe"), o.optNullableString("byName"))) }
+            }
+        }
+        socket.on("friend-messages-expired") { a ->
+            (a.firstOrNull() as? JSONObject)?.let { o ->
+                val who = o.optString("friendClientId")
+                val ids = o.optJSONArray("ids")?.let { arr -> (0 until arr.length()).map { arr.optString(it) }.toSet() }.orEmpty()
+                updateThread(who) { list -> list.filterNot { it.id in ids } }
+            }
+        }
+        // Disappearing messages also go on the phone the moment their time is up.
+        scope.launch {
+            while (true) {
+                delay(60_000)
+                val now = System.currentTimeMillis()
+                if (_threads.value.values.any { l -> l.any { (it.exp ?: Long.MAX_VALUE) <= now } }) {
+                    _threads.update { m -> m.mapValues { (_, l) -> l.filterNot { (it.exp ?: Long.MAX_VALUE) <= now } } }
+                }
+            }
+        }
         socket.on("dm-gate") { a ->
             (a.firstOrNull() as? JSONObject)?.let { o ->
                 val id = o.optString("clientId"); val g = o.optString("gate")
@@ -310,7 +343,7 @@ class SocialRepository @Inject constructor(
     suspend fun find(friendId: String): Result<FoundUser> {
         val res = request("find-by-friend-id", JSONObject().put("friendId", friendId.trim()), "find-by-friend-id-result")
             ?: return Result.failure(Exception("No connection. Try again."))
-        if (!res.optBoolean("ok")) return Result.failure(Exception(res.optString("error").ifBlank { "No one has that ID right now." }))
+        if (!res.optBoolean("ok")) return Result.failure(Exception(app.talklive.ui.components.friendlyError(res.optString("error"), "No one has that ID right now.")))
         val u = res.getJSONObject("user")
         return Result.success(
             FoundUser(
@@ -358,7 +391,7 @@ class SocialRepository @Inject constructor(
     suspend fun setHandle(handle: String): Result<String> {
         val res = request("set-handle", JSONObject().put("handle", handle.trim()), "set-handle-result")
             ?: return Result.failure(Exception("No connection. Try again."))
-        if (!res.optBoolean("ok")) return Result.failure(Exception(res.optString("error").ifBlank { "Could not save that ID." }))
+        if (!res.optBoolean("ok")) return Result.failure(Exception(app.talklive.ui.components.friendlyError(res.optString("error"), "Could not save that ID.")))
         val id = res.optString("friendId")
         _myFriendId.value = id
         return Result.success(id)
@@ -376,7 +409,7 @@ class SocialRepository @Inject constructor(
     fun send(toClientId: String, text: String, replyTo: String? = null) = scope.launch {
         val body = text.trim().take(1000)
         if (body.isEmpty()) return@launch
-        val msg = ChatMessage(id = newId(), mine = true, text = body, ts = System.currentTimeMillis(), replyTo = replyTo, status = MsgStatus.Sending)
+        val msg = ChatMessage(id = newId(), mine = true, text = body, ts = System.currentTimeMillis(), replyTo = replyTo, status = MsgStatus.Sending, exp = expiryFor(toClientId))
         updateThread(toClientId) { it + msg }
         emitMessage(toClientId, msg)
         // Still not confirmed after 10 s: show it as failed so it can be retried.
@@ -385,7 +418,7 @@ class SocialRepository @Inject constructor(
     }
 
     fun sendGif(toClientId: String, gif: Gif) = scope.launch {
-        val msg = ChatMessage(id = newId(), mine = true, text = "", ts = System.currentTimeMillis(), gifUrl = gif.url, gif = gif, status = MsgStatus.Sending)
+        val msg = ChatMessage(id = newId(), mine = true, text = "", ts = System.currentTimeMillis(), gifUrl = gif.url, gif = gif, status = MsgStatus.Sending, exp = expiryFor(toClientId))
         updateThread(toClientId) { it + msg }
         emitMessage(toClientId, msg)
         delay(10_000)
@@ -590,6 +623,7 @@ class SocialRepository @Inject constructor(
         val id = o.optString("friendClientId")
         o.optString("voice").takeIf { it.isNotBlank() }?.let { v -> _voice.update { it + (id to v) } }
         o.optString("gate").takeIf { it.isNotBlank() }?.let { g -> _gates.update { it + (id to g) } }
+        o.optJSONObject("disappearing")?.let { d -> _disappearing.update { it + (id to Disappearing(d.optBoolean("on"), d.optBoolean("byMe"))) } }
         val arr = o.optJSONArray("messages") ?: JSONArray()
         val fromServer = (0 until arr.length()).mapNotNull { arr.optJSONObject(it)?.let { m -> ChatMessage.from(m, identity.clientId) } }
         updateThread(id) { local ->
@@ -636,6 +670,9 @@ class SocialRepository @Inject constructor(
 
     private suspend fun request(event: String, payload: JSONObject, result: String): JSONObject? =
         try { socket.request(event, payload, result) } catch (_: TimeoutCancellationException) { null }
+
+    private fun expiryFor(to: String): Long? =
+        if (_disappearing.value[to]?.on == true) System.currentTimeMillis() + 24 * 60 * 60 * 1000L else null
 
     private fun newId(): String {
         val chars = "abcdefghijklmnopqrstuvwxyz0123456789"

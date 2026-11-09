@@ -338,7 +338,6 @@ const sidePanelRegisterBtn = document.getElementById('sidePanelRegisterBtn');
 const avatarGrid = document.getElementById('avatarGrid');
 const saveAvatarBtn = document.getElementById('saveAvatarBtn');
 
-const MIN_CALL_SECONDS_BEFORE_SKIP = 2;
 
 // --- Theme-matched inline icon set, used instead of emoji everywhere in the UI ---
 const ICONS = {
@@ -737,7 +736,6 @@ let speakingCheckInterval = null;
 let myProfile = null;
 let callTimerInterval = null;
 let callStartedAt = null;
-let skipUnlockTimeout = null;
 let currentPartnerInterests = [];
 let currentPartner = null;
 // A call-back is a call with a friend, not a spin of the roulette: when it ends,
@@ -3416,7 +3414,6 @@ signupPassword.addEventListener('input', renderPasswordMeter);
 
 // The username rules, checked as they are typed rather than after a round trip.
 const signupUsernameNote = document.getElementById('signupUsernameNote');
-const USERNAME_RE = /^[A-Za-z0-9_.-]{3,24}$/;
 signupUsername.addEventListener('input', () => {
   const v = signupUsername.value.trim();
   signupUsernameNote.classList.toggle('is-error', /[^A-Za-z0-9_.-]/.test(v));
@@ -4151,43 +4148,48 @@ changePasswordBtn.addEventListener('click', () => {
   });
 });
 
-// Persist the login locally (nickname for instant UI, token for the server-side
-// session), then reload - the token signs the reloaded page straight back in.
-// Settings that belong to the account (same names as the app). Signing in
-// writes the account's values here; changing one while signed in saves it.
+// Account settings (same names as the app). Each remembers when it last
+// changed here; the newer side wins, so an older copy never wipes a choice.
 const CLOUD_KEYS = {
   theme: 'talklive_theme', sounds: 'talklive_sound', vibration: 'talklive_vibration',
   autoConnect: 'talklive_autocall', acceptCalls: 'talklive_accept_calls', hideStatus: 'talklive_status_visible',
 };
+const lsSet = Storage.prototype.setItem;
+const cloudTimes = () => { try { return JSON.parse(localStorage.getItem('tl_cloud_t')) || {}; } catch (_) { return {}; } };
+function setCloudTime(k, t) { const m = cloudTimes(); m[k] = t; lsSet.call(localStorage, 'tl_cloud_t', JSON.stringify(m)); }
+function cloudValue(k) {
+  const v = localStorage.getItem(CLOUD_KEYS[k]);
+  return v == null ? undefined : k === 'theme' ? v : (k === 'hideStatus') === (v === 'off');
+}
+function pushCloudKeys(keys) {
+  const settings = {}; const times = {}; const t = cloudTimes();
+  keys.forEach((k) => { const v = cloudValue(k); if (v !== undefined) { settings[k] = v; times[k] = t[k] || 1; } });
+  if (sessionToken && Object.keys(settings).length) socket.emit('settings-save', { settings, times });
+}
 function applyCloudSettings(s) {
-  if (!s || !Object.keys(s).length) { pushCloudSettings(); return; }
-  for (const [k, key] of Object.entries(CLOUD_KEYS)) {
-    if (!(k in s)) continue;
-    const on = k === 'hideStatus' ? !s[k] : !!s[k];
-    localStorage.setItem(key, k === 'theme' ? String(s[k]) : (on ? 'on' : 'off'));
+  s = s || {};
+  const rT = s._t || {}; const lT = cloudTimes(); const up = [];
+  for (const k in CLOUD_KEYS) {
+    const rt = +rT[k] || 0; const lt = +lT[k] || 0;
+    if (k in s && rt > lt) {
+      lsSet.call(localStorage, CLOUD_KEYS[k], k === 'theme' ? String(s[k]) : (k === 'hideStatus' ? !s[k] : s[k]) ? 'on' : 'off');
+      setCloudTime(k, rt);
+    } else if (cloudValue(k) !== undefined && (lt > rt || !(k in s))) up.push(k);
   }
+  pushCloudKeys(up);
 }
 let cloudTimer = 0;
-function pushCloudSettings() {
+const cloudDirty = new Set();
+const cloudByKey = Object.fromEntries(Object.entries(CLOUD_KEYS).map(([k, v]) => [v, k]));
+Storage.prototype.setItem = function (key, v) {
+  lsSet.call(this, key, v);
+  const k = this === localStorage && cloudByKey[key];
+  if (!k) return;
+  setCloudTime(k, Date.now());
+  cloudDirty.add(k);
   clearTimeout(cloudTimer);
-  cloudTimer = setTimeout(() => {
-    if (!sessionToken) return;
-    const out = {};
-    for (const [k, key] of Object.entries(CLOUD_KEYS)) {
-      const v = localStorage.getItem(key);
-      if (v != null) out[k] = k === 'theme' ? v : (k === 'hideStatus' ? v === 'off' : v !== 'off');
-    }
-    socket.emit('settings-save', { settings: out });
-  }, 600);
-}
-{
-  const set = Storage.prototype.setItem;
-  const watched = new Set(Object.values(CLOUD_KEYS));
-  Storage.prototype.setItem = function (k, v) {
-    set.call(this, k, v);
-    if (this === window.localStorage && sessionToken && watched.has(k)) pushCloudSettings();
-  };
-}
+  cloudTimer = setTimeout(() => { pushCloudKeys([...cloudDirty]); cloudDirty.clear(); }, 600);
+};
 // The account's own face: a guest's avatar never carries into it.
 // An account with no face yet keeps this browser's, which the next register
 // saves to it, so nobody is asked to pick again. Returns true when it changed.
@@ -7444,10 +7446,6 @@ function stopCallTimer() {
   callTimerEl.textContent = '0:00';
 }
 
-// The separate Skip/Next button was removed in favour of the single Call
-// button, so these are now no-ops kept only so existing call sites still work.
-function lockSkipButton() {}
-function unlockSkipButton() {}
 
 function showReactionFloat(reaction) {
   const el = document.createElement('div');
@@ -8426,7 +8424,6 @@ function teardownPeer() {
   reactionBar.classList.add('hidden');
   stopQualityMonitor();
   stopCallTimer();
-  lockSkipButton();
 }
 
 // Full reset back to the Tap-to-Talk landing (used after a ban / abandoned
@@ -9078,11 +9075,6 @@ document.getElementById('chatEmptyChips').addEventListener('click', (e) => {
   else sendStrangerChat(text);
 });
 
-// Put the caret in the box the person is about to type in when a panel with a
-// composer opens. Deferred a frame because these panels animate in from
-// visibility:hidden and a hidden element cannot take focus, and skipped on
-// touch: there the only effect is the on-screen keyboard popping up over the
-// messages, forcing the user to dismiss it just to read.
 // Put the caret in the box the person is about to type in - on a match, and
 // whenever anything with a composer opens. Two details it has to get right,
 // both of which used to make a plain .focus() do nothing:
@@ -9986,7 +9978,7 @@ notifyForm.addEventListener('submit', async (e) => {
     setNotifyStatus(t('notifyEmailSent'), 'ok');
   } catch (err) {
     notifySubmitBtn.disabled = false;
-    setNotifyStatus(err.message || t('notifyEmailError'), 'error');
+    setNotifyStatus((!(err instanceof TypeError) && err.message) || t('notifyEmailError'), 'error');
   }
 });
 
@@ -10608,7 +10600,6 @@ socket.on('matched', async ({ initiator, partner, rematched, callback, samePerso
   sharedInterestNote.classList.add('hidden');
   reactionBar.classList.add('hidden');
 
-  lockSkipButton();
 
   // Armed before the setup, not after it - see armConnectWatchdog(). Everything
   // below can hang or throw, and this is what guarantees the user moves on.

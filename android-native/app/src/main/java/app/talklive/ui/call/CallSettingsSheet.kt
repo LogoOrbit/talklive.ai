@@ -1,5 +1,6 @@
 package app.talklive.ui.call
 
+import app.talklive.ui.components.tapOnce
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -117,7 +118,7 @@ fun CallSettingsSheet(
                 Switch(checked = noiseSuppression, onCheckedChange = onNoiseSuppression, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary))
             }
             Label(R.string.call_support)
-            Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(onClick = onProblem).padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).tapOnce(windowMs = 700, onClick = onProblem).padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Rounded.ReportProblem, null, tint = MaterialTheme.colorScheme.onSurface)
                 Spacer(Modifier.width(16.dp))
                 Text(stringResource(R.string.call_tech_problem), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)

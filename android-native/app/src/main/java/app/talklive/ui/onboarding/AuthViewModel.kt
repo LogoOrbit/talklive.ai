@@ -78,7 +78,7 @@ class AuthViewModel @Inject constructor(private val auth: AuthRepository) : View
 
     fun finishReset() = run {
         val token = resetToken ?: return@run
-        (auth.resetPassword(token, resetPassword) as? AuthResult.Error)?.let { error = it.message }
+        (auth.resetPassword(token, resetPassword) as? AuthResult.Error)?.let { error = app.talklive.ui.components.friendlyError(it.message) }
     }
 
     // Log-in form.
@@ -130,7 +130,7 @@ class AuthViewModel @Inject constructor(private val auth: AuthRepository) : View
     }
 
     fun login() = run {
-        (auth.login(loginUser, loginPassword) as? AuthResult.Error)?.let { error = it.message }
+        (auth.login(loginUser, loginPassword) as? AuthResult.Error)?.let { error = app.talklive.ui.components.friendlyError(it.message) }
     }
 
     /** Set when Google says this is a new account: the screen asks for a date of birth, then [retryGoogle]. */
@@ -168,7 +168,7 @@ class AuthViewModel @Inject constructor(private val auth: AuthRepository) : View
                 error = "Google sign-in is not available right now."
             } else when (val g = System.currentTimeMillis().let { t0 -> GoogleSignIn.signIn(activity, clientId).let { if (it == GoogleSignIn.Result.Cancelled && System.currentTimeMillis() - t0 < 1500) GoogleSignIn.Result.Failed(GoogleSignIn.NOT_SET_UP) else it } }) {
                 is GoogleSignIn.Result.Token -> googleWith(g.idToken)
-                is GoogleSignIn.Result.Failed -> error = g.message
+                is GoogleSignIn.Result.Failed -> error = app.talklive.ui.components.friendlyError(g.message, "Google sign-in did not finish. Please try again.")
                 GoogleSignIn.Result.Cancelled -> Unit
             }
             googleBusy = false

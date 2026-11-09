@@ -125,11 +125,11 @@ fun EmptyTab(tab: MainTab, onStart: () -> Unit, showTitle: Boolean = true) {
         Spacer(Modifier.weight(1f))
         Box(
             Modifier.size(132.dp).clip(CircleShape)
-                .background(Brush.linearGradient(listOf(BrandViolet.copy(alpha = 0.16f), BrandTeal.copy(alpha = 0.16f)))),
+                .background(Brush.linearGradient(listOf(BrandTeal.copy(alpha = 0.16f), BrandTeal.copy(alpha = 0.16f)))),
             contentAlignment = Alignment.Center,
         ) {
             Box(
-                Modifier.size(84.dp).clip(CircleShape).background(Brush.linearGradient(listOf(BrandViolet, BrandTeal))),
+                Modifier.size(84.dp).clip(CircleShape).background(Brush.linearGradient(listOf(BrandTeal, BrandTeal))),
                 contentAlignment = Alignment.Center,
             ) { Icon(tab.selectedIcon, null, tint = Color.White, modifier = Modifier.size(40.dp)) }
         }

@@ -56,6 +56,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.composed
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
@@ -77,10 +79,10 @@ import app.talklive.ui.theme.BrandViolet
 import app.talklive.ui.theme.Danger
 
 /** The website's primary button: violet to teal, 135°. */
-/** The theme's accent gradient (violet to cyan on the default theme). */
+/** The theme's accent as a solid fill (no gradients). */
 val BrandGradient: Brush
     @androidx.compose.runtime.Composable @androidx.compose.runtime.ReadOnlyComposable
-    get() = app.talklive.ui.theme.LocalAccents.current.let { Brush.linearGradient(listOf(it.a, it.b)) }
+    get() = androidx.compose.ui.graphics.SolidColor(app.talklive.ui.theme.LocalAccents.current.a)
 
 /** A press-to-shrink modifier source, for buttons that feel physical. */
 @Composable
@@ -104,12 +106,13 @@ fun PrimaryButton(
     val haptics = LocalHapticFeedback.current
     val source = remember { MutableInteractionSource() }
     androidx.compose.runtime.LaunchedEffect(done) { if (done) haptics.performHapticFeedback(HapticFeedbackType.LongPress) }
+    val once = rememberSingleTap {
+        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        app.talklive.sound.Tap.pop()
+        onClick()
+    }
     Surface(
-        onClick = {
-            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-            app.talklive.sound.Tap.pop()
-            onClick()
-        },
+        onClick = once,
         enabled = enabled && !loading && !done,
         shape = shape,
         color = Color.Transparent,
@@ -154,8 +157,10 @@ fun SecondaryButton(
     shape: androidx.compose.ui.graphics.Shape? = null,
 ) {
     val source = remember { MutableInteractionSource() }
+    val haptics = LocalHapticFeedback.current
+    val once = rememberSingleTap { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); app.talklive.sound.Tap.pop(); onClick() }
     Surface(
-        onClick = { app.talklive.sound.Tap.pop(); onClick() },
+        onClick = once,
         enabled = !loading,
         shape = shape ?: CircleShape,
         color = if (shape == null) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant,
@@ -310,4 +315,31 @@ fun ScreenTitle(title: String, subtitle: String? = null) {
         Spacer(Modifier.height(8.dp))
         Text(it, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Start)
     }
+}
+
+/**
+ * Wraps [onClick] so a quick second tap (a double press when the first seemed
+ * not to react) is ignored: one tap, one action.
+ */
+@Composable
+fun rememberSingleTap(windowMs: Long = 700, onClick: () -> Unit): () -> Unit {
+    val latest = androidx.compose.runtime.rememberUpdatedState(onClick)
+    val last = remember { longArrayOf(0L) }
+    return remember {
+        {
+            val now = android.os.SystemClock.uptimeMillis()
+            if (now - last[0] >= windowMs) { last[0] = now; latest.value() }
+        }
+    }
+}
+
+/**
+ * A tappable area that visibly reacts: it dips in size while pressed and
+ * springs back, with a light tick, and ignores a quick repeat tap.
+ */
+fun Modifier.tapOnce(enabled: Boolean = true, windowMs: Long = 700, onClick: () -> Unit): Modifier = composed {
+    val source = remember { MutableInteractionSource() }
+    val haptics = LocalHapticFeedback.current
+    val once = rememberSingleTap(windowMs) { haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove); onClick() }
+    this.scale(pressScale(source)).clickable(interactionSource = source, indication = androidx.compose.material3.ripple(), enabled = enabled, onClick = once)
 }

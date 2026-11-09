@@ -112,7 +112,7 @@ class SupportViewModel @Inject constructor(private val repo: SupportRepository) 
         busy = true; error = null
         viewModelScope.launch {
             val r = if (thread == null) repo.start(text.trim(), email) else repo.send(text.trim())
-            r.onSuccess { thread = it.copy(teamOnline = thread?.teamOnline ?: false) }.onFailure { error = it.message }
+            r.onSuccess { thread = it.copy(teamOnline = thread?.teamOnline ?: false) }.onFailure { error = app.talklive.ui.components.friendlyError(it.message) }
             busy = false
             // Instant help while the team gets the message.
             if (r.isSuccess) {

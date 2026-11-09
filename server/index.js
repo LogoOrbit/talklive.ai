@@ -1998,6 +1998,11 @@ const MAX_BLOCKS = 500;
 // "Clear chat" is one-sided: `${clientId}|${pairKey}` -> ts. Messages at or
 // before it are hidden from that person only; the other side keeps the thread.
 const chatClears = new Map();
+// Disappearing messages, per conversation: pairKey -> { by: clientId, at }.
+// While on, each new message is stamped to expire 24 hours after it is sent
+// and is removed then for both people.
+const disappearing = new Map();
+const DISAPPEAR_MS = (process.env.NODE_ENV !== 'production' && Number(process.env.DISAPPEAR_MS)) || 24 * 60 * 60 * 1000;
 // Muted conversations: clientId -> Set<otherClientId>. Messages still arrive and
 // still count as unread; they just never wake a phone or play a sound. The
 // other person is never told - muting is a private volume knob, not a signal.
@@ -2364,6 +2369,7 @@ function writeSocial() {
     lastSeen: Object.fromEntries(lastSeen),
     blockMeta: mapOfMaps(blockMeta),
     chatClears: Object.fromEntries(chatClears),
+    disappearing: Object.fromEntries(disappearing),
     declinedRequests: Object.fromEntries(declinedRequests),
     voiceConsent: Object.fromEntries(voiceConsent),
     activeHours: Object.fromEntries(activeHours),
@@ -2442,6 +2448,9 @@ function hydrateFromStore() {
   }
   for (const [cid, m] of Object.entries(social.blockMeta || {})) {
     if (m && typeof m === 'object') blockMeta.set(cid, new Map(Object.entries(m)));
+  }
+  for (const [key, v] of Object.entries(social.disappearing || {})) {
+    if (v && typeof v === 'object') disappearing.set(key, { by: String(v.by || ''), at: Number(v.at) || Date.now() });
   }
   for (const [key, ts] of Object.entries(social.chatClears || {})) {
     if (typeof ts === 'number') chatClears.set(key, ts);
@@ -2556,8 +2565,36 @@ function clearedAt(viewerClientId, otherClientId) {
 function visibleThread(viewerClientId, otherClientId) {
   const list = friendChats.get(pairKey(viewerClientId, otherClientId)) || [];
   const cut = clearedAt(viewerClientId, otherClientId);
-  return cut ? list.filter((m) => m.ts > cut) : list;
+  const now = Date.now();
+  return list.filter((m) => (!cut || m.ts > cut) && !(m.exp && m.exp <= now));
 }
+
+// What each side is told about a conversation's disappearing setting.
+function disappearingFor(viewerClientId, otherClientId) {
+  const d = disappearing.get(pairKey(viewerClientId, otherClientId));
+  return d ? { on: true, byMe: d.by === viewerClientId, at: d.at } : { on: false };
+}
+
+// Messages past their 24 hours go, for both people, and both apps are told.
+function sweepDisappearing(now = Date.now()) {
+  for (const [key, list] of friendChats) {
+    if (!list.some((m) => m && m.exp && m.exp <= now)) continue;
+    const gone = list.filter((m) => m && m.exp && m.exp <= now);
+    friendChats.set(key, list.filter((m) => !(m && m.exp && m.exp <= now)));
+    const clips = gone.filter((m) => m.voice && m.voice.id).map((m) => m.voice.id);
+    if (clips.length) store.deleteVoiceNotes(clips).catch(() => {});
+    const cut = key.indexOf('|');
+    const a = key.slice(0, cut);
+    const b = key.slice(cut + 1);
+    const ids = gone.map((m) => m.id).filter(Boolean);
+    for (const [me, other] of [[a, b], [b, a]]) {
+      const s = getSocketByClientId(me);
+      if (s) s.emit('friend-messages-expired', { friendClientId: other, ids });
+    }
+    persistSocial();
+  }
+}
+setInterval(() => { try { sweepDisappearing(); } catch (err) { console.error('[disappearing] sweep failed', err.message); } }, 5 * 60 * 1000).unref();
 
 function dropFromChatHistory(ownerClientId, otherClientId) {
   const list = chatHistory.get(ownerClientId);
@@ -3264,6 +3301,7 @@ function deliverFriendMessage(socket, me, toClientId, parsed, msgId) {
     ts: Date.now(),
     id: msgId || 'm' + crypto.randomBytes(6).toString('hex'),
   };
+  if (disappearing.has(key)) msg.exp = msg.ts + DISAPPEAR_MS;
   if (parsed.replyTo) msg.replyTo = parsed.replyTo;
   if (parsed.gif) msg.gif = parsed.gif;
   if (parsed.voice) msg.voice = parsed.voice;
@@ -3294,6 +3332,7 @@ function deliverFriendMessage(socket, me, toClientId, parsed, msgId) {
     replyTo: msg.replyTo || null,
     gif: msg.gif || null,
     voice: msg.voice || null,
+    exp: msg.exp || null,
   };
   const targetSocket = getSocketByClientId(toClientId);
   if (targetSocket) {
@@ -5438,10 +5477,10 @@ io.on('connection', (socket) => {
     if (me) store.setNotifPrefs(me.clientId, prefs);
   });
 
-  socket.on('settings-save', ({ settings } = {}) => {
+  socket.on('settings-save', ({ settings, times } = {}) => {
     const usernameLower = socketAuth.get(socket.id);
     if (!usernameLower) return;
-    store.mergeAccountSettings(usernameLower, settings);
+    store.mergeAccountSettings(usernameLower, settings, times && typeof times === 'object' ? times : {});
   });
 
   socket.on('logout', ({ token, pushToken, pushEndpoint, all } = {}) => {
@@ -7707,7 +7746,25 @@ io.on('connection', (socket) => {
       messages: visibleThread(me.clientId, friendClientId),
       gate: dmGate(me.clientId, friendClientId),
       voice: voiceStateFor(me.clientId, friendClientId),
+      disappearing: disappearingFor(me.clientId, friendClientId),
     });
+  });
+
+  // Disappearing messages on or off for one conversation. Both people see it
+  // in the chat itself (no push), and either can turn it off again.
+  socket.on('chat-disappearing', ({ friendClientId, on } = {}) => {
+    const me = profiles.get(socket.id);
+    friendClientId = validId(friendClientId);
+    if (!me || !friendClientId || !canOpenThread(me.clientId, friendClientId)) return;
+    if (isBlockedPair(me.clientId, friendClientId)) return;
+    const key = pairKey(me.clientId, friendClientId);
+    if (on === true) disappearing.set(key, { by: me.clientId, at: Date.now() }); else disappearing.delete(key);
+    persistSocial();
+    store.recordFeature(on === true ? 'disappearing_on' : 'disappearing_off');
+    for (const [who, other] of [[me.clientId, friendClientId], [friendClientId, me.clientId]]) {
+      const s = getSocketByClientId(who);
+      if (s) s.emit('chat-disappearing', { friendClientId: other, ...disappearingFor(who, other), byName: me.username });
+    }
   });
 
   socket.on('mark-messages-read', ({ friendClientId } = {}) => {

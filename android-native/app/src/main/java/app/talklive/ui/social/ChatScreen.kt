@@ -1,5 +1,6 @@
 package app.talklive.ui.social
 
+import app.talklive.ui.components.tapOnce
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -51,6 +52,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Reply
 import androidx.compose.material.icons.automirrored.rounded.Send
+import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.Call
 import androidx.compose.material.icons.rounded.PersonAdd
 import androidx.compose.material.icons.rounded.Check
@@ -123,6 +125,7 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
     val isFriend = friends.any { it.clientId == clientId }
     val messages = threads[clientId].orEmpty()
     val typing = clientId in typingSet
+    val disappearingMap by vm.disappearing.collectAsStateWithLifecycle()
     var draft by rememberSaveable(clientId) { mutableStateOf("") }
     var replyTo by remember { mutableStateOf<ChatMessage?>(null) }
     var actionsFor by remember { mutableStateOf<ChatMessage?>(null) }
@@ -208,6 +211,12 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                             text = { Text(stringResource(if (isMuted) R.string.unmute_chat else R.string.mute_chat)) },
                             onClick = { menuOpen = false; vm.setMuted(clientId, !isMuted) },
                         )
+                        val dis = disappearingMap[clientId]?.on == true
+                        androidx.compose.material3.DropdownMenuItem(
+                            text = { Text(stringResource(if (dis) R.string.disappearing_turn_off else R.string.disappearing_turn_on)) },
+                            leadingIcon = { Icon(Icons.Rounded.Timer, null) },
+                            onClick = { menuOpen = false; vm.setDisappearing(clientId, !dis) },
+                        )
                         androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.clear_chat)) }, onClick = { menuOpen = false; confirm = "clear" })
                         androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.report), color = app.talklive.ui.theme.DangerText) }, onClick = { menuOpen = false; confirm = "report" })
                         androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.block), color = app.talklive.ui.theme.DangerText) }, onClick = { menuOpen = false; confirm = "block" })
@@ -249,6 +258,30 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                 }
             }
             if (messages.isEmpty() && !typing) item { EmptyChat(person) }
+            // Disappearing messages: said once, quietly, at the top of the chat
+            // (no notification), with a way to turn it off right there.
+            disappearingMap[clientId]?.takeIf { it.on }?.let { d ->
+                item(key = "disappearing") {
+                    Column(
+                        Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 10.dp)
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Rounded.Timer, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                if (d.byMe) stringResource(R.string.disappearing_on_me) else stringResource(R.string.disappearing_on_them, d.byName ?: person.displayName),
+                                style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            )
+                        }
+                        androidx.compose.material3.TextButton(onClick = { vm.setDisappearing(clientId, false) }) { Text(stringResource(R.string.disappearing_turn_off)) }
+                    }
+                }
+            }
         }
 
         // Composer.
@@ -477,7 +510,7 @@ private fun RecordingBar(ms: Long, modifier: Modifier, onCancel: () -> Unit, onS
         Box(Modifier.size(10.dp).clip(CircleShape).background(Danger.copy(alpha = a)))
         Spacer(Modifier.width(10.dp))
         Text("%d:%02d".format(ms / 60000, (ms / 1000) % 60), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
-        Box(Modifier.size(40.dp).clip(CircleShape).background(BrandGradient).clickable(onClick = onSend), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(40.dp).clip(CircleShape).background(BrandGradient).tapOnce(windowMs = 300, onClick = onSend), contentAlignment = Alignment.Center) {
             Icon(Icons.AutoMirrored.Rounded.Send, stringResource(R.string.send), tint = Color.White, modifier = Modifier.size(20.dp))
         }
     }
@@ -606,7 +639,7 @@ internal fun MessageBubble(
                     .then(if (m.mine) Modifier.background(BrandGradient) else Modifier.background(MaterialTheme.colorScheme.surface))
                     .then(
                         when {
-                            m.status == MsgStatus.Failed -> Modifier.clickable(onClick = onRetry)
+                            m.status == MsgStatus.Failed -> Modifier.tapOnce(windowMs = 700, onClick = onRetry)
                             onLongPress != null || onDoubleTap != null -> Modifier.combinedClickable(
                                 onClick = {},
                                 onLongClick = onLongPress?.let { lp -> { haptics.performHapticFeedback(HapticFeedbackType.LongPress); lp() } },
@@ -812,14 +845,14 @@ internal fun PersonSheet(
                 Column(Modifier.padding(vertical = 6.dp)) {
                     person.countryCode?.let { cc ->
                         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(flag(cc) ?: "🌍", style = MaterialTheme.typography.titleMedium)
+                            app.talklive.ui.components.SymbolIcon(flag(cc) ?: "🌍", 22.dp)
                             Spacer(Modifier.width(12.dp))
                             Text(java.util.Locale("", cc).displayCountry, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
                         }
                     }
                     app.talklive.ui.animals.animalById(person.animal)?.let { a ->
                         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("✨", style = MaterialTheme.typography.titleMedium)
+                            app.talklive.ui.components.SymbolIcon("✨", 22.dp)
                             Spacer(Modifier.width(12.dp))
                             Text(a.name + if (a.trait.isNotBlank()) " · ${a.trait}" else "", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
                         }
@@ -898,7 +931,7 @@ private fun VoicePolicySheet(
             )
             points.forEach { (emoji, text) ->
                 Row(Modifier.padding(vertical = 6.dp)) {
-                    Text(emoji, modifier = Modifier.width(30.dp))
+                    Box(Modifier.width(32.dp)) { app.talklive.ui.components.SymbolIcon(emoji, 20.dp) }
                     Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onBackground)
                 }
             }

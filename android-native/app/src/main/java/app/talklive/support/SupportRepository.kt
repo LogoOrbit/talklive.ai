@@ -44,7 +44,7 @@ class SupportRepository @Inject constructor(
             "start",
             JSONObject().put("text", text).put("email", email.orEmpty()).put("clientId", identity.clientId).put("page", "android-app"),
         ) ?: return Result.failure(Exception("No connection. Try again."))
-        res.optString("error").takeIf { it.isNotBlank() }?.let { return Result.failure(Exception(it)) }
+        res.optString("error").takeIf { it.isNotBlank() }?.let { return Result.failure(Exception(app.talklive.ui.components.friendlyError(it))) }
         prefs.edit().putString("id", res.optString("id")).putString("key", res.optString("key")).apply()
         return Result.success(thread(res, online = false))
     }
@@ -65,7 +65,7 @@ class SupportRepository @Inject constructor(
         val id = prefs.getString("id", null) ?: return Result.failure(Exception("Start a conversation first."))
         val res = post("send", JSONObject().put("id", id).put("key", prefs.getString("key", null)).put("text", text))
             ?: return Result.failure(Exception("No connection. Try again."))
-        res.optString("error").takeIf { it.isNotBlank() }?.let { return Result.failure(Exception(it)) }
+        res.optString("error").takeIf { it.isNotBlank() }?.let { return Result.failure(Exception(app.talklive.ui.components.friendlyError(it))) }
         return Result.success(thread(res, online = false))
     }
 

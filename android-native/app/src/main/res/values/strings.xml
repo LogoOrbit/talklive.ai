@@ -669,4 +669,8 @@
     <string name="call_noise_desc">Cut background noise from your mic</string>
     <string name="call_support">Support</string>
     <string name="call_tech_problem">Technical problem</string>
+    <string name="disappearing_turn_on">Disappearing messages</string>
+    <string name="disappearing_turn_off">Turn off disappearing messages</string>
+    <string name="disappearing_on_me">You turned on disappearing messages. New messages disappear 24 hours after they are sent.</string>
+    <string name="disappearing_on_them">%1$s turned on disappearing messages. New messages disappear 24 hours after they are sent.</string>
 </resources>

@@ -90,7 +90,7 @@ fun RateCard(name: String, onRate: (Boolean) -> Unit, onDismiss: () -> Unit, mod
                 Box(
                     Modifier.size(44.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer).clickable { onRate(up) },
                     contentAlignment = Alignment.Center,
-                ) { Text(e, fontSize = 22.sp) }
+                ) { app.talklive.ui.components.SymbolIcon(e, 22.dp) }
                 Spacer(Modifier.width(8.dp))
             }
             IconButton(onClick = onDismiss) { Icon(Icons.Rounded.Close, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }

@@ -56,7 +56,7 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             val r = social.setHandle(handle)
             busy = false
-            r.onSuccess { confirmThenClose("Friend ID updated") }.onFailure { error = it.message }
+            r.onSuccess { confirmThenClose("Friend ID updated") }.onFailure { error = app.talklive.ui.components.friendlyError(it.message) }
             busy = false
         }
     }

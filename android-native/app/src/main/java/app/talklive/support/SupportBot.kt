@@ -36,7 +36,7 @@ object SupportBot {
         Faq("Does TalkLive record calls?", listOf("record", "recorded", "privacy", "safe", "store"),
             "No. Call audio is never recorded or stored."),
         Faq("What does TalkLive Plus include?", listOf("plus", "premium", "subscription", "subscribe", "include", "benefit"),
-            "Every filter (gender and unlimited countries), seeing who liked you, undoing a skip, faster matching, a 💎 badge, and bringing back a broken streak once a month."),
+            "Every filter (gender and unlimited countries), seeing who liked you, undoing a skip, faster matching, a Plus badge, and bringing back a broken streak once a month."),
         Faq("How do I cancel Plus or get a refund?", listOf("cancel", "refund", "unsubscribe", "charged", "billing"),
             "Plus bought in the app is managed by Google Play: open Play Store > your profile > Payments & subscriptions > Subscriptions > TalkLive. You keep Plus until the end of the period you paid for."),
         Faq("I was banned. Can I appeal?", listOf("ban", "banned", "appeal", "blocked", "paused"),

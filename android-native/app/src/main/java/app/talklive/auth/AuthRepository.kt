@@ -243,7 +243,7 @@ class AuthRepository(
             return AuthResult.Error("The server did not answer. Please try again.") to JSONObject()
         }
         if (!res.optBoolean("ok")) {
-            return AuthResult.Error(res.optString("error").ifBlank { "Something went wrong. Please try again." }, res.optString("errorKey").ifBlank { null }) to res
+            return AuthResult.Error(app.talklive.ui.components.friendlyError(res.optString("error")), res.optString("errorKey").ifBlank { null }) to res
         }
         return AuthResult.Ok to res
     }

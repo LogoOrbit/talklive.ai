@@ -337,7 +337,7 @@
         note.textContent = 'Check your inbox and tap the link to confirm.';
       }).catch(function (err) {
         btn.disabled = false;
-        note.textContent = err.message || 'Something went wrong. Please try again.';
+        note.textContent = (!(err instanceof TypeError) && err.message) || 'Something went wrong. Please try again.';
       });
     });
 

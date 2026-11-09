@@ -1,5 +1,6 @@
 package app.talklive.ui
 
+import app.talklive.ui.components.tapOnce
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -95,9 +96,13 @@ fun HomeScreen(
             Spacer(Modifier.weight(1f))
             if (!premium) {
                 Row(
-                    Modifier.clip(CircleShape).background(app.talklive.ui.components.BrandGradient).clickable(onClick = onPlus).padding(horizontal = 10.dp, vertical = 5.dp),
+                    Modifier.clip(CircleShape).background(app.talklive.ui.components.BrandGradient).tapOnce(windowMs = 700, onClick = onPlus).padding(horizontal = 10.dp, vertical = 5.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                ) { Text("💎 Plus", color = androidx.compose.ui.graphics.Color.White, style = MaterialTheme.typography.labelMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold) }
+                ) {
+                    app.talklive.ui.components.PlusGem(14.dp)
+                    Spacer(Modifier.width(5.dp))
+                    Text("Plus", color = androidx.compose.ui.graphics.Color.White, style = MaterialTheme.typography.labelMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                }
                 Spacer(Modifier.width(6.dp))
             }
             app.talklive.ui.engage.StreakChip(engage, onStreak)
@@ -119,7 +124,7 @@ fun HomeScreen(
         androidx.compose.foundation.layout.BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
             val fit = (maxHeight / 230.dp).coerceIn(0.45f, 1f)
             // Never disabled: a tap while reconnecting starts as soon as the line is back.
-            Box(Modifier.clip(CircleShape).clickable(onClick = onStart)) {
+            Box(Modifier.clip(CircleShape).tapOnce(windowMs = 700, onClick = onStart)) {
                 MicOrb(mode == app.talklive.call.CallMode.Chat, fit)
             }
         }
@@ -253,7 +258,7 @@ private fun MicOrb(text: Boolean = false, fit: Float = 1f) {
     Box(contentAlignment = Alignment.Center) {
         Box(
             Modifier.size(220.dp * fit).scale(halo).clip(CircleShape)
-                .background(Brush.radialGradient(listOf(BrandViolet.copy(alpha = 0.18f), BrandTeal.copy(alpha = 0.0f)))),
+                .background(Brush.radialGradient(listOf(BrandTeal.copy(alpha = 0.18f), BrandTeal.copy(alpha = 0.0f)))),
         )
         Box(Modifier.size(160.dp * fit).clip(CircleShape).background(BrandViolet.copy(alpha = 0.10f)))
         Box(

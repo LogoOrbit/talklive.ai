@@ -71,7 +71,7 @@ class EngageViewModel @Inject constructor(private val repo: EngageRepository, pr
         if (busy) return
         busy = true; error = null
         viewModelScope.launch {
-            repo.saveFilms(list).onSuccess { onDone() }.onFailure { error = it.message }
+            repo.saveFilms(list).onSuccess { onDone() }.onFailure { error = app.talklive.ui.components.friendlyError(it.message) }
             busy = false
         }
     }

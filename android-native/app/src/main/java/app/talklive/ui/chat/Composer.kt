@@ -89,6 +89,7 @@ import app.talklive.R
 import app.talklive.chat.GifApi
 import app.talklive.social.Gif
 import app.talklive.ui.components.BrandGradient
+import app.talklive.ui.components.tapOnce
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -239,7 +240,7 @@ fun Composer(
                     Box(
                         Modifier.size(48.dp).clip(CircleShape)
                             .background(if (ready) BrandGradient else SolidColor(MaterialTheme.colorScheme.surfaceVariant))
-                            .clickable(enabled = ready) { onSend() },
+                            .tapOnce(enabled = ready, windowMs = 300) { onSend() },
                         contentAlignment = Alignment.Center,
                     ) { Icon(Icons.AutoMirrored.Rounded.Send, stringResource(R.string.send), tint = if (ready) Color.White else MaterialTheme.colorScheme.onSurfaceVariant) }
                 } else idleTrailing?.invoke()
@@ -348,7 +349,7 @@ private fun ActionTray(actions: List<ChatAction>, close: () -> Unit) {
             val bounce = remember { androidx.compose.animation.core.Animatable(1f) }
             val scope = rememberCoroutineScope()
             Column(
-                Modifier.clip(RoundedCornerShape(16.dp)).clickable(enabled = a.enabled) {
+                Modifier.clip(RoundedCornerShape(16.dp)).tapOnce(enabled = a.enabled) {
                     app.talklive.sound.Tap.pop()
                     scope.launch {
                         bounce.animateTo(0.82f, androidx.compose.animation.core.tween(70))

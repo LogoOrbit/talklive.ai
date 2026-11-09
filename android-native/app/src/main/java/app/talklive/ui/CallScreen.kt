@@ -556,11 +556,14 @@ private fun IcebreakerCard(key: String, draw: () -> app.talklive.data.Icebreaker
     AnimatedContent(targetState = q, transitionSpec = { (fadeIn() + scaleIn(initialScale = 0.9f)) togetherWith fadeOut() }, label = "ice") { cur ->
         if (cur == null) {
             Surface(onClick = { q = draw() }, shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
+                Row(Modifier.padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                app.talklive.ui.components.SymbolIcon("💡", 18.dp, tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                Spacer(Modifier.width(8.dp))
                 Text(
-                    "💡  " + stringResource(R.string.need_icebreaker),
+                    stringResource(R.string.need_icebreaker),
                     style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
                 )
+                }
             }
         } else {
             Surface(onClick = { q = draw() }, shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface) {

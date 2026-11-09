@@ -1,5 +1,6 @@
 package app.talklive.ui
 
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -80,7 +81,7 @@ fun PartnerSheet(
             androidx.compose.foundation.layout.Spacer(Modifier.height(14.dp))
             androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 androidx.compose.material3.Text(p.username, style = androidx.compose.material3.MaterialTheme.typography.headlineSmall, color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground)
-                if (p.premium) androidx.compose.material3.Text("  💎", style = androidx.compose.material3.MaterialTheme.typography.titleLarge)
+                if (p.premium) { androidx.compose.foundation.layout.Spacer(androidx.compose.ui.Modifier.size(8.dp)); app.talklive.ui.components.PlusGem(20.dp) }
             }
             app.talklive.ui.animals.animalById(p.animal)?.let {
                 androidx.compose.material3.Text(it.name + if (it.trait.isNotBlank()) " · ${it.trait}" else "", style = androidx.compose.material3.MaterialTheme.typography.bodyMedium, color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant)
@@ -125,7 +126,7 @@ fun PartnerSheet(
 @Composable
 private fun FactRow(icon: String, text: String) {
     androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-        androidx.compose.material3.Text(icon, style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
+        app.talklive.ui.components.SymbolIcon(icon, 22.dp)
         androidx.compose.foundation.layout.Spacer(Modifier.width(12.dp))
         androidx.compose.material3.Text(text, style = androidx.compose.material3.MaterialTheme.typography.bodyLarge, color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface)
     }

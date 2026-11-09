@@ -186,12 +186,12 @@ fun ProfileScreen(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp))
                     .background(androidx.compose.ui.graphics.Brush.linearGradient(
                         if (premium.active) listOf(androidx.compose.ui.graphics.Color(0xFFB8860B), androidx.compose.ui.graphics.Color(0xFFF5C451))
-                        else listOf(app.talklive.ui.theme.LocalAccents.current.a, app.talklive.ui.theme.LocalAccents.current.b),
+                        else listOf(app.talklive.ui.theme.LocalAccents.current.a, app.talklive.ui.theme.LocalAccents.current.a),
                     ))
                     .clickable { youSheet = "plus" }.padding(18.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("💎", fontSize = 34.sp)
+                    app.talklive.ui.components.PlusGem(36.dp)
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {
                         Text(stringResource(R.string.plus), style = MaterialTheme.typography.titleLarge, color = androidx.compose.ui.graphics.Color.White)
@@ -575,7 +575,7 @@ private fun ProfileSheetHost(sheet: ProfileSheet, vm: ProfileViewModel, animal: 
     val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val account by vm.account.collectAsStateWithLifecycle()
     ModalBottomSheet(onDismissRequest = vm::close, sheetState = state, containerColor = MaterialTheme.colorScheme.background) {
-        Column(Modifier.fillMaxWidth().navigationBarsPadding().imePadding().padding(horizontal = 20.dp).padding(bottom = 20.dp)) {
+        Column(Modifier.fillMaxWidth().navigationBarsPadding().imePadding().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 20.dp)) {
             when (sheet) {
                 ProfileSheet.Animal -> {
                     var pick by rememberSaveable { mutableStateOf(animal) }

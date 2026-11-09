@@ -34,55 +34,83 @@ class CloudSettings(
         Spec("readReceipts", "privacy", "read_receipts", Kind.Bool),
     )
     private val files = specs.map { it.file }.distinct().associateWith { context.getSharedPreferences(it, Context.MODE_PRIVATE) }
+    /** When each setting was last changed on this phone (ms). Newer always wins; nothing is ever wiped by an older copy. */
+    private val times = context.getSharedPreferences("cloud_t", Context.MODE_PRIVATE)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     @Volatile private var signedIn = false
     @Volatile private var applying = false
+    private val dirty = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
     private var pending: Job? = null
 
     // Held as fields: SharedPreferences only keeps weak references to listeners.
     private val listeners = files.map { (file, prefs) ->
         val l = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (!applying && signedIn && specs.any { it.file == file && it.key == key }) pushSoon()
+            if (applying) return@OnSharedPreferenceChangeListener
+            val spec = specs.firstOrNull { it.file == file && it.key == key } ?: return@OnSharedPreferenceChangeListener
+            // A choice made on this phone: stamp it, and send just that one.
+            times.edit().putLong(spec.cloud, System.currentTimeMillis()).apply()
+            dirty.add(spec.cloud)
+            if (signedIn) pushSoon()
         }
         prefs.registerOnSharedPreferenceChangeListener(l)
         l
     }
 
-    private fun snapshot(): JSONObject = JSONObject().apply {
+    private fun valueOf(s: Spec): Any? {
+        val p = files.getValue(s.file)
+        if (!p.contains(s.key)) return null
+        return when (s.kind) { Kind.Str -> p.getString(s.key, null); Kind.Bool -> p.getBoolean(s.key, false) }
+    }
+
+    private fun push(keys: Collection<String>) {
+        if (keys.isEmpty()) return
+        val settings = JSONObject(); val ts = JSONObject()
         for (s in specs) {
-            val p = files.getValue(s.file)
-            if (!p.contains(s.key)) continue
-            when (s.kind) {
-                Kind.Str -> p.getString(s.key, null)?.let { put(s.cloud, it) }
-                Kind.Bool -> put(s.cloud, p.getBoolean(s.key, false))
-            }
+            if (s.cloud !in keys) continue
+            val v = valueOf(s) ?: continue
+            settings.put(s.cloud, v)
+            ts.put(s.cloud, times.getLong(s.cloud, 1L).coerceAtLeast(1L))
         }
+        if (settings.length() > 0) socket.emit("settings-save", JSONObject().put("settings", settings).put("times", ts))
     }
 
     private fun pushSoon() {
         pending?.cancel()
         pending = scope.launch {
             delay(600)
-            socket.emit("settings-save", JSONObject().put("settings", snapshot()))
+            val keys = dirty.toList(); dirty.clear()
+            push(keys)
         }
     }
 
-    /** A sign-in: the account's saved settings replace the phone's; a new account takes the phone's. */
+    /**
+     * A sign-in: each setting goes whichever way is newer. The account's copy
+     * is used only where it was changed more recently than this phone's; this
+     * phone's newer choices are sent up. Nothing is reset or wiped.
+     */
     fun onSignedIn(cloud: JSONObject?) {
         signedIn = true
-        if (cloud == null || cloud.length() == 0) { pushSoon(); return }
+        val cloudT = cloud?.optJSONObject("_t")
+        val upload = mutableListOf<String>()
         applying = true
         try {
             for (s in specs) {
-                if (!cloud.has(s.cloud)) continue
-                val e = files.getValue(s.file).edit()
-                when (s.kind) {
-                    Kind.Str -> e.putString(s.key, cloud.optString(s.cloud))
-                    Kind.Bool -> e.putBoolean(s.key, cloud.optBoolean(s.cloud))
+                val local = times.getLong(s.cloud, 0L)
+                val remote = cloudT?.optLong(s.cloud, 0L) ?: 0L
+                if (cloud != null && cloud.has(s.cloud) && remote > local) {
+                    val e = files.getValue(s.file).edit()
+                    when (s.kind) {
+                        Kind.Str -> e.putString(s.key, cloud.optString(s.cloud))
+                        Kind.Bool -> e.putBoolean(s.key, cloud.optBoolean(s.cloud))
+                    }
+                    e.commit()
+                    times.edit().putLong(s.cloud, remote).apply()
+                } else if (valueOf(s) != null && (local > remote || cloud == null || !cloud.has(s.cloud))) {
+                    upload += s.cloud
                 }
-                e.commit()
             }
         } finally { applying = false }
+        push(upload + dirty.toList().also { dirty.clear() })
     }
 
     fun onSignedOut() { signedIn = false; pending?.cancel() }

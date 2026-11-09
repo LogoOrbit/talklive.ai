@@ -2408,20 +2408,33 @@ const SETTING_KEY = /^[a-zA-Z][a-zA-Z0-9_]{0,39}$/;
 function getAccountSettings(usernameLower) {
   return (data.accountSettings && data.accountSettings[usernameLower]) || {};
 }
-// Merges a few validated values; anything that is not a plain small value is dropped.
-function mergeAccountSettings(usernameLower, incoming) {
+// Merges validated values. Each setting carries when it was last changed
+// (`times[k]`, ms); a value only replaces the saved one if it is newer, so an
+// older copy from another device can never wipe a newer choice. Settings are
+// stored as { key: value, _t: { key: changedAt } }.
+function mergeAccountSettings(usernameLower, incoming, times = {}) {
   if (!usernameLower || !incoming || typeof incoming !== 'object') return getAccountSettings(usernameLower);
   if (!data.accountSettings) data.accountSettings = {};
   const cur = { ...getAccountSettings(usernameLower) };
+  const curT = { ...(cur._t || {}) };
+  delete cur._t;
+  let changed = false;
   for (const [k, v] of Object.entries(incoming).slice(0, 60)) {
-    if (!SETTING_KEY.test(k)) continue;
-    if (v === null) { delete cur[k]; continue; }
-    if (typeof v === 'boolean' || (typeof v === 'number' && Number.isFinite(v)) || (typeof v === 'string' && v.length <= 60)) cur[k] = v;
+    if (!SETTING_KEY.test(k) || k === '_t') continue;
+    const t = Number(times && times[k]) || 0;
+    // No time given (older apps): only fills a setting the account has never had.
+    if (!t ? k in cur : t <= (Number(curT[k]) || 0)) continue;
+    if (!(typeof v === 'boolean' || (typeof v === 'number' && Number.isFinite(v)) || (typeof v === 'string' && v.length <= 60))) continue;
+    cur[k] = v;
+    curT[k] = t || 1;
+    changed = true;
   }
   if (Object.keys(cur).length > 60) return getAccountSettings(usernameLower);
-  data.accountSettings[usernameLower] = cur;
-  save();
-  return cur;
+  if (changed) {
+    data.accountSettings[usernameLower] = { ...cur, _t: curT };
+    save();
+  }
+  return data.accountSettings[usernameLower] || {};
 }
 
 function plusLook(clientId) {

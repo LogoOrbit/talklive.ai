@@ -197,7 +197,7 @@ class EngageRepository(
         } catch (_: TimeoutCancellationException) {
             return Result.failure(Exception("The server did not answer. Please try again."))
         }
-        if (!res.optBoolean("ok")) return Result.failure(Exception(res.optString("error").ifBlank { "Could not save." }))
+        if (!res.optBoolean("ok")) return Result.failure(Exception(app.talklive.ui.components.friendlyError(res.optString("error"), "Could not save.")))
         val saved = Film.list(res.optJSONArray("films"))
         _films.value = saved
         return Result.success(saved)

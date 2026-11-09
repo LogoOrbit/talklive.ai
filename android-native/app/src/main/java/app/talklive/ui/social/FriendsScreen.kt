@@ -1,5 +1,8 @@
 package app.talklive.ui.social
 
+import androidx.compose.foundation.verticalScroll
+import app.talklive.ui.components.tapOnce
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.runtime.LaunchedEffect
 
 import androidx.compose.foundation.clickable
@@ -210,10 +213,10 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
                         .clip(RoundedCornerShape(16.dp))
                         .background(app.talklive.ui.components.PlusGold.copy(alpha = 0.10f))
                         .border(1.dp, app.talklive.ui.components.PlusGold.copy(alpha = 0.45f), RoundedCornerShape(16.dp))
-                        .clickable(onClick = onPlus).padding(horizontal = 16.dp, vertical = 12.dp),
+                        .tapOnce(windowMs = 700, onClick = onPlus).padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("🔒", fontSize = 18.sp)
+                    Icon(androidx.compose.material.icons.Icons.Rounded.Lock, null, tint = app.talklive.ui.theme.GoldText, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(12.dp))
                     Text(
                         stringResource(R.string.history_locked, historyHidden),
@@ -418,13 +421,13 @@ private fun AddFriendSheet(vm: SocialViewModel, onDismiss: () -> Unit, onOpenCha
         if (query.isBlank() || busy) return
         busy = true; error = null; found = null
         scope.launch {
-            vm.find(query).onSuccess { found = it }.onFailure { error = it.message }
+            vm.find(query).onSuccess { found = it }.onFailure { error = app.talklive.ui.components.friendlyError(it.message) }
             busy = false
         }
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = MaterialTheme.colorScheme.background) {
-        Column(Modifier.fillMaxWidth().navigationBarsPadding().imePadding().padding(horizontal = 20.dp).padding(bottom = 24.dp).animateContentSize()) {
+        Column(Modifier.fillMaxWidth().navigationBarsPadding().imePadding().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 24.dp).animateContentSize()) {
             Text(stringResource(R.string.add_friend), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
             Spacer(Modifier.height(16.dp))
             // Your own ID, to share.
@@ -571,7 +574,7 @@ private fun Action(icon: ImageVector, label: String, tint: Color = MaterialTheme
 }
 
 @OptIn(ExperimentalFoundationApi::class)
-private fun Modifier.combinedClickableCompat(onClick: () -> Unit) = this.combinedClickable(onClick = onClick)
+private fun Modifier.combinedClickableCompat(onClick: () -> Unit) = this.tapOnce(onClick = onClick)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

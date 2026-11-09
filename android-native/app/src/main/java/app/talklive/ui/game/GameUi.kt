@@ -103,7 +103,7 @@ internal fun GameContent(
                     when (stage) {
                         Stage.Idle, Stage.Invited -> Picker(ui.declined, partnerName, onInvite)
                         Stage.Inviting, Stage.Waiting -> {
-                            Text("🎮", style = MaterialTheme.typography.displaySmall)
+                            app.talklive.ui.components.SymbolIcon("🎮", 44.dp)
                             Spacer(Modifier.height(8.dp))
                             Text(
                                 stringResource(if (stage == Stage.Inviting) R.string.game_waiting else R.string.game_starting, partnerName),
@@ -139,7 +139,7 @@ private fun Picker(declined: Boolean, partnerName: String, onInvite: (GameKind) 
 private fun GameCard(emoji: String, title: String, modifier: Modifier, onClick: () -> Unit) {
     Surface(onClick = onClick, shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface, modifier = modifier) {
         Column(Modifier.padding(vertical = 22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(emoji, style = MaterialTheme.typography.headlineMedium)
+            app.talklive.ui.components.SymbolIcon(emoji, 34.dp)
             Spacer(Modifier.height(8.dp))
             Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
             Text(stringResource(R.string.invite), style = MaterialTheme.typography.labelMedium, color = app.talklive.ui.theme.AccentText)
@@ -274,7 +274,7 @@ private fun DotsBoard(b: Board, enabled: Boolean, onEdge: (Char, Int) -> Unit) {
 fun GameInviteDialog(kind: GameKind, partnerName: String, onAccept: () -> Unit, onDecline: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDecline,
-        icon = { Text("🎮", style = MaterialTheme.typography.headlineMedium) },
+        icon = { app.talklive.ui.components.SymbolIcon("🎮", 34.dp) },
         title = { Text(stringResource(R.string.game_invite_title, partnerName)) },
         text = { Text(stringResource(if (kind == GameKind.Dots) R.string.dots_boxes else R.string.tic_tac_toe)) },
         confirmButton = { TextButton(onClick = onAccept) { Text(stringResource(R.string.play)) } },

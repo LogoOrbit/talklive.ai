@@ -224,7 +224,7 @@
       var closedNote = view.querySelector('.closed'); if (closedNote) closedNote.remove();
       renderThread(true);
     }).catch(function (e) {
-      err.textContent = e.message;
+      err.textContent = (!(e instanceof TypeError) && e.message) || 'Could not send. Check your connection and try again.';
       if (e.status === 404) forget();
     }).then(function () { state.sending = false; });
   }

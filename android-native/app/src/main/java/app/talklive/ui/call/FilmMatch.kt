@@ -55,11 +55,11 @@ fun FilmMatchBanner(title: String?, modifier: Modifier = Modifier) {
         Row(
             Modifier.widthIn(max = 360.dp).shadow(12.dp, RoundedCornerShape(50))
                 .clip(RoundedCornerShape(50))
-                .background(Brush.horizontalGradient(listOf(BrandViolet, BrandTeal)))
+                .background(Brush.horizontalGradient(listOf(BrandTeal, BrandTeal)))
                 .padding(horizontal = 18.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("🎬", fontSize = 18.sp)
+            app.talklive.ui.components.SymbolIcon("🎬", 20.dp, tint = androidx.compose.ui.graphics.Color.White)
             Spacer(Modifier.width(10.dp))
             Text(
                 stringResource(R.string.film_match, shown),

@@ -288,7 +288,7 @@ fun SignedInWelcome(name: String, animal: String?, onDone: () -> Unit) {
     ) {
         Canvas(Modifier.fillMaxSize()) {
             val r = size.maxDimension * burst.value
-            drawCircle(Brush.radialGradient(listOf(BrandViolet.copy(alpha = 0.55f * (1 - burst.value * 0.6f)), BrandTeal.copy(alpha = 0.25f), Color.Transparent), center = center, radius = r.coerceAtLeast(1f)), radius = r, center = center)
+            drawCircle(Brush.radialGradient(listOf(BrandTeal.copy(alpha = 0.55f * (1 - burst.value * 0.6f)), BrandTeal.copy(alpha = 0.25f), Color.Transparent), center = center, radius = r.coerceAtLeast(1f)), radius = r, center = center)
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(Modifier.graphicsLayerScale(face.value)) { app.talklive.ui.animals.AnimalAvatar(animal, name, 112.dp) }
