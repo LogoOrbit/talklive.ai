@@ -1318,8 +1318,12 @@ function persistNow(throttlePg) {
 // few minutes, pages hung and calls and chats dropped. 15s cuts that CPU by
 // ~7x. Shutdown, admin actions and the wipe guard still write immediately, so
 // only a hard crash can lose the last few seconds. Tests keep the 2s default.
+// November 2026: at ~27MB even every 15s used up the shared CPU's allowance,
+// and the throttled machine froze for 5-40s at a time (apps sat on
+// "Connecting...", calls stalled). 60s quarters that cost; shutdown still
+// writes at once, so only a hard crash can lose the last minute.
 const SAVE_DEBOUNCE_MS = Number(process.env.SAVE_DEBOUNCE_MS)
-  || (process.env.NODE_ENV === 'production' ? 15000 : 2000);
+  || (process.env.NODE_ENV === 'production' ? 60000 : 2000);
 
 function save() {
   if (saveTimer) return;
@@ -3174,6 +3178,22 @@ function verifyReferral(clientId, { ownerNetsFor = () => [] } = {}) {
 const TALK_DAYS = 30;
 
 // Add one finished conversation of `seconds` to `clientId`'s running total.
+// Talk-time records of guests long gone (no account, a couple of calls, not
+// seen for 45 days) are dropped: they were a quarter of the whole store and
+// cost CPU on every save. Accounts' records and regulars are kept.
+function pruneTalkTime() {
+  const cutoff = Date.now() - 45 * 24 * 60 * 60 * 1000;
+  const linked = new Set(Object.values(data.accounts || {}).map((a) => a && a.clientId).filter(Boolean));
+  let dropped = 0;
+  for (const [cid, rec] of Object.entries(data.talkTime || {})) {
+    if (!rec || linked.has(cid)) continue;
+    const last = Number(rec.lastAt) || 0;
+    if (last < cutoff && (Number(rec.calls) || 0) <= 3) { delete data.talkTime[cid]; dropped++; }
+  }
+  if (dropped) { console.log('[store] pruned', dropped, 'old guest talk-time records'); save(); }
+  return dropped;
+}
+
 function recordTalkTime(clientId, seconds, info = {}) {
   if (!clientId || !(seconds > 0)) return;
   const now = Date.now();
@@ -3728,6 +3748,7 @@ function publicModes() {
 module.exports = {
   plusLook,
   getAccountSettings,
+  pruneTalkTime,
   getNotifPrefs,
   setNotifPrefs,
   moveReferralClaim,

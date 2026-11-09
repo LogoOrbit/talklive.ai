@@ -37,6 +37,9 @@ const play = playBilling.createPlayBilling();
 const push = require('./push');
 // Kinds of push a person turned off in the app are skipped.
 push.setFilter((clientId, category) => store.getNotifPrefs(clientId)[category] !== false);
+// Old guest talk-time records go once a day (and shortly after start).
+setTimeout(() => { try { store.pruneTalkTime(); } catch (_) { /* store not loaded yet */ } }, 5 * 60 * 1000).unref();
+setInterval(() => { try { store.pruneTalkTime(); } catch (_) { /* ignore */ } }, 24 * 60 * 60 * 1000).unref();
 const flags = require('./flags');
 const { minifiedScripts } = require('./minified');
 const ageAssurance = require('./age-assurance');
