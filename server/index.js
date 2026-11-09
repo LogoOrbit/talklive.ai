@@ -4,7 +4,9 @@ const crypto = require('crypto');
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const geoip = require('geoip-lite');
+// Country only: geoip-lite's city database cost 143MB of memory on its own;
+// this one costs about 20MB. Cities are no longer recorded.
+const geoip = require('geoip-country');
 const { OAuth2Client } = require('google-auth-library');
 const { generateUsername } = require('./usernames');
 // Shared with the browser: public/countries.js exports for Node and defines a

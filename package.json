@@ -59,7 +59,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.129.0",
     "express": "^4.19.2",
-    "geoip-lite": "^1.4.10",
+    "geoip-country": "^5.0.202611070310",
     "google-auth-library": "^9.15.1",
     "nodemailer": "^10.3.1",
     "pg": "^8.22.0",
