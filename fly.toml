@@ -10,6 +10,10 @@ app = 'talklive-ai'
 # unattached, as a backup.
 primary_region = 'sin'
 
+# Disk-backed overflow, so a short memory peak slows the machine down instead of
+# killing it.
+swap_size_mb = 512
+
 # Shutdown writes the latest store to Postgres before exiting (see
 # SHUTDOWN_PG_WAIT_MS below). The default 5s cut that short, and from iad a
 # full write to the Mumbai database took over 25s on 2026-10-01.
@@ -19,6 +23,7 @@ kill_timeout = 120
 
 [env]
   NODE_ENV = 'production'
+  NODE_OPTIONS = '--max-old-space-size=400'
   PORT = '8080'
   # How long shutdown waits for the final Postgres save (must stay under
   # kill_timeout above).
@@ -97,7 +102,15 @@ kill_timeout = 120
 # Raised to 1GB on 2026-10-01: the store grew to ~5MB and every save holds
 # several serialized copies at once (mirror, Postgres payload, driver buffer),
 # and node was OOM-killed at 406MB RSS. 512MB no longer had headroom.
+#
+# Back to 512MB on 2026-11-10. Measured on the live machine after three changes:
+# a country-only IP database (20MB instead of 143MB), old guest records pruned
+# daily, and saves streamed to disk and to Postgres instead of built as one
+# string. RSS went from 599MB to 200-250MB, with ~50MB spikes on a save. Check
+# with /healthz?mem. swap_size_mb (top of this file) absorbs a boot that has to
+# download the store from the database, and NODE_OPTIONS keeps V8 from sizing
+# its heap for a smaller machine than the data needs.
 [[vm]]
   cpu_kind = 'shared'
   cpus = 1
-  memory = '1gb'
+  memory = '512mb'
