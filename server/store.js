@@ -122,6 +122,14 @@ function defaults() {
     admin: null, // { passwordHash, salt, totpSecret, createdAt }
     sessions: [], // { token, createdAt, expiresAt, ip }
     bans: [], // { id, clientId, ip, username, country, city, reason, createdAt, expiresAt, liftedAt }
+    // Under-18 sign-up attempts: 'c:<clientId>' | 'i:<ip>' -> blocked-until ms.
+    ageBlocks: {},
+    // Bot quarantine, so a restart does not hand scripted clients a clean slate:
+    // 'c:<clientId>' | 'i:<ip>' -> { until, strikes }.
+    quarantine: {},
+    // Stripe Checkout session id -> ms the pass was granted, so a redelivered or
+    // concurrent webhook never extends Plus twice.
+    billingPasses: {},
     reports: [], // { id, ts, reporter, reported, reason, detail, handled }
     // { id, ts, username, country, text, clientId, account, reply }; reply is
     // the owner's answer: { text, ts, deliveredAt, seenAt } (see setFeedbackReply).
@@ -2181,6 +2189,52 @@ function findActiveBan(clientId, ip) {
     && ((clientId && b.clientId === clientId) || (ip && b.ip && b.ip === ip))) || null;
 }
 
+// --- Stripe one-time passes ---
+const MAX_BILLING_PASSES = 5000;
+
+// True the first time a Checkout session id is claimed, false after. It runs
+// with no await before the grant, so two deliveries at once cannot both win.
+function claimBillingPass(sessionId) {
+  const passes = data.billingPasses || (data.billingPasses = {});
+  if (Object.prototype.hasOwnProperty.call(passes, sessionId)) return false;
+  passes[sessionId] = Date.now();
+  const ids = Object.keys(passes);
+  if (ids.length > MAX_BILLING_PASSES) {
+    ids.sort((a, b) => passes[a] - passes[b]);
+    for (const id of ids.slice(0, ids.length - MAX_BILLING_PASSES)) delete passes[id];
+  }
+  save();
+  return true;
+}
+
+// --- Under-18 sign-up blocks ---
+// A refused sign-up on a date of birth under 18 shuts that device and network
+// out of matching for a day, so the same child cannot simply retype a year.
+const AGE_BLOCK_MS = 24 * 60 * 60000;
+
+function pruneAgeBlocks() {
+  const now = Date.now();
+  if (!data.ageBlocks || typeof data.ageBlocks !== 'object') data.ageBlocks = {};
+  for (const [key, until] of Object.entries(data.ageBlocks)) {
+    if (!(until > now)) delete data.ageBlocks[key];
+  }
+  return data.ageBlocks;
+}
+
+function addAgeBlock(clientId, ip) {
+  const blocks = pruneAgeBlocks();
+  const until = Date.now() + AGE_BLOCK_MS;
+  if (clientId) blocks['c:' + clientId] = until;
+  if (ip) blocks['i:' + ip] = until;
+  save();
+}
+
+// `byIp` false skips the network check (an adult signed-in account).
+function ageBlocked(clientId, ip, byIp = true) {
+  const blocks = pruneAgeBlocks();
+  return !!((clientId && blocks['c:' + clientId]) || (byIp && ip && blocks['i:' + ip]));
+}
+
 function addBan({ clientId, ip, username, country, city, reason, minutes }) {
   const rec = {
     id: crypto.randomUUID(),
@@ -2518,6 +2572,10 @@ function saveAccount(usernameLower, account) {
     ageGroup: account.ageGroup || previous.ageGroup || null,
     googleId: account.googleId || null,
     email,
+    // False for an address typed in by the account holder and never confirmed
+    // with a code. Absent means confirmed (signup code, Google), so nobody is
+    // locked out. Google sign-in only auto-links to a confirmed address.
+    emailVerified: account.emailVerified !== undefined ? account.emailVerified : previous.emailVerified,
     // The Google profile the user consented to share (name, verified email,
     // avatar, locale, workspace domain). Null for password accounts, and kept
     // from the previous record if this write did not carry a fresh copy.
@@ -2559,19 +2617,76 @@ function saveAccount(usernameLower, account) {
 function deleteAccount(usernameLower) {
   const acc = data.accounts[usernameLower];
   if (!acc) return null;
-  if (acc.email) delete data.emailIndex[String(acc.email).toLowerCase()];
+  const email = acc.email ? String(acc.email).toLowerCase() : '';
+  if (email) delete data.emailIndex[email];
   if (acc.googleId && data.googleIndex[acc.googleId] === usernameLower) delete data.googleIndex[acc.googleId];
+  // Same address, any spelling: Google sign-in finds accounts by the gmail-canonical form too.
+  for (const [indexed, owner] of Object.entries(data.emailIndex)) {
+    if (owner === usernameLower) delete data.emailIndex[indexed];
+  }
+  for (const [sub, owner] of Object.entries(data.googleIndex)) {
+    if (owner === usernameLower) delete data.googleIndex[sub];
+  }
   if (acc.handle) handleIndex.delete(String(acc.handle).toLowerCase());
-  if (data.accountSettings) delete data.accountSettings[usernameLower];
+  if (acc.friendId) friendIdIndex.delete(acc.friendId);
+  delete data.accountSettings[usernameLower];
+  delete data.accountsRegistry[usernameLower];
   const clientId = acc.clientId || null;
+  if (clientId && clientIdIndex.get(clientId) === usernameLower) clientIdIndex.delete(clientId);
   delete data.accounts[usernameLower];
   deleteAuthSessionsForUser(usernameLower, null);
-  if (clientId) {
-    delete data.engage[clientId];
-    delete data.favFilms[clientId];
+  if (email) {
+    delete data.subscribers[email];
+    scrubEmail(email);
   }
+  if (clientId) purgeClientData(clientId);
   save();
   return { clientId };
+}
+
+// Everything the store keeps under one profile (clientId). Plus is the one
+// exception: a live Stripe or Play subscription must keep its record so a
+// renewal or refund notice still finds it, so only the extras go.
+function purgeClientData(clientId) {
+  for (const key of ['engage', 'favFilms', 'talkTime', 'likes', 'push', 'notifPrefs', 'plusLook',
+    'contactConsent', 'contactCapture', 'identityEpochs']) {
+    if (data[key]) delete data[key][clientId];
+  }
+  if (data.msgCounts && data.msgCounts.users) delete data.msgCounts.users[clientId];
+  if (data.games && data.games.players) delete data.games.players[clientId];
+  for (const users of Object.values(data.featureUsers || {})) delete users[clientId];
+  // Hearts other people gave this profile are gone with it; so are the ones it gave.
+  for (const [to, list] of Object.entries(data.likes || {})) {
+    const next = list.filter((l) => l.from !== clientId);
+    if (next.length) data.likes[to] = next; else delete data.likes[to];
+  }
+  const rec = data.premium[clientId];
+  const paid = rec && !rec.revokedAt && (rec.subscriptionId || rec.playToken);
+  if (!paid) delete data.premium[clientId];
+  else data.premium[clientId] = Object.fromEntries(Object.entries(rec).filter(([k]) => PREMIUM_KEEP.has(k)));
+  const ref = data.referrals;
+  const owned = ref.owners[clientId];
+  if (owned && ref.codes[owned.code] === clientId) delete ref.codes[owned.code];
+  for (const [code, owner] of Object.entries(ref.codes)) if (owner === clientId) delete ref.codes[code];
+  delete ref.owners[clientId];
+  delete ref.claims[clientId];
+}
+const PREMIUM_KEEP = new Set(['activatedAt', 'updatedAt', 'expiresAt', 'lastEvent', 'subscriptionId', 'playToken', 'source', 'stripeEventAt', 'revokedAt']);
+
+// Reports, bans and the other safety records stay, but they must not keep the
+// address of someone who asked to be deleted.
+function scrubEmail(email) {
+  const needle = String(email).toLowerCase();
+  const clean = (v) => {
+    if (typeof v === 'string') {
+      return v.toLowerCase().includes(needle) ? v.split(new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'ig')).join('[deleted]') : v;
+    }
+    if (Array.isArray(v)) { for (let i = 0; i < v.length; i++) v[i] = clean(v[i]); return v; }
+    if (v && typeof v === 'object') { for (const k of Object.keys(v)) v[k] = clean(v[k]); return v; }
+    return v;
+  };
+  for (const key of ['reports', 'bans', 'feedback', 'warnings', 'errors', 'auditLog']) clean(data[key]);
+  clean(data.support && data.support.conversations);
 }
 
 function getAccountClientId(usernameLower) {
@@ -3958,6 +4073,9 @@ module.exports = {
   addError,
   activeBans,
   findActiveBan,
+  claimBillingPass,
+  addAgeBlock,
+  ageBlocked,
   addBan,
   addWarning,
   pendingWarningsFor,

@@ -55,6 +55,10 @@ class RtcSession(
     private val pendingRemote = mutableListOf<IceCandidate>()
     private var remoteAudio: AudioTrack? = null
 
+    // Relay-only with no relay server would either gather nothing or, if widened, leak IPs.
+    private val relayOk = require(!ice.relayOnly || ice.servers.any { s -> s.urls.any { it.startsWith("turn", ignoreCase = true) } }) {
+        "relay-only but no relay server"
+    }
     private val pc: PeerConnection = requireNotNull(
         factory.createPeerConnection(
             PeerConnection.RTCConfiguration(ice.servers).apply {

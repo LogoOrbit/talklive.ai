@@ -98,7 +98,7 @@ class ScreenshotTest {
         val socket = TalkSocket(identity)
         app.talklive.ui.profile.ProfileScreen(
             onSignIn = {},
-            vm = app.talklive.ui.profile.ProfileViewModel(app.talklive.voice.MicMonitor(ctx, socket).let { mic -> app.talklive.call.CallManager(socket, app.talklive.net.IceServerApi(), app.talklive.call.RtcFactory(ctx, mic), app.talklive.call.AudioRouter(ctx), identity, ctx, mic) }, AuthRepository(ctx, socket, identity), identity, app.talklive.data.ThemeStore(ctx), app.talklive.sound.Sounds(ctx), app.talklive.data.PrivacyStore(ctx), socket, app.talklive.social.SocialRepository(socket, identity), app.talklive.data.NotifSettings(ctx, socket)),
+            vm = app.talklive.ui.profile.ProfileViewModel(app.talklive.voice.MicMonitor(ctx, socket).let { mic -> app.talklive.call.CallManager(socket, app.talklive.net.IceServerApi(ctx), app.talklive.call.RtcFactory(ctx, mic), app.talklive.call.AudioRouter(ctx), identity, ctx, mic) }, AuthRepository(ctx, socket, identity), identity, app.talklive.data.ThemeStore(ctx), app.talklive.sound.Sounds(ctx), app.talklive.data.PrivacyStore(ctx), socket, app.talklive.social.SocialRepository(socket, identity), app.talklive.data.NotifSettings(ctx, socket)),
             engageVm = app.talklive.ui.engage.EngageViewModel(app.talklive.engage.EngageRepository(ctx, socket), app.talklive.voice.MicMonitor(ctx, socket)),
         )
     }

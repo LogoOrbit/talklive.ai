@@ -113,7 +113,7 @@ fun StreakChip(engage: Engage?, onClick: () -> Unit) {
 /** Streak, week and passport in one sheet. */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun StreakSheet(engage: Engage, onDismiss: () -> Unit, premium: Boolean = false, restoring: Boolean = false, onRestore: () -> Unit = {}, onPlus: () -> Unit = {}) {
+fun StreakSheet(engage: Engage, onDismiss: () -> Unit, premium: Boolean = false, restoring: Boolean = false, onRestore: () -> Unit = {}, onPlus: (PlusWhy) -> Unit = {}) {
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -132,7 +132,7 @@ fun StreakSheet(engage: Engage, onDismiss: () -> Unit, premium: Boolean = false,
             Row(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
                     .background(app.talklive.ui.components.PlusGold.copy(alpha = 0.10f))
-                    .then(if (premium) Modifier else Modifier.tapOnce(windowMs = 700, onClick = onPlus))
+                    .then(if (premium) Modifier else Modifier.tapOnce(windowMs = 700, onClick = { onPlus(PlusWhy()) }))
                     .padding(horizontal = 14.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -153,7 +153,7 @@ fun StreakSheet(engage: Engage, onDismiss: () -> Unit, premium: Boolean = false,
                         Text(stringResource(R.string.streak_lost_body), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp, bottom = 12.dp))
                         PrimaryButton(
                             stringResource(if (premium) R.string.streak_restore else R.string.streak_restore_plus),
-                            onClick = { if (premium) onRestore() else onPlus() },
+                            onClick = { if (premium) onRestore() else onPlus(PlusWhy(PlusReason.StreakRestore, engage.streak.lostCount)) },
                             loading = restoring,
                         )
                     }
@@ -343,7 +343,7 @@ private fun Modifier.matchParentSizeCompat() = this.fillMaxWidth().aspectRatio(2
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun FiltersSheet(current: Filters, premium: Boolean, onApply: (Filters) -> Unit, onDismiss: () -> Unit, onPlus: () -> Unit = {}, loadCounts: suspend () -> Map<String, Int> = { emptyMap() }) {
+fun FiltersSheet(current: Filters, premium: Boolean, onApply: (Filters) -> Unit, onDismiss: () -> Unit, onPlus: (PlusWhy) -> Unit = {}, loadCounts: suspend () -> Map<String, Int> = { emptyMap() }) {
     val freeCountries = 2 // the website's free limit per list (server FREE_LIMITS)
     var f by remember { mutableStateOf(current) }
     var newInterest by remember { mutableStateOf("") }
@@ -351,7 +351,7 @@ fun FiltersSheet(current: Filters, premium: Boolean, onApply: (Filters) -> Unit,
     val interestCap = if (premium) 10 else 2
     fun addInterest(v: String) {
         if (v.isBlank() || v in f.interests) return
-        if (f.interests.size >= interestCap) { if (!premium) onPlus(); return }
+        if (f.interests.size >= interestCap) { if (!premium) onPlus(PlusWhy(PlusReason.Interests)); return }
         f = f.copy(interests = f.interests + v)
     }
     var countryQuery by remember { mutableStateOf("") }
@@ -416,7 +416,7 @@ fun FiltersSheet(current: Filters, premium: Boolean, onApply: (Filters) -> Unit,
                     "💜", stringResource(R.string.match_with), if (premium) null else stringResource(R.string.filters_gender_hint),
                     onClear = if (f.prefGender != "any") ({ f = f.copy(prefGender = "any") }) else null,
                 ) {
-                    GenderPicker(f.prefGender, premium) { g -> if (premium || g == "any") f = f.copy(prefGender = g) else onPlus() }
+                    GenderPicker(f.prefGender, premium) { g -> if (premium || g == "any") f = f.copy(prefGender = g) else onPlus(PlusWhy(PlusReason.GenderFilter)) }
                 }
                 Spacer(Modifier.height(12.dp))
             }
@@ -438,7 +438,7 @@ fun FiltersSheet(current: Filters, premium: Boolean, onApply: (Filters) -> Unit,
         countries = countries,
         selected = if (avoidMode) f.excludeCountries else f.includeCountries,
         limit = if (premium) null else freeCountries,
-        onLimit = { pickingCountries = false; onPlus() },
+        onLimit = { pickingCountries = false; onPlus(PlusWhy(PlusReason.Countries)) },
         onDone = { picked ->
             f = if (avoidMode) f.copy(excludeCountries = picked, includeCountries = f.includeCountries - picked.toSet())
             else f.copy(includeCountries = picked, excludeCountries = f.excludeCountries - picked.toSet())
@@ -660,7 +660,7 @@ private fun CountryChips(list: List<String>, onRemove: (String) -> Unit) {
 /** Who hearted you. Plus shows names; everyone sees the count. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LikesSheet(vm: EngageViewModel, onPlus: (() -> Unit)? = null, onDismiss: () -> Unit) {
+fun LikesSheet(vm: EngageViewModel, onPlus: ((PlusWhy) -> Unit)? = null, onDismiss: () -> Unit) {
     LaunchedEffect(Unit) { vm.loadLikes() }
     val likes = vm.likes
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.background) {
@@ -699,7 +699,7 @@ fun LikesSheet(vm: EngageViewModel, onPlus: (() -> Unit)? = null, onDismiss: () 
                     )
                     if (onPlus != null) {
                         Spacer(Modifier.height(14.dp))
-                        PrimaryButton(stringResource(R.string.likes_see_who), onClick = onPlus)
+                        PrimaryButton(stringResource(R.string.likes_see_who), onClick = { onPlus(PlusWhy(PlusReason.LikedYou, likes.count)) })
                     }
                 }
                 else -> likes.list.forEach { l ->

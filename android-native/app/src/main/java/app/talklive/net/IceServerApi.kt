@@ -1,6 +1,8 @@
 package app.talklive.net
 
+import android.content.Context
 import app.talklive.BuildConfig
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -16,7 +18,9 @@ data class IceConfig(val servers: List<PeerConnection.IceServer>, val relayOnly:
 
 /** Fetches STUN/TURN servers (with short-lived credentials) from GET /ice-servers. */
 @Singleton
-class IceServerApi @Inject constructor() {
+class IceServerApi @Inject constructor(@ApplicationContext context: Context) {
+    private val prefs = context.getSharedPreferences("ui", Context.MODE_PRIVATE)
+
     private val http = Http.withTimeout(6)
 
     @Volatile private var cached: IceConfig? = null
@@ -42,8 +46,13 @@ class IceServerApi @Inject constructor() {
                 IceConfig(parse(body.optJSONArray("iceServers")), body.optString("iceTransportPolicy") == "relay")
             }
         }.getOrNull()?.takeIf { it.servers.isNotEmpty() }
-            ?.also { cached = it; fetchedAt = System.currentTimeMillis() }
-            ?: cached ?: FALLBACK
+            ?.also {
+                cached = it; fetchedAt = System.currentTimeMillis()
+                prefs.edit().putBoolean(RELAY_KEY, it.relayOnly).apply()
+            }
+            // A failed fetch keeps the last policy we were given, so IP privacy fails closed.
+            ?: cached?.copy(relayOnly = prefs.getBoolean(RELAY_KEY, cached!!.relayOnly))
+            ?: FALLBACK.copy(relayOnly = prefs.getBoolean(RELAY_KEY, false))
     }
 
     private fun parse(arr: JSONArray?): List<PeerConnection.IceServer> {
@@ -79,6 +88,7 @@ class IceServerApi @Inject constructor() {
         // refreshes them 10 minutes before they expire), so a copy is only
         // trusted for 4 minutes. Keeping them 45 minutes meant calls behind
         // mobile/office NAT tried an expired relay and never connected.
+        const val RELAY_KEY = "ice_relay_only"
         const val MAX_AGE_MS = 4 * 60 * 1000L
         const val CALL_MAX_AGE_MS = 8 * 60 * 1000L
         val FALLBACK = IceConfig(

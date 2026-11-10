@@ -1505,3 +1505,65 @@ summary:active {
   content: ''; width: 8px; height: 8px; margin-left: auto; border-radius: 50%;
   background: var(--accent); flex: 0 0 auto;
 }
+
+/* ===========================================================================
+   Android-app chat look (see android-native ChatScreen.kt / Composer.kt).
+   Solid accent for my bubbles, surface colour for theirs, 18dp corners with a
+   6dp tail, 2px between bubbles of one turn, 8px between turns, a pill field
+   on a surface bar, a round 40px send button, a short rise-and-fade entrance.
+   Kept at the end of the file so it wins over the older rules above.
+   ========================================================================= */
+.msgs { padding: 12px 12px 8px; gap: 2px; }
+.msg { max-width: min(80%, 440px); padding: 9px 14px; border-radius: 18px; font-size: 15.5px; line-height: 1.4; }
+.msg.me { border-radius: 18px 18px 6px 18px; }
+.msg.them { border-radius: 18px 18px 18px 6px; }
+.msg.me.is-grouped { border-top-right-radius: 6px; }
+.msg.them.is-grouped { border-top-left-radius: 6px; }
+.msg:not(.is-grouped):not(.system) { margin-top: 6px; }
+.msg.is-grouped { margin-top: 0; }
+.msg.system { border-radius: 0; }
+.msg.system.system-request { border-radius: 16px; }
+.msg-time { font-size: 10px; font-weight: 500; margin-inline-start: 8px; }
+.msg.me .msg-time { color: rgba(255, 255, 255, 0.8); }
+.day-divider { margin: 12px 0 6px; }
+.day-divider span {
+  padding: 4px 12px; background: var(--bubble-them); color: var(--muted);
+  font-size: 11.5px; font-weight: 600; letter-spacing: 0; text-transform: none;
+}
+.friend-chat-msgs .msg.me { background: var(--accent); }
+
+/* Entrance: 12px rise + fade in 160ms, from the bubble's own corner. No scale. */
+@keyframes msgRise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+.msg, .msg.me, .msg.them { animation: msgRise 0.16s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@media (prefers-reduced-motion: reduce) { .msg, .msg.me, .msg.them { animation: none; } }
+
+/* Composer: surface bar, pill field on the page colour, round accent send. */
+.composer { padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)); gap: 8px; background: var(--bg-2); border-top: 0; }
+.composer-field, .friend-chat-composer input {
+  min-height: 44px; border: 1px solid transparent; border-radius: 24px; background: var(--bg-1);
+}
+.friend-chat-composer input { padding: 0 18px; }
+.composer-field:focus-within, .friend-chat-composer input:focus {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent); box-shadow: none; outline: none;
+}
+.composer-field #msgInput { min-height: 42px; font-size: 16px; }
+.composer .next-btn { min-height: 40px; padding: 0 14px; background: var(--bg-1); border-color: transparent; }
+.composer .send-btn, .composer .send-btn.friend-chat-send {
+  width: 40px; height: 40px; min-height: 40px; padding: 0; border-radius: 50%;
+  background: var(--accent); box-shadow: none; font-size: 0; position: relative;
+}
+.composer .send-btn:hover { transform: none; box-shadow: none; opacity: 0.92; }
+.composer .send-btn:active { transform: scale(0.92); }
+/* The friend composer's button carries the word "Send" (translated, and its
+   accessible name). Hide the glyph text visually and draw the paper plane. */
+.send-btn.friend-chat-send::after {
+  content: ""; width: 20px; height: 20px; background: #fff; margin-left: 2px;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3.4 20.4 21 12 3.4 3.6 3.3 10l12.6 2-12.6 2z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3.4 20.4 21 12 3.4 3.6 3.3 10l12.6 2-12.6 2z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+@media (min-width: 900px) {
+  .msgs { padding: 16px 20px 10px; gap: 2px; }
+  .composer { padding: 10px 16px 12px; }
+  .composer-field { min-height: 46px; }
+  .composer .send-btn { width: 44px; height: 44px; }
+}

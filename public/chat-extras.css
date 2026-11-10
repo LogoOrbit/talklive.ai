@@ -637,3 +637,16 @@
 .cx-pop{animation:cx-pop .35s ease-out}
 @keyframes cx-pop{40%{transform:scale(1.06)}}
 @media (prefers-reduced-motion:reduce){.cx-pop{animation:none}}
+
+/* App-style reaction: a small chip hanging off the bubble's lower corner. */
+.cx-has-reactions { margin-bottom: 12px; }
+.cx-reactions {
+  position: absolute; bottom: -13px; inset-inline-start: 8px; margin: 0; gap: 2px; flex-wrap: nowrap;
+}
+.msg.me .cx-reactions, .chat-msg.me .cx-reactions { inset-inline-start: auto; inset-inline-end: 8px; }
+.cx-reaction {
+  background: var(--bg-2); color: var(--text); border: 2px solid var(--bg-1);
+  padding: 0 6px; font-size: 12px; line-height: 1.45;
+}
+.cx-reaction.own { background: color-mix(in srgb, var(--accent) 35%, var(--bg-2)); }
+[data-theme="light"] .cx-reaction { background: var(--bg-2); }

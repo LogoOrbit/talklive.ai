@@ -425,8 +425,10 @@ app.get('/premium-status', httpRateLimit('premium-status', 60, 60000), (req, res
   res.json({
     premium: isPremium(clientId),
     // null when the grant is permanent (manual/env) - the client renders
-    // "Plus is active" rather than a renewal date.
-    expiresAt: envPremiumClients.has(clientId) ? null : store.premiumExpiry(clientId),
+    // "Plus is active" rather than a renewal date. Only shown to the holder of
+    // the identity token: a clientId alone is not a secret.
+    ...(validIdentityToken(clientId, String(req.query.identityToken || ''))
+      ? { expiresAt: envPremiumClients.has(clientId) ? null : store.premiumExpiry(clientId) } : {}),
     // The pricing page swaps its "coming soon" card for real buttons based on
     // this, so a deployment with no Stripe keys keeps the honest copy it has
     // today instead of showing a button that cannot charge anyone.
@@ -626,6 +628,12 @@ app.post('/billing/webhook', express.raw({ type: 'application/json', limit: '1mb
   // A one-time pass: add its days on top of whatever Plus time is left.
   const pass = billing.passFromEvent(event);
   if (pass) {
+    // Recorded before the grant and kept on disk: a redelivery after a restart,
+    // or two deliveries at once, must not add the days twice.
+    if (!store.claimBillingPass(String(event.data.object.id || event.id))) {
+      billing.markProcessed(event.id);
+      return res.json({ received: true, duplicate: true });
+    }
     store.extendPremium(pass.clientId, pass.days * 24 * 60 * 60 * 1000, { source: 'stripe', lastEvent: `pass:${pass.pass}` });
     store.recordFeature('premium_pass_bought');
     store.persistNow();
@@ -2437,11 +2445,17 @@ function hydrateFromStore() {
       ageGroup: acc.ageGroup || null,
       googleId: acc.googleId || null,
       email: acc.email || null,
+      emailVerified: acc.emailVerified,
       google: acc.google || null,
     });
   }
   for (const [googleId, usernameLower] of Object.entries(store.data.googleIndex || {})) {
     googleAccounts.set(googleId, usernameLower);
+  }
+  // Quarantine survives a restart; entries that have run out are dropped.
+  for (const [key, rec] of Object.entries(store.data.quarantine || {})) {
+    if (rec && rec.until > Date.now()) quarantine.set(key, { until: rec.until, strikes: rec.strikes || 1 });
+    else delete store.data.quarantine[key];
   }
   const social = store.data.social || {};
   for (const [cid, m] of Object.entries(social.friends || {})) {
@@ -2822,6 +2836,45 @@ function addFriendPair(clientIdA, infoA, clientIdB, infoB) {
   declinedRequests.delete(`${clientIdB}>${clientIdA}`);
   removeNotificationsWhere(clientIdA, (n) => n.type === 'friend_request' && n.fromClientId === clientIdB);
   removeNotificationsWhere(clientIdB, (n) => n.type === 'friend_request' && n.fromClientId === clientIdA);
+  persistSocial();
+}
+
+// Forget one profile everywhere the live social graph holds it: both sides of
+// every friendship, requests, inbox, blocks, history and every friend thread
+// (with its voice clips). The store persists the result via persistSocial().
+function purgeSocialState(clientId) {
+  const has = (key) => String(key).split(/[|>]/).includes(clientId);
+  for (const [fid] of friends.get(clientId) || new Map()) {
+    removeFriendPair(clientId, fid);
+    const fs = getSocketByClientId(fid);
+    if (fs) syncClientState(fs, fid);
+  }
+  for (const m of [friends, friendRequests, sentRequests, notifications, chatHistory, blocks, blockMeta,
+    lastSeen, mutedChats, onlineAlerts, activeHours, statusHidden, callsOpen]) m.delete(clientId);
+  // Other people's maps that point at this profile.
+  for (const m of [friends, friendRequests, sentRequests, blockMeta]) {
+    for (const inner of m.values()) inner.delete(clientId);
+  }
+  for (const m of [blocks, mutedChats, onlineAlerts]) {
+    for (const set of m.values()) set.delete(clientId);
+  }
+  for (const [cid, list] of notifications) {
+    const next = list.filter((n) => n && n.fromClientId !== clientId);
+    if (next.length) notifications.set(cid, next); else notifications.delete(cid);
+  }
+  for (const [cid, list] of chatHistory) {
+    if (list.some((h) => h && h.clientId === clientId)) chatHistory.set(cid, list.filter((h) => !(h && h.clientId === clientId)));
+  }
+  const clips = [];
+  for (const [key, list] of Array.from(friendChats)) {
+    if (!has(key)) continue;
+    for (const m of list) if (m && m.voice && m.voice.id) clips.push(m.voice.id);
+    friendChats.delete(key);
+  }
+  if (clips.length) store.deleteVoiceNotes(clips).catch(() => {});
+  for (const m of [chatClears, disappearing, voiceConsent, hearts, declinedRequests]) {
+    for (const key of Array.from(m.keys())) if (has(key)) m.delete(key);
+  }
   persistSocial();
 }
 
@@ -3484,19 +3537,14 @@ const DOB_ERRORS = {
   needDob: 'Enter your date of birth to create an account.',
   underage: 'TalkLive is only for people aged 18 and over.',
 };
-// Android builds before 3.8.0 have no date-of-birth step (they show an 18+
-// confirmation instead), so they are let through without one until updated.
-function legacyAppWithoutDob(socket, dob) {
-  if (dob) return false;
-  const ua = String((socket && socket.handshake && socket.handshake.headers['user-agent']) || '');
-  const m = /^TalkLive-Android\/(\d+)\.(\d+)/.exec(ua);
-  return !!m && (+m[1] < 3 || (+m[1] === 3 && +m[2] < 8));
-}
 function dobProblem(dob, socket) {
-  if (legacyAppWithoutDob(socket, dob)) return null;
   const age = ageFromDob(dob);
   if (age === null) return 'needDob';
-  if (age < 18) return 'underage';
+  if (age < 18) {
+    // Shut this device and network out of matching for a day.
+    if (socket) store.addAgeBlock((profiles.get(socket.id) || {}).clientId, getClientIp(socket));
+    return 'underage';
+  }
   return null;
 }
 
@@ -3900,6 +3948,13 @@ function modeRefusal(socket, mode) {
   const m = store.siteModes();
   if (m.membersOnly && !socketAuth.get(socket.id)) return 'modeMembersOnly';
   if (m.voicePaused && mode !== 'chat') return 'modeVoicePaused';
+  // A device or network that was just refused for being under 18. A signed-in
+  // account whose own date of birth is an adult one is not tied to the network.
+  const me = profiles.get(socket.id);
+  const user = socketAuth.get(socket.id);
+  const acc = user && store.data.accounts[user];
+  const adult = !!acc && ageFromDob(acc.dob) >= 18;
+  if (store.ageBlocked(me && me.clientId, getClientIp(socket), !adult)) return 'age';
   return null;
 }
 
@@ -3925,7 +3980,7 @@ async function findOrCreateGoogleAccount(idToken, { dob, socket } = {}) {
     const linked = accounts.get(username);
     const owner = store.findUsernameByEmail(googleEmail);
     const ownerAccount = owner && owner !== username && accounts.get(owner);
-    if (linked && !linked.email && ownerAccount && !ownerAccount.googleId) {
+    if (linked && !linked.email && ownerAccount && !ownerAccount.googleId && ownerAccount.emailVerified !== false) {
       linked.googleId = null;
       linked.mergedInto = owner;
       persistAccount(username);
@@ -3938,7 +3993,9 @@ async function findOrCreateGoogleAccount(idToken, { dob, socket } = {}) {
   if (!username && googleEmail) {
     const owner = store.findUsernameByEmail(googleEmail);
     const ownerAccount = owner && accounts.get(owner);
-    if (ownerAccount && !ownerAccount.googleId) {
+    // Only an address confirmed by a code counts: one typed into Settings could
+    // be anyone's, and linking on it would hand this account to that Google user.
+    if (ownerAccount && !ownerAccount.googleId && ownerAccount.emailVerified !== false) {
       ownerAccount.googleId = googleId;
       googleAccounts.set(googleId, owner);
       persistAccount(owner);
@@ -3954,6 +4011,12 @@ async function findOrCreateGoogleAccount(idToken, { dob, socket } = {}) {
   if (!username) {
     const dobErr = dobProblem(dob, socket);
     if (dobErr) throw Object.assign(new Error(DOB_ERRORS[dobErr]), { errorKey: dobErr });
+    // Same per-network cap as email sign-up.
+    const gip = socket && getClientIp(socket);
+    if (gip && signupThrottled(gip)) {
+      throw Object.assign(new Error('Too many accounts created from this network. Please try again later.'), { errorKey: 'signupThrottled' });
+    }
+    if (gip) noteSignup(gip);
   }
   if (!username) {
     username = uniqueUsernameFromBase((payload.email || 'user').split('@')[0]);
@@ -4458,7 +4521,8 @@ function churnHeld(profile) {
 //   - nearly every match it had recently, it ended itself within seconds
 //     (QUICK_LIMIT of its last QUICK_SAMPLE), counted per device and, with a
 //     much higher bar because carriers share addresses, per IP.
-// Signed-in accounts and Plus members are never quarantined on behaviour.
+// Plus members and accounts older than a week are never quarantined on
+// behaviour; a fresh account is judged like a guest (bots farm new accounts).
 const QUICK_END_MS = 6500;
 // Tests shrink the sample; production always uses 10 of the last 12.
 const QUICK_SAMPLE = (process.env.NODE_ENV !== 'production' && Number(process.env.QUARANTINE_SAMPLE)) || 12;
@@ -4472,9 +4536,23 @@ const quarantine = new Map(); // same keys -> { until, strikes }
 function foreignClientId(clientId) {
   return (process.env.NODE_ENV === 'production' || process.env.QUARANTINE_FOREIGN_IDS === '1') && /[A-Z]/.test(String(clientId || ''));
 }
+const QUARANTINE_ACCOUNT_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+function establishedAccount(socketId) {
+  const user = socketAuth.get(socketId);
+  if (!user) return false;
+  const acc = store.data.accounts[user];
+  const reg = store.data.accountsRegistry[user];
+  const made = Math.min((acc && acc.createdAt) || Infinity, (reg && reg.createdAt) || Infinity);
+  // No date at all means it predates the field: treat as old.
+  return made === Infinity || Date.now() - made > QUARANTINE_ACCOUNT_AGE_MS;
+}
+function saveQuarantine(key, rec) {
+  store.data.quarantine[key] = rec;
+  store.save();
+}
 function noteMatchEnd(socketId, profile, ms) {
   if (!profile || !profile.clientId) return;
-  if (socketAuth.get(socketId) || isPremium(profile.clientId)) return;
+  if (establishedAccount(socketId) || isPremium(profile.clientId)) return;
   const now = Date.now();
   const sock = io.sockets.sockets.get(socketId);
   const ip = profile.ip || (sock ? getClientIp(sock) : null);
@@ -4490,12 +4568,15 @@ function noteMatchEnd(socketId, profile, ms) {
       rec.strikes = Math.min(rec.strikes + 1, 6);
       rec.until = now + Math.min(QUARANTINE_MS * 2 ** (rec.strikes - 1), QUARANTINE_MAX_MS);
       quarantine.set(key, rec);
+      saveQuarantine(key, { until: rec.until, strikes: rec.strikes });
       matchEnds.delete(key);
       store.recordFeature('bot_quarantine');
     }
   }
   if (matchEnds.size > 20000) matchEnds.clear();
-  if (quarantine.size > 20000) for (const [k, v] of quarantine) if (v.until < now) quarantine.delete(k);
+  if (quarantine.size > 20000) {
+    for (const [k, v] of quarantine) if (v.until < now) { quarantine.delete(k); delete store.data.quarantine[k]; }
+  }
 }
 function quarantined(profile, socketId) {
   if (!profile) return false;
@@ -4507,7 +4588,7 @@ function quarantined(profile, socketId) {
   const ip = profile.ip || (sock ? getClientIp(sock) : null);
   const byIp = ip && quarantine.get('i:' + ip);
   // An address under quarantine does not drag in accounts or Plus members on it.
-  return !!byIp && byIp.until > now && !(socketId && socketAuth.get(socketId)) && !isPremium(profile.clientId);
+  return !!byIp && byIp.until > now && !(socketId && establishedAccount(socketId)) && !isPremium(profile.clientId);
 }
 
 function disconnectPartner(socketId, opts = {}) {
@@ -5049,6 +5130,7 @@ function predictedMatch(socketId) {
 // Reject non-string / malformed ids coming off the wire before they're used as
 // Map keys or echoed to other clients.
 function validId(id) {
+  if (id === '__proto__' || id === 'constructor' || id === 'prototype') return null;
   return typeof id === 'string' && id.length >= 1 && id.length <= 64 ? id : null;
 }
 
@@ -5257,8 +5339,36 @@ function reportHandlerError(event, err) {
   store.addError({ source: 'server', message: `socket '${event}': ${String((err && err.message) || err).slice(0, 360)}`, stack: String((err && err.stack) || '').slice(0, 1500), url: '', username: '', country: '' });
 }
 
+// Per-address caps. Carrier NAT puts thousands of people behind one address,
+// so these are far above anything a household or office reaches.
+const MAX_SOCKETS_PER_IP = Number(process.env.MAX_SOCKETS_PER_IP) || 40;
+const MAX_NEW_IDS_PER_IP_HOUR = Number(process.env.MAX_NEW_IDS_PER_IP_HOUR) || 80;
+const socketsPerIp = new Map(); // ip bucket -> live sockets
+const newIdsPerIp = new Map(); // ip bucket -> { first, ids: Set }
+function newIdAllowed(ip, clientId) {
+  const key = ipBucket(ip);
+  let rec = newIdsPerIp.get(key);
+  if (!rec || Date.now() - rec.first > 60 * 60000) { rec = { first: Date.now(), ids: new Set() }; newIdsPerIp.set(key, rec); }
+  if (rec.ids.has(clientId)) return true;
+  if (rec.ids.size >= MAX_NEW_IDS_PER_IP_HOUR) return false;
+  rec.ids.add(clientId);
+  if (newIdsPerIp.size > 20000) for (const [k, v] of newIdsPerIp) if (Date.now() - v.first > 60 * 60000) newIdsPerIp.delete(k);
+  return true;
+}
+
 io.on('connection', (socket) => {
   const ip = getClientIp(socket);
+  const ipKey = ipBucket(ip);
+  const openFromIp = (socketsPerIp.get(ipKey) || 0) + 1;
+  if (openFromIp > MAX_SOCKETS_PER_IP) {
+    socket.disconnect(true);
+    return;
+  }
+  socketsPerIp.set(ipKey, openFromIp);
+  socket.once('disconnect', () => {
+    const left = (socketsPerIp.get(ipKey) || 1) - 1;
+    if (left > 0) socketsPerIp.set(ipKey, left); else socketsPerIp.delete(ipKey);
+  });
   const geo = lookupGeo(ip);
   // Kept out of the online count and the Online Now rail.
   socket.data.bot = isBotUserAgent(socket.handshake.headers['user-agent']);
@@ -5668,6 +5778,7 @@ io.on('connection', (socket) => {
         ...linked,
       });
     } catch (err) {
+      if (err.errorKey === 'signupThrottled') return socket.emit('google-auth-result', { ok: false, error: err.message });
       if (err.errorKey && DOB_ERRORS[err.errorKey]) return socket.emit('google-auth-result', { ok: false, error: err.message, errorKey: err.errorKey });
       if (err.errorKey) return socket.emit('google-auth-result', { ok: false, error: 'New sign-ups are paused right now. Please try again later.', errorKey: err.errorKey });
       console.error('[google-auth] verification failed:', err.message);
@@ -5722,21 +5833,7 @@ io.on('connection', (socket) => {
     accounts.delete(authedUsername);
     if (account.googleId && googleAccounts.get(account.googleId) === authedUsername) googleAccounts.delete(account.googleId);
     const clientId = (gone && gone.clientId) || (profiles.get(socket.id) || {}).clientId;
-    if (clientId) {
-      // Friends lose the friendship; pending requests and history go too.
-      for (const [fid] of friends.get(clientId) || new Map()) {
-        removeFriendPair(clientId, fid);
-        const fs = getSocketByClientId(fid);
-        if (fs) syncClientState(fs, fid);
-      }
-      friends.delete(clientId);
-      friendRequests.delete(clientId);
-      sentRequests.delete(clientId);
-      for (const m of friendRequests.values()) m.delete(clientId);
-      for (const m of sentRequests.values()) m.delete(clientId);
-      chatHistory.delete(clientId);
-      persistSocial();
-    }
+    if (clientId) purgeSocialState(clientId);
     store.recordFeature('account_deleted');
     // Every device signed in to it is signed out now.
     signOutOtherSockets(authedUsername, socket.id);
@@ -5812,6 +5909,7 @@ io.on('connection', (socket) => {
     if (ownerNow && ownerNow !== authedUsername) {
       return socket.emit('update-recovery-email-result', { ok: false, error: 'That email is already used by another account.' });
     }
+    if (live.email !== next) live.emailVerified = false;
     live.email = next;
     persistAccount(authedUsername);
     socket.emit('update-recovery-email-result', { ok: true, email: next });
@@ -5991,7 +6089,7 @@ io.on('connection', (socket) => {
     // browsers inside HTML attributes (friends list, notifications), so an
     // arbitrary string here would be a stored-XSS vector.
     const rawClientId = typeof data.clientId === 'string' ? data.clientId : '';
-    const clientId = /^[A-Za-z0-9_-]{8,64}$/.test(rawClientId) ? rawClientId : socket.id;
+    const clientId = /^[A-Za-z0-9_-]{8,64}$/.test(rawClientId) && validId(rawClientId) ? rawClientId : socket.id;
     const identityToken = typeof data.identityToken === 'string' ? data.identityToken : '';
     const tokenOk = !!identityToken && validIdentityToken(clientId, identityToken);
     // A wrong or missing token is only a hijack attempt when the identity is
@@ -6015,6 +6113,10 @@ io.on('connection', (socket) => {
     // token).
     if (!tokenOk && identityHasState(clientId)) {
       return socket.emit('register-result', { ok: false, error: 'Client identity could not be verified.', reason: 'unverified' });
+    }
+    // A flood of brand-new identities from one address is a script minting ids.
+    if (!tokenOk && !newIdAllowed(ip, clientId)) {
+      return socket.emit('register-result', { ok: false, error: 'Too many new visitors from this network. Please try again later.', reason: 'busy' });
     }
     // Captured before the identity takeover below, which clears the old entry:
     // otherwise every reconnect looked like a fresh login and re-fired the
@@ -6914,7 +7016,8 @@ io.on('connection', (socket) => {
   socket.on('mic-state', (muted) => {
     const partnerId = partners.get(socket.id);
     if (partnerId) {
-      io.to(partnerId).emit('partner-mic-state', muted);
+      // Clients send and read a plain boolean; never relay anything else.
+      io.to(partnerId).emit('partner-mic-state', !!muted);
     }
   });
 
@@ -7188,6 +7291,10 @@ io.on('connection', (socket) => {
     // too, not just the notification, so the requests list can show it.
     const intro = (typeof message === 'string' && !containsLink(message) && !UNSAFE_RE.test(message))
       ? message.trim().slice(0, 200) : '';
+    // The intro is chat text too: walls and repeats get the same treatment.
+    if (intro && chatSpam(me.clientId, intro, { rate: false })) {
+      return socket.emit('friend-request-result', { ok: false, error: 'Unable to send friend request.' });
+    }
     if (!friendRequests.has(targetClientId)) friendRequests.set(targetClientId, new Map());
     const reqEntry = { ...myInfo, ts: Date.now() };
     if (intro) reqEntry.message = intro;

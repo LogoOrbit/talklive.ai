@@ -119,6 +119,8 @@ fun ProfileScreen(
     val context = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
     var youSheet by remember { mutableStateOf<String?>(null) }
+    // Why the Plus page was opened, for its headline.
+    var plusWhy by remember { mutableStateOf(app.talklive.ui.engage.PlusWhy()) }
     val plusNow by engageVm.premium.collectAsStateWithLifecycle()
     var confirmSignOut by remember { mutableStateOf(false) }
     LaunchedEffect(vm.saved) {
@@ -188,7 +190,7 @@ fun ProfileScreen(
                         if (premium.active) listOf(androidx.compose.ui.graphics.Color(0xFFB8860B), androidx.compose.ui.graphics.Color(0xFFF5C451))
                         else listOf(app.talklive.ui.theme.LocalAccents.current.a, app.talklive.ui.theme.LocalAccents.current.a),
                     ))
-                    .clickable { youSheet = "plus" }.padding(18.dp),
+                    .clickable { plusWhy = app.talklive.ui.engage.PlusWhy(); youSheet = "plus" }.padding(18.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     app.talklive.ui.components.PlusGem(36.dp)
@@ -233,9 +235,9 @@ fun ProfileScreen(
                 }
             }
             when (youSheet) {
-                "passport" -> engage?.let { app.talklive.ui.engage.StreakSheet(it, onDismiss = { youSheet = null }, premium = premium.active, restoring = engageVm.restoring, onRestore = engageVm::restoreStreak, onPlus = { youSheet = "plus-locked" }) } ?: run { youSheet = null }
-                "films" -> app.talklive.ui.engage.FilmsSheet(engageVm, films, premium.active, onPlus = { youSheet = "plus-locked" }) { youSheet = null }
-                "likes" -> app.talklive.ui.engage.LikesSheet(engageVm, onPlus = { youSheet = "plus-locked" }) { youSheet = null }
+                "passport" -> engage?.let { app.talklive.ui.engage.StreakSheet(it, onDismiss = { youSheet = null }, premium = premium.active, restoring = engageVm.restoring, onRestore = engageVm::restoreStreak, onPlus = { plusWhy = it; youSheet = "plus-locked" }) } ?: run { youSheet = null }
+                "films" -> app.talklive.ui.engage.FilmsSheet(engageVm, films, premium.active, onPlus = { plusWhy = app.talklive.ui.engage.PlusWhy(); youSheet = "plus-locked" }) { youSheet = null }
+                "likes" -> app.talklive.ui.engage.LikesSheet(engageVm, onPlus = { plusWhy = it; youSheet = "plus-locked" }) { youSheet = null }
                 "invite" -> app.talklive.ui.engage.InviteSheet(engageVm) { youSheet = null }
                 "notifications" -> NotificationSettingsSheet(vm.notif) { youSheet = null }
                 "feedback" -> app.talklive.ui.engage.FeedbackSheet(onSend = { engageVm.sendFeedback(it); vm.saved = context.getString(R.string.feedback_thanks) }) { youSheet = null }
@@ -246,7 +248,7 @@ fun ProfileScreen(
                 ) { app.talklive.ui.support.SupportScreen(onBack = { youSheet = null }) }
                 "gender" -> ChoiceDialog(stringResource(R.string.i_am), listOf("male", "female", "unspecified"), engageVm.myGender.value, { genderLabel(it) }, { engageVm.setMyGender(it) }) { youSheet = null }
                 "age" -> ChoiceDialog(stringResource(R.string.age_group), listOf("18-24", "25-34", "35-44", "45-54", "55+", "unspecified"), engageVm.ageGroup.value, { if (it == "unspecified") stringResource(R.string.gender_unspecified) else it }, { engageVm.setAgeGroup(it) }) { youSheet = null }
-                "plus", "plus-locked" -> app.talklive.ui.engage.PlusSheet(premium, signedIn = account != null, onSignIn = { youSheet = null; onSignIn() }, onDismiss = { youSheet = null }, onInvite = { youSheet = "invite" }, passFirst = youSheet == "plus-locked")
+                "plus", "plus-locked" -> app.talklive.ui.engage.PlusSheet(premium, signedIn = account != null, onSignIn = { youSheet = null; onSignIn() }, onDismiss = { youSheet = null }, onInvite = { youSheet = "invite" }, passFirst = youSheet == "plus-locked", why = plusWhy)
             }
 
             if (account != null) {
@@ -322,7 +324,7 @@ fun ProfileScreen(
 
             Section(stringResource(R.string.section_appearance)) {
                 val current by vm.theme.collectAsStateWithLifecycle()
-                ThemePicker(current, premium.active, onLocked = { youSheet = "plus-locked" }, onPick = vm::setTheme)
+                ThemePicker(current, premium.active, onLocked = { plusWhy = app.talklive.ui.engage.PlusWhy(app.talklive.ui.engage.PlusReason.Theme); youSheet = "plus-locked" }, onPick = vm::setTheme)
                 val soundsOn by vm.sounds.collectAsStateWithLifecycle()
                 SettingRow(Icons.Rounded.VolumeUp, stringResource(R.string.sounds), stringResource(R.string.sounds_desc), onClick = { vm.setSounds(!soundsOn) }, trailing = {
                     Switch(checked = soundsOn, onCheckedChange = vm::setSounds, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary))
@@ -404,7 +406,7 @@ fun ProfileScreen(
             }
         }
     }
-    vm.sheet?.let { sheet -> ProfileSheetHost(sheet, vm, animal, onSignIn, premium = plusNow.active, look = plusNow.look, lookFace = plusNow.lookFace, onPlus = { vm.close(); youSheet = "plus-locked" }) }
+    vm.sheet?.let { sheet -> ProfileSheetHost(sheet, vm, animal, onSignIn, premium = plusNow.active, look = plusNow.look, lookFace = plusNow.lookFace, onPlus = { vm.close(); plusWhy = app.talklive.ui.engage.PlusWhy(app.talklive.ui.engage.PlusReason.Avatar); youSheet = "plus-locked" }) }
 }
 
 @Composable

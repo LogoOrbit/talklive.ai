@@ -96,6 +96,7 @@
     plusFreezesFree: "Plus gives you 2 streak freezes a month.",
     plusFrozen: "{n}-day streak kept by a Plus freeze",
     plusMember: "Plus member",
+    plusPriceHint: "Plus is {price} a month, about {perDay} a day.",
     plusTrialTitle: "A day of Plus, on us",
     plusTrialBody: "Thanks for being part of TalkLive. For the next 24 hours you have a gold name, legendary avatars, every filter, your full history and more. Enjoy!",
     plusTrialOk: "Let's go",
@@ -273,7 +274,7 @@
       // A streak that just broke: Plus brings it back (same rule as the app).
       var lost = state.streak && state.streak.lost;
       if (state.streak && !state.streak.count && lost && lost.restorable && lost.count >= 2) {
-        if (!isPremiumUser) { showPremiumUpsell(t('restoreAsk', { n: lost.count }), 'streak'); return; }
+        if (!isPremiumUser) { plusUpsell(t('restoreAsk', { n: lost.count }), 'streak'); return; }
         socket.emit('streak-restore', function (r) {
           showToast(r && r.ok ? t('restoreOk', { n: r.count || lost.count }) : t('restoreNo'), r && r.ok ? 'success' : 'social');
         });
@@ -355,10 +356,40 @@
     return t('engageAgoDay', { n: Math.round(h / 24) });
   }
 
+  // The local Plus price, from /pricing.json once: "Plus is $9.99 a month, about $0.33 a day."
+  var pricingCache = null; var pricingReq = null;
+  function loadPricing() {
+    if (pricingCache) return Promise.resolve(pricingCache);
+    if (!pricingReq) {
+      pricingReq = fetch('/pricing.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+        if (j && j.monthly && j.monthly.amount > 0 && j.currency) pricingCache = j; else pricingReq = null;
+        return pricingCache;
+      }).catch(function () { pricingReq = null; return null; });
+    }
+    return pricingReq;
+  }
+  function priceHint() {
+    var p = pricingCache;
+    if (!p) return '';
+    try {
+      var perDay = new Intl.NumberFormat(undefined, { style: 'currency', currency: p.currency }).format(p.monthly.amount / 30);
+      return t('plusPriceHint', { price: p.monthly.label, perDay: perDay });
+    } catch (_) { return ''; }
+  }
+  // The Plus dialog with the price added to its reason line, once the price is known.
+  function plusUpsell(message, perk) {
+    showPremiumUpsell(message + (priceHint() ? ' ' + priceHint() : ''), perk);
+    if (pricingCache) return;
+    loadPricing().then(function () {
+      var line = priceHint(); var r = document.getElementById('puReason');
+      if (line && r && r.textContent === message) r.textContent = message + ' ' + line;
+    });
+  }
+
   function openLikes() {
     if (likes.locked) {
       if (typeof trackGrowthEvent === 'function') trackGrowthEvent('likes_locked_tap');
-      if (!likes.count) { showPremiumUpsell(t('engageLikesReasonNone'), 'likes'); return; }
+      if (!likes.count) { plusUpsell(t('engageLikesReasonNone'), 'likes'); return; }
       // A teaser: real likes, one row each with the country, names hidden.
       var shown = likes.countries.slice(0, 5);
       if (!shown.length) shown = [''];
@@ -369,9 +400,12 @@
           return '<li><span class="tl-likes-who"><b><span class="tl-blur-av">?</span>' + esc(t('likesFrom', { where: c ? flag(c) + ' ' + countryName(c) : '🌍' })) + '</b></span>🔒</li>';
         }).join('') + '</ul>'
         + (likes.count > shown.length ? '<p class="pu-reason">' + esc(t('likesMore', { n: likes.count - shown.length })) + '</p>' : '')
-        + '<button type="button" class="pu-cta tl-see-who">' + esc(t('likesSeeWho')) + '</button>');
+        + '<button type="button" class="pu-cta tl-see-who">' + esc(t('likesSeeWho')) + '</button>'
+        + '<p class="pu-reason tl-price-hint" style="display:none"></p>');
+      var hintEl = tm.querySelector('.tl-price-hint');
+      loadPricing().then(function () { var line = priceHint(); if (line && hintEl) { hintEl.textContent = line; hintEl.style.display = ''; } });
       var go = tm.querySelector('.tl-see-who');
-      if (go) go.addEventListener('click', function () { closeModal(tm); showPremiumUpsell(t('engageLikesReason', { n: likes.count }), 'likes'); });
+      if (go) go.addEventListener('click', function () { closeModal(tm); plusUpsell(t('engageLikesReason', { n: likes.count }), 'likes'); });
       return;
     }
     var rows = likes.list.length
@@ -416,7 +450,7 @@
       undoBtn.addEventListener('click', function () {
         hideUndo();
         if (!isPremiumUser) {
-          showPremiumUpsell(t('engageUndoReason'), 'undo');
+          plusUpsell(t('engageUndoReason'), 'undo');
           return;
         }
         socket.emit('undo-skip', function (res) {
@@ -557,7 +591,7 @@
     if (!historyHidden || isPremiumUser) return;
     var row = el('button', 'tl-locked-row', esc(t('historyLocked', { n: historyHidden })));
     row.type = 'button';
-    row.addEventListener('click', function () { showPremiumUpsell(t('historyLocked', { n: historyHidden }), 'history'); });
+    row.addEventListener('click', function () { plusUpsell(t('historyLocked', { n: historyHidden }), 'history'); });
     list.appendChild(row);
   }
   ['renderFriendsList', 'renderHistory'].forEach(function (name) {
@@ -583,7 +617,7 @@
     var b = e.target.closest && e.target.closest('.animal-option[data-avatar]');
     if (!b || !PLUS_FACES[b.dataset.avatar] || faceOk(b.dataset.avatar)) return;
     e.stopPropagation(); e.preventDefault();
-    showPremiumUpsell(t('plusMember'), 'avatars');
+    plusUpsell(t('plusMember'), 'avatars');
   }, true);
   if (typeof window.renderAnimalPicker === 'function') {
     var origPicker = window.renderAnimalPicker;
@@ -609,7 +643,7 @@
     write('tl_nudge_at', now);
     write('tl_nudge_snooze', now + 3 * 864e5);
     setTimeout(function () {
-      showToast(t(h ? 'nudgeHeart' : 'nudgeCall'), 'success', function () { write('tl_nudge_snooze', 0); showPremiumUpsell(t(h ? 'nudgeHeart' : 'nudgeCall'), 'history'); });
+      showToast(t(h ? 'nudgeHeart' : 'nudgeCall'), 'success', function () { write('tl_nudge_snooze', 0); plusUpsell(t(h ? 'nudgeHeart' : 'nudgeCall'), 'history'); });
     }, 1500);
   }
 

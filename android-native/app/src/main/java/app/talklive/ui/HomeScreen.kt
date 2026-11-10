@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -87,6 +88,10 @@ fun HomeScreen(
     autoConnect: Boolean = true,
     onAutoConnect: (Boolean) -> Unit = {},
     ring: Boolean = false,
+    // A small, dismissible card after a good call: the per-day price to show, or null for none.
+    plusCard: String? = null,
+    onPlusCard: () -> Unit = {},
+    onPlusCardClose: () -> Unit = {},
 ) {
     Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 24.dp, vertical = 16.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -160,6 +165,18 @@ fun HomeScreen(
         val placed = online.filter { it.countryCode != null }
         if (placed.size >= 3) OnlineNow(placed, enabled = connected, onFindIn = onFindIn)
         else HowItWorks(mode == app.talklive.call.CallMode.Chat)
+        if (plusCard != null && !premium) {
+            Spacer(Modifier.height(14.dp))
+            Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
+                Row(Modifier.padding(start = 16.dp, top = 4.dp, bottom = 4.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.home_plus_card, plusCard), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+                    androidx.compose.material3.TextButton(onClick = onPlusCard) { Text(stringResource(R.string.nudge_see_plus)) }
+                    IconButton(onClick = onPlusCardClose) {
+                        Icon(androidx.compose.material.icons.Icons.Rounded.Close, stringResource(R.string.home_plus_card_close), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
         Spacer(Modifier.height(22.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f)) { ModeSwitch(mode, onMode) }
