@@ -39,7 +39,10 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /** One subscription plan as Play prices it for this person. */
-data class PlusPlan(val basePlanId: String, val price: String, val period: String, val offerToken: String, val trial: String?)
+data class PlusPlan(
+    val basePlanId: String, val price: String, val period: String, val offerToken: String, val trial: String?,
+    val priceMicros: Long = 0, val currency: String = "",
+)
 
 /** A one-time pass: Plus for [days] days, no renewal. */
 data class PlusPass(val productId: String, val days: Int, val price: String, val priceMicros: Long, val currency: String = "")
@@ -115,7 +118,7 @@ class PlayBilling @Inject constructor(
                 val phases = offer.pricingPhases.pricingPhaseList
                 val full = phases.lastOrNull() ?: return@mapNotNull null
                 val trial = phases.firstOrNull { it.priceAmountMicros == 0L }?.billingPeriod
-                PlusPlan(base, full.formattedPrice, full.billingPeriod, offer.offerToken, trial)
+                PlusPlan(base, full.formattedPrice, full.billingPeriod, offer.offerToken, trial, full.priceAmountMicros, full.priceCurrencyCode)
             }
             .sortedBy { periodDays(it.period) }
         // The one-time passes (in-app products), cheapest first.
@@ -228,6 +231,11 @@ class PlayBilling @Inject constructor(
     }
 
     companion object {
+        /**
+         * One subscription product with two base plans, picked by their billing period:
+         * `plus-monthly` (P1M) and `plus-yearly` (P1Y). The code sorts by period, so the
+         * base plan ids are free to differ, but these are the ones to create in Play Console.
+         */
         const val PRODUCT_ID = "talklive_plus"
         /** One-time passes (Play Console > In-app products), as server/play-billing.js PASS_DAYS. */
         val PASS_DAYS = mapOf("pass_1d" to 1, "pass_7d" to 7, "pass_15d" to 15)

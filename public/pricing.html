@@ -44,6 +44,12 @@
 .plan.plus { border: 2px solid #f2c14e; background: linear-gradient(180deg, rgba(242,193,78,0.10), rgba(255,255,255,0.02) 45%); box-shadow: 0 18px 50px rgba(242,193,78,0.14); }
 .plan.plus h2 { background: linear-gradient(90deg,#ffe29a,#f2c14e,#c8912e); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .ribbon { position: absolute; top: 0; left: 50%; transform: translate(-50%,-50%); background: linear-gradient(90deg,#ffe29a,#f2c14e); color: #2b1d00; font-size: 0.72rem; font-weight: 800; padding: 5px 14px; border-radius: 999px; letter-spacing: 0.04em; white-space: nowrap; }
+.plan .term { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 16px 0 0; padding: 4px; border-radius: 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10); }
+.plan .term button { font: inherit; font-size: 0.9rem; font-weight: 700; color: var(--muted); background: transparent; border: 0; border-radius: 10px; padding: 9px 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+.plan .term button[aria-pressed="true"] { background: #f2c14e; color: #2b1d00; }
+.plan .term .chip { font-size: 0.64rem; font-weight: 800; padding: 2px 7px; border-radius: 999px; background: rgba(242,193,78,0.16); color: #f2c14e; }
+.plan .term button[aria-pressed="true"] .chip { background: #2b1d00; color: #f2c14e; }
+.plan .term button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .passes { display: grid; gap: 10px; margin: 18px 0 20px; flex: 1; align-content: start; }
 .pass { display: flex; align-items: center; gap: 14px; border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; padding: 14px 16px; background: rgba(255,255,255,0.03); }
 .pass .days { font-size: 1.6rem; font-weight: 800; min-width: 44px; text-align: center; line-height: 1; }
@@ -91,7 +97,7 @@
 <main class="page-main wide">
   <section class="pricing-hero">
     <h1>Simple pricing</h1>
-    <p>Talking is free, forever. Want more? Get <strong>TalkLive Plus</strong> every month, or try it for a few days with a pass.</p>
+    <p>Talking is free, forever. Want more? Get <strong>TalkLive Plus</strong> by the month or the year, or try it for a few days with a pass.</p>
   </section>
 
   <div id="premiumActiveNote" class="status-note ok" hidden>You have TalkLive Plus. Everything is unlocked. Enjoy!</div>
@@ -117,8 +123,12 @@
       <span class="ribbon">MOST POPULAR</span>
       <h2>TalkLive Plus</h2>
       <p class="tagline">The full TalkLive</p>
-      <div class="price"><span id="priceMonthly">$9.99</span> <small>/ month</small></div>
-      <div class="per">Renews monthly. Cancel any time.</div>
+      <div class="term" role="group" aria-label="Billing period">
+        <button type="button" id="termMonthly" aria-pressed="false">Monthly</button>
+        <button type="button" id="termYearly" aria-pressed="true">Yearly <span class="chip" id="saveChip">Save 42%</span></button>
+      </div>
+      <div class="price"><span id="priceMonthly">$5.83</span> <small>/ month</small></div>
+      <div class="per" id="plusPer">Billed yearly at $69.99. Cancel any time.</div>
       <ul>
         <li><span class="i" aria-hidden="true"></span><span><b>All filters</b>: men or women, any countries, more interests</span></li>
         <li><span class="i" aria-hidden="true"></span><span><b>See who liked you</b> and call them back</span></li>
@@ -156,11 +166,11 @@
   <section class="faq">
     <h2>Questions</h2>
     <h3>What is the difference between Plus and a pass?</h3>
-    <p>They unlock exactly the same things. Plus is $9.99 a month in the US and less in many countries and renews until you cancel. A pass is a one-time payment for 1, 7 or 15 days and then simply ends.</p>
+    <p>They unlock exactly the same things. Plus is $9.99 a month in the US ($69.99 a year, 12 months for the price of 7) and less in many countries, and renews until you cancel. A pass is a one-time payment for 1, 7 or 15 days and then simply ends.</p>
     <h3>How do I buy?</h3>
     <p>Open the TalkLive Android app, tap Plus and choose a plan or a pass. You pay through Google Play. Your Plus works on the website too when you sign in with the same account.</p>
     <h3>How do I cancel Plus?</h3>
-    <p>In Google Play: Payments &amp; subscriptions, Subscriptions, TalkLive. You keep Plus until the end of the month you paid for.</p>
+    <p>In Google Play: Payments &amp; subscriptions, Subscriptions, TalkLive. You keep Plus until the end of the month or year you paid for.</p>
     <h3>Can I buy a pass while I have Plus?</h3>
     <p>Yes. The days are added on top, so you never lose time you paid for.</p>
     <h3>Is the free plan changing?</h3>
@@ -213,6 +223,21 @@
   // Prices for the visitor's country, and real checkout when it is switched on.
   var picked = 'pass_7d';
   var canPay = false;
+  // The Plus plan on show: yearly by default, as it costs 42% less a month.
+  var term = 'yearly';
+  var plus = {
+    monthly: { big: '$9.99', per: 'Renews monthly. Cancel any time.' },
+    yearly: { big: '$5.83', per: 'Billed yearly at $69.99. Cancel any time.' }
+  };
+  var termBtns = { monthly: document.getElementById('termMonthly'), yearly: document.getElementById('termYearly') };
+  function showTerm(t) {
+    term = t;
+    Object.keys(termBtns).forEach(function (k) { termBtns[k].setAttribute('aria-pressed', k === t ? 'true' : 'false'); });
+    document.getElementById('priceMonthly').textContent = plus[t].big;
+    document.getElementById('plusPer').textContent = plus[t].per;
+  }
+  termBtns.monthly.addEventListener('click', function () { showTerm('monthly'); });
+  termBtns.yearly.addEventListener('click', function () { showTerm('yearly'); });
   var passes = [].slice.call(document.querySelectorAll('[data-pass]'));
   function pick(id) {
     picked = id;
@@ -225,7 +250,17 @@
   fetch('/pricing.json').then(function (r) { return r.json(); }).then(function (p) {
     if (!p || !p.monthly) return;
     canPay = !!p.checkout;
-    document.getElementById('priceMonthly').textContent = p.monthly.label;
+    plus.monthly = { big: p.monthly.label, per: 'Renews monthly. Cancel any time.' };
+    if (p.yearly && p.yearly.web !== false) {
+      plus.yearly = { big: p.yearly.perMonthLabel, per: 'Billed yearly at ' + p.yearly.label + '. Cancel any time.' };
+      if (p.yearly.savePercent > 0) document.getElementById('saveChip').textContent = 'Save ' + p.yearly.savePercent + '%';
+    } else {
+      // Not sold yearly here: only the monthly plan is offered.
+      termBtns.yearly.hidden = true;
+      document.querySelector('.term').hidden = true;
+      term = 'monthly';
+    }
+    showTerm(term);
     (p.passes || []).forEach(function (it) {
       var cost = document.querySelector('[data-cost="' + it.id + '"]');
       if (cost) cost.textContent = it.label;
@@ -247,7 +282,7 @@
       .catch(function () { btn.removeAttribute('aria-busy'); location.href = '/?upgrade=1'; });
     return false;
   }
-  plusBtn.addEventListener('click', function (e) { if (!buy(plusBtn, 'monthly')) e.preventDefault(); });
+  plusBtn.addEventListener('click', function (e) { if (!buy(plusBtn, term)) e.preventDefault(); });
   passBtn.addEventListener('click', function (e) { if (!buy(passBtn, picked)) e.preventDefault(); });
 
   function markActive(expiresAt) {

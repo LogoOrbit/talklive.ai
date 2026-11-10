@@ -24,10 +24,6 @@ const crypto = require('crypto');
 const pricing = require('./pricing');
 const SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
-const PRICES = {
-  monthly: process.env.STRIPE_PRICE_MONTHLY || '',
-  yearly: process.env.STRIPE_PRICE_YEARLY || '',
-};
 const API = 'https://api.stripe.com/v1';
 
 // Checkout can be created as soon as there is a key and at least one price.
@@ -40,8 +36,9 @@ function configured() {
   return !!(SECRET_KEY && WEBHOOK_SECRET);
 }
 
+// Subscription plans on sale; both are priced per country (server/pricing.js).
 function plans() {
-  return Object.keys(PRICES).filter((k) => PRICES[k]);
+  return ['monthly', 'yearly'];
 }
 
 function warnIfHalfConfigured() {
@@ -124,22 +121,18 @@ async function createCheckout({ clientId, plan, origin, country }) {
     });
     return session.url;
   }
-  // The monthly plan at the local price; a configured Stripe price id still
-  // wins for the yearly plan, which has no regional table.
-  const amt = plan === 'monthly' ? pricing.stripeAmount(country, 'monthly') : null;
-  // Own keys only: `plan` is user input, and PRICES['constructor'] is truthy.
-  const price = Object.prototype.hasOwnProperty.call(PRICES, plan) ? PRICES[plan] : '';
-  if (!amt && !price) throw Object.assign(new Error('Unknown plan.'), { status: 400 });
-  const line = amt ? {
-    'line_items[0][price_data][currency]': amt.currency,
-    'line_items[0][price_data][unit_amount]': amt.unit_amount,
-    'line_items[0][price_data][recurring][interval]': 'month',
-    'line_items[0][price_data][product_data][name]': 'TalkLive Plus',
-  } : { 'line_items[0][price]': price };
+  // A subscription at the local price: monthly, or yearly (12 months for the price of 7).
+  const interval = plan === 'monthly' ? 'month' : plan === 'yearly' ? 'year' : '';
+  if (!interval) throw Object.assign(new Error('Unknown plan.'), { status: 400 });
+  const amt = pricing.stripeAmount(country, plan);
+  if (!amt) throw Object.assign(new Error('This plan is not sold here.'), { status: 400 });
   const session = await stripeRequest('POST', '/checkout/sessions', {
     ...common,
-    ...line,
     mode: 'subscription',
+    'line_items[0][price_data][currency]': amt.currency,
+    'line_items[0][price_data][unit_amount]': amt.unit_amount,
+    'line_items[0][price_data][recurring][interval]': interval,
+    'line_items[0][price_data][product_data][name]': plan === 'yearly' ? 'TalkLive Plus (yearly)' : 'TalkLive Plus',
     'line_items[0][quantity]': 1,
     allow_promotion_codes: 'true',
     subscription_data: { metadata: { clientId, plan } },
@@ -337,7 +330,6 @@ module.exports = {
   alreadyProcessed,
   markProcessed,
   plans,
-  plansConfigured: PRICES,
   warnIfHalfConfigured,
   webhookConfigured: () => !!WEBHOOK_SECRET,
   createCheckout,
