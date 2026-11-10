@@ -8,9 +8,31 @@ const net = require('net');
 // last. It must not be relied on behind Fly, whose last entry is the app's own
 // address. The leftmost entry is whatever the client typed, so it is never
 // used: a banned or rate-limited person could pick a new one on every request.
+// Cloudflare's published edge ranges (https://www.cloudflare.com/ips/). When
+// the site sits behind Cloudflare, Fly sees one of these as the client; the
+// visitor's own address is then in CF-Connecting-IP. That header is trusted
+// only when the request really came from Cloudflare, so nobody can set it to
+// dodge a ban by connecting to Fly directly.
+const CLOUDFLARE = new net.BlockList();
+for (const r of ['173.245.48.0/20', '103.21.244.0/22', '103.22.200.0/22', '103.31.4.0/22', '141.101.64.0/18',
+  '108.162.192.0/18', '190.93.240.0/20', '188.114.96.0/20', '197.234.240.0/22', '198.41.128.0/17',
+  '162.158.0.0/15', '104.16.0.0/13', '104.24.0.0/14', '172.64.0.0/13', '131.0.72.0/22']) {
+  const [a, n] = r.split('/'); CLOUDFLARE.addSubnet(a, Number(n), 'ipv4');
+}
+for (const r of ['2400:cb00::/32', '2606:4700::/32', '2803:f800::/32', '2405:b500::/32', '2405:8100::/32',
+  '2a06:98c0::/29', '2c0f:f248::/32']) {
+  const [a, n] = r.split('/'); CLOUDFLARE.addSubnet(a, Number(n), 'ipv6');
+}
+function fromCloudflare(ip) {
+  const v = net.isIP(ip);
+  return v ? CLOUDFLARE.check(ip, v === 6 ? 'ipv6' : 'ipv4') : false;
+}
+
 function clientIpFrom(headers = {}, remoteAddress = '') {
   const flyIp = headers['fly-client-ip'];
   let ip = flyIp ? String(flyIp).trim() : '';
+  const cf = headers['cf-connecting-ip'];
+  if (ip && cf && fromCloudflare(ip) && net.isIP(String(cf).trim())) ip = String(cf).trim();
   if (!ip) {
     const fwd = headers['x-forwarded-for'];
     const hops = fwd ? String(fwd).split(',').map((s) => s.trim()).filter(Boolean) : [];
@@ -43,4 +65,4 @@ function ipBucket(ip) {
   return groups.slice(0, 4).map((g) => (parseInt(g, 16) || 0).toString(16)).join(':') + '::/64';
 }
 
-module.exports = { clientIpFrom, ipBucket };
+module.exports = { clientIpFrom, ipBucket, fromCloudflare };

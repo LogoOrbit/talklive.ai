@@ -54,6 +54,14 @@ async function ask(sock, ev, payload, reply) {
 // --- Unit: which header is trusted -------------------------------------------
 ok('Fly-Client-IP wins over X-Forwarded-For',
   clientIpFrom({ 'fly-client-ip': '203.0.113.5', 'x-forwarded-for': '1.2.3.4, 9.9.9.9' }, '10.0.0.1') === '203.0.113.5');
+ok('behind Cloudflare, the visitor address comes from CF-Connecting-IP',
+  clientIpFrom({ 'fly-client-ip': '172.70.1.2', 'cf-connecting-ip': '203.0.113.9' }) === '203.0.113.9');
+ok('Cloudflare over IPv6 is recognised too',
+  clientIpFrom({ 'fly-client-ip': '2a06:98c0:3600::103', 'cf-connecting-ip': '198.51.100.4' }) === '198.51.100.4');
+ok('CF-Connecting-IP sent straight to Fly (not via Cloudflare) is ignored',
+  clientIpFrom({ 'fly-client-ip': '203.0.113.5', 'cf-connecting-ip': '1.1.1.1' }) === '203.0.113.5');
+ok('a junk CF-Connecting-IP is ignored',
+  clientIpFrom({ 'fly-client-ip': '172.70.1.2', 'cf-connecting-ip': 'not-an-ip' }) === '172.70.1.2');
 ok('rightmost X-Forwarded-For entry is used, not the forged first one',
   clientIpFrom({ 'x-forwarded-for': '1.2.3.4, 9.9.9.9' }, '10.0.0.1') === '9.9.9.9');
 ok('no proxy headers falls back to the socket address',
