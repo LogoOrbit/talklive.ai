@@ -42,9 +42,9 @@
   --bg-2: #111729;
   --bg-glow: #1c2240;
   --line: rgba(255, 255, 255, 0.09);
-  --accent: #6c5ce7;
+  --accent: #2a6fe8;
   --accent-2: #00d4ff;
-  --accent-soft: rgba(108, 92, 231, 0.16);
+  --accent-soft: rgba(42,111,232, 0.16);
   --danger: #ff5470;
   --green: #2ed47a;
   --text: #f2f4ff;
@@ -54,7 +54,7 @@
 [data-theme="light"] {
   --bg-1: #eef1f9; --bg-2: #ffffff; --bg-glow: #dde4f5;
   --line: rgba(26, 32, 51, 0.14);
-  --accent: #6c5ce7; --accent-2: #0086b3; --accent-soft: rgba(108, 92, 231, 0.1);
+  --accent: #2a6fe8; --accent-2: #0086b3; --accent-soft: rgba(42,111,232, 0.1);
   --green: #17a862;
   --text: #1a2033; --muted: #5a617a; --bubble-them: #e7eaf4;
 }
@@ -438,7 +438,7 @@ img { max-width: 100%; }
 .gate-age-opt { min-height: 36px; padding: 6px 12px; border-radius: 99px; border: 1px solid color-mix(in srgb, var(--text) 16%, transparent); background: transparent; color: var(--muted); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
 /* Five chips on one row even on a 360px phone, instead of four and a lonely "55+". */
 @media (max-width: 420px) { #gateAgeOptions { flex-wrap: nowrap !important; gap: 4px !important; } .gate-age-opt { flex: 1 1 0; min-width: 0; padding: 6px 2px; font-size: 12px; } }
-.gate-age-opt.selected { color: var(--text); border-color: var(--accent, #6c5ce7); background: color-mix(in srgb, var(--accent, #6c5ce7) 18%, transparent); }
+.gate-age-opt.selected { color: var(--text); border-color: var(--accent, #2a6fe8); background: color-mix(in srgb, var(--accent, #2a6fe8) 18%, transparent); }
 .gate-option-neutral .gate-option-icon { color: var(--muted); }
 
 /* The way past a picker for whoever does not care which one. Quiet enough not
@@ -478,7 +478,7 @@ img { max-width: 100%; }
   flex: 1 1 auto; display: inline-flex; align-items: center; justify-content: center; gap: 9px;
   border: none; cursor: pointer; border-radius: 999px; padding: 15px 22px;
   font-family: inherit; font-size: 16px; font-weight: 700; color: #fff;
-  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)));
+  background: linear-gradient(var(--accent),var(--accent));
   transition: transform 0.15s ease, opacity 0.15s ease;
 }
 .gate-cta:hover { opacity: 0.93; }
@@ -567,7 +567,7 @@ img { max-width: 100%; }
 .settings-row-avatar {
   position: relative; display: flex; align-items: center; justify-content: center;
   width: 44px; height: 44px; flex: 0 0 44px; border-radius: 50%;
-  background: rgba(108, 92, 231, 0.22);
+  background: rgba(42,111,232, 0.22);
   font-size: 17px; font-weight: 800;
 }
 /* The "you are online" dot, in the one place that is unambiguously you. */
@@ -585,8 +585,8 @@ img { max-width: 100%; }
 .settings-row-text strong { font-size: 14.5px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .settings-row-text small { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .settings-row-badge {
-  flex: none; padding: 3px 8px; border: 1px solid rgba(108, 92, 231, 0.5);
-  border-radius: 999px; background: rgba(108, 92, 231, 0.16);
+  flex: none; padding: 3px 8px; border: 1px solid rgba(42,111,232, 0.5);
+  border-radius: 999px; background: rgba(42,111,232, 0.16);
   font-size: 10px; font-weight: 700; white-space: nowrap; color: var(--text);
 }
 .settings-row-go svg { width: 18px; height: 18px; display: block; color: var(--muted); }
@@ -714,10 +714,10 @@ img { max-width: 100%; }
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.12s ease;
 }
 .pill:active { transform: scale(0.95); }
-.pill.selected { background: rgba(108, 92, 231, 0.18); border-color: var(--accent); }
+.pill.selected { background: rgba(42,111,232, 0.18); border-color: var(--accent); }
 .pill.selected .pill-dot {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  border-color: transparent; box-shadow: 0 0 6px rgba(108, 92, 231, 0.8);
+  background: linear-gradient(var(--accent),var(--accent));
+  border-color: transparent; box-shadow: 0 0 6px rgba(42,111,232, 0.8);
 }
 .pill.selected .pill-dot-male { background: #4da6ff; box-shadow: 0 0 8px #4da6ff; }
 .pill.selected .pill-dot-female { background: #ff6fb5; box-shadow: 0 0 8px #ff6fb5; }
@@ -923,7 +923,7 @@ img { max-width: 100%; }
   font-weight: 700;
   cursor: pointer;
 }
-.pwa-prompt-yes { background: linear-gradient(90deg, #7c3aed, #22d3ee); color: #fff; flex: 1; }
+.pwa-prompt-yes { background: linear-gradient(var(--accent),var(--accent)); color: #fff; flex: 1; }
 .pwa-prompt-no { background: rgba(255, 255, 255, 0.08); color: #aab3c8; }
 
 /* --- Spirit animals ---------------------------------------------------------
@@ -957,7 +957,7 @@ img { max-width: 100%; }
   color: var(--text);
   border-color: var(--animal-color, var(--accent));
   background: var(--accent-soft);
-  background: color-mix(in srgb, var(--animal-color, #6c5ce7) 18%, transparent);
+  background: color-mix(in srgb, var(--animal-color, #2a6fe8) 18%, transparent);
   box-shadow: 0 0 0 1px var(--animal-color, var(--accent)) inset;
 }
 .animal-option.selected .tl-animal-icon { transform: scale(1.1); }
@@ -1247,7 +1247,7 @@ summary:active {
 .social-toast[data-tone="info"] { background: linear-gradient(135deg, #3b82f6, #2563eb); }
 .social-toast[data-tone="warn"] { background: linear-gradient(135deg, #e07b0a, #b45309); }
 .social-toast[data-tone="error"] { background: linear-gradient(135deg, #ef4444, #dc2626); }
-.social-toast[data-tone="social"] { background: linear-gradient(135deg, #8b5cf6, #db2777); }
+.social-toast[data-tone="social"] { background: linear-gradient(var(--accent),var(--accent)); }
 .social-toast[data-tone="plus"] { background: linear-gradient(135deg, #facc15, #f59e0b); color: #1f1500; }
 .social-toast.show.is-tappable { pointer-events: auto; cursor: pointer; }
 .social-toast.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
@@ -1275,8 +1275,8 @@ summary:active {
 .icebreak-head { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; font-size: 11.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
 .icebreak-shuffle { border: 0; background: none; color: var(--accent); font: inherit; letter-spacing: 0.04em; text-transform: none; font-size: 12.5px; cursor: pointer; padding: 4px 6px; border-radius: 8px; }
 .icebreak-close { border: 0; background: none; color: var(--muted); font-size: 18px; line-height: 1; cursor: pointer; padding: 2px 8px; border-radius: 8px; }
-.icebreak-close:hover { color: var(--text); background: var(--accent-soft, rgba(108, 92, 231, 0.12)); }
-.icebreak-shuffle:hover { background: var(--accent-soft, rgba(108, 92, 231, 0.12)); }
+.icebreak-close:hover { color: var(--text); background: var(--accent-soft, rgba(42,111,232, 0.12)); }
+.icebreak-shuffle:hover { background: var(--accent-soft, rgba(42,111,232, 0.12)); }
 .icebreak-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .icebreak-chip {
   display: inline-flex; align-items: center; gap: 8px; max-width: 100%;

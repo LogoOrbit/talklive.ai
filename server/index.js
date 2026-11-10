@@ -34,6 +34,7 @@ const { createPatterns } = require('./patterns');
 const { createChatGuard } = require('./chat-guard');
 const compress = require('./compress');
 const billing = require('./billing');
+const pricing = require('./pricing');
 const playBilling = require('./play-billing');
 const play = playBilling.createPlayBilling();
 const push = require('./push');
@@ -579,6 +580,12 @@ app.get('/subscribe/confirm', httpRateLimit('subscribe-confirm', 30, 10 * 60000)
 
 billing.warnIfHalfConfigured();
 
+// Plus prices for wherever the visitor is (server/pricing.js).
+app.get('/pricing.json', (req, res) => {
+  res.setHeader('Cache-Control', 'private, max-age=3600');
+  res.json({ ...pricing.forCountry(lookupGeo(clientIp(req)).country), checkout: billing.configured() });
+});
+
 app.post('/billing/checkout', httpRateLimit('checkout', 10, 60000), express.json({ limit: '2kb' }), async (req, res) => {
   if (!billing.configured()) return res.status(503).json({ error: 'Checkout is not available yet.' });
   const clientId = String((req.body && req.body.clientId) || '');
@@ -597,6 +604,7 @@ app.post('/billing/checkout', httpRateLimit('checkout', 10, 60000), express.json
       clientId,
       plan: String((req.body && req.body.plan) || 'monthly'),
       origin: `https://${CANONICAL_HOST}`,
+      country: lookupGeo(clientIp(req)).country,
     });
     store.recordFeature('premium_checkout_start');
     res.json({ url });
@@ -614,6 +622,18 @@ app.post('/billing/webhook', express.raw({ type: 'application/json', limit: '1mb
   // Stripe should retry rather than believe it was accepted.
   if (!event) return res.status(400).send('invalid signature');
   if (billing.alreadyProcessed(event.id)) return res.json({ received: true, duplicate: true });
+
+  // A one-time pass: add its days on top of whatever Plus time is left.
+  const pass = billing.passFromEvent(event);
+  if (pass) {
+    store.extendPremium(pass.clientId, pass.days * 24 * 60 * 60 * 1000, { source: 'stripe', lastEvent: `pass:${pass.pass}` });
+    store.recordFeature('premium_pass_bought');
+    store.persistNow();
+    await Promise.race([store.whenPersisted(), new Promise((r) => setTimeout(r, 8000))]);
+    emitPremiumStatus(pass.clientId);
+    billing.markProcessed(event.id);
+    return res.json({ received: true });
+  }
 
   const decision = billing.decide(event);
   // Ordering, duplicate and "which subscription" rules live in billing.nextPremium.

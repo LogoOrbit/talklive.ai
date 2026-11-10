@@ -449,7 +449,7 @@
    action is without anything else shouting. */
 .nav-btn-primary {
   border-color: transparent;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  background: linear-gradient(var(--accent,#2a6fe8),var(--accent,#2a6fe8));
   color: #fff;
   font-weight: 750;
   box-shadow: 0 6px 18px -8px var(--accent);

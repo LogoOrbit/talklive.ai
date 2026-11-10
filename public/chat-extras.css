@@ -33,7 +33,7 @@
   transition: transform 0.12s ease, background 0.15s ease, color 0.15s ease;
 }
 .cx-btn:active { transform: scale(0.92); }
-.cx-btn.on { background: var(--accent-soft, rgba(108, 92, 231, 0.16)); color: var(--accent); }
+.cx-btn.on { background: var(--accent-soft, rgba(42,111,232, 0.16)); color: var(--accent); }
 .cx-gif-btn { font-size: 12.5px; font-weight: 800; letter-spacing: 0.04em; }
 
 /* Every component here is toggled with the `hidden` property, and each one also
@@ -128,7 +128,7 @@
   border-radius: 10px;
   transition: transform 0.1s ease, background 0.12s ease;
 }
-.cx-emoji-cell:active { transform: scale(0.86); background: var(--accent-soft, rgba(108, 92, 231, 0.16)); }
+.cx-emoji-cell:active { transform: scale(0.86); background: var(--accent-soft, rgba(42,111,232, 0.16)); }
 
 .cx-gif-bar {
   display: flex;
@@ -291,8 +291,8 @@
 /* Armed: release now and the reply lands. The colour change is the whole
    promise of the gesture, so it is the accent and not a shade of grey. */
 .cx-swipe-hint.is-armed {
-  background: var(--accent-soft, rgba(108, 92, 231, 0.16));
-  color: var(--accent, #6c5ce7);
+  background: var(--accent-soft, rgba(42,111,232, 0.16));
+  color: var(--accent, #2a6fe8);
 }
 
 /* The heart the double tap throws: it rises out of the bubble it was aimed at,
@@ -344,7 +344,7 @@
   transition: transform 0.12s ease;
 }
 .cx-menu-react:active { transform: scale(1.18); }
-.cx-menu-react.on { border-color: var(--accent); background: var(--accent-soft, rgba(108, 92, 231, 0.16)); }
+.cx-menu-react.on { border-color: var(--accent); background: var(--accent-soft, rgba(42,111,232, 0.16)); }
 .cx-menu-item {
   border: 0;
   border-radius: 9px;
@@ -356,11 +356,11 @@
   padding: 9px 12px;
   cursor: pointer;
 }
-.cx-menu-item:active { background: var(--accent-soft, rgba(108, 92, 231, 0.16)); }
+.cx-menu-item:active { background: var(--accent-soft, rgba(42,111,232, 0.16)); }
 .cx-menu-item[hidden] { display: none; }
 .cx-menu-item.cx-menu-danger { color: var(--danger, #e5484d); }
 @media (hover: hover) {
-  .cx-menu-item:hover { background: var(--accent-soft, rgba(108, 92, 231, 0.12)); }
+  .cx-menu-item:hover { background: var(--accent-soft, rgba(42,111,232, 0.12)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -417,7 +417,7 @@
 /* Calls attention to itself when a friend chat opens (see nudge()). */
 .vn-mic-btn.vn-nudge {
   color: var(--accent);
-  background: var(--accent-soft, rgba(108, 92, 231, 0.16));
+  background: var(--accent-soft, rgba(42,111,232, 0.16));
   animation: vnPop 0.5s ease-out, vnPulse 1.6s ease-out 0.5s 3;
 }
 .vn-mic-btn.vn-nudge-loop { animation: vnPop 0.5s ease-out, vnPulse 1.6s ease-out 0.5s 3, vnGlow 2.4s ease-out 5.3s infinite; }
@@ -428,7 +428,7 @@
   100% { transform: scale(1); }
 }
 @keyframes vnPulse {
-  0% { box-shadow: 0 0 0 0 rgba(108, 92, 231, 0.55); box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); transform: scale(1); }
+  0% { box-shadow: 0 0 0 0 rgba(42,111,232, 0.55); box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); transform: scale(1); }
   15% { transform: scale(1.1); }
   30% { transform: scale(1); }
   100% { box-shadow: 0 0 0 12px transparent; transform: scale(1); }
@@ -436,7 +436,7 @@
 /* The open-ended reminder only glows: a button that keeps changing size is
    a moving target for the finger trying to press it. */
 @keyframes vnGlow {
-  0% { box-shadow: 0 0 0 0 rgba(108, 92, 231, 0.45); box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent); }
+  0% { box-shadow: 0 0 0 0 rgba(42,111,232, 0.45); box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent); }
   100% { box-shadow: 0 0 0 10px transparent; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -453,7 +453,7 @@
   min-height: 44px;
   padding: 0 4px 0 6px;
   border-radius: 999px;
-  background: var(--accent-soft, rgba(108, 92, 231, 0.14));
+  background: var(--accent-soft, rgba(42,111,232, 0.14));
   animation: vnIn 0.18s ease-out;
 }
 .vn-rec button {
@@ -544,7 +544,7 @@
   margin: 6px 10px 0;
   padding: 9px 12px;
   border-radius: 14px;
-  background: var(--accent-soft, rgba(108, 92, 231, 0.12));
+  background: var(--accent-soft, rgba(42,111,232, 0.12));
   color: var(--text);
   font-size: 13.5px;
   line-height: 1.4;
@@ -631,7 +631,7 @@
   opacity: 0.7;
   margin-right: 4px;
 }
-.cx-reply-bar.cx-editing { border-left-color: var(--accent, #7c5cff); }
+.cx-reply-bar.cx-editing { border-left-color: var(--accent, #2a6fe8); }
 
 /* Double-tap like */
 .cx-pop{animation:cx-pop .35s ease-out}

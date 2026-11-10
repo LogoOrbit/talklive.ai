@@ -109,7 +109,7 @@
     '</style>' +
     '<div class="w">' +
       '<div class="panel" role="dialog" aria-modal="false" aria-label="Chat Support">' +
-        '<div class="hd"><button class="bk" type="button" aria-label="Back to help" hidden>‹</button><div class="av" aria-hidden="true">🎧</div><div><b class="ttl">Help &amp; Support</b><small><i></i><span class="st">Answers to common questions</span></small></div>' +
+        '<div class="hd"><button class="bk" type="button" aria-label="Back to help" hidden>‹</button><div class="av" aria-hidden="true"><i class="ti ti-headset"></i></div><div><b class="ttl">Help &amp; Support</b><small><i></i><span class="st">Answers to common questions</span></small></div>' +
         '<button class="x" type="button" aria-label="Close chat">✕</button></div>' +
         '<div class="view"></div>' +
       '</div>' +
@@ -283,7 +283,7 @@
   function renderHelp() {
     var html = '<div class="help">';
     if (state.conv && hasUnread()) {
-      html += '<button type="button" class="reply" data-go="chat"><span>💬 You have a new reply from Support</span><b>Open</b></button>';
+      html += '<button type="button" class="reply" data-go="chat"><span>You have a new reply from Support</span><b>Open</b></button>';
     }
     html += '<input class="q" type="search" placeholder="Search help (e.g. microphone, password)" aria-label="Search help" autocomplete="off">';
     FAQ.forEach(function (sec, si) {
@@ -327,7 +327,7 @@
     if (!help || help.querySelector('.reply')) return;
     var b = document.createElement('button');
     b.type = 'button'; b.className = 'reply';
-    b.innerHTML = '<span>💬 You have a new reply from Support</span><b>Open</b>';
+    b.innerHTML = '<span>You have a new reply from Support</span><b>Open</b>';
     b.addEventListener('click', function () { track('support_chat_from_help'); showChat(); });
     help.insertBefore(b, help.firstChild);
   }

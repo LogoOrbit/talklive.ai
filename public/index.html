@@ -54,18 +54,18 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=20260922type" crossorigin />
-<link rel="stylesheet" href="style.css?v=20261109prof2" />
-<link rel="stylesheet" href="chat-extras.css?v=20261109acct" />
-<link rel="stylesheet" href="games.css?v=20261006fix" />
+<link rel="stylesheet" href="style.css?v=20261110blue" />
+<link rel="stylesheet" href="chat-extras.css?v=20261110blue" />
+<link rel="stylesheet" href="games.css?v=20261110blue" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20261106passes" />
+<link rel="stylesheet" href="ui.css?v=20261110blue" />
 <link rel="stylesheet" href="auth.css?v=20261109cloud" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
      on every screen of the product. -->
-<link rel="stylesheet" href="nav.css?v=20261005modes" />
+<link rel="stylesheet" href="nav.css?v=20261110blue" />
 <script defer src="/config.js"></script>
 <!-- Google Identity Services is not loaded here: app.js fetches it when the
      Log in / Sign up page opens (loadGoogleSignIn). -->
@@ -798,7 +798,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           <section class="tl-filter-block">
             <div role="heading" aria-level="3" class="ui-h3 tl-filter-legend" id="prefGenderGroupLabel">
               <span data-i18n="matchMeWith">Match me with</span>
-              <a href="/pricing" class="tl-filter-premium premium-lock hidden" data-i18n="premiumBadge">💎 Premium</a>
+              <a href="/pricing" class="tl-filter-premium premium-lock hidden" data-i18n="premiumBadge">Premium</a>
             </div>
             <div class="tl-seg pill-group" id="prefGenderGroup" data-value="any" role="group" aria-labelledby="prefGenderGroupLabel">
               <button type="button" class="tl-seg-opt pill" data-value="any"><span class="pill-dot pill-dot-neutral" aria-hidden="true"></span><span data-i18n="anyone">Anyone</span></button>
@@ -1174,7 +1174,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           <p style="margin:6px 0 0;text-align:center"><a href="#tour" style="color:var(--accent-2);font-weight:600;font-size:14px;text-decoration:none">New here? See how TalkLive works ↓</a></p>
           <div class="setup-growth" data-i18n-aria="growthAria" aria-label="TalkLive membership and sharing">
             <a class="setup-growth-card setup-growth-premium" href="/pricing?utm_source=app">
-              <span class="setup-growth-icon" aria-hidden="true">💎</span>
+              <span class="setup-growth-icon" aria-hidden="true"><i class="ti ti-gem" aria-hidden="true"></i></span>
               <span><strong data-i18n="growthPremiumTitle">Premium plan</strong><small data-i18n="growthPremiumSub">All filters and instant rematching</small></span>
             </a>
             <button type="button" id="shareTalkLiveBtn" class="setup-growth-card setup-growth-share">
@@ -1485,7 +1485,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               <div id="passTiers" class="pass-tiers" role="radiogroup" aria-labelledby="passTitle"></div>
               <button type="button" id="passBuyBtn" class="pass-buy" disabled></button>
               <p class="pass-foot" data-i18n="passFoot">One-time payment. No subscription.</p>
-              <p class="pass-foot"><a href="/pricing" data-i18n="shopPlusLine">Or TalkLive Plus: $10 a month</a></p>
+              <p class="pass-foot"><a href="/pricing" data-i18n="shopPlusLine">Or TalkLive Plus, by the month</a></p>
             </section>
             <section class="pass-panel" aria-labelledby="passIncTitle">
               <div role="heading" aria-level="3" class="ui-h3" id="passIncTitle" data-i18n="passIncluded">Included with every pass</div>
@@ -1603,16 +1603,16 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           <div role="heading" aria-level="2" class="pu-title" id="puTitle">Want more countries?</div>
           <p class="pu-reason" id="puReason"></p>
           <ul class="pu-perks">
-            <li data-perk="countries"><span class="pu-ico" aria-hidden="true">🌍</span><span data-i18n="upsellPerkCountries">Unlimited countries &amp; regions</span></li>
-            <li data-perk="gender"><span class="pu-ico" aria-hidden="true">💬</span><span data-i18n="upsellPerkGender">Match with men or women</span></li>
-            <li data-perk="likes"><span class="pu-ico" aria-hidden="true">❤️</span><span data-i18n="upsellPerkLikes">See who liked you</span></li>
-            <li data-perk="undo"><span class="pu-ico" aria-hidden="true">↩️</span><span data-i18n="upsellPerkUndo">Undo a skip</span></li>
-            <li data-perk="themes"><span class="pu-ico" aria-hidden="true">🎨</span><span data-i18n="upsellPerkThemes">Ocean and Sunset themes</span></li>
-            <li data-perk="rematch"><span class="pu-ico" aria-hidden="true">⚡</span><span data-i18n="upsellPerkRematch">Instant rematch: skip the queue</span></li>
-            <li data-perk="alive"><span class="pu-ico" aria-hidden="true">✨</span><span>A living avatar, gold name &amp; ring</span></li>
-            <li data-perk="avatars"><span class="pu-ico" aria-hidden="true">👑</span><span>8 legendary avatars</span></li>
-            <li data-perk="history"><span class="pu-ico" aria-hidden="true">🕘</span><span>Everyone you met, 3 favourite films</span></li>
-            <li data-perk="streak"><span class="pu-ico" aria-hidden="true">🧊</span><span>Streak freezes &amp; restore</span></li>
+            <li data-perk="countries"><span class="pu-ico" aria-hidden="true"><i class="ti ti-globe" aria-hidden="true"></i></span><span data-i18n="upsellPerkCountries">Unlimited countries &amp; regions</span></li>
+            <li data-perk="gender"><span class="pu-ico" aria-hidden="true"><i class="ti ti-chat" aria-hidden="true"></i></span><span data-i18n="upsellPerkGender">Match with men or women</span></li>
+            <li data-perk="likes"><span class="pu-ico" aria-hidden="true"><i class="ti ti-heart" aria-hidden="true"></i></span><span data-i18n="upsellPerkLikes">See who liked you</span></li>
+            <li data-perk="undo"><span class="pu-ico" aria-hidden="true"><i class="ti ti-undo" aria-hidden="true"></i></span><span data-i18n="upsellPerkUndo">Undo a skip</span></li>
+            <li data-perk="themes"><span class="pu-ico" aria-hidden="true"><i class="ti ti-brush" aria-hidden="true"></i></span><span data-i18n="upsellPerkThemes">Ocean and Sunset themes</span></li>
+            <li data-perk="rematch"><span class="pu-ico" aria-hidden="true"><i class="ti ti-bolt" aria-hidden="true"></i></span><span data-i18n="upsellPerkRematch">Instant rematch: skip the queue</span></li>
+            <li data-perk="alive"><span class="pu-ico" aria-hidden="true"><i class="ti ti-spark" aria-hidden="true"></i></span><span>A living avatar, gold name &amp; ring</span></li>
+            <li data-perk="avatars"><span class="pu-ico" aria-hidden="true"><i class="ti ti-crown" aria-hidden="true"></i></span><span>8 legendary avatars</span></li>
+            <li data-perk="history"><span class="pu-ico" aria-hidden="true"><i class="ti ti-clock" aria-hidden="true"></i></span><span>Everyone you met</span></li>
+            <li data-perk="streak"><span class="pu-ico" aria-hidden="true"><i class="ti ti-snow" aria-hidden="true"></i></span><span>Streak freezes &amp; restore</span></li>
           </ul>
           <button type="button" id="puNotifyBtn" class="pu-cta">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 16V11a6 6 0 1 0-12 0v5l-1.6 2.4h15.2z"/><path d="M10 20.2a2.2 2.2 0 0 0 4 0"/></svg>
@@ -1766,7 +1766,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                 <span data-i18n="blogCtaText">Want a lighter read?</span>
                 <span class="policy-blog-cta-sub" data-i18n="blogCtaSub">Tips and stories about meeting new people are on our blog.</span>
               </p>
-              <a href="/blog/" class="btn btn-primary" data-i18n="readOurBlog">📖 Read our blog</a>
+              <a href="/blog/" class="btn btn-primary" data-i18n="readOurBlog">Read our blog</a>
             </div>
 
             <p class="account-hint" data-i18n="termsEnglishNote">The full rules below are provided in English.</p>
@@ -2125,7 +2125,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             <div role="heading" aria-level="3" id="chatEmptyTitle" class="ui-h3 chat-empty-title"></div>
             <p class="chat-empty-body" data-i18n="chatEmptyBody">You are both here right now. Break the ice - the first message is the hard one.</p>
             <div class="chat-empty-chips" id="chatEmptyChips">
-              <button type="button" class="chat-ice-chip" data-ice="iceHi" data-i18n="iceHi">Hey! 👋</button>
+              <button type="button" class="chat-ice-chip" data-ice="iceHi" data-i18n="iceHi">Hey!</button>
               <button type="button" class="chat-ice-chip" data-ice="iceWhereFrom" data-i18n="iceWhereFrom">Where are you from?</button>
               <button type="button" class="chat-ice-chip" data-ice="iceUpTo" data-i18n="iceUpTo">What are you up to?</button>
               <button type="button" class="chat-ice-chip" data-ice="iceMusic" data-i18n="iceMusic">What are you listening to?</button>
@@ -2144,8 +2144,8 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        stage in the middle column, so it starts right below the hero instead of
        below the (taller) activity rail. Its stylesheet loads without blocking first paint (all of this is below
        the fold); the inline script at the end drives the stepper. -->
-  <link rel="preload" href="/home-tour.css?v=20261109acct" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-  <noscript><link rel="stylesheet" href="/home-tour.css?v=20261109acct" /></noscript>
+  <link rel="preload" href="/home-tour.css?v=20261110blue" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="/home-tour.css?v=20261110blue" /></noscript>
   <section id="tour" class="tt" aria-labelledby="ttTitle">
     <div class="tt-in">
       <header class="tt-head tt-rv">
@@ -2176,11 +2176,11 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         </header>
         <article class="tt-feat tt-rv">
           <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-chat-in-call-640.avif?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-chat-in-call-640.webp?v=20261007a" srcset="/images/home-tour/feat-chat-in-call-640.webp?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="Text messages sent during a live TalkLive voice call" loading="lazy" decoding="async" /></picture></div>
-          <div><span class="tt-ico" aria-hidden="true">💬</span><h3>Talk and text at the same time</h3><p>Open the chat during any call to share a word you cannot pronounce, a link or an emoji. Send quick reactions without interrupting.</p><div class="tt-tags"><span>In-call chat</span><span>👍 😊 ❤️ reactions</span><span>Their local time</span></div></div>
+          <div><span class="tt-ico" aria-hidden="true"><i class="ti ti-chat" aria-hidden="true"></i></span><h3>Talk and text at the same time</h3><p>Open the chat during any call to share a word you cannot pronounce, a link or an emoji. Send quick reactions without interrupting.</p><div class="tt-tags"><span>In-call chat</span><span>👍 😊 ❤️ reactions</span><span>Their local time</span></div></div>
         </article>
         <article class="tt-feat tt-rv">
           <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-games-640.avif?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-games-640.webp?v=20261007a" srcset="/images/home-tour/feat-games-640.webp?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="Tic Tac Toe being played during a TalkLive call" loading="lazy" decoding="async" /></picture></div>
-          <div><span class="tt-ico" aria-hidden="true">🎮</span><h3>Play games while you talk</h3><p>Silence is easier with something to do. Challenge the other person to a game without leaving the call.</p><div class="tt-tags"><span>Tic Tac Toe</span><span>Dots &amp; Boxes</span></div></div>
+          <div><span class="tt-ico" aria-hidden="true"><i class="ti ti-game" aria-hidden="true"></i></span><h3>Play games while you talk</h3><p>Silence is easier with something to do. Challenge the other person to a game without leaving the call.</p><div class="tt-tags"><span>Tic Tac Toe</span><span>Dots &amp; Boxes</span></div></div>
         </article>
         <article class="tt-feat tt-rv">
           <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-text-chat-640.avif?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-text-chat-640.webp?v=20261007a" srcset="/images/home-tour/feat-text-chat-640.webp?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="A TalkLive text chat used for English practice" loading="lazy" decoding="async" /></picture></div>
@@ -2188,15 +2188,15 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         </article>
         <article class="tt-feat tt-rv">
           <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-friends-640.avif?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-friends-640.webp?v=20261007a" srcset="/images/home-tour/feat-friends-640.webp?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="An incoming friend request and the Friends panel" loading="lazy" decoding="async" /></picture></div>
-          <div><span class="tt-ico" aria-hidden="true">🤝</span><h3>Keep the people you click with</h3><p>Add a friend mid-call and call or message them later, without ever swapping phone numbers. Share your Friend ID to be found.</p><div class="tt-tags"><span>Friend requests</span><span>Friend ID</span><span>Call back</span></div></div>
+          <div><span class="tt-ico" aria-hidden="true"><i class="ti ti-people" aria-hidden="true"></i></span><h3>Keep the people you click with</h3><p>Add a friend mid-call and call or message them later, without ever swapping phone numbers. Share your Friend ID to be found.</p><div class="tt-tags"><span>Friend requests</span><span>Friend ID</span><span>Call back</span></div></div>
         </article>
         <article class="tt-feat tt-rv">
           <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-filters-640.avif?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-filters-640.webp?v=20261007a" srcset="/images/home-tour/feat-filters-640.webp?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="Match filters and call history panels" loading="lazy" decoding="async" /></picture></div>
-          <div><span class="tt-ico" aria-hidden="true">🌍</span><h3>Filters and call history</h3><p>Choose countries you would like to meet, or never meet, and find recent conversations in your call history. A planned Premium plan adds gender filters.</p><div class="tt-tags"><span>Country filters</span><span>Call history</span><span>Premium soon</span></div></div>
+          <div><span class="tt-ico" aria-hidden="true"><i class="ti ti-globe" aria-hidden="true"></i></span><h3>Filters and call history</h3><p>Choose countries you would like to meet, or never meet, and find recent conversations in your call history. A planned Premium plan adds gender filters.</p><div class="tt-tags"><span>Country filters</span><span>Call history</span><span>Premium soon</span></div></div>
         </article>
         <article class="tt-feat tt-rv">
           <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-safety-640.avif?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-safety-640.webp?v=20261007a" srcset="/images/home-tour/feat-safety-640.webp?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="Report and mute controls and the TalkLive house rules" loading="lazy" decoding="async" /></picture></div>
-          <div><span class="tt-ico" aria-hidden="true">🛡️</span><h3>Built for safe conversations</h3><p>Mute, hang up or report in one tap. Automatic safety checks run during calls, calls are never recorded by TalkLive, and the whole service is 18+. <a href="/safety">Safety center</a></p><div class="tt-tags"><span>Report &amp; block</span><span>Not recorded</span><span>18+ only</span></div></div>
+          <div><span class="tt-ico" aria-hidden="true"><i class="ti ti-shield" aria-hidden="true"></i></span><h3>Built for safe conversations</h3><p>Mute, hang up or report in one tap. Automatic safety checks run during calls, calls are never recorded by TalkLive, and the whole service is 18+. <a href="/safety">Safety center</a></p><div class="tt-tags"><span>Report &amp; block</span><span>Not recorded</span><span>18+ only</span></div></div>
         </article>
       </div>
 
@@ -2213,7 +2213,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
       <div class="tt-cta tt-rv">
         <h2 class="tt-h2">Someone is waiting <span class="tt-grad">to say hello.</span></h2>
-        <div class="tt-btns"><button type="button" class="tt-btn talk" id="ttTalk">🎙️ Tap to Talk</button><a class="tt-btn chat" href="/chat?go=1">💬 Tap to Chat</a></div>
+        <div class="tt-btns"><button type="button" class="tt-btn talk" id="ttTalk"><i class="ti ti-mic" aria-hidden="true"></i> Tap to Talk</button><a class="tt-btn chat" href="/chat?go=1"><i class="ti ti-chat" aria-hidden="true"></i> Tap to Chat</a></div>
       </div>
     </div>
   </section>
@@ -2424,7 +2424,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
       <h3>Today's featured read</h3>
       <a id="dailyArticleCard" class="daily-article-card" href="/blog/">
-        <span class="daily-article-badge">✨ New today</span>
+        <span class="daily-article-badge">New today</span>
         <span id="dailyArticleTitle" class="daily-article-title">Loading today's article…</span>
         <span id="dailyArticleBlurb" class="daily-article-blurb"></span>
         <span class="daily-article-cta">Read now →</span>
@@ -2454,7 +2454,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <!-- The footer closes the page, after the crawlable section rather than
        above it. -->
   <footer class="footer">
-    <a href="/blog/" class="footer-blog-btn" data-i18n="readOurBlog">📖 Read our blog</a>
+    <a href="/blog/" class="footer-blog-btn" data-i18n="readOurBlog">Read our blog</a>
     <div class="footer-links">
       <a href="/about" class="link-btn" data-i18n="aboutLink">About</a>
       <a href="/safety" class="link-btn">Safety Center</a>
@@ -2587,7 +2587,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        browser finish parsing and paint the page first. -->
   <script defer src="/socket.io/socket.io.min.js"></script>
   <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20261109name"></script>
+  <script defer src="i18n.js?v=20261110price"></script>
   <script defer src="chat-time.js?v=20260916navbar"></script>
   <script defer src="animals.js?v=20261008more"></script>
   <script defer src="characters.js?v=20261008more"></script>
@@ -2598,7 +2598,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="voice-notes.js?v=20261001mic"></script>
   <script defer src="games.js?v=20261101rr"></script>
   <script defer src="nickname-rules.js?v=20261101nick"></script>
-  <script defer src="app.js?v=20261110tiles"></script>
+  <script defer src="app.js?v=20261110price"></script>
 
 <!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

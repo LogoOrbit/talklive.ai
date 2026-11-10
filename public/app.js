@@ -2613,9 +2613,9 @@ function renderSettingsProfileRow() {
 // bought in the Android app through Google Play (the same prices as /pricing);
 // the button here opens the pricing page that explains it.
 const SHOP_PASSES = [
-  { id: 'd1', days: 1, price: '$2', tagKey: 'passTagEntry' },
-  { id: 'd7', days: 7, price: '$5', tagKey: 'passTagPopular' },
-  { id: 'd15', days: 15, price: '$7', tagKey: 'passTagMax' },
+  { id: 'd1', days: 1, price: '$1.99', tagKey: 'passTagEntry' },
+  { id: 'd7', days: 7, price: '$4.99', tagKey: 'passTagPopular' },
+  { id: 'd15', days: 15, price: '$6.99', tagKey: 'passTagMax' },
 ];
 let selectedPassId = 'd7';
 
@@ -2651,9 +2651,17 @@ function renderPasses() {
   }
 }
 
+let shopPriced = false;
 function openShop() {
   renderPasses();
   openModal(shopModal);
+  // Prices for the visitor's country (server/pricing.js), fetched once.
+  if (shopPriced) return;
+  shopPriced = true;
+  fetch('/pricing.json').then((r) => r.json()).then((p) => {
+    (p.passes || []).forEach((it, i) => { if (SHOP_PASSES[i]) SHOP_PASSES[i].price = it.label; });
+    renderPasses();
+  }).catch(() => {});
 }
 
 if (settingsShopRow) settingsShopRow.addEventListener('click', openShop);
@@ -3222,7 +3230,7 @@ function accountUi() {
     accountUiP = new Promise((resolve, reject) => {
       const css = document.createElement('link');
       css.rel = 'stylesheet';
-      css.href = '/account-ui.css?v=20261109b';
+      css.href = '/account-ui.css?v=20261110blue';
       document.head.appendChild(css);
       const js = document.createElement('script');
       js.src = '/account-ui.js?v=20261109b';
@@ -8601,69 +8609,12 @@ const CONSENT_KEY = 'talklive_age_consent';
 // answered in one tap, and the tap goes straight on into whatever was being
 // started. Whoever connects sees it, because it is the same choice the
 // profile avatar is made of.
-const animalGateModal = document.getElementById('animalGateModal');
-const animalGateGrid = document.getElementById('animalGateGrid');
-const closeAnimalGateBtn = document.getElementById('closeAnimalGateBtn');
-let afterAnimalGate = null;
-
-// Runs `next` once there is an animal - immediately if there already is one,
-// otherwise after the gate has been answered. Returns true when it waited, so
-// callers can stop and let the gate drive.
+// Runs `next` once there is a face. Nobody is stopped to choose one before their
+// first call: they get one at random and can change it from Home or mid-call.
 function requireAnimal(next) {
-  // Any face will do - an animal, a character or a plain one. Only someone with
-  // none at all is asked, so a choice made in Settings is never overwritten.
-  if (myAvatar || !animalGateModal || !Animals) { next(); return false; }
-  // Nobody is stopped to choose a face before their first call any more: they
-  // get one at random and can change it from Home or during the call.
-  setMyAnimal(Animals.random());
+  if (!myAvatar && Animals) setMyAnimal(Animals.random());
   next();
   return false;
-}
-
-function closeAnimalGate(run) {
-  const next = afterAnimalGate;
-  afterAnimalGate = null;
-  closeModal(animalGateModal);
-  if (run && next) next();
-}
-
-if (animalGateGrid) {
-  animalGateGrid.addEventListener('click', (e) => {
-    const option = e.target.closest('.animal-option');
-    if (!option || !option.dataset.avatar) return;
-    vibrate(8);
-    setMyAvatarChoice(option.dataset.avatar);
-    // A beat so the tick is visibly on the one just tapped before the panel
-    // goes, rather than the tap appearing to skip straight past the question.
-    setTimeout(() => closeAnimalGate(true), 180);
-  });
-}
-
-// "Surprise me" - the same outcome as tapping one, for whoever does not care
-// which. It picks, shows the pick for the same beat a tapped one gets, and
-// carries on into whatever the gate interrupted.
-const animalSurpriseBtn = document.getElementById('animalSurpriseBtn');
-if (animalSurpriseBtn) {
-  animalSurpriseBtn.addEventListener('click', () => {
-    vibrate(8);
-    setMyAnimal(Animals.random());
-    setTimeout(() => closeAnimalGate(true), 180);
-  });
-}
-
-// Backing out. Nothing is stored, so it is still a gate next time - but the
-// button that opened it has to come back to life, the way the consent gate's
-// does, or "Tap to Talk" stays inert until the page is reloaded.
-function dismissAnimalGate() {
-  closeAnimalGate(false);
-  startBtn.disabled = false;
-  startBtn.classList.remove('is-connecting');
-}
-if (closeAnimalGateBtn) closeAnimalGateBtn.addEventListener('click', dismissAnimalGate);
-if (animalGateModal) {
-  animalGateModal.addEventListener('click', (e) => {
-    if (e.target === animalGateModal) dismissAnimalGate();
-  });
 }
 
 // Start a call from the big button - gated by the one-time age/terms consent,
@@ -9504,7 +9455,6 @@ function closeTopmostLayer() {
     // connecting state, which is also what guards against double taps - so
     // closing one from here has to go through its own dismiss or "Tap to
     // Talk" stays inert until the page is reloaded.
-    if (openModalEl === animalGateModal) { dismissAnimalGate(); return true; }
     if (openModalEl === ageConsentModal) { dismissAgeConsent(); return true; }
     closeModal(openModalEl);
     return true;
@@ -11647,7 +11597,7 @@ socket.on('friend-online', ({ clientId, username, countryCode, country } = {}) =
 // a call, so it loads once the page is up and stays out of the first paint.
 window.addEventListener('load', () => {
   const s = document.createElement('script');
-  s.src = '/engage.js?v=20261110new';
+  s.src = '/engage.js?v=20261110ico';
   s.async = true;
   document.head.appendChild(s);
 });

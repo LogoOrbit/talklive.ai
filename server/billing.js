@@ -21,6 +21,7 @@
 
 const crypto = require('crypto');
 
+const pricing = require('./pricing');
 const SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 const PRICES = {
@@ -34,7 +35,9 @@ const API = 'https://api.stripe.com/v1';
 // but cannot hear back about it is a misconfiguration worth shouting about,
 // not one to fail silently.
 function configured() {
-  return !!(SECRET_KEY && (PRICES.monthly || PRICES.yearly));
+  // Prices are built in (server/pricing.js), so the two keys are all it needs. The
+  // webhook secret is required: without it a payment would be taken and nothing granted.
+  return !!(SECRET_KEY && WEBHOOK_SECRET);
 }
 
 function plans() {
@@ -95,26 +98,65 @@ async function stripeRequest(method, path, body) {
  * because the two event families do not carry the same fields and we need the
  * id in both.
  */
-async function createCheckout({ clientId, plan, origin }) {
-  // Own keys only: `plan` is user input, and PRICES['constructor'] is truthy.
-  const price = Object.prototype.hasOwnProperty.call(PRICES, plan) ? PRICES[plan] : '';
-  if (!price) throw Object.assign(new Error('Unknown plan.'), { status: 400 });
+async function createCheckout({ clientId, plan, origin, country }) {
   if (!clientId) throw Object.assign(new Error('Missing client id.'), { status: 400 });
-  const session = await stripeRequest('POST', '/checkout/sessions', {
-    mode: 'subscription',
-    'line_items[0][price]': price,
-    'line_items[0][quantity]': 1,
+  const common = {
     client_reference_id: clientId,
     // Stripe emails the receipt; nothing here needs an address, and asking for
     // one costs conversions on an anonymous product.
     billing_address_collection: 'auto',
+    success_url: `${origin}/pricing?checkout=success`,
+    cancel_url: `${origin}/pricing?checkout=cancelled`,
+  };
+  // A pass: one payment, a fixed number of days, priced for the buyer's country.
+  if (Object.prototype.hasOwnProperty.call(pricing.PASS_DAYS, plan)) {
+    const amt = pricing.stripeAmount(country, plan);
+    if (!amt) throw Object.assign(new Error('This pass is not sold here.'), { status: 400 });
+    const session = await stripeRequest('POST', '/checkout/sessions', {
+      ...common,
+      mode: 'payment',
+      'line_items[0][price_data][currency]': amt.currency,
+      'line_items[0][price_data][unit_amount]': amt.unit_amount,
+      'line_items[0][price_data][product_data][name]': `TalkLive Plus - ${amt.days}-day pass`,
+      'line_items[0][quantity]': 1,
+      metadata: { clientId, pass: plan, days: amt.days },
+      payment_intent_data: { metadata: { clientId, pass: plan, days: amt.days } },
+    });
+    return session.url;
+  }
+  // The monthly plan at the local price; a configured Stripe price id still
+  // wins for the yearly plan, which has no regional table.
+  const amt = plan === 'monthly' ? pricing.stripeAmount(country, 'monthly') : null;
+  // Own keys only: `plan` is user input, and PRICES['constructor'] is truthy.
+  const price = Object.prototype.hasOwnProperty.call(PRICES, plan) ? PRICES[plan] : '';
+  if (!amt && !price) throw Object.assign(new Error('Unknown plan.'), { status: 400 });
+  const line = amt ? {
+    'line_items[0][price_data][currency]': amt.currency,
+    'line_items[0][price_data][unit_amount]': amt.unit_amount,
+    'line_items[0][price_data][recurring][interval]': 'month',
+    'line_items[0][price_data][product_data][name]': 'TalkLive Plus',
+  } : { 'line_items[0][price]': price };
+  const session = await stripeRequest('POST', '/checkout/sessions', {
+    ...common,
+    ...line,
+    mode: 'subscription',
+    'line_items[0][quantity]': 1,
     allow_promotion_codes: 'true',
     subscription_data: { metadata: { clientId, plan } },
     metadata: { clientId, plan },
-    success_url: `${origin}/pricing?checkout=success`,
-    cancel_url: `${origin}/pricing?checkout=cancelled`,
   });
   return session.url;
+}
+
+// A paid one-time pass in a webhook event: { clientId, pass, days }, else null.
+function passFromEvent(event) {
+  const o = (event && event.data && event.data.object) || {};
+  if (!event || event.type !== 'checkout.session.completed' || o.mode !== 'payment') return null;
+  if (o.payment_status && o.payment_status !== 'paid') return null;
+  const m = o.metadata || {};
+  const days = pricing.PASS_DAYS[m.pass];
+  if (!days || !m.clientId) return null;
+  return { clientId: String(m.clientId), pass: String(m.pass), days };
 }
 
 /**
@@ -299,6 +341,7 @@ module.exports = {
   warnIfHalfConfigured,
   webhookConfigured: () => !!WEBHOOK_SECRET,
   createCheckout,
+  passFromEvent,
   verifyWebhook,
   decide,
   // exported for tests

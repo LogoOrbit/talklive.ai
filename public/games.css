@@ -85,7 +85,7 @@
 .game-pick-card:hover,
 .game-pick-card:focus-visible {
   border-color: var(--accent-2, var(--accent));
-  background: var(--accent-soft, rgba(108, 92, 231, 0.14));
+  background: var(--accent-soft, rgba(42,111,232, 0.14));
   transform: translateY(-2px);
   box-shadow: 0 8px 22px rgba(0,0,0,0.35);
 }
@@ -159,7 +159,7 @@
 .ttt-player[data-side="opp"] { flex-direction: row-reverse; text-align: right; }
 .ttt-player.active {
   border-color: var(--accent-2, var(--accent));
-  background: var(--accent-soft, rgba(108, 92, 231, 0.16));
+  background: var(--accent-soft, rgba(42,111,232, 0.16));
   transform: translateY(-1px);
   box-shadow: 0 4px 16px rgba(0,0,0,0.28);
 }
@@ -300,7 +300,7 @@
 }
 .ttt-cell.empty.movable:hover,
 .ttt-cell.empty.movable:active {
-  background: var(--accent-soft, rgba(108, 92, 231, 0.14));
+  background: var(--accent-soft, rgba(42,111,232, 0.14));
   transform: scale(0.97);
 }
 @keyframes tttCellGlow {
@@ -331,7 +331,7 @@
   100% { transform: scale(1); }
 }
 .ttt-cell.win {
-  background: var(--accent-soft, rgba(108, 92, 231, 0.18));
+  background: var(--accent-soft, rgba(42,111,232, 0.18));
   box-shadow: 0 0 0 2px var(--accent-2, var(--accent)), 0 0 16px 2px var(--accent-2, var(--accent));
 }
 .ttt-cell.win .ttt-mark { animation: tttWinPulse 0.9s ease-in-out infinite; }

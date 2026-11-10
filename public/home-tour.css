@@ -2,7 +2,7 @@
    app. Loaded without blocking render (it is all below the fold), so nothing
    here may affect layout above #tour. Colours come from the theme tokens in
    style.css, so light/ocean/sunset themes follow automatically. */
-.tt { container: tt / inline-size; --tt-sky: var(--accent-2, #38bdf8); --tt-vio: #8b7bff; border-top: 1px solid var(--line); padding: 72px 20px 24px; color: var(--muted); font-family: var(--font-sans); }
+.tt { container: tt / inline-size; --tt-sky: var(--accent-2, #38bdf8); --tt-vio: #2a6fe8; border-top: 1px solid var(--line); padding: 72px 20px 24px; color: var(--muted); font-family: var(--font-sans); }
 .tt-in { max-width: 1120px; margin: 0 auto; }
 .tt img { display: block; width: 100%; height: auto; }
 .tt picture { display: contents; }
@@ -30,7 +30,7 @@
 .tt-step.is-on.is-auto .tt-bar i { animation: tt-fill var(--tt-dur, 6s) linear forwards; }
 @keyframes tt-fill { to { width: 100%; } }
 .js-tt .tt-step:not(.is-on) span { display: none; }
-.tt-stage { position: relative; aspect-ratio: 1; border-radius: 26px; overflow: hidden; border: 1px solid var(--line); background: #0e1324; box-shadow: 0 40px 100px -40px rgba(124, 92, 255, .55); }
+.tt-stage { position: relative; aspect-ratio: 1; border-radius: 26px; overflow: hidden; border: 1px solid var(--line); background: #0e1324; box-shadow: 0 40px 100px -40px rgba(42,111,232, .55); }
 .tt-stage figure { margin: 0; position: absolute; inset: 0; transition: opacity .5s ease, transform .6s cubic-bezier(.2, .7, .2, 1); }
 .js-tt .tt-stage figure { opacity: 0; transform: scale(1.03); }
 .js-tt .tt-stage figure.is-on { opacity: 1; transform: none; }
@@ -57,7 +57,7 @@
 /* Story card + guides. */
 .tt-story { display: grid; grid-template-columns: 1.2fr 1fr; align-items: center; gap: 0; margin: 90px 0 0; border-radius: 26px; overflow: hidden; border: 1px solid var(--line); text-decoration: none; color: inherit;
   background: var(--bg-2); transition: transform .3s, box-shadow .3s; }
-.tt-story:hover { transform: translateY(-4px); box-shadow: 0 30px 80px -40px rgba(124, 92, 255, .6); }
+.tt-story:hover { transform: translateY(-4px); box-shadow: 0 30px 80px -40px rgba(42,111,232, .6); }
 .tt-story-body { padding: 36px 40px; }
 .tt-story-body h3 { color: var(--text); font-size: clamp(24px, 3vw, 34px); text-wrap: balance; font-weight: 800; margin: 12px 0 10px; line-height: 1.12; }
 .tt-story-body p { margin: 0 0 18px; line-height: 1.65; }

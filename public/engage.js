@@ -31,7 +31,7 @@
     engagePassportLabel: "countries",
     engagePassportEmpty: "Talk to someone",
     engageLikesLabel: "liked you",
-    engageLikesUnlock: "Unlock 💎",
+    engageLikesUnlock: "Unlock ",
     engageLikesNone: "No likes yet",
     engageLikesSee: "See who",
     engageQuestionLabel: "Today's question",
@@ -55,11 +55,11 @@
     engageUndoBusy: "They already found someone else.",
     engageUndoExpired: "Too late to undo that one.",
     engageUndo: "Undo skip",
-    engageStreakSaved: "🔥 {n}-day streak - saved by your weekly streak-saver",
-    engageStreakUp: "🔥 {n}-day streak! Come back tomorrow",
-    engageStreakStart: "🔥 Streak started! Talk tomorrow to keep it",
+    engageStreakSaved: "{n}-day streak - saved by your weekly streak-saver",
+    engageStreakUp: "{n}-day streak! Come back tomorrow",
+    engageStreakStart: "Streak started! Talk tomorrow to keep it",
     engageStamp: "{flag} New stamp: {country} ({n} countries)",
-    engageQuestionToast: "💬 Today's question: {q}",
+    engageQuestionToast: "Today's question: {q}",
     presOnline: "Online now",
     presActive: "Active {time}",
     presUsual: "Usually online {from}–{to}",
@@ -77,36 +77,36 @@
     ntfIos: "On iPhone, add TalkLive to your Home Screen to get notifications.",
     ntfIosHow: "Show me",
     ntfHelpTitle: "Turn on notifications",
-    ntfHelpChrome: "Chrome / Edge: tap the 🔒 or ⓘ next to the address, then Notifications → Allow.",
+    ntfHelpChrome: "Chrome / Edge: tap the or ⓘ next to the address, then Notifications → Allow.",
     ntfHelpSamsung: "Samsung Internet: ⋮ menu → Settings → Sites and downloads → Notifications → allow talklive.app.",
-    ntfHelpFirefox: "Firefox: tap the 🔒 next to the address, then clear the Notifications block.",
-    ntfHelpSafari: "iPhone Safari: tap Share ⬆ → Add to Home Screen, open TalkLive from there, then turn on notifications.",
+    ntfHelpFirefox: "Firefox: tap the next to the address, then clear the Notifications block.",
+    ntfHelpSafari: "iPhone Safari: tap Share → Add to Home Screen, open TalkLive from there, then turn on notifications.",
     ntfHelpReload: "Then reload this page.",
-    ntfFirstFriend: "🔔 Want to know when {name} messages or comes online?",
-    restoreOk: "🔥 Streak restored: {n} days. Talk today to keep it going.",
+    ntfFirstFriend: "Want to know when {name} messages or comes online?",
+    restoreOk: "Streak restored: {n} days. Talk today to keep it going.",
     restoreNo: "This streak can't be restored right now.",
     restoreAsk: "Your {n}-day streak broke. Plus can bring it back.",
-    callOffline: "{name} is offline right now. Tap to ask them to call you back, or ring the 🔔 to know when they're online.",
+    callOffline: "{name} is offline right now. Tap to ask them to call you back, or ring the to know when they're online.",
     awayTitle: "While you were away",
     awayMsg: "{name} sent {n} message(s)",
     awayCall: "{name} wanted to talk",
     awayReply: "Reply",
     awayCall2: "Call back",
-    plusFreezes: "🧊 {n} Plus streak freezes left this month.",
+    plusFreezes: "{n} Plus streak freezes left this month.",
     plusFreezesFree: "Plus gives you 2 streak freezes a month.",
-    plusFrozen: "🧊 {n}-day streak kept by a Plus freeze",
-    plusMember: "💎 Plus member",
+    plusFrozen: "{n}-day streak kept by a Plus freeze",
+    plusMember: "Plus member",
     plusTrialTitle: "A day of Plus, on us",
     plusTrialBody: "Thanks for being part of TalkLive. For the next 24 hours you have a gold name, legendary avatars, every filter, your full history and more. Enjoy!",
     plusTrialOk: "Let's go",
     likesFrom: "Someone from {where} liked you",
     likesMore: "and {n} more",
-    likesSeeWho: "💎 See who liked you",
-    historyLocked: "🔒 {n} more people you met. See them all with Plus.",
+    likesSeeWho: "See who liked you",
+    historyLocked: "{n} more people you met. See them all with Plus.",
     nudgeCall: "Great call! With Plus you never lose anyone you met.",
     nudgeHeart: "You both tapped ❤️! Plus keeps everyone you meet in your history.",
-    engageMutual: "💞 It's mutual! You both liked this call. Tap to add them as a friend.",
-    engageUndoThem: "👋 They came back! Your last chat is back on.",
+    engageMutual: "It's mutual! You both liked this call. Tap to add them as a friend.",
+    engageUndoThem: "They came back! Your last chat is back on.",
   };
   if (typeof I18N_STRINGS !== 'undefined' && I18N_STRINGS.en) {
     Object.keys(EN).forEach(function (k) { if (!(k in I18N_STRINGS.en)) I18N_STRINGS.en[k] = EN[k]; });
@@ -201,7 +201,8 @@
     '📱 Which app do you use the most?', '🚀 Would you go to space if you could?',
     '🤝 What is a small thing that makes your day better?',
   ];
-  function todaysQuestion() { return QUESTIONS[dayNum(dayKey()) % QUESTIONS.length]; }
+  // The questions are written with a leading emoji; the page shows the words only.
+  function todaysQuestion() { return QUESTIONS[dayNum(dayKey()) % QUESTIONS.length].replace(/^[^A-Za-z0-9"'(]+/, ''); }
 
   // --- Landing strip ------------------------------------------------------------
   var strip = null;
@@ -230,7 +231,7 @@
     var html = '';
     // The Chat Support launch (support-chat.js says whether it is running).
     if (supportPromoLive()) {
-      html += '<button type="button" class="tl-engage-banner tl-engage-news" data-act="support"><span>🎧 ' + esc(t('fxSupportChip')) + '</span>'
+      html += '<button type="button" class="tl-engage-banner tl-engage-news" data-act="support"><span><i class="ti ti-headset" aria-hidden="true"></i> ' + esc(t('fxSupportChip')) + '</span>'
         + '<span class="tl-engage-new" aria-hidden="true">' + esc(t('fxSupportGo')) + '</span></button>';
     } else if (prev && read(KEY.recap, '') !== prev.week) {
       html += '<div class="tl-engage-banner tl-engage-recap"><span>📊 ' + esc(t('engageRecap', {
@@ -242,15 +243,15 @@
     var fresh = !s.count && !s.lost && !p.codes.length && !likes.count;
     if (!fresh) html += '<div class="tl-engage-tiles">'
       + '<button type="button" class="tl-engage-tile' + (today ? ' is-done' : (s.count ? ' is-due' : '')) + '" data-act="streak">'
-      + '<span class="tl-engage-big">🔥 ' + s.count + '</span>'
+      + '<span class="tl-engage-big"><i class="ti ti-flame" aria-hidden="true"></i> ' + s.count + '</span>'
       + '<span class="tl-engage-label">' + esc(t('engageStreakLabel')) + '</span>'
       + '<span class="tl-engage-sub">' + esc(today ? t('engageStreakDone') : t('engageStreakDue')) + '</span></button>'
       + '<button type="button" class="tl-engage-tile" data-act="passport">'
-      + '<span class="tl-engage-big">🌍 ' + p.codes.length + '</span>'
+      + '<span class="tl-engage-big"><i class="ti ti-globe" aria-hidden="true"></i> ' + p.codes.length + '</span>'
       + '<span class="tl-engage-label">' + esc(t('engagePassportLabel')) + '</span>'
       + '<span class="tl-engage-sub tl-engage-flags">' + (p.codes.length ? p.codes.slice(-4).map(function (c) { return flagImg(c, 20); }).join('') : esc(t('engagePassportEmpty'))) + '</span></button>'
       + '<button type="button" class="tl-engage-tile tl-engage-likes" data-act="likes">'
-      + '<span class="tl-engage-big">❤️ ' + likes.count + '</span>'
+      + '<span class="tl-engage-big"><i class="ti ti-heart" aria-hidden="true"></i> ' + likes.count + '</span>'
       + '<span class="tl-engage-label">' + esc(t('engageLikesLabel')) + '</span>'
       + '<span class="tl-engage-sub">' + esc(likes.locked ? (likes.count ? t('engageLikesUnlock') : t('engageLikesNone')) : t('engageLikesSee')) + '</span></button>'
       + '</div>';

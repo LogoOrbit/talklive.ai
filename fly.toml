@@ -24,6 +24,9 @@ kill_timeout = 120
 [env]
   NODE_ENV = 'production'
   NODE_OPTIONS = '--max-old-space-size=400'
+  # Calls go through the relay only, so neither side ever learns the other's IP
+  # address. Audio is ~1MB a minute; Cloudflare's relay is free to 1,000GB a month.
+  TURN_FORCE_RELAY = '1'
   PORT = '8080'
   # How long shutdown waits for the final Postgres save (must stay under
   # kill_timeout above).

@@ -224,7 +224,7 @@ html:not(.tl-set-css) .tl-set-page { visibility: hidden; }
 .tl-set-nav-icon,
 .tl-set-pane-icon {
   --hue: #8b7cf6;
-  --hue2: #6c5ce7;
+  --hue2: #2a6fe8;
   flex: none;
   width: 40px;
   height: 40px;
@@ -592,8 +592,8 @@ html:not(.tl-set-css) .tl-set-page { visibility: hidden; }
 .tl-theme-art i:nth-child(1) { top: 0; left: 0; right: 0; height: 18%; border-radius: 0; background: var(--bar); }
 .tl-theme-art i:nth-child(2) { top: 34%; left: 10%; width: 48%; height: 17%; background: var(--a); }
 .tl-theme-art i:nth-child(3) { top: 60%; right: 10%; width: 40%; height: 17%; background: var(--b); }
-.tl-theme-opt[data-value="dark"] { --g1: #1c2240; --g2: #0b0f1a; --a: #6c5ce7; --b: #00d4ff; --bar: rgba(255, 255, 255, 0.07); }
-.tl-theme-opt[data-value="light"] { --g1: #ffffff; --g2: #e3e8f5; --a: #6c5ce7; --b: #0086b3; --bar: rgba(26, 32, 51, 0.07); }
+.tl-theme-opt[data-value="dark"] { --g1: #1c2240; --g2: #0b0f1a; --a: #2a6fe8; --b: #00d4ff; --bar: rgba(255, 255, 255, 0.07); }
+.tl-theme-opt[data-value="light"] { --g1: #ffffff; --g2: #e3e8f5; --a: #2a6fe8; --b: #0086b3; --bar: rgba(26, 32, 51, 0.07); }
 .tl-theme-opt[data-value="ocean"] { --g1: #0a3648; --g2: #03151f; --a: #00b4d8; --b: #90e0ef; --bar: rgba(255, 255, 255, 0.07); }
 .tl-theme-opt[data-value="sunset"] { --g1: #3d1a2e; --g2: #1a0b14; --a: #ff6b6b; --b: #ffa94d; --bar: rgba(255, 255, 255, 0.07); }
 
@@ -669,7 +669,7 @@ html:not(.tl-set-css) .tl-set-page { visibility: hidden; }
   border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--set-line));
   border-radius: 20px;
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, transparent), color-mix(in srgb, var(--accent-2) 8%, transparent)),
+    linear-gradient(var(--accent),var(--accent)),
     var(--set-card);
 }
 #sidePanelAuth.hidden { display: none; }
@@ -810,7 +810,7 @@ html:not(.tl-set-css) .tl-set-page { visibility: hidden; }
     bottom: 16px;
     width: 3px;
     border-radius: 3px;
-    background: linear-gradient(var(--accent), var(--accent-2));
+    background: linear-gradient(var(--accent),var(--accent));
   }
 }
 

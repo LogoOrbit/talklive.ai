@@ -3,31 +3,96 @@ package app.talklive.billing
 import android.content.Context
 import android.telephony.TelephonyManager
 import java.text.NumberFormat
-import java.util.Currency
 import java.util.Locale
-import kotlin.math.ceil
-import kotlin.math.log10
-import kotlin.math.pow
 
 /**
- * Prices in the person's own currency while Google Play cannot show its own
- * (Play's prices are already local when it can). The country comes from the
- * SIM or network, then the phone's region; amounts are approximate conversions
- * of the US price, rounded to a natural price point (PKR 2,799, ₹839, €9.99).
+ * Plus prices for the person's country, shown while Google Play cannot list
+ * its own (Play's prices are already local when it can). The same table the
+ * website and Stripe use: server/pricing-table.json. Prices are set for each
+ * market, not converted from dollars. The country comes from the SIM or
+ * network, then the phone's region.
  */
 object LocalPrice {
-    // US dollar -> local, approximate. Currencies not listed stay in dollars.
-    private val RATES = mapOf(
-        "PKR" to 280.0, "INR" to 84.0, "BDT" to 120.0, "NPR" to 134.0, "LKR" to 300.0,
-        "IDR" to 16000.0, "PHP" to 58.0, "VND" to 25000.0, "THB" to 35.0, "MYR" to 4.5,
-        "SGD" to 1.34, "HKD" to 7.8, "TWD" to 32.0, "JPY" to 152.0, "KRW" to 1380.0, "CNY" to 7.2,
-        "EUR" to 0.92, "GBP" to 0.78, "CHF" to 0.88, "SEK" to 10.5, "NOK" to 10.8, "DKK" to 6.9,
-        "PLN" to 4.0, "CZK" to 23.0, "HUF" to 365.0, "RON" to 4.6, "TRY" to 34.0, "UAH" to 41.0, "RUB" to 95.0,
-        "CAD" to 1.38, "AUD" to 1.52, "NZD" to 1.66, "MXN" to 19.0, "BRL" to 5.6, "COP" to 4200.0,
-        "CLP" to 950.0, "PEN" to 3.75, "NGN" to 1600.0, "KES" to 129.0, "ZAR" to 18.0, "GHS" to 15.5,
-        "EGP" to 49.0, "MAD" to 10.0, "DZD" to 134.0, "SAR" to 3.75, "AED" to 3.67, "QAR" to 3.64,
-        "KWD" to 0.31, "JOD" to 0.71, "IQD" to 1310.0, "ILS" to 3.7,
+    private class P(val currency: String, val monthly: Double, val d1: Double, val d7: Double, val d15: Double)
+
+    // Generated from server/pricing-table.json - edit there, then copy across.
+    private val TABLE = mapOf(
+        "AE" to P("AED", 35.0, 7.0, 18.0, 25.0),
+        "AF" to P("AFN", 149.0, 25.0, 69.0, 99.0),
+        "AT" to P("EUR", 9.99, 1.99, 4.99, 6.99),
+        "AU" to P("AUD", 14.99, 2.99, 7.49, 10.49),
+        "BD" to P("BDT", 249.0, 39.0, 99.0, 169.0),
+        "BE" to P("EUR", 9.99, 1.99, 4.99, 6.99),
+        "BR" to P("BRL", 19.9, 3.9, 9.9, 14.9),
+        "CA" to P("CAD", 12.99, 2.49, 6.49, 8.99),
+        "CH" to P("CHF", 9.9, 1.9, 4.9, 6.9),
+        "CL" to P("CLP", 4490.0, 890.0, 2290.0, 3290.0),
+        "CN" to P("CNY", 35.0, 6.0, 18.0, 25.0),
+        "CO" to P("COP", 19900.0, 3900.0, 9900.0, 14900.0),
+        "CY" to P("EUR", 9.99, 1.99, 4.99, 6.99),
+        "CZ" to P("CZK", 119.0, 25.0, 59.0, 85.0),
+        "DE" to P("EUR", 9.99, 1.99, 4.99, 6.99),
+        "DK" to P("DKK", 69.0, 13.0, 35.0, 49.0),
+        "DZ" to P("DZD", 399.0, 59.0, 179.0, 269.0),
+        "EE" to P("EUR", 9.99, 1.99, 4.99, 6.99),
+        "EG" to P("EGP", 99.0, 15.0, 45.0, 69.0),
+        "ES" to P("EUR", 9.99, 1.99, 4.99, 6.99),
+        "FI" to P("EUR", 9.99, 1.99, 4.99, 6.99),
+        "FR" to P("EUR", 9.99, 1.99, 4.99, 6.99),
+        "GB" to P("GBP", 7.99, 1.49, 3.99, 5.49),
+        "GH" to P("GHS", 35.0, 5.0, 15.0, 25.0),
+        "GR" to P("EUR", 9.99, 1.99, 4.99, 6.99),
+        "HK" to P("HKD", 78.0, 15.0, 38.0, 55.0),
+        "HR" to P("EUR", 9.99, 1.99, 4.99, 6.99),
+        "HU" to P("HUF", 1790.0, 350.0, 890.0, 1290.0),
+        "ID" to P("IDR", 35000.0, 5000.0, 15000.0, 25000.0),
+        "IE" to P("EUR", 9.99, 1.99, 4.99, 6.99),
+        "IL" to P("ILS", 35.0, 7.0, 18.0, 25.0),
+        "IN" to P("INR", 199.0, 29.0, 79.0, 129.0),
+        "IQ" to P("IQD", 3500.0, 500.0, 1500.0, 2500.0),
+        "IT" to P("EUR", 9.99, 1.99, 4.99, 6.99),
+        "JP" to P("JPY", 1480.0, 300.0, 750.0, 1050.0),
+        "KE" to P("KES", 299.0, 49.0, 129.0, 199.0),
+        "KR" to P("KRW", 12900.0, 2500.0, 6500.0, 8900.0),
+        "KW" to P("KWD", 2.9, 0.6, 1.5, 2.1),
+        "LK" to P("LKR", 699.0, 99.0, 299.0, 449.0),
+        "LT" to P("EUR", 9.99, 1.99, 4.99, 6.99),
+        "LU" to P("EUR", 9.99, 1.99, 4.99, 6.99),
+        "LV" to P("EUR", 9.99, 1.99, 4.99, 6.99),
+        "MA" to P("MAD", 29.0, 5.0, 13.0, 19.0),
+        "MT" to P("EUR", 9.99, 1.99, 4.99, 6.99),
+        "MX" to P("MXN", 89.0, 19.0, 45.0, 65.0),
+        "MY" to P("MYR", 19.9, 3.9, 9.9, 14.9),
+        "NG" to P("NGN", 2900.0, 450.0, 1300.0, 1900.0),
+        "NL" to P("EUR", 9.99, 1.99, 4.99, 6.99),
+        "NO" to P("NOK", 99.0, 19.0, 49.0, 69.0),
+        "NP" to P("NPR", 299.0, 39.0, 129.0, 199.0),
+        "NZ" to P("NZD", 15.99, 2.99, 7.99, 10.99),
+        "PE" to P("PEN", 17.9, 3.5, 8.9, 12.9),
+        "PH" to P("PHP", 129.0, 19.0, 59.0, 89.0),
+        "PK" to P("PKR", 599.0, 79.0, 249.0, 399.0),
+        "PL" to P("PLN", 19.99, 3.99, 9.99, 14.99),
+        "PT" to P("EUR", 9.99, 1.99, 4.99, 6.99),
+        "QA" to P("QAR", 35.0, 7.0, 18.0, 25.0),
+        "RO" to P("RON", 22.99, 4.49, 11.99, 16.99),
+        "RU" to P("RUB", 449.0, 89.0, 229.0, 329.0),
+        "SA" to P("SAR", 35.0, 7.0, 18.0, 25.0),
+        "SE" to P("SEK", 99.0, 19.0, 49.0, 69.0),
+        "SG" to P("SGD", 12.9, 2.5, 6.5, 8.9),
+        "SI" to P("EUR", 9.99, 1.99, 4.99, 6.99),
+        "SK" to P("EUR", 9.99, 1.99, 4.99, 6.99),
+        "TH" to P("THB", 159.0, 29.0, 79.0, 119.0),
+        "TR" to P("TRY", 149.0, 29.0, 79.0, 109.0),
+        "TW" to P("TWD", 290.0, 59.0, 149.0, 209.0),
+        "UA" to P("UAH", 199.0, 39.0, 99.0, 149.0),
+        "UG" to P("UGX", 7900.0, 1200.0, 3500.0, 5500.0),
+        "US" to P("USD", 9.99, 1.99, 4.99, 6.99),
+        "VN" to P("VND", 59000.0, 9000.0, 25000.0, 39000.0),
+        "ZA" to P("ZAR", 89.0, 17.0, 45.0, 65.0),
     )
+    private val LOW = setOf("IR", "ET", "TZ", "SD", "YE", "SY", "MM", "KH", "LA", "ZM", "ZW", "MW", "RW", "CM", "SN", "CI", "ML", "BF", "NE", "TD", "SO", "MZ", "MG", "BJ", "TG", "HT", "BO", "HN", "NI", "VE", "UZ", "KG", "TJ", "TM", "AZ", "GE", "AM", "MD", "BY", "TN", "LY", "LB", "JO", "PS", "CU")
+    private val DEFAULT = P("USD", 9.99, 1.99, 4.99, 6.99)
+    private val LOW_PRICE = P("USD", 1.99, 0.29, 0.99, 1.49)
 
     @Volatile private var cachedCountry: String? = null
 
@@ -40,35 +105,34 @@ object LocalPrice {
         return c
     }
 
-    /** The currency people in this phone's country pay in, if we convert to it. */
-    fun currency(context: Context?): String {
-        val code = runCatching { Currency.getInstance(Locale("", country(context))).currencyCode }.getOrNull()
-        return if (code != null && code in RATES) code else "USD"
-    }
+    private fun row(context: Context?): P = country(context).let { TABLE[it] ?: if (it in LOW) LOW_PRICE else DEFAULT }
 
-    /** A US-dollar price in local money: (amount, currency). */
+    /** The currency prices are shown in for this phone's country. */
+    fun currency(context: Context?): String = row(context).currency
+
+    /**
+     * The local price for one of the US list prices: 10 is the monthly plan,
+     * and 2, 5 and 7 are the 1, 7 and 15-day passes.
+     */
     fun amount(context: Context?, usd: Double): Pair<Double, String> {
-        val cur = currency(context)
-        return if (cur == "USD") usd to "USD" else nice(usd * (RATES[cur] ?: 1.0), cur) to cur
+        val r = row(context)
+        val a = when {
+            usd >= 8.0 -> r.monthly
+            usd >= 6.0 -> r.d15
+            usd >= 4.0 -> r.d7
+            else -> r.d1
+        }
+        return a to r.currency
     }
 
-    /** A US-dollar price shown in local money, e.g. 10.0 -> "PKR 2,799". */
+    /** A list price shown in local money, e.g. 10.0 -> "PKR 599". */
     fun of(context: Context?, usd: Double): String = amount(context, usd).let { (a, c) -> format(a, c) }
 
     /** A pass priced locally, for when Play cannot list its own. */
     fun pass(context: Context?, id: String, days: Int, usd: Double): PlusPass =
         amount(context, usd).let { (a, c) -> PlusPass(id, days, format(a, c), (a * 1_000_000).toLong(), c) }
 
-    /** Rounds up to a natural price point: 9.2 -> 9.99, 2800 -> 2,799, 839.4 -> 839. */
-    private fun nice(amount: Double, cur: String): Double {
-        val decimals = runCatching { Currency.getInstance(cur).defaultFractionDigits }.getOrDefault(2)
-        if (decimals > 0 && amount < 100) return ceil(amount) - 0.01
-        val step = 10.0.pow(maxOf(0.0, ceil(log10(amount)) - 2))
-        val up = ceil(amount / step) * step
-        return if (up >= 100) up - 1 else up
-    }
-
-    /** "$10", "PKR 2,799", "€9.99": the code in front for anything but dollars. */
+    /** "$9.99", "PKR 599", "EUR 9.99": the code in front for anything but dollars. */
     fun format(amount: Double, cur: String, decimals: Int? = null): String {
         val fd = decimals ?: if (amount % 1.0 == 0.0) 0 else 2
         val nf = NumberFormat.getNumberInstance(Locale.getDefault()).apply {
