@@ -237,7 +237,10 @@
         calls: prev.calls, countries: prev.countries, minutes: Math.max(1, Math.round(prev.longest / 60)),
       })) + '</span><button type="button" class="tl-engage-x" data-act="recap" aria-label="' + esc(t('close')) + '">&times;</button></div>';
     }
-    html += '<div class="tl-engage-tiles">'
+    // Someone who has not talked to anyone yet has three zeros to look at; the
+    // tiles appear with their first streak day, country or like.
+    var fresh = !s.count && !s.lost && !p.codes.length && !likes.count;
+    if (!fresh) html += '<div class="tl-engage-tiles">'
       + '<button type="button" class="tl-engage-tile' + (today ? ' is-done' : (s.count ? ' is-due' : '')) + '" data-act="streak">'
       + '<span class="tl-engage-big">🔥 ' + s.count + '</span>'
       + '<span class="tl-engage-label">' + esc(t('engageStreakLabel')) + '</span>'
@@ -250,8 +253,8 @@
       + '<span class="tl-engage-big">❤️ ' + likes.count + '</span>'
       + '<span class="tl-engage-label">' + esc(t('engageLikesLabel')) + '</span>'
       + '<span class="tl-engage-sub">' + esc(likes.locked ? (likes.count ? t('engageLikesUnlock') : t('engageLikesNone')) : t('engageLikesSee')) + '</span></button>'
-      + '</div>'
-      + '<div class="tl-engage-q"><small>' + esc(t('engageQuestionLabel')) + '</small><span>' + esc(todaysQuestion()) + '</span></div>';
+      + '</div>';
+    html += '<div class="tl-engage-q"><small>' + esc(t('engageQuestionLabel')) + '</small><span>' + esc(todaysQuestion()) + '</span></div>';
     strip.innerHTML = html;
   }
 
