@@ -102,6 +102,8 @@ fun PrimaryButton(
     icon: ImageVector? = null,
     shape: androidx.compose.ui.graphics.Shape = CircleShape,
     done: Boolean = false,
+    // A full-colour mark (the Google logo) in front of the label, on a white disc.
+    leading: (@Composable () -> Unit)? = null,
 ) {
     val haptics = LocalHapticFeedback.current
     val source = remember { MutableInteractionSource() }
@@ -137,6 +139,10 @@ fun PrimaryButton(
                     2 -> Icon(Icons.Rounded.Check, null, tint = Color.White, modifier = Modifier.size(26.dp))
                     1 -> CircularProgressIndicator(Modifier.size(24.dp), color = Color.White, strokeWidth = 2.5.dp)
                     else -> Row(verticalAlignment = Alignment.CenterVertically) {
+                        leading?.let {
+                            Box(Modifier.size(28.dp).background(Color.White, CircleShape), contentAlignment = Alignment.Center) { it() }
+                            Spacer(Modifier.width(10.dp))
+                        }
                         icon?.let { Icon(it, null, tint = Color.White); Spacer(Modifier.width(10.dp)) }
                         Text(text, color = Color.White, style = MaterialTheme.typography.labelLarge)
                     }

@@ -242,7 +242,7 @@ fun TextChatScreen(
                                 color = MaterialTheme.colorScheme.primaryContainer,
                             ) {
                                 Text(
-                                    "${q.emoji}  ${q.text}",
+                                    q.text,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),

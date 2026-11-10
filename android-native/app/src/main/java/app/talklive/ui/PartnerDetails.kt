@@ -39,7 +39,7 @@ fun speaksMyLanguage(p: Partner): Boolean = p.lang != null && p.lang.equals(Loca
 fun partnerLine(p: Partner): String {
     val there = partnerLocalTime(p)?.let { androidx.compose.ui.res.stringResource(app.talklive.R.string.time_there, it) }
     val lang = if (speaksMyLanguage(p)) androidx.compose.ui.res.stringResource(app.talklive.R.string.speaks_your_language) else null
-    return listOfNotNull(listOfNotNull(flag(p.countryCode), p.country).joinToString(" ").ifBlank { null }, there, lang).joinToString("  ·  ")
+    return listOfNotNull(listOfNotNull(flag(p.countryCode), p.country).joinToString(" ").ifBlank { null }, there, lang).joinToString(" · ")
 }
 
 @OptIn(ExperimentalLayoutApi::class)

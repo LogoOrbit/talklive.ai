@@ -91,9 +91,9 @@ fun AuroraBackground(modifier: Modifier = Modifier, content: @Composable () -> U
             val w = size.width; val h = size.height
             val pa = if (still) 0.3f else a
             val pb = if (still) 0.6f else b
-            drawCircle(BrandViolet.copy(alpha = if (dark) 0.34f else 0.22f), radius = w * 0.62f, center = Offset(w * (0.15f + 0.35f * pa), h * (0.18f + 0.12f * pb)))
+            drawCircle(Color(0xFF2A6FE8).copy(alpha = if (dark) 0.30f else 0.20f), radius = w * 0.62f, center = Offset(w * (0.15f + 0.35f * pa), h * (0.18f + 0.12f * pb)))
             drawCircle(BrandTeal.copy(alpha = if (dark) 0.26f else 0.18f), radius = w * 0.55f, center = Offset(w * (0.9f - 0.3f * pb), h * (0.42f + 0.1f * pa)))
-            drawCircle(Color(0xFFE879F9).copy(alpha = if (dark) 0.12f else 0.10f), radius = w * 0.4f, center = Offset(w * (0.4f + 0.2f * pb), h * (0.62f - 0.08f * pa)))
+            drawCircle(BrandTeal.copy(alpha = if (dark) 0.12f else 0.10f), radius = w * 0.4f, center = Offset(w * (0.4f + 0.2f * pb), h * (0.62f - 0.08f * pa)))
         }
         content()
     }
@@ -242,6 +242,7 @@ internal fun MethodsScreen(vm: AuthViewModel, onBack: (() -> Unit)?, onEmail: ()
                 PrimaryButton(
                     stringResource(R.string.continue_google), onClick = { vm.google(context) }, loading = vm.googleBusy,
                     shape = RoundedCornerShape(InnerRadius),
+                    leading = { androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(R.drawable.ic_google), null, Modifier.size(18.dp)) },
                 )
                 SecondaryButton(
                     text = stringResource(R.string.signup_email), onClick = onEmail,

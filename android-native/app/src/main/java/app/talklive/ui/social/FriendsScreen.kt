@@ -369,7 +369,7 @@ private fun MetCard(
 @Composable
 private fun FriendRow(p: Person, modifier: Modifier, onCall: () -> Unit, onChat: () -> Unit, onProfile: () -> Unit = {}, onBell: (() -> Unit)? = null) {
     Row(modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.clip(CircleShape).clickable(onClick = onProfile)) { PersonAvatar(p, 52.dp) }
+        Box(Modifier.clickable(interactionSource = null, indication = null, onClick = onProfile)) { PersonAvatar(p, 52.dp) }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
