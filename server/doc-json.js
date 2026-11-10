@@ -36,16 +36,45 @@ function listCache(map) {
   return { map, json: new Map(), prevTouched: new Set(), misses: 0 };
 }
 
+// Everything below writes JSON to a sink: an object with push(string). A plain
+// array works (join it for the text); a Writer hands the text on in groups as
+// it is produced, so the whole document never exists in memory at once. At
+// ~35MB, the document as one string plus the buffer written to disk was over
+// 100MB of memory on every save.
+class Writer {
+  constructor(write, size = 512 * 1024) {
+    this.write = write;
+    this.size = size;
+    this.buf = [];
+    this.n = 0;
+    this.bytes = 0;
+  }
+  push(s) {
+    this.buf.push(s);
+    this.n += s.length;
+    if (this.n >= this.size) this.flush();
+  }
+  flush() {
+    if (!this.buf.length) return;
+    const group = this.buf.join('');
+    this.buf = [];
+    this.n = 0;
+    this.bytes += group.length;
+    this.write(group);
+  }
+}
+
 // Serialize a plain object of key -> list, reusing cached JSON where safe.
 // Each cache entry holds the finished `"key":[...]` piece, so a reused list
-// costs one array slot and the final join.
-function cachedObject(obj, c, full) {
+// costs one push.
+function cachedObject(obj, c, full, out) {
   const touched = c.map.touched;
   c.map.touched = new Set();
   const prev = c.prevTouched;
   c.prevTouched = touched;
   const next = new Map();
-  const parts = [];
+  out.push('{');
+  let first = true;
   for (const k of Object.keys(obj)) {
     const list = obj[k];
     const hit = c.json.get(k);
@@ -60,33 +89,80 @@ function cachedObject(obj, c, full) {
       if (clean && piece !== hit.piece) c.misses += 1;
     }
     next.set(k, { ref: list, piece });
-    parts.push(piece);
+    out.push(first ? piece : ',' + piece);
+    first = false;
   }
+  out.push('}');
   c.json = next;
-  return '{' + parts.join(',') + '}';
+}
+
+// Writes `prefix` + JSON.stringify(v) to `out`, exactly, and returns true - or
+// writes nothing and returns false for a value JSON leaves out (undefined, a
+// function). Plain objects and arrays are walked `depth` levels down so a big
+// section goes out a record at a time instead of as one multi-megabyte string.
+function emit(out, prefix, v, depth) {
+  if (depth > 0 && v && typeof v === 'object' && typeof v.toJSON !== 'function') {
+    if (Array.isArray(v)) {
+      out.push(prefix + '[');
+      for (let i = 0; i < v.length; i++) {
+        if (!emit(out, i ? ',' : '', v[i], depth - 1)) out.push(i ? ',null' : 'null');
+      }
+      out.push(']');
+      return true;
+    }
+    const proto = Object.getPrototypeOf(v);
+    if (proto === Object.prototype || proto === null) {
+      out.push(prefix + '{');
+      let first = true;
+      for (const k of Object.keys(v)) {
+        if (emit(out, (first ? '' : ',') + JSON.stringify(k) + ':', v[k], depth - 1)) first = false;
+      }
+      out.push('}');
+      return true;
+    }
+  }
+  const j = JSON.stringify(v);
+  if (j === undefined) return false;
+  out.push(prefix + j);
+  return true;
+}
+
+// How deep a section is split: one piece per record (section -> record).
+const SPLIT_DEPTH = 1;
+
+// Writes JSON.stringify(doc) to `out`, with doc[outer][field] served from
+// `caches[field]`.
+function serializeTo(out, doc, outer, caches, full) {
+  out.push('{');
+  let first = true;
+  for (const k of Object.keys(doc)) {
+    const v = doc[k];
+    const prefix = (first ? '' : ',') + JSON.stringify(k) + ':';
+    if (k === outer && v && typeof v === 'object' && !Array.isArray(v) && caches) {
+      out.push(prefix + '{');
+      let firstField = true;
+      for (const f of Object.keys(v)) {
+        const fv = v[f];
+        const c = caches[f];
+        const fp = (firstField ? '' : ',') + JSON.stringify(f) + ':';
+        if (c && fv && typeof fv === 'object' && !Array.isArray(fv)) {
+          out.push(fp);
+          cachedObject(fv, c, full, out);
+          firstField = false;
+        } else if (emit(out, fp, fv, SPLIT_DEPTH)) firstField = false;
+      }
+      out.push('}');
+      first = false;
+    } else if (emit(out, prefix, v, SPLIT_DEPTH)) first = false;
+  }
+  out.push('}');
+  if (typeof out.flush === 'function') out.flush();
+  return out;
 }
 
 // JSON.stringify(doc), with doc[outer][field] served from `caches[field]`.
 function serialize(doc, outer, caches, full) {
-  const parts = [];
-  for (const k of Object.keys(doc)) {
-    const v = doc[k];
-    let j;
-    if (k === outer && v && typeof v === 'object' && !Array.isArray(v) && caches) {
-      const inner = [];
-      for (const f of Object.keys(v)) {
-        const fv = v[f];
-        const c = caches[f];
-        const fj = c && fv && typeof fv === 'object' && !Array.isArray(fv) ? cachedObject(fv, c, full) : JSON.stringify(fv);
-        if (fj !== undefined) inner.push(JSON.stringify(f) + ':' + fj);
-      }
-      j = '{' + inner.join(',') + '}';
-    } else {
-      j = JSON.stringify(v);
-    }
-    if (j !== undefined) parts.push(JSON.stringify(k) + ':' + j);
-  }
-  return '{' + parts.join(',') + '}';
+  return serializeTo([], doc, outer, caches, full).join('');
 }
 
-module.exports = { TrackedMap, listCache, serialize };
+module.exports = { TrackedMap, listCache, serialize, serializeTo, Writer };

@@ -17,6 +17,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const os = require('os');
 const docJson = require('./doc-json');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
@@ -937,7 +938,7 @@ async function connectPg(atBoot) {
     pgChatsSent = new Map();
     for (const [pair, msgs] of Object.entries((data.social || {}).friendChats || {})) {
       const json = JSON.stringify(msgs);
-      if (json !== undefined) pgChatsSent.set(pair, json);
+      if (json !== undefined) pgChatsSent.set(pair, chatMark(json));
     }
   } else if (verdict !== 'push-local') pgChatsSent = null;
   pgConfirmedRev = confirmedRev || revOf(data);
@@ -1023,9 +1024,18 @@ const FULL_SAVE_EVERY_MS = Number(process.env.FULL_SAVE_EVERY_MS)
   || (process.env.NODE_ENV === 'production' ? 10 * 60 * 1000 : 60 * 1000);
 let lastFullSaveAt = 0;
 let socialCaches = null;
-function serializeData(full) {
+// Writes the document to `file` as it is serialized, half a megabyte at a time:
+// neither the whole text nor a whole-file buffer is ever held in memory (see
+// docJson.Writer). Synchronous, so the file is one consistent snapshot.
+function serializeData(full, file) {
   if (full || !socialCaches) lastFullSaveAt = Date.now();
-  const s = docJson.serialize(data, 'social', socialCaches, full || !socialCaches);
+  const fd = fs.openSync(file, 'w');
+  let s;
+  try {
+    s = docJson.serializeTo(new docJson.Writer((group) => fs.writeSync(fd, group)), data, 'social', socialCaches, full || !socialCaches);
+  } finally {
+    fs.closeSync(fd);
+  }
   if (socialCaches) {
     const misses = socialCaches.friendChats.misses + socialCaches.chatHistory.misses;
     if (misses && misses !== backendStatus.saveCacheMisses) {
@@ -1041,9 +1051,6 @@ function serializeData(full) {
 // background write can never put an older document over a newer one.
 let mirrorPrimed = false;
 let mirrorSeq = 0;
-let mirrorDoneSeq = 0;
-let mirrorBusy = false;
-let mirrorAgain = false;
 function writeMirror(shrinking, background) {
   if (mirrorBlocked) return false;
   const full = !background || Date.now() - lastFullSaveAt >= FULL_SAVE_EVERY_MS;
@@ -1062,38 +1069,25 @@ function writeMirror(shrinking, background) {
     }
     mirrorPrimed = true;
     if (background && !shrinking) {
-      // One background write at a time; a save that lands meanwhile is
-      // written once this one finishes, with whatever `data` is by then.
-      if (mirrorBusy) { mirrorAgain = true; return true; }
       const seq = ++mirrorSeq;
       const tmp = `${DATA_FILE}.tmp-${process.pid}-${seq}`;
-      const payload = serializeData(full);
-      mirrorBusy = true;
-      fs.promises.writeFile(tmp, payload)
-        .then(() => {
-          if (seq > mirrorDoneSeq) {
-            fs.renameSync(tmp, DATA_FILE);
-            mirrorDoneSeq = seq;
-            if (Date.now() - lastBackupAt >= BACKUP_EVERY_MS) writeBackup();
-          } else {
-            fs.unlink(tmp, () => {});
-          }
-        })
-        .catch((err) => {
-          console.error('[store] failed to save to disk:', err.message);
-          fs.unlink(tmp, () => {});
-        })
-        .finally(() => {
-          mirrorBusy = false;
-          if (mirrorAgain) { mirrorAgain = false; save(); }
-        });
+      // Written as it is serialized, so there is nothing left to hand to a
+      // background write: the file is complete when this returns.
+      try {
+        serializeData(full, tmp);
+        fs.renameSync(tmp, DATA_FILE);
+      } catch (err) {
+        console.error('[store] failed to save to disk:', err.message);
+        fs.unlink(tmp, () => {});
+        return false;
+      }
+      if (Date.now() - lastBackupAt >= BACKUP_EVERY_MS) writeBackup();
       return true;
     }
     const seq = ++mirrorSeq;
     const tmp = DATA_FILE + '.tmp';
-    fs.writeFileSync(tmp, serializeData(true));
+    serializeData(true, tmp);
     fs.renameSync(tmp, DATA_FILE);
-    mirrorDoneSeq = seq;
   } catch (err) {
     console.error('[store] failed to save to disk:', err.message);
     return false;
@@ -1164,6 +1158,9 @@ function persistPg() {
 // pair -> JSON last confirmed in friend_chats. null: unknown, so the next write
 // sends every conversation and removes rows for any that no longer exist.
 let pgChatsSent = null;
+function chatMark(json) {
+  return json.length + ':' + crypto.createHash('md5').update(json).digest('base64');
+}
 
 // Fill a document read from the row with the chats from the table.
 async function attachPgChats(doc) {
@@ -1181,11 +1178,25 @@ async function attachPgChats(doc) {
 async function pgWriteStore(guard) {
   const social = data.social || {};
   const { friendChats: chats = {}, ...socialRest } = social;
-  const payload = JSON.stringify({
-    ...data,
-    social: socialRest,
-    _meta: { ...(data._meta || {}), chatsTable: true },
-  });
+  // Sent a megabyte at a time into a staging table and put together inside the
+  // database: one $1 holding the whole document cost ~35MB as a string here,
+  // twice that while the driver copied it, on every save.
+  // The snapshot is taken synchronously into a scratch file (so it is one
+  // consistent version), then read back and sent a chunk at a time.
+  const scratch = path.join(os.tmpdir(), `talklive-pg-${process.pid}-${Date.now()}.json`);
+  {
+    const fd = fs.openSync(scratch, 'w');
+    try {
+      docJson.serializeTo(new docJson.Writer((group) => fs.writeSync(fd, group)), {
+        ...data,
+        social: socialRest,
+        _meta: { ...(data._meta || {}), chatsTable: true },
+      }, null, null, true);
+    } finally {
+      fs.closeSync(fd);
+    }
+  }
+  let payloadBytes = 0;
   const full = !pgChatsSent;
   const sentNow = new Map();
   const upPairs = [];
@@ -1194,30 +1205,46 @@ async function pgWriteStore(guard) {
   for (const pair of Object.keys(chats)) {
     const json = JSON.stringify(chats[pair]);
     if (json === undefined) continue;
-    sentNow.set(pair, json);
+    // Only a fingerprint of what was sent is kept, not a second copy of every chat.
+    const mark = chatMark(json);
+    sentNow.set(pair, mark);
     chatBytes += json.length;
-    if (full || pgChatsSent.get(pair) !== json) { upPairs.push(pair); upMsgs.push(json); }
+    if (full || pgChatsSent.get(pair) !== mark) { upPairs.push(pair); upMsgs.push(json); }
   }
   const gone = full ? null : [...pgChatsSent.keys()].filter((p) => !sentNow.has(p));
 
-  const client = await pgPool.connect();
+  let client;
+  try {
+    client = await pgPool.connect();
+  } catch (err) {
+    fs.unlink(scratch, () => {});
+    throw err;
+  }
   let rowCount = 0;
   try {
     await client.query('BEGIN');
+    await client.query('CREATE TEMP TABLE owner_store_parts (i int, part text) ON COMMIT DROP');
+    let i = 0;
+    // A utf8 stream never splits a character across two chunks.
+    for await (const group of fs.createReadStream(scratch, { encoding: 'utf8', highWaterMark: 1024 * 1024 })) {
+      payloadBytes += group.length;
+      await client.query('INSERT INTO owner_store_parts (i, part) VALUES ($1, $2)', [i++, group]);
+    }
+    const assembled = "(SELECT string_agg(part, '' ORDER BY i) FROM owner_store_parts)::jsonb";
     const r = guard
       ? await client.query(
-        `INSERT INTO owner_store (id, doc, updated_at) VALUES (1, $1, now())
-         ON CONFLICT (id) DO UPDATE SET doc = $1, updated_at = now()
-         WHERE owner_store.doc->'_meta'->>'writer' = $3
-            OR COALESCE((owner_store.doc->'_meta'->>'rev')::bigint, 0) <= $2`,
-        [payload, guard.confirmedRev, WRITER])
+        `INSERT INTO owner_store (id, doc, updated_at) SELECT 1, ${assembled}, now()
+         ON CONFLICT (id) DO UPDATE SET doc = EXCLUDED.doc, updated_at = now()
+         WHERE owner_store.doc->'_meta'->>'writer' = $2
+            OR COALESCE((owner_store.doc->'_meta'->>'rev')::bigint, 0) <= $1`,
+        [guard.confirmedRev, WRITER])
       : await client.query(
-        'INSERT INTO owner_store (id, doc, updated_at) VALUES (1, $1, now()) ON CONFLICT (id) DO UPDATE SET doc = $1, updated_at = now()',
-        [payload]);
+        `INSERT INTO owner_store (id, doc, updated_at) SELECT 1, ${assembled}, now()
+         ON CONFLICT (id) DO UPDATE SET doc = EXCLUDED.doc, updated_at = now()`);
     rowCount = r.rowCount;
     if (rowCount === 0) {
       await client.query('ROLLBACK');
-      return { rowCount, bytes: payload.length + chatBytes };
+      return { rowCount, bytes: payloadBytes + chatBytes };
     }
     if (full) {
       await client.query('DELETE FROM friend_chats WHERE NOT (pair = ANY($1::text[]))', [[...sentNow.keys()]]);
@@ -1241,8 +1268,9 @@ async function pgWriteStore(guard) {
     throw err;
   } finally {
     client.release();
+    fs.unlink(scratch, () => {});
   }
-  return { rowCount, bytes: payload.length + chatBytes };
+  return { rowCount, bytes: payloadBytes + chatBytes };
 }
 
 // Every Postgres save rewrites the whole document (megabytes, plus WAL), so
