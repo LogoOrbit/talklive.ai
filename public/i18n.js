@@ -160,7 +160,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "someone": "Someone",
     "catBilling": "Billing",
     "skipToContent": "Skip to main content",
-    "age": "TalkLive is only for people aged 18 and over.",
+    "age": "TalkLive is 18+ only.",
     "modeMembersOnly": "Only members can start a chat right now. Please log in or sign up to continue.",
     "modeVoicePaused": "Voice calls are paused for a short while. Text chat is still open at /chat.",
     "modeSignupsPaused": "New sign-ups are paused right now. Please try again later.",
