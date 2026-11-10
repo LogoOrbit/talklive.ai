@@ -34,8 +34,8 @@ android {
         applicationId = "app.talklive"
         minSdk = 26
         targetSdk = 36
-        versionCode = 124
-        versionName = "3.9.4"
+        versionCode = 125
+        versionName = "3.9.5"
         buildConfigField("String", "SERVER_URL", "\"https://talklive.app\"")
     }
 
