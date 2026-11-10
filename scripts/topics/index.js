@@ -18,6 +18,7 @@ const SLUGS = [
   'talk-to-strangers', 'random-voice-chat', 'random-text-chat', 'anonymous-chat', 'random-call',
   'talk-to-someone', 'late-night-chat', 'make-friends-online', 'practice-english-speaking',
   'language-exchange', 'voice-chat-vs-video-chat', 'omegle-alternative',
+  'ometv-alternative', 'chatroulette-alternative', 'monkey-app-alternative', 'emerald-chat-alternative',
   'how-it-works', 'safety', 'language-chat-guide', 'country-chat-guide', 'resources',
 ];
 const TOPICS = SLUGS.map((slug) => require(`./${slug}`));
@@ -38,6 +39,10 @@ const READING = {
   'language-chat-guide': ['small-talk-around-the-world', 'how-to-practise-a-language-by-speaking'],
   'country-chat-guide': ['small-talk-around-the-world', 'lonely-after-moving-abroad'],
   'omegle-alternative': ['what-happened-to-omegle', 'how-to-spot-a-bot-or-scam-in-random-chat'],
+  'ometv-alternative': ['what-happened-to-omegle', 'why-a-call-beats-texting'],
+  'chatroulette-alternative': ['what-happened-to-omegle', 'why-a-call-beats-texting'],
+  'monkey-app-alternative': ['what-happened-to-omegle', 'why-a-call-beats-texting'],
+  'emerald-chat-alternative': ['what-happened-to-omegle', 'why-a-call-beats-texting'],
   'voice-chat-vs-video-chat': ['why-a-call-beats-texting', 'phone-anxiety-how-to-get-comfortable-talking'],
   'safety': ['how-to-spot-a-bot-or-scam-in-random-chat', 'how-to-end-a-conversation'],
   'how-it-works': ['how-random-matchmaking-works', 'how-to-end-a-conversation'],

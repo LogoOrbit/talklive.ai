@@ -10,8 +10,8 @@
     "v": 3
   },
   "/anonymous-chat": {
-    "hash": "418d6690165a94a3",
-    "date": "2026-11-09",
+    "hash": "8692e1909bb19e61",
+    "date": "2026-11-10",
     "v": 3
   },
   "/ar/": {
@@ -131,6 +131,11 @@
   },
   "/bn/": {
     "hash": "7d097377e020a275",
+    "date": "2026-11-10",
+    "v": 3
+  },
+  "/chatroulette-alternative": {
+    "hash": "3e20dd8c0dd16a40",
     "date": "2026-11-10",
     "v": 3
   },
@@ -320,8 +325,8 @@
     "v": 3
   },
   "/country-chat-guide": {
-    "hash": "f12c855a23fcc492",
-    "date": "2026-10-18",
+    "hash": "dead40a9e19bfed8",
+    "date": "2026-11-10",
     "v": 3
   },
   "/de/": {
@@ -332,6 +337,11 @@
   "/delete-account": {
     "hash": "951e28ab9ae9dbbb",
     "date": "2026-11-09",
+    "v": 3
+  },
+  "/emerald-chat-alternative": {
+    "hash": "08a2e3d612164a20",
+    "date": "2026-11-10",
     "v": 3
   },
   "/es/": {
@@ -355,8 +365,8 @@
     "v": 3
   },
   "/how-it-works": {
-    "hash": "ca762e3bb46e215a",
-    "date": "2026-11-09",
+    "hash": "44edf55506cc9fdb",
+    "date": "2026-11-10",
     "v": 3
   },
   "/id/": {
@@ -380,13 +390,13 @@
     "v": 3
   },
   "/language-chat-guide": {
-    "hash": "dd0e237913fb426b",
-    "date": "2026-10-18",
+    "hash": "9bd81592ed0a79e5",
+    "date": "2026-11-10",
     "v": 3
   },
   "/language-exchange": {
-    "hash": "f5fc22270cace252",
-    "date": "2026-10-19",
+    "hash": "a26747d517d98ca0",
+    "date": "2026-11-10",
     "v": 3
   },
   "/languages/": {
@@ -395,23 +405,33 @@
     "v": 3
   },
   "/late-night-chat": {
-    "hash": "c7c883df19cf672b",
-    "date": "2026-11-09",
+    "hash": "885ac87d1b9b3b2f",
+    "date": "2026-11-10",
     "v": 3
   },
   "/make-friends-online": {
-    "hash": "585117b41d4ce85c",
-    "date": "2026-10-19",
+    "hash": "a140284e9237a2f9",
+    "date": "2026-11-10",
+    "v": 3
+  },
+  "/monkey-app-alternative": {
+    "hash": "16fd4763336ff49b",
+    "date": "2026-11-10",
     "v": 3
   },
   "/omegle-alternative": {
-    "hash": "15dae4df0c7db056",
-    "date": "2026-10-19",
+    "hash": "dde3e9a0f548a023",
+    "date": "2026-11-10",
+    "v": 3
+  },
+  "/ometv-alternative": {
+    "hash": "07e0b41ec4c6a340",
+    "date": "2026-11-10",
     "v": 3
   },
   "/practice-english-speaking": {
-    "hash": "5c2933c0c48b0501",
-    "date": "2026-10-19",
+    "hash": "aabea70af63077e8",
+    "date": "2026-11-10",
     "v": 3
   },
   "/pricing": {
@@ -430,18 +450,18 @@
     "v": 3
   },
   "/random-call": {
-    "hash": "d581edf242e8a494",
-    "date": "2026-10-19",
+    "hash": "e1106a132a356323",
+    "date": "2026-11-10",
     "v": 3
   },
   "/random-text-chat": {
-    "hash": "9881d69220a8757e",
-    "date": "2026-11-09",
+    "hash": "b33328e5395c7b72",
+    "date": "2026-11-10",
     "v": 3
   },
   "/random-voice-chat": {
-    "hash": "76e16de1ca5de5af",
-    "date": "2026-10-19",
+    "hash": "39da687da1490d83",
+    "date": "2026-11-10",
     "v": 3
   },
   "/refund": {
@@ -480,8 +500,8 @@
     "v": 3
   },
   "/resources": {
-    "hash": "b8e8fbb1ca211051",
-    "date": "2026-10-18",
+    "hash": "105fb4a1feb7ed73",
+    "date": "2026-11-10",
     "v": 3
   },
   "/ru/": {
@@ -490,18 +510,18 @@
     "v": 3
   },
   "/safety": {
-    "hash": "4b72b13c1b8fe452",
-    "date": "2026-11-09",
+    "hash": "0d472a955197daa7",
+    "date": "2026-11-10",
     "v": 3
   },
   "/talk-to-someone": {
-    "hash": "0e56a44618dc164f",
-    "date": "2026-10-18",
+    "hash": "1c3a2bc3e2d98621",
+    "date": "2026-11-10",
     "v": 3
   },
   "/talk-to-strangers": {
-    "hash": "93c4f14269da1514",
-    "date": "2026-10-19",
+    "hash": "56188bedf95a2b0d",
+    "date": "2026-11-10",
     "v": 3
   },
   "/terms": {
@@ -520,8 +540,8 @@
     "v": 3
   },
   "/voice-chat-vs-video-chat": {
-    "hash": "660d9cc2b4d0f86b",
-    "date": "2026-10-19",
+    "hash": "f491c2c0474576f4",
+    "date": "2026-11-10",
     "v": 3
   },
   "/what-is-talklive": {
