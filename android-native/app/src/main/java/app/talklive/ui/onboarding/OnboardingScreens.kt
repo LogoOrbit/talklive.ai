@@ -172,9 +172,10 @@ fun OnboardingFlow(vm: AuthViewModel, start: AuthRoute = AuthRoute.Choose, onClo
     ) { r ->
         when (r) {
             AuthRoute.Welcome -> WelcomeScreen(
-                onDone = { introPrefs.edit().putBoolean("intro_seen", true).apply(); go(AuthRoute.Choose) },
+                // Straight to the ways in: the old "Get started" screen between was one more tap for nothing.
+                onDone = { introPrefs.edit().putBoolean("intro_seen", true).apply(); go(AuthRoute.Methods) },
                 // "Get Plus" on the intro: carry on, and open Plus on arriving home.
-                onPlus = { introPrefs.edit().putBoolean("intro_seen", true).putBoolean("plus_after_intro", true).apply(); go(AuthRoute.Choose) },
+                onPlus = { introPrefs.edit().putBoolean("intro_seen", true).putBoolean("plus_after_intro", true).apply(); go(AuthRoute.Methods) },
             )
             AuthRoute.Choose -> StartScreen(onStart = { go(AuthRoute.Methods) }, onLogin = { go(AuthRoute.Login) })
             AuthRoute.Age -> AgeScreen(onBack = { vm.cancelGoogle(); guestAfterGate = false; go(AuthRoute.Methods) }) { adult ->
@@ -211,7 +212,6 @@ internal fun WelcomeScreen(onDone: () -> Unit, onPlus: () -> Unit = onDone) {
         listOf(
             // Page 0 is the welcome page (WelcomeHero); its slide is a placeholder.
             Slide(Icons.Rounded.Mic, R.string.welcome_hero_title, R.string.welcome_hero_body, all.take(2)),
-            Slide(Icons.Rounded.Shield, R.string.welcome_3_title, R.string.welcome_3_body, all.drop(10).take(3)),
             // Last page: TalkLive Plus (PlusIntroPage); its slide is a placeholder.
             Slide(Icons.Rounded.Public, R.string.intro_plus_title, R.string.intro_plus_title, emptyList()),
         )

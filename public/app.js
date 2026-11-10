@@ -1405,63 +1405,86 @@ socket.on('contact-consent', ({ on } = {}) => {
   if (contactSaveToggle) contactSaveToggle.checked = !!on;
 });
 
-// --- Sound effects (small synthesized tones, no audio files needed) ---
+// --- Sound effects -----------------------------------------------------------
+// Synthesised, so there are no audio files to download. Each sound is rendered
+// once into a buffer (bell-like notes with soft overtones, or a rising "bubble")
+// and then plays the instant it is asked for. The Android app renders the same
+// recipes (sound/Sounds.kt). A note is [hz, seconds, volume, delay, voice, hzTo]:
+// b = bell, s = soft sine, p = pluck, u = bubble gliding to hzTo.
 let soundEnabled = localStorage.getItem('talklive_sound') !== 'off';
 let sfxCtx = null;
+const SFX = {
+  tap: [[420, 0.055, 0.3, 0, 'u', 980]],
+  connect: [[392, 0.14, 0.2, 0, 'b'], [494, 0.14, 0.2, 0.07, 'b'], [587, 0.38, 0.22, 0.14, 'b']],
+  hangup: [[330, 0.16, 0.2, 0, 's'], [262, 0.3, 0.2, 0.13, 's']],
+  message: [[880, 0.09, 0.2, 0, 'b'], [1319, 0.3, 0.2, 0.07, 'b']],
+  send: [[600, 0.05, 0.26, 0, 'u', 1250]],
+  turn: [[784, 0.1, 0.18, 0, 's'], [1047, 0.2, 0.18, 0.09, 's']],
+  move: [[700, 0.045, 0.22, 0, 'p']],
+  win: [[523, 0.12, 0.2, 0, 'b'], [659, 0.12, 0.2, 0.09, 'b'], [784, 0.12, 0.2, 0.18, 'b'], [1047, 0.42, 0.22, 0.27, 'b']],
+  invite: [[587, 0.12, 0.2, 0, 'b'], [880, 0.28, 0.2, 0.1, 'b']],
+  friend: [[587, 0.1, 0.18, 0, 'b'], [784, 0.1, 0.18, 0.08, 'b'], [988, 0.1, 0.18, 0.16, 'b'], [1175, 0.4, 0.2, 0.24, 'b']],
+};
+const sfxBuf = {};
 
 function getSfxCtx() {
-  if (!sfxCtx) sfxCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (!sfxCtx) sfxCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
   return sfxCtx;
 }
 
-function playTone(freq, duration, type, volume, delay = 0) {
+function sfxRender(ctx, notes) {
+  const sr = ctx.sampleRate;
+  const buf = ctx.createBuffer(1, Math.ceil(sr * (Math.max(...notes.map((n) => n[3] + n[1])) + 0.02)), sr);
+  const d = buf.getChannelData(0);
+  for (const [hz, dur, vol, delay, v, hzTo] of notes) {
+    let ph = 0;
+    const at = Math.floor(delay * sr);
+    for (let i = 0, n = Math.floor(dur * sr); i < n; i++) {
+      const t = i / sr;
+      ph += 2 * Math.PI * (v === 'u' ? hz + (hzTo - hz) * (1 - Math.exp(-t / (dur * 0.35))) : hz) / sr;
+      const w = v === 'b' ? Math.sin(ph) + 0.38 * Math.sin(2 * ph) * Math.exp(-t * 18) + 0.16 * Math.sin(3.01 * ph) * Math.exp(-t * 30)
+        : v === 'p' ? 2 / Math.PI * Math.asin(Math.sin(ph)) : Math.sin(ph) + 0.15 * Math.sin(2 * ph);
+      // 3ms attack so nothing clicks; bells ring out, the rest fade faster.
+      d[at + i] += w * vol * Math.min(1, i / (0.003 * sr)) * Math.exp(-t * (v === 'b' ? 6.9 : 5) / dur);
+    }
+  }
+  return buf;
+}
+
+function sfx(name) {
   if (!soundEnabled) return;
   try {
     const ctx = getSfxCtx();
     if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-    const t0 = ctx.currentTime + delay;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = type;
-    osc.frequency.value = freq;
-    gain.gain.setValueAtTime(volume, t0);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start(t0);
-    osc.stop(t0 + duration + 0.02);
+    const src = ctx.createBufferSource();
+    src.buffer = sfxBuf[name] || (sfxBuf[name] = sfxRender(ctx, SFX[name]));
+    src.connect(ctx.destination);
+    src.start();
   } catch (e) {
     // AudioContext may be unavailable; non-critical
   }
 }
+// Browsers keep audio asleep until a gesture. The first touch wakes it and
+// renders every sound, so even the very first one is instant.
+window.addEventListener('pointerdown', () => {
+  if (!soundEnabled) return;
+  try {
+    const ctx = getSfxCtx();
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    for (const k in SFX) if (!sfxBuf[k]) sfxBuf[k] = sfxRender(ctx, SFX[k]);
+  } catch (e) { /* no audio */ }
+}, { once: true, capture: true });
 
-function playTapSound() { playTone(520, 0.08, 'square', 0.12); }
-function playConnectSound() { playTone(660, 0.12, 'sine', 0.18); playTone(880, 0.15, 'sine', 0.18, 0.12); }
-function playHangupSound() { playTone(320, 0.2, 'sine', 0.18); playTone(220, 0.25, 'sine', 0.18, 0.15); }
-// A bright, instantly recognizable two-note message chime: a quick high "ti"
-// that resolves up a fourth into a longer bell "ding". Deliberately crisp and
-// high-pitched so it is never confused with the warm, lower friend chime.
-function playMessageSound() {
-  playTone(1245, 0.06, 'triangle', 0.15);
-  playTone(1661, 0.20, 'sine', 0.15, 0.06);
-}
-// A crisp, tactile "whoosh" for sending - WhatsApp-style rising blip.
-function playSendSound() { playTone(660, 0.05, 'sine', 0.14); playTone(990, 0.07, 'sine', 0.13, 0.04); }
-// A soft two-note chime for "it's your turn" in the game.
-function playTurnSound() { playTone(784, 0.1, 'sine', 0.16); playTone(1046, 0.13, 'sine', 0.15, 0.1); }
-// Tic Tac Toe effects: a tick per move, a fanfare on win.
-function playMoveSound() { playTone(660, 0.05, 'triangle', 0.13); }
-function playWinSound() {
-  [523, 659, 784, 1046].forEach((f, i) => playTone(f, 0.16, 'sine', 0.17, i * 0.11));
-}
-function playInviteSound() { playTone(880, 0.09, 'sine', 0.15); playTone(1174, 0.11, 'sine', 0.14, 0.09); }
-// A warm, celebratory three-note rising arpeggio (D5 -> G5 -> D6) in a
-// rounder, lower register than the message chime. It "feels" like a reward,
-// so a new friend never sounds like an incoming message.
-function playFriendAddedSound() {
-  playTone(587, 0.11, 'sine', 0.17);
-  playTone(784, 0.11, 'sine', 0.16, 0.10);
-  playTone(1175, 0.26, 'triangle', 0.15, 0.20);
-}
+function playTapSound() { sfx('tap'); }
+function playConnectSound() { sfx('connect'); }
+function playHangupSound() { sfx('hangup'); }
+function playMessageSound() { sfx('message'); }
+function playSendSound() { sfx('send'); }
+function playTurnSound() { sfx('turn'); }
+function playMoveSound() { sfx('move'); }
+function playWinSound() { sfx('win'); }
+function playInviteSound() { sfx('invite'); }
+function playFriendAddedSound() { sfx('friend'); }
 
 function updateSoundToggleUi() {
   soundToggle.checked = soundEnabled;

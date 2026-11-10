@@ -2,8 +2,6 @@ package app.talklive.sound
 
 import android.content.Context
 import android.media.AudioAttributes
-import android.media.AudioFormat
-import android.media.AudioTrack
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,19 +14,22 @@ import javax.inject.Singleton
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.exp
-import kotlin.math.ln
 import kotlin.math.sin
 
 /**
- * The website's sound effects (public/app.js playTone and friends): short
- * synthesised tones, same notes and timings, rendered once and cached.
+ * TalkLive's sound effects, the same recipes as the website (public/app.js
+ * SFX): bell-like notes with soft overtones and rising "bubbles", synthesised
+ * here rather than shipped as files. Every sound is rendered once at start,
+ * written to the cache folder and loaded into a SoundPool, so playing one is a
+ * single call with no rendering and no audible delay.
  * On by default; Profile has a switch, like the website's Settings.
  */
 @Singleton
-class Sounds @Inject constructor(@ApplicationContext context: Context) {
+class Sounds @Inject constructor(@ApplicationContext private val context: Context) {
     enum class Fx { Tap, Pop, PopSoft, Connect, Hangup, Message, Send, Turn, Move, Win, Invite, FriendAdded }
 
-    private data class Tone(val freq: Double, val dur: Double, val wave: Char, val vol: Double, val delay: Double = 0.0)
+    /** [hz] for [dur] seconds at [vol], starting at [delay]. voice: b bell, s soft, p pluck, u bubble gliding to [hzTo]. */
+    private data class Note(val hz: Double, val dur: Double, val vol: Double, val delay: Double = 0.0, val voice: Char = 'b', val hzTo: Double = 0.0)
 
     private val prefs = context.getSharedPreferences("ui", Context.MODE_PRIVATE)
     private val _enabled = MutableStateFlow(prefs.getBoolean("sounds", true))
@@ -44,102 +45,94 @@ class Sounds @Inject constructor(@ApplicationContext context: Context) {
     }.also { prefs.registerOnSharedPreferenceChangeListener(it) }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val cache = HashMap<Fx, ShortArray>()
+    private val pool: android.media.SoundPool = android.media.SoundPool.Builder()
+        .setMaxStreams(4)
+        .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build())
+        .build()
+    /** Fx -> SoundPool id, filled in as each one finishes loading. */
+    private val ready = java.util.concurrent.ConcurrentHashMap<Fx, Int>()
+    private val loading = java.util.concurrent.ConcurrentHashMap<Int, Fx>()
+    @Volatile private var warmed = false
 
-    private fun tones(fx: Fx): List<Tone> = when (fx) {
-        Fx.Tap -> listOf(Tone(520.0, 0.08, 'q', 0.12))
-        Fx.Pop, Fx.PopSoft -> emptyList() // bubbles, rendered by bubble()
-        Fx.Connect -> listOf(Tone(660.0, 0.12, 's', 0.18), Tone(880.0, 0.15, 's', 0.18, 0.12))
-        Fx.Hangup -> listOf(Tone(320.0, 0.2, 's', 0.18), Tone(220.0, 0.25, 's', 0.18, 0.15))
-        Fx.Message -> listOf(Tone(1245.0, 0.06, 't', 0.15), Tone(1661.0, 0.20, 's', 0.15, 0.06))
-        Fx.Send -> listOf(Tone(660.0, 0.05, 's', 0.14), Tone(990.0, 0.07, 's', 0.13, 0.04))
-        Fx.Turn -> listOf(Tone(784.0, 0.1, 's', 0.16), Tone(1046.0, 0.13, 's', 0.15, 0.1))
-        Fx.Move -> listOf(Tone(660.0, 0.05, 't', 0.13))
-        Fx.Win -> listOf(523.0, 659.0, 784.0, 1046.0).mapIndexed { i, f -> Tone(f, 0.16, 's', 0.17, i * 0.11) }
-        Fx.Invite -> listOf(Tone(880.0, 0.09, 's', 0.15), Tone(1174.0, 0.11, 's', 0.14, 0.09))
-        Fx.FriendAdded -> listOf(Tone(587.0, 0.11, 's', 0.17), Tone(784.0, 0.11, 's', 0.16, 0.10), Tone(1175.0, 0.26, 't', 0.15, 0.20))
+    private fun notes(fx: Fx): List<Note> = when (fx) {
+        Fx.Tap -> listOf(Note(420.0, 0.055, 0.3, voice = 'u', hzTo = 980.0))
+        Fx.Pop -> listOf(Note(380.0, 0.075, 0.5, voice = 'u', hzTo = 1150.0))
+        Fx.PopSoft -> listOf(Note(520.0, 0.05, 0.34, voice = 'u', hzTo = 1350.0))
+        Fx.Connect -> listOf(Note(392.0, 0.14, 0.2), Note(494.0, 0.14, 0.2, 0.07), Note(587.0, 0.38, 0.22, 0.14))
+        Fx.Hangup -> listOf(Note(330.0, 0.16, 0.2, voice = 's'), Note(262.0, 0.3, 0.2, 0.13, 's'))
+        Fx.Message -> listOf(Note(880.0, 0.09, 0.2), Note(1319.0, 0.3, 0.2, 0.07))
+        Fx.Send -> listOf(Note(600.0, 0.05, 0.26, voice = 'u', hzTo = 1250.0))
+        Fx.Turn -> listOf(Note(784.0, 0.1, 0.18, voice = 's'), Note(1047.0, 0.2, 0.18, 0.09, 's'))
+        Fx.Move -> listOf(Note(700.0, 0.045, 0.22, voice = 'p'))
+        Fx.Win -> listOf(Note(523.0, 0.12, 0.2), Note(659.0, 0.12, 0.2, 0.09), Note(784.0, 0.12, 0.2, 0.18), Note(1047.0, 0.42, 0.22, 0.27))
+        Fx.Invite -> listOf(Note(587.0, 0.12, 0.2), Note(880.0, 0.28, 0.2, 0.1))
+        Fx.FriendAdded -> listOf(Note(587.0, 0.1, 0.18), Note(784.0, 0.1, 0.18, 0.08), Note(988.0, 0.1, 0.18, 0.16), Note(1175.0, 0.4, 0.2, 0.24))
     }
 
-    /** Renders the tap sounds ahead of time so the first tap is instant. */
-    fun warm() = scope.launch { play(Fx.Pop, silent = true); play(Fx.PopSoft, silent = true) }
-
-    fun play(fx: Fx) = play(fx, silent = false)
-
-    private fun play(fx: Fx, silent: Boolean) {
-        if (!_enabled.value && !silent) return
+    /** Renders and loads every sound ahead of time, so the first one is instant. */
+    fun warm() {
+        if (warmed) return
+        warmed = true
+        pool.setOnLoadCompleteListener { _, id, status -> if (status == 0) loading.remove(id)?.let { ready[it] = id } }
         scope.launch {
             runCatching {
-                val pcm = cache.getOrPut(fx) {
-                    when (fx) {
-                        Fx.Pop -> bubble(from = 380.0, to = 1150.0, dur = 0.075, vol = 0.55)
-                        Fx.PopSoft -> bubble(from = 520.0, to = 1350.0, dur = 0.05, vol = 0.38)
-                        else -> render(tones(fx))
-                    }
+                val dir = java.io.File(context.cacheDir, "sfx$VERSION").apply { mkdirs() }
+                for (fx in Fx.values()) {
+                    val f = java.io.File(dir, fx.name + ".wav")
+                    if (!f.exists() || f.length() < 100) writeWav(f, render(notes(fx)))
+                    val id = pool.load(f.absolutePath, 1)
+                    loading[id] = fx
                 }
-                if (silent) return@runCatching
-                val track = AudioTrack.Builder()
-                    .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build())
-                    .setAudioFormat(AudioFormat.Builder().setEncoding(AudioFormat.ENCODING_PCM_16BIT).setSampleRate(RATE).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build())
-                    .setTransferMode(AudioTrack.MODE_STATIC)
-                    .setBufferSizeInBytes(pcm.size * 2)
-                    .build()
-                track.write(pcm, 0, pcm.size)
-                track.setNotificationMarkerPosition(pcm.size - 1)
-                track.setPlaybackPositionUpdateListener(object : AudioTrack.OnPlaybackPositionUpdateListener {
-                    override fun onMarkerReached(t: AudioTrack) { t.release() }
-                    override fun onPeriodicNotification(t: AudioTrack) {}
-                })
-                track.play()
             }
         }
+    }
+
+    /** Plays at once. Before the sounds have loaded (the first moments after launch) it stays quiet. */
+    fun play(fx: Fx) {
+        if (!_enabled.value) return
+        if (!warmed) { warm(); return }
+        ready[fx]?.let { pool.play(it, 1f, 1f, 1, 0, 1f) }
     }
 
     companion object {
         const val RATE = 44100
+        /** Bump when a recipe changes, so the cached files are rendered again. */
+        private const val VERSION = 2
 
-        /**
-         * TalkLive's own tap sound: a sine whose pitch rises quickly, like a
-         * bubble popping, with a short soft tail. Quiet on purpose.
-         */
-        private fun bubble(from: Double, to: Double, dur: Double, vol: Double): ShortArray {
-            val n = (dur * RATE).toInt()
-            val out = ShortArray(n + (0.01 * RATE).toInt())
-            var phase = 0.0
-            for (i in 0 until n) {
-                val t = i.toDouble() / RATE
-                val f = from + (to - from) * (1 - exp(-t / (dur * 0.35)))
-                phase += 2 * PI * f / RATE
-                val attack = minOf(1.0, i / (0.002 * RATE))
-                val env = attack * exp(-5.0 * t / dur)
-                // A little second harmonic gives it body without sounding like a beep.
-                val w = sin(phase) + 0.18 * sin(2 * phase)
-                out[i] = (w / 1.18 * env * vol * 32767).toInt().toShort()
-            }
-            return out
-        }
-
-        /** Mixes oscillators with an exponential fade to silence, as the Web Audio graph does. */
-        private fun render(tones: List<Tone>): ShortArray {
-            val total = tones.maxOf { it.delay + it.dur + 0.02 }
+        /** Mixes the notes exactly as the website's sfxRender does. */
+        private fun render(notes: List<Note>): ShortArray {
+            val total = notes.maxOf { it.delay + it.dur } + 0.02
             val out = FloatArray((total * RATE).toInt() + 1)
-            for (t in tones) {
-                val start = (t.delay * RATE).toInt()
-                val n = (t.dur * RATE).toInt()
-                val k = ln(t.vol / 0.0001) / n
+            for (nt in notes) {
+                val start = (nt.delay * RATE).toInt()
+                val n = (nt.dur * RATE).toInt()
+                var ph = 0.0
                 for (i in 0 until n) {
-                    val ph = 2 * PI * t.freq * i / RATE
-                    val w = when (t.wave) {
-                        'q' -> if (sin(ph) >= 0) 1.0 else -1.0
-                        't' -> 2 / PI * kotlin.math.asin(sin(ph))
-                        else -> sin(ph)
+                    val t = i.toDouble() / RATE
+                    val hz = if (nt.voice == 'u') nt.hz + (nt.hzTo - nt.hz) * (1 - exp(-t / (nt.dur * 0.35))) else nt.hz
+                    ph += 2 * PI * hz / RATE
+                    val w = when (nt.voice) {
+                        'b' -> sin(ph) + 0.38 * sin(2 * ph) * exp(-t * 18) + 0.16 * sin(3.01 * ph) * exp(-t * 30)
+                        'p' -> 2 / PI * kotlin.math.asin(sin(ph))
+                        else -> sin(ph) + 0.15 * sin(2 * ph)
                     }
-                    // 3 ms attack so the start does not click.
-                    val attack = minOf(1.0, i / (0.003 * RATE))
-                    out[start + i] += (w * t.vol * exp(-k * i) * attack).toFloat()
+                    // 3 ms attack so nothing clicks; bells ring out, the rest fade faster.
+                    val env = minOf(1.0, i / (0.003 * RATE)) * exp(-t * (if (nt.voice == 'b') 6.9 else 5.0) / nt.dur)
+                    out[start + i] += (w * nt.vol * env).toFloat()
                 }
             }
             val peak = out.maxOf { abs(it) }.coerceAtLeast(1f)
-            return ShortArray(out.size) { (out[it] / peak.coerceAtLeast(1f) * 32767 * 0.9f).toInt().toShort() }
+            return ShortArray(out.size) { (out[it] / peak * 32767 * 0.95f).toInt().toShort() }
+        }
+
+        /** 16-bit mono PCM as a WAV file, which is what SoundPool loads. */
+        private fun writeWav(file: java.io.File, pcm: ShortArray) {
+            val data = java.nio.ByteBuffer.allocate(44 + pcm.size * 2).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+            data.put("RIFF".toByteArray()).putInt(36 + pcm.size * 2).put("WAVE".toByteArray())
+            data.put("fmt ".toByteArray()).putInt(16).putShort(1).putShort(1).putInt(RATE).putInt(RATE * 2).putShort(2).putShort(16)
+            data.put("data".toByteArray()).putInt(pcm.size * 2)
+            for (v in pcm) data.putShort(v)
+            file.writeBytes(data.array())
         }
     }
 }
