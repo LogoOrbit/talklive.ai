@@ -99,7 +99,19 @@ async function webhookE2E() {
       const r = await fetch(base + '/billing/webhook', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Stripe-Signature': sign(body) }, body });
       return r.status;
     };
-    const status = async () => (await fetch(base + '/premium-status?clientId=e2e-client-1')).json();
+    // expiresAt is only shown to the holder of the identity token, so ask for one
+    // the way a browser does: register and read the token the server issues.
+    const { io } = require('socket.io-client');
+    const sock = io(base, { transports: ['websocket'], forceNew: true });
+    const token = await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('no identity token')), 6000);
+      sock.on('identity-token', ({ clientId, token: t } = {}) => { if (clientId === 'e2e-client-1') { clearTimeout(timer); resolve(t); } });
+      sock.emit('register', { clientId: 'e2e-client-1', nickname: 'e2e' });
+    });
+    sock.close();
+    const status = async () => (await fetch(base + '/premium-status?clientId=e2e-client-1&identityToken=' + token)).json();
+    const anon = await (await fetch(base + '/premium-status?clientId=e2e-client-1')).json();
+    ok('e2e: no expiresAt without the identity token', !('expiresAt' in anon) && anon.premium === false, anon);
     const bad = await fetch(base + '/billing/webhook', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Stripe-Signature': 't=1,v1=00' }, body: '{}' });
     ok('e2e: bad signature is a 400', bad.status === 400);
     await post('invoice.paid', { metadata: { clientId: 'e2e-client-1' }, subscription: 'sub_new', lines: { data: [{ period: { end } }] } }, nowS);
@@ -112,6 +124,14 @@ async function webhookE2E() {
     await post('customer.subscription.deleted', { id: 'sub_new', metadata: { clientId: 'e2e-client-1' } }, nowS + 2);
     st = await status();
     ok('e2e: deleting the current subscription ends Plus', st.premium === false);
+    // A pass delivered twice (a retry under a new event id, or after a restart)
+    // is one purchase: its Checkout session id is recorded before the grant.
+    const pass = { id: 'cs_pass_1', mode: 'payment', payment_status: 'paid', metadata: { clientId: 'e2e-client-1', pass: 'pass_7d' } };
+    await post('checkout.session.completed', pass, nowS + 3);
+    const once = (await status()).expiresAt;
+    await post('checkout.session.completed', pass, nowS + 4);
+    st = await status();
+    ok('e2e: a redelivered pass is granted once', once && st.expiresAt === once, { once, again: st.expiresAt });
   } finally {
     srv.kill('SIGKILL');
     fs.rmSync(DATA_DIR, { recursive: true, force: true });

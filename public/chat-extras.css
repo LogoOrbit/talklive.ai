@@ -639,7 +639,7 @@
 @media (prefers-reduced-motion:reduce){.cx-pop{animation:none}}
 
 /* App-style reaction: a small chip hanging off the bubble's lower corner. */
-.cx-has-reactions { margin-bottom: 12px; }
+.cx-has-reactions { margin-bottom: 15px; }
 .cx-reactions {
   position: absolute; bottom: -13px; inset-inline-start: 8px; margin: 0; gap: 2px; flex-wrap: nowrap;
 }

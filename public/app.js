@@ -563,9 +563,8 @@ let ICE_SERVERS = [{ urls: FALLBACK_STUN_URLS.slice() }];
 // without one leaves the browser with zero candidates: the SDP still completes,
 // so the UI looked "connected" while no audio could ever flow. Only the server
 // may turn it on, and only when it actually publishes a TURN relay.
-// Remembered between visits so a failed fetch never silently drops relay-only.
 let ICE_TRANSPORT_POLICY = 'all';
-try { if (localStorage.getItem('tl_ice_policy') === 'relay') ICE_TRANSPORT_POLICY = 'relay'; } catch (e) { /* private mode */ }
+try { if (localStorage.getItem('tl_ice_policy') === 'relay') ICE_TRANSPORT_POLICY = 'relay'; } catch (e) { /* none */ }
 
 // Pull the authoritative (possibly env-configured, more reliable) TURN list from
 // the server as early as possible so the very first call already relays properly.
@@ -616,11 +615,10 @@ function applyIceConfig(data) {
     ICE_SERVERS = clean;
     iceConfigFetchedAt = Date.now();
   }
-  // Only a real answer changes the policy; a failed fetch keeps the last one.
-  // Relay-only with no relay is refused in createPeerConnection, never widened.
+  // A failed fetch keeps the last policy.
   if (!data) return;
   ICE_TRANSPORT_POLICY = data.iceTransportPolicy === 'relay' ? 'relay' : 'all';
-  try { localStorage.setItem('tl_ice_policy', ICE_TRANSPORT_POLICY); } catch (e) { /* private mode */ }
+  try { localStorage.setItem('tl_ice_policy', ICE_TRANSPORT_POLICY); } catch (e) { /* no storage */ }
 }
 
 function fetchIceConfig() {
@@ -8001,7 +7999,7 @@ function createPeerConnection(isInitiator) {
   // whole call setup. A STUN-only call fails for some networks; a thrown
   // constructor failed for everyone, silently.
   let peer;
-  // Fail closed: relay-only without a relay must not fall back to exposing IPs.
+  // Fail closed: never expose IPs when relay-only.
   if (ICE_TRANSPORT_POLICY === 'relay' && !iceListHasRelay(ICE_SERVERS)) throw new Error('no relay');
   try {
     peer = new RTCPeerConnection({

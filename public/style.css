@@ -7310,6 +7310,7 @@ html.perf-lite .side-panel { box-shadow: none; }
   .chat-msg.chat-msg-enter { transform: none; }
   .chat-msg.me.chat-msg-pop { animation: none; }
 }
+.chat-msg { text-align: start; }
 .chat-msg-time { font-size: 10px; font-weight: 500; }
 .chat-day-divider { margin: 12px 0 6px; }
 .chat-day-divider span {
