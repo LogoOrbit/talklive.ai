@@ -138,6 +138,18 @@ object LocalPrice {
         return format(if (m >= 100) Math.round(m).toDouble() else Math.round(m * 100) / 100.0, cur)
     }
 
+    /**
+     * What [total] comes to for each of [days] days, from the real amount: "$0.33", or whole
+     * units once it is large ("IDR 1,167"). Yearly is 365 days, monthly 30, a pass its days.
+     */
+    fun perDay(total: Double, days: Int, cur: String): String {
+        val d = total / days.coerceAtLeast(1)
+        return if (d >= 100) format(Math.round(d).toDouble(), cur, 0) else format(Math.round(d * 100) / 100.0, cur, 2)
+    }
+
+    /** Days a plan's billing period is priced over for the per-day figure. */
+    fun planDays(periodDays: Int): Int = if (periodDays >= 360) 365 else 30
+
     /** Percent saved by the yearly plan against twelve months, e.g. 42. */
     fun yearlySavePercent(context: Context?): Int = row(context).let { Math.round(100 - it.yearly * 100 / (it.monthly * 12)).toInt() }
 

@@ -97,6 +97,12 @@ import app.talklive.ui.theme.LocalAccents
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
+/** What the person was doing when Plus opened, so the page can speak to it. */
+enum class PlusReason { GenderFilter, Countries, Interests, LikedYou, StreakRestore, Avatar, Theme, History, Priority, Generic }
+
+/** A [reason], and the number its headline uses when it has one (people who liked you, days of a lost streak). */
+data class PlusWhy(val reason: PlusReason = PlusReason.Generic, val count: Int = 0)
+
 @HiltViewModel
 class PlusViewModel @Inject constructor(
     val billing: PlayBilling,
@@ -123,6 +129,7 @@ fun PlusSheet(
     onInvite: (() -> Unit)? = null,
     onFreeOption: Pair<String, () -> Unit>? = null,
     passFirst: Boolean = false,
+    why: PlusWhy = PlusWhy(),
     vm: PlusViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
@@ -158,6 +165,7 @@ fun PlusSheet(
             onInvite = onInvite,
             onFreeOption = onFreeOption,
             passFirst = passFirst,
+            why = why,
         )
     }
 }
@@ -191,6 +199,7 @@ fun PlusContent(
     // Opened from a limit someone just hit: the 1-day pass comes first and is
     // picked, since a small try is the easiest yes.
     passFirst: Boolean = false,
+    why: PlusWhy = PlusWhy(),
 ) {
     val accents = LocalAccents.current
     val still = app.talklive.ui.theme.LocalReduceMotion.current
@@ -223,6 +232,8 @@ fun PlusContent(
             Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.End) {
                 IconButton(onClick = onClose) { Icon(Icons.Rounded.Close, stringResource(R.string.cancel), tint = Color.White.copy(alpha = 0.8f)) }
             }
+            // One headline and one line for what the person was just doing; nothing for the general page.
+            if (!premium.active) WhyHeader(why)
             Gem()
             Spacer(Modifier.height(18.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -259,43 +270,64 @@ fun PlusContent(
                     // Play, or the products are not live): show the prices anyway, so
                     // people know what Plus and the passes cost.
                     state is BillingState.Unavailable -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        // Same choices as when Play can sell (-1 = monthly, 0..2 = passes), so
-                        // everything here can be picked; buying waits for Google Play.
-                        var shownPick by remember { mutableStateOf(if (passFirst) 0 else -1) }
-                        val monthOn = shownPick == -1
-                        val monthBorder by animateColorAsState(if (monthOn) Gold2 else Color.White.copy(alpha = 0.16f), label = "month")
-                        Surface(
-                            onClick = { app.talklive.sound.Tap.pop(); shownPick = -1 },
-                            shape = RoundedCornerShape(20.dp),
-                            color = if (monthOn) Gold2.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.05f),
-                            border = BorderStroke(if (monthOn) 2.dp else 1.dp, monthBorder),
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    Modifier.size(22.dp).clip(CircleShape)
-                                        .background(if (monthOn) GoldBrush else SolidColor(Color.Transparent))
-                                        .border(2.dp, if (monthOn) Color.Transparent else Color.White.copy(alpha = 0.45f), CircleShape),
-                                    contentAlignment = Alignment.Center,
-                                ) { if (monthOn) Box(Modifier.size(8.dp).clip(CircleShape).background(Color.White)) }
-                                Spacer(Modifier.width(14.dp))
-                                Column(Modifier.weight(1f)) {
-                                    Text("TalkLive Plus", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
-                                    Text(stringResource(R.string.plus_monthly), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.72f))
+                        // Same choices as when Play can sell (-2 = yearly, -1 = monthly, 0..2 = passes),
+                        // so everything here can be picked; buying waits for Google Play.
+                        var shownPick by remember { mutableStateOf(if (passFirst) 0 else -2) }
+                        val ctx = androidx.compose.ui.platform.LocalContext.current
+                        val (yearAmount, yearCur) = app.talklive.billing.LocalPrice.yearly(ctx)
+                        val save = app.talklive.billing.LocalPrice.yearlySavePercent(ctx)
+                        listOf(-2, -1).forEach { which ->
+                            val yearlyCard = which == -2
+                            val on = shownPick == which
+                            val planBorder by animateColorAsState(if (on) Gold2 else Color.White.copy(alpha = 0.16f), label = "month")
+                            Box {
+                                Surface(
+                                    onClick = { app.talklive.sound.Tap.pop(); shownPick = which },
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = if (on) Gold2.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.05f),
+                                    border = BorderStroke(if (on) 2.dp else 1.dp, planBorder),
+                                    modifier = Modifier.fillMaxWidth().padding(top = if (yearlyCard) 10.dp else 0.dp),
+                                ) {
+                                    Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Box(
+                                            Modifier.size(22.dp).clip(CircleShape)
+                                                .background(if (on) GoldBrush else SolidColor(Color.Transparent))
+                                                .border(2.dp, if (on) Color.Transparent else Color.White.copy(alpha = 0.45f), CircleShape),
+                                            contentAlignment = Alignment.Center,
+                                        ) { if (on) Box(Modifier.size(8.dp).clip(CircleShape).background(Color.White)) }
+                                        Spacer(Modifier.width(14.dp))
+                                        Column(Modifier.weight(1f)) {
+                                            Text("TalkLive Plus", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                                            Text(stringResource(if (yearlyCard) R.string.plus_yearly else R.string.plus_monthly), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.72f))
+                                            if (yearlyCard) Text(stringResource(R.string.plus_year_per_month, app.talklive.billing.LocalPrice.perMonth(yearAmount, yearCur)), style = MaterialTheme.typography.labelMedium, color = Gold1)
+                                        }
+                                        Text(
+                                            stringResource(if (yearlyCard) R.string.plus_price_year else R.string.plus_price_month, if (yearlyCard) app.talklive.billing.LocalPrice.yearlyLabel(ctx) else app.talklive.billing.LocalPrice.of(ctx, 10.0)),
+                                            style = MaterialTheme.typography.titleMedium.copy(brush = GoldBrush), fontWeight = FontWeight.Black,
+                                        )
+                                    }
                                 }
-                                Text(stringResource(R.string.plus_price_month, app.talklive.billing.LocalPrice.of(androidx.compose.ui.platform.LocalContext.current, 10.0)), style = MaterialTheme.typography.titleMedium.copy(brush = GoldBrush), fontWeight = FontWeight.Black)
+                                if (yearlyCard) SaveChip(save, Modifier.align(Alignment.TopEnd).padding(end = 16.dp))
                             }
                         }
                         Text(stringResource(R.string.pass_heading), style = MaterialTheme.typography.titleSmall, color = Color.White.copy(alpha = 0.8f), modifier = Modifier.fillMaxWidth().padding(top = 10.dp), textAlign = TextAlign.Center)
                         Text(stringResource(R.string.pass_sub), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.72f), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                            val ctx = androidx.compose.ui.platform.LocalContext.current
                             listOf(
                                 app.talklive.billing.LocalPrice.pass(ctx, "pass_1d", 1, 2.0),
                                 app.talklive.billing.LocalPrice.pass(ctx, "pass_7d", 7, 5.0),
                                 app.talklive.billing.LocalPrice.pass(ctx, "pass_15d", 15, 7.0),
                             ).forEachIndexed { i, pass ->
                                 PassCard(pass, badge = when (i) { 1 -> stringResource(R.string.pass_popular); 2 -> stringResource(R.string.pass_best); else -> null }, selected = shownPick == i) { shownPick = i }
+                            }
+                        }
+                        // The same figure as when Play can sell, from the local price table.
+                        val (monthAmount, monthCur) = app.talklive.billing.LocalPrice.amount(ctx, 10.0)
+                        when (shownPick) {
+                            -2 -> PerDayLine((yearAmount * 1_000_000).toLong(), yearCur, app.talklive.billing.LocalPrice.planDays(360))
+                            -1 -> PerDayLine((monthAmount * 1_000_000).toLong(), monthCur, app.talklive.billing.LocalPrice.planDays(30))
+                            else -> listOf(1 to 2.0, 7 to 5.0, 15 to 7.0).getOrNull(shownPick)?.let { (days, usd) ->
+                                app.talklive.billing.LocalPrice.amount(ctx, usd).let { (a, c) -> PerDayLine((a * 1_000_000).toLong(), c, days) }
                             }
                         }
                         Surface(shape = RoundedCornerShape(18.dp), color = Color.White.copy(alpha = 0.06f)) {
@@ -355,6 +387,7 @@ fun PlusContent(
                     val pass = pickedPass!!
                     GoldButton(stringResource(R.string.pass_buy, pass.days, pass.price), busy = busy, onClick = { onBuyPass(pass) })
                     Text(stringResource(R.string.pass_once), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = Color.White, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 10.dp))
+                    PerDayLine(pass.priceMicros, pass.currency, pass.days)
                 }
                 canBuy -> {
                     val plan = picked
@@ -371,6 +404,7 @@ fun PlusContent(
                             else -> stringResource(if (yearly) R.string.plus_price_year else R.string.plus_price_month, pl.price)
                         }
                         Text(line, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = Color.White, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 10.dp))
+                        PerDayLine(pl.priceMicros, pl.currency, app.talklive.billing.LocalPrice.planDays(PlayBilling.periodDays(pl.period)))
                     }
                     Text(stringResource(R.string.plus_terms), style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.72f), textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
                 }
@@ -536,6 +570,42 @@ private fun PerkPreview(page: Int) {
     }
 }
 
+/** "That is $0.33 a day", from the real price in micro-units of [currency] spread over [days]. */
+@Composable
+private fun PerDayLine(priceMicros: Long, currency: String, days: Int) {
+    if (priceMicros <= 0 || currency.isBlank() || days <= 0) return
+    Text(
+        stringResource(R.string.plus_per_day, app.talklive.billing.LocalPrice.perDay(priceMicros / 1_000_000.0, days, currency)),
+        style = MaterialTheme.typography.bodyMedium, color = Gold1, textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+    )
+}
+
+/** The headline and line for why Plus was opened. */
+@Composable
+private fun WhyHeader(why: PlusWhy) {
+    val (title, body) = when (why.reason) {
+        PlusReason.Generic -> return
+        PlusReason.GenderFilter -> stringResource(R.string.plus_why_gender) to stringResource(R.string.plus_why_gender_body)
+        PlusReason.Countries -> stringResource(R.string.plus_why_countries) to stringResource(R.string.plus_why_countries_body)
+        PlusReason.Interests -> stringResource(R.string.plus_why_interests) to stringResource(R.string.plus_why_interests_body)
+        PlusReason.LikedYou ->
+            (if (why.count > 0) pluralStringResource(R.plurals.plus_why_likes, why.count, why.count) else stringResource(R.string.plus_why_likes_none)) to stringResource(R.string.plus_why_likes_body)
+        PlusReason.StreakRestore ->
+            (if (why.count > 0) stringResource(R.string.plus_why_streak, why.count) else stringResource(R.string.plus_why_streak_none)) to stringResource(R.string.plus_why_streak_body)
+        PlusReason.Avatar -> stringResource(R.string.plus_why_avatar) to stringResource(R.string.plus_why_avatar_body)
+        PlusReason.Theme -> stringResource(R.string.plus_why_theme) to stringResource(R.string.plus_why_theme_body)
+        PlusReason.History -> stringResource(R.string.plus_why_history) to stringResource(R.string.plus_why_history_body)
+        PlusReason.Priority -> stringResource(R.string.plus_why_priority) to stringResource(R.string.plus_why_priority_body)
+    }
+    Column(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(6.dp))
+        Text(body, style = MaterialTheme.typography.bodyLarge, color = Color.White.copy(alpha = 0.8f), textAlign = TextAlign.Center)
+        Spacer(Modifier.height(16.dp))
+    }
+}
+
 /** Free vs Plus, row by row. */
 @Composable
 private fun CompareTable(modifier: Modifier = Modifier) {
@@ -543,16 +613,20 @@ private fun CompareTable(modifier: Modifier = Modifier) {
     val yes = "✓"; val no = "—"
     val rows = listOf(
         Triple(R.string.cmp_calls, yes, yes),
-        Triple(R.string.cmp_alive, no, yes),
-        Triple(R.string.cmp_gold, no, yes),
-        Triple(R.string.cmp_faces, no, yes),
-        Triple(R.string.cmp_countries, no, yes),
+        // Numbers are the product's own limits: server FREE_LIMITS (2 countries, 2 interests, Plus 50 and 10),
+        // FREE_HISTORY 3, PLUS_FREEZES 2, PLUS_FACES 8, AppTheme (Dark and Light free, Ocean and Sunset Plus).
+        Triple(R.string.cmp_countries_n, "2", "50"),
+        Triple(R.string.cmp_interests_n, "2", "10"),
+        Triple(R.string.cmp_gender_n, no, yes),
         Triple(R.string.plus_perk_likes, no, yes),
         Triple(R.string.cmp_history, "3", "∞"),
-        Triple(R.string.cmp_freezes, no, yes),
+        Triple(R.string.cmp_freezes_n, "0", "2"),
+        Triple(R.string.cmp_faces_n, "0", "8"),
+        Triple(R.string.cmp_themes_n, "2", "4"),
         Triple(R.string.plus_perk_undo, no, yes),
         Triple(R.string.plus_perk_queue, no, yes),
-        Triple(R.string.plus_perk_themes, no, yes),
+        Triple(R.string.cmp_alive, no, yes),
+        Triple(R.string.cmp_gold, no, yes),
         Triple(R.string.cmp_streaks, yes, yes),
     )
     Surface(shape = RoundedCornerShape(24.dp), color = Color.White.copy(alpha = 0.05f), modifier = modifier.fillMaxWidth()) {
@@ -600,7 +674,7 @@ private fun PlanCard(plan: PlusPlan, all: List<PlusPlan>, selected: Boolean, onC
         val shortMicros = priceMicros(short.price) ?: return@let null
         val mine = priceMicros(plan.price) ?: return@let null
         val shortDays = PlayBilling.periodDays(short.period).takeIf { it > 0 } ?: return@let null
-        val pct = (100 - mine * 100.0 / (shortMicros * days / shortDays)).toInt()
+        val pct = Math.round(100 - mine * 100.0 / (shortMicros * days / shortDays)).toInt()
         pct.takeIf { it in 5..90 }
     }
     Box {
@@ -623,17 +697,28 @@ private fun PlanCard(plan: PlusPlan, all: List<PlusPlan>, selected: Boolean, onC
                         style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White,
                     )
                     plan.trial?.let { Text(stringResource(R.string.plus_trial, PlayBilling.periodDays(it)), style = MaterialTheme.typography.labelMedium, color = Gold1) }
+                    // What a yearly plan comes to each month, to set against the monthly price.
+                    if (days >= 360 && plan.priceMicros > 0 && plan.currency.isNotBlank()) {
+                        Text(
+                            stringResource(R.string.plus_year_per_month, app.talklive.billing.LocalPrice.perMonth(plan.priceMicros / 1_000_000.0, plan.currency)),
+                            style = MaterialTheme.typography.labelMedium, color = Gold1,
+                        )
+                    }
                 }
                 Text(plan.price, style = MaterialTheme.typography.titleLarge, color = Color.White)
             }
         }
-        saving?.let {
-            Text(
-                stringResource(R.string.plus_save, it), color = Color(0xFF2B1D00), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.TopEnd).padding(end = 16.dp).clip(CircleShape).background(GoldBrush).padding(horizontal = 10.dp, vertical = 4.dp),
-            )
-        }
+        saving?.let { SaveChip(it, Modifier.align(Alignment.TopEnd).padding(end = 16.dp)) }
     }
+}
+
+/** The gold "Save 42%" tag on the yearly plan. */
+@Composable
+private fun SaveChip(percent: Int, modifier: Modifier = Modifier) {
+    Text(
+        stringResource(R.string.plus_save, percent), color = Color(0xFF2B1D00), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
+        modifier = modifier.clip(CircleShape).background(GoldBrush).padding(horizontal = 10.dp, vertical = 4.dp),
+    )
 }
 
 /** Digits of a formatted price ("$4.99", "₹ 399,00") as a comparable number. */

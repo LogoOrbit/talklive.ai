@@ -485,6 +485,7 @@
     <string name="plus_trial_then_month">%1$d days free, then %2$s a month</string>
     <string name="plus_price_year">%1$s a year</string>
     <string name="plus_price_month">%1$s a month</string>
+    <string name="plus_year_per_month">%1$s a month, billed yearly</string>
     <string name="request_sent">Request sent</string>
     <string name="archived">Archived</string>
     <string name="archive">Archive chat</string>
@@ -673,4 +674,37 @@
     <string name="disappearing_turn_off">Turn off disappearing messages</string>
     <string name="disappearing_on_me">You turned on disappearing messages. New messages disappear 24 hours after they are sent.</string>
     <string name="disappearing_on_them">%1$s turned on disappearing messages. New messages disappear 24 hours after they are sent.</string>
+    <!-- Plus page: what it says first, by why it was opened -->
+    <string name="plus_why_gender">Choose who you talk to</string>
+    <string name="plus_why_gender_body">Match with women or men, in any country.</string>
+    <string name="plus_why_countries">Talk to more of the world</string>
+    <string name="plus_why_countries_body">Pick up to 50 countries, not just 2.</string>
+    <string name="plus_why_interests">Match on more interests</string>
+    <string name="plus_why_interests_body">Pick up to 10 interests instead of 2.</string>
+    <plurals name="plus_why_likes">
+        <item quantity="one">%1$d person liked you</item>
+        <item quantity="other">%1$d people liked you</item>
+    </plurals>
+    <string name="plus_why_likes_none">See who liked you</string>
+    <string name="plus_why_likes_body">See who they are and call them back.</string>
+    <string name="plus_why_streak">Bring back your %1$d-day streak</string>
+    <string name="plus_why_streak_none">Bring back your streak</string>
+    <string name="plus_why_streak_body">Plus restores a lost streak, once a month.</string>
+    <string name="plus_why_avatar">Wear a legendary face</string>
+    <string name="plus_why_avatar_body">8 legendary avatars, only for Plus.</string>
+    <string name="plus_why_theme">Two more looks for the app</string>
+    <string name="plus_why_theme_body">Ocean and Sunset. Light and Dark stay free.</string>
+    <string name="plus_why_history">Keep everyone you meet</string>
+    <string name="plus_why_history_body">Free keeps your last 3 people. Plus keeps them all.</string>
+    <string name="plus_why_priority">Get matched sooner</string>
+    <string name="plus_why_priority_body">Plus members go first when it is busy.</string>
+    <string name="plus_per_day">That is %1$s a day</string>
+    <string name="cmp_countries_n">Countries you can pick</string>
+    <string name="cmp_interests_n">Interests you can pick</string>
+    <string name="cmp_gender_n">Choose women or men</string>
+    <string name="cmp_freezes_n">Extra streak freezes a month</string>
+    <string name="cmp_faces_n">Legendary avatars</string>
+    <string name="cmp_themes_n">App themes</string>
+    <string name="home_plus_card">Enjoying TalkLive? Plus is %1$s a day.</string>
+    <string name="home_plus_card_close">Close</string>
 </resources>
