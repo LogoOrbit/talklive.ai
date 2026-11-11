@@ -3492,6 +3492,7 @@
     sendAdsConversion();
     currentPartner = data.partner;
     partnerHere = true;
+    if (games) games.reset(); // never carry the last partner's game or invite over
     // Before anything else: a disabled input cannot take focus, and the box is
     // left disabled when a chat ends. It used to be re-enabled by a second
     // 'matched' listener further down, which ran after the focus call below

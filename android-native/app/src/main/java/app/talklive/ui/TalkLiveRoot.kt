@@ -664,7 +664,9 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
             onInvite = vm::inviteGame, onCell = vm::tapCell, onEdge = vm::drawEdge, onRematch = vm::rematch,
             onClose = { vm.leaveGame(); showGames = false },
         )
-    } else if (inCall && game.stage == app.talklive.game.Stage.Invited) {
+    }
+    // Shown over the sheet too: with the sheet open there is no other way to answer.
+    if (inCall && game.stage == app.talklive.game.Stage.Invited) {
         app.talklive.ui.game.GameInviteDialog(game.kind, partnerName, onAccept = { vm.acceptGame(); showGames = true }, onDecline = vm::declineGame)
     }
 

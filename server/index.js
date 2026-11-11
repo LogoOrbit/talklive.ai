@@ -1493,7 +1493,15 @@ function sendPendingFeedbackReplies(socket) {
   }
 }
 
-const gameTracker = createGameTracker({ store, profileOf: (sid) => profiles.get(sid) });
+const gameTracker = createGameTracker({
+  store,
+  profileOf: (sid) => profiles.get(sid),
+  // An unanswered invite timed out: the inviter hears "no", the invitee's prompt goes away.
+  onExpire: ({ from, to }) => {
+    io.to(from).emit('game', { type: 'decline' });
+    io.to(to).emit('game', { type: 'left' });
+  },
+});
 // For the owner's Users tab: per person, how many friends they have, the
 // avatar others see for them, whether they are online, and (when `since` is
 // given) how many friend messages they sent before that time.
@@ -7197,16 +7205,24 @@ io.on('connection', (socket) => {
   let gameRl = { start: 0, n: 0 };
   socket.on('game', (data) => {
     const partnerId = partners.get(socket.id);
-    if (!partnerId || !data || typeof data !== 'object' || !GAME_EVENT_TYPES.has(data.type)) return;
+    if (!data || typeof data !== 'object' || !GAME_EVENT_TYPES.has(data.type)) return;
+    if (!partnerId) {
+      // No partner any more (the pairing ended server-side): tell the sender its game is over.
+      if (data.type !== 'left' && data.type !== 'decline') socket.emit('game', { type: 'left' });
+      return;
+    }
     const now = Date.now();
     if (now - gameRl.start > 5000) gameRl = { start: now, n: 0 };
     if (++gameRl.n > 30) return;
     let size = 0;
     try { size = JSON.stringify(data).length; } catch (_) { return; }
     if (size > 4096) return;
+    const verdict = gameTracker.judge(socket.id, partnerId, data);
+    if (verdict.reply) socket.emit('game', verdict.reply);
+    if (!verdict.relay) return;
     if (data.type === 'invite') store.recordFeature('mini_game');
     try { gameTracker.onEvent(socket.id, partnerId, data); } catch (err) { console.warn('[games] stats:', err.message); }
-    io.to(partnerId).emit('game', data);
+    io.to(partnerId).emit('game', verdict.relay);
   });
 
   // --- Friends ---
