@@ -33,6 +33,7 @@ class LocalNotifier @Inject constructor(
     @ApplicationContext private val context: Context,
     private val social: SocialRepository,
     private val notif: app.talklive.data.NotifSettings,
+    private val socket: app.talklive.net.TalkSocket,
 ) {
     private fun on(k: app.talklive.data.NotifSettings.Kind) = notif.allows(k)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -41,6 +42,15 @@ class LocalNotifier @Inject constructor(
     private fun background() = !ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
 
     fun start() {
+        // A stranger writing while this side is in another app: the chat is held
+        // for a few minutes, so say so, or it ends unseen.
+        scope.launch {
+            socket.events.collect { e ->
+                if (e is app.talklive.net.ServerEvent.StrangerMessage && background()) {
+                    post("stranger", context.getString(R.string.n_stranger_title), if (e.gifUrl != null) "GIF" else e.text.take(120), null)
+                }
+            }
+        }
         scope.launch {
             var seen: Set<String>? = null
             social.requests.collect { list ->

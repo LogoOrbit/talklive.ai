@@ -3525,7 +3525,9 @@ const GAME_EVENT_TYPES = new Set(['invite', 'accept', 'decline', 'state', 'left'
 // A phone that switches apps keeps its socket open, and the ping timeout would
 // otherwise leave the stranger waiting up to ~85s for nobody.
 const chatAwayTimers = new Map();
-const CHAT_AWAY_DROP_MS = Number(process.env.CHAT_AWAY_DROP_MS) || 60000;
+// Five minutes: a minute ended chats when someone only answered a message in
+// another app. The stranger sees "switched away" meanwhile and can leave.
+const CHAT_AWAY_DROP_MS = Number(process.env.CHAT_AWAY_DROP_MS) || 5 * 60000;
 function clearChatAway(socketId) {
   const timer = chatAwayTimers.get(socketId);
   if (timer) { clearTimeout(timer); chatAwayTimers.delete(socketId); }

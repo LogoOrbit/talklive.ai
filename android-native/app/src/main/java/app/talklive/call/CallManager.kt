@@ -279,7 +279,10 @@ class CallManager @Inject constructor(
     }
 
     /** The app went to the background or came back: a text-chat partner is told. */
+    @Volatile private var visible = true
+
     fun appVisible(visible: Boolean) = scope.launch {
+        this@CallManager.visible = visible
         if (_state.value.mode == CallMode.Chat && _state.value.phase is CallPhase.Connected) {
             socket.emit("chat-away", JSONObject().put("away", !visible))
         }
@@ -397,7 +400,9 @@ class CallManager @Inject constructor(
                     _state.update { CallState(speakerOn = it.speakerOn, notice = CallNotice.CallEnded(e.username.ifBlank { "Your friend" })) }
                 } else {
                     val notice = CallNotice.PartnerLeft(e.username.ifBlank { "Stranger" }, e.reason != "left")
-                    if (_autoConnect.value) {
+                    // Not while the app is in the background: a new stranger would
+                    // be connected to a phone nobody is looking at.
+                    if (_autoConnect.value && visible) {
                         _state.update { it.copy(notice = notice) }
                         search()
                     } else {
