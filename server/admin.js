@@ -17,6 +17,8 @@ const mail = require('./mailer');
 const searchConsole = require('./search-console');
 const health = require('./health');
 const insights = require('./insights');
+const plusStats = require('./plus-stats');
+const billing = require('./billing');
 
 const SESSION_HOURS = 12;
 const OWNER_EMAIL = process.env.OWNER_EMAIL || '';
@@ -418,6 +420,7 @@ function generateConclusion(runtime, report) {
 // --- Module wiring ---
 function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats, automod, talkguard, patterns, support, grantPlus }) {
   if (automod) automod.setAlert(sendAlertEmail);
+  try { billing.installPaymentLog(store); } catch (e) { console.log('[owner] payment log not installed:', e.message); }
   const router = express.Router();
   router.use(express.json({ limit: '64kb' }));
 
@@ -1874,6 +1877,53 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     const r = grantPlus((req.body || {}).who, (req.body || {}).days);
     if (r.ok) store.audit('premium-grant', reqIp(req), `Gave ${Number((req.body || {}).days) || 0} day(s) of Plus to ${String((req.body || {}).who || '').slice(0, 80)}`);
     res.status(r.status || 200).json(r);
+  });
+
+  // --- Plus tab: subscriptions and (estimated) payments -----------------------
+  // The summary is one pass over premium records and the capped payment log;
+  // the two tables are paged on the server (50 a page) and searched there.
+  const who = (clientId) => {
+    try {
+      const key = store.findUsernameByClientId(clientId);
+      const a = key && (store.data.accounts || {})[key];
+      const email = a && ((a.google && a.google.email) || a.email);
+      return { account: email ? plusStats.mask(email) : (key || ''), search: `${email || ''} ${key || ''} ${clientId}` };
+    } catch (_) { return { account: '', search: clientId }; }
+  };
+  let plusSummaryCache = null;
+  router.get('/api/plus', (req, res) => {
+    const now = Date.now();
+    if (plusSummaryCache && now - plusSummaryCache.at < 60000) return res.json(plusSummaryCache.body);
+    let active30 = 0;
+    const cutoff = store.dayKey(now - 30 * 86400000);
+    for (const id in (store.data.talkTime || {})) {
+      const dd = store.data.talkTime[id] && store.data.talkTime[id].days;
+      if (!dd) continue;
+      for (const k in dd) if (k >= cutoff) { active30++; break; }
+    }
+    const body = plusStats.summarize({ premium: store.data.premium, log: store.data.paymentLog, now, activeAccounts30: active30 });
+    plusSummaryCache = { at: now, body };
+    res.json(body);
+  });
+  router.get('/api/plus/subscribers', (req, res) => {
+    const now = Date.now();
+    const last = new Map();
+    for (const e of (store.data.paymentLog || [])) if (e.kind !== 'cancelled') last.set(e.clientId, e);
+    const rows = premiumRows().filter((r) => plusStats.PAID.has(r.source) || r.paying).map((r) => {
+      const l = last.get(r.clientId);
+      const w = who(r.clientId);
+      return { ...r, ...w, plan: (l && l.plan) || (r.source === 'play-pass' ? 'pass' : 'monthly'), country: (l && l.country) || '', amount: l ? l.amount : null, currency: l ? l.currency : '', usd: l ? l.usd : null, now };
+    });
+    res.json(plusStats.page(rows, req.query, (r) => r.search + ' ' + r.plan + ' ' + r.source + ' ' + r.country + ' ' + r.status));
+  });
+  router.get('/api/plus/payments', (req, res) => {
+    const log = store.data.paymentLog || [];
+    const rows = [];
+    for (let i = log.length - 1; i >= 0; i--) { // newest first, no copy of the whole log
+      const e = log[i]; const w = who(e.clientId);
+      rows.push({ ...e, account: w.account, search: w.search });
+    }
+    res.json(plusStats.page(rows, req.query, (r) => r.search + ' ' + r.plan + ' ' + r.source + ' ' + r.country + ' ' + r.kind));
   });
 
   router.get('/api/premium', (req, res) => {

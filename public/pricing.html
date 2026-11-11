@@ -78,6 +78,9 @@
 .plan li .i{width:18px;height:18px;flex:none;border-radius:50%;background:currentColor;opacity:.9;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9.6 16.6 5 12l1.4-1.4 3.2 3.2 8-8L19 7.2z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9.6 16.6 5 12l1.4-1.4 3.2 3.2 8-8L19 7.2z'/%3E%3C/svg%3E") center/contain no-repeat}
 .pass[data-pass]{cursor:pointer}.pass.is-picked{outline:2px solid currentColor;outline-offset:2px}
 .cta[aria-busy=true]{opacity:.6;pointer-events:none}
+.app-step{max-width:560px;margin:0 auto 26px;text-align:center;outline:none}.app-step h2{margin:0 0 8px}.app-step>p{color:var(--muted)}.app-step-prices{margin:14px 0 18px;display:grid;gap:8px}.app-step-prices div{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:2px 12px;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,0.05);text-align:left}.app-step-prices b{text-align:right}.app-step[hidden]{display:none}.plan li .i{margin-top:3px}
+.cta:active{transform:scale(.98);filter:brightness(.95)}
+
 </style>
 <script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebPage","name":"TalkLive Pricing","url":"https://talklive.app/pricing","description":"Free voice and text matching, TalkLive Plus at $10 a month, and 1, 7 and 15-day passes.","mainEntity":{"@type":"Service","name":"TalkLive","url":"https://talklive.app/","brand":{"@type":"Brand","name":"TalkLive"},"offers":[{"@type":"Offer","name":"TalkLive Free","price":"0","priceCurrency":"USD","url":"https://talklive.app/","description":"Core random voice and text matching, with instant matching for everyone.","availability":"https://schema.org/InStock"},{"@type":"Offer","name":"TalkLive Plus (monthly)","price":"9.99","priceCurrency":"USD","url":"https://talklive.app/pricing","description":"Every filter, see who liked you, undo skip, skip the queue. Renews monthly, cancel any time."},{"@type":"Offer","name":"1-day pass","price":"1.99","priceCurrency":"USD","url":"https://talklive.app/pricing"},{"@type":"Offer","name":"7-day pass","price":"4.99","priceCurrency":"USD","url":"https://talklive.app/pricing"},{"@type":"Offer","name":"15-day pass","price":"6.99","priceCurrency":"USD","url":"https://talklive.app/pricing"}],"additionalType":"https://schema.org/WebApplication","serviceType":"Random voice and text chat","category":"CommunicationApplication","provider":{"@id":"https://talklive.app/#organization"},"areaServed":"Worldwide","availableChannel":{"@type":"ServiceChannel","serviceUrl":"https://talklive.app/"}}},{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://talklive.app/"},{"@type":"ListItem","position":2,"name":"Pricing","item":"https://talklive.app/pricing"}]}]</script>
 <script defer src="/pwa.js?v=20261109push"></script>
@@ -101,6 +104,14 @@
   </section>
 
   <div id="premiumActiveNote" class="status-note ok" hidden>You have TalkLive Plus. Everything is unlocked. Enjoy!</div>
+
+  <section id="appStep" class="card app-step" hidden tabindex="-1" aria-labelledby="appStepTitle">
+    <h2 id="appStepTitle">Get Plus in the app</h2>
+    <p>Plus is bought in the TalkLive Android app. It unlocks on the website too when you sign in with the same account.</p>
+    <div class="app-step-prices" id="appStepPrices"></div>
+    <a id="appStepBtn" class="cta violet" href="https://play.google.com/store/apps/details?id=app.talklive" rel="noopener">Download the app</a>
+    <p class="small-note">Your account: <b id="appStepName"></b></p>
+  </section>
 
   <section class="plans">
     <div class="card plan free">
@@ -141,7 +152,7 @@
         <li><span class="i" aria-hidden="true"></span><span><b>Streak freezes</b> and streak restore</span></li>
         <li><span class="i" aria-hidden="true"></span><span><b>Ocean &amp; Sunset</b> themes</span></li>
       </ul>
-      <a id="plusBtn" class="cta gold" href="/?upgrade=1">Get Plus</a>
+      <a id="plusBtn" class="cta gold" href="/signup" data-plan="plus">Get Plus</a>
     </div>
 
     <div class="card plan">
@@ -152,15 +163,15 @@
         <div class="pass is-picked" data-pass="pass_7d" role="button" tabindex="0"><div class="days">7<small>days</small></div><div class="what"><b>One week <span class="chip">POPULAR</span></b>A full week of Plus</div><div class="cost" data-cost="pass_7d">$4.99</div></div>
         <div class="pass" data-pass="pass_15d" role="button" tabindex="0"><div class="days">15<small>days</small></div><div class="what"><b>Two weeks <span class="chip">BEST VALUE</span></b>Most days for the price</div><div class="cost" data-cost="pass_15d">$6.99</div></div>
       </div>
-      <a id="passBtn" class="cta violet" href="/?upgrade=1">Get a pass</a>
+      <a id="passBtn" class="cta violet" href="/signup" data-plan="pass">Get a pass</a>
       <p class="small-note">Pay once. Nothing renews.</p>
     </div>
   </section>
 
   <section class="how">
-    <div><b>💳 Easy to pay</b><span>In the Android app, pay with your Google Play account.</span></div>
-    <div><b>🔁 No surprises</b><span>Passes end on their own. Plus renews until you cancel.</span></div>
-    <div><b>🎁 Or earn it free</b><span>Invite 3 friends who sign up with your link and get 1 hour of Plus.</span></div>
+    <div><b>Easy to pay</b><span>In the Android app, pay with your Google Play account.</span></div>
+    <div><b>No surprises</b><span>Passes end on their own. Plus renews until you cancel.</span></div>
+    <div><b>Or earn it free</b><span>Invite 3 friends who sign up with your link and get 1 hour of Plus.</span></div>
   </section>
 
   <section class="faq">
@@ -220,9 +231,8 @@
   var plusBtn = document.getElementById('plusBtn');
   var passBtn = document.getElementById('passBtn');
   var activeNote = document.getElementById('premiumActiveNote');
-  // Prices for the visitor's country, and real checkout when it is switched on.
+  // Prices for the visitor's country.
   var picked = 'pass_7d';
-  var canPay = false;
   // The Plus plan on show: yearly by default, as it costs 42% less a month.
   var term = 'yearly';
   var plus = {
@@ -249,7 +259,6 @@
   });
   fetch('/pricing.json').then(function (r) { return r.json(); }).then(function (p) {
     if (!p || !p.monthly) return;
-    canPay = !!p.checkout;
     plus.monthly = { big: p.monthly.label, per: 'Renews monthly. Cancel any time.' };
     if (p.yearly && p.yearly.web !== false) {
       plus.yearly = { big: p.yearly.perMonthLabel, per: 'Billed yearly at ' + p.yearly.label + '. Cancel any time.' };
@@ -269,21 +278,37 @@
       if (card && !it.web) { card.hidden = true; if (picked === it.id) pick('pass_7d'); }
     });
   }).catch(function () {});
-  function buy(btn, plan) {
-    track('premium_checkout_click');
-    var token = localStorage.getItem('talklive_identity_token') || '';
-    // No checkout yet, or a browser the app has never run in: the app page handles it.
-    if (!canPay || !token) return true;
-    if (btn.getAttribute('aria-busy') === 'true') return false;
-    btn.setAttribute('aria-busy', 'true');
-    fetch('/billing/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientId: getClientId(), identityToken: token, plan: plan }) })
-      .then(function (r) { return r.json(); })
-      .then(function (d) { if (d && d.url) location.href = d.url; else location.href = '/?upgrade=1'; })
-      .catch(function () { btn.removeAttribute('aria-busy'); location.href = '/?upgrade=1'; });
-    return false;
+  // The website does not sell Plus. Guests are asked to sign up or log in first
+  // (the intent is remembered so the flow continues), then everyone is sent to
+  // the Android app, where Plus is bought and follows the account to the web.
+  var loggedIn = !!localStorage.getItem('talklive_nickname');
+  var appStep = document.getElementById('appStep');
+  function showAppStep() {
+    var name = localStorage.getItem('talklive_nickname') || '';
+    document.getElementById('appStepName').textContent = name;
+    var rows = [['Plus, monthly', plus.monthly.big + ' / month'], ['Plus, yearly', plus.yearly.big + ' / month, ' + plus.yearly.per.replace(/^Billed yearly at /, 'billed ').replace(/\. Cancel any time\.$/, '')]];
+    if (term === 'monthly' && termBtns.yearly.hidden) rows.pop();
+    var ul = document.getElementById('appStepPrices');
+    ul.textContent = '';
+    rows.forEach(function (r) { var li = document.createElement('div'); li.innerHTML = '<span></span><b></b>'; li.firstChild.textContent = r[0]; li.lastChild.textContent = r[1]; ul.appendChild(li); });
+    appStep.hidden = false;
+    appStep.scrollIntoView({ block: 'center' });
+    appStep.focus({ preventScroll: true });
   }
-  plusBtn.addEventListener('click', function (e) { if (!buy(plusBtn, term)) e.preventDefault(); });
-  passBtn.addEventListener('click', function (e) { if (!buy(passBtn, picked)) e.preventDefault(); });
+  function buy(e) {
+    e.preventDefault();
+    track('premium_checkout_click');
+    if (!loggedIn) {
+      try { sessionStorage.setItem('tl_plus_intent', '1'); } catch (_) {}
+      location.href = '/signup';
+      return;
+    }
+    showAppStep();
+  }
+  plusBtn.addEventListener('click', buy);
+  passBtn.addEventListener('click', buy);
+  document.getElementById('appStepBtn').addEventListener('click', function () { track('premium_app_download_click'); });
+  if (loggedIn && /[?&]step=app/.test(location.search)) setTimeout(showAppStep, 400);
 
   function markActive(expiresAt) {
     activeNote.hidden = false;
@@ -300,22 +325,6 @@
     .then(function (d) { if (d && d.premium) markActive(d.expiresAt); })
     .catch(function () {});
 
-  // Coming back from Stripe: the webhook that grants premium can land a moment
-  // after the redirect, so poll briefly rather than telling a paying customer
-  // they are not premium.
-  if (/[?&]checkout=success/.test(location.search)) {
-    var tries = 0;
-    var poll = setInterval(function () {
-      tries += 1;
-      fetch('/premium-status?clientId=' + encodeURIComponent(getClientId()))
-        .then(function (r) { return r.json(); })
-        .then(function (d) {
-          if (d && d.premium) { clearInterval(poll); markActive(d.expiresAt); }
-          else if (tries >= 10) clearInterval(poll);
-        })
-        .catch(function () { if (tries >= 10) clearInterval(poll); });
-    }, 1500);
-  }
 })();
 </script>
 

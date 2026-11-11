@@ -2673,6 +2673,16 @@ function renderPasses() {
   }
 }
 
+// Plus is bought in the Android app, not on the web. Guests make (or log in to)
+// an account first so the purchase follows them; the intent is remembered and
+// goHomeAfterAuth continues to the "Get Plus in the app" step afterwards.
+function plusGo() {
+  if (accountNickname) { location.href = '/pricing?step=app'; return; }
+  try { sessionStorage.setItem('tl_plus_intent', '1'); } catch (_) { /* private mode */ }
+  [shopModal, document.getElementById('premiumUpsellModal')].forEach((m) => m && closeModal(m));
+  openAuthPage('signup');
+}
+
 let shopPriced = false;
 function openShop() {
   renderPasses();
@@ -2691,7 +2701,7 @@ if (settingsShopRow) settingsShopRow.addEventListener('click', openShop);
   const buy = document.getElementById('passBuyBtn');
   if (buy) {
     buy.disabled = false;
-    buy.addEventListener('click', () => { trackGrowthEvent('premium_upsell_click'); location.href = '/pricing'; });
+    buy.addEventListener('click', () => { trackGrowthEvent('premium_upsell_click'); plusGo(); });
   }
 }
 if (closeShopBtn) closeShopBtn.addEventListener('click', () => closeModal(shopModal));
@@ -3340,9 +3350,13 @@ function closeAuthPage(fromHistory) {
 // leave people on whatever screen they started from, half-updated.
 function goHomeAfterAuth(message, delay) {
   try { if (message) sessionStorage.setItem('talklive_flash', message); } catch (_) { /* private mode */ }
+  let dest = '/';
+  try {
+    if (sessionStorage.getItem('tl_plus_intent')) { sessionStorage.removeItem('tl_plus_intent'); dest = '/pricing?step=app'; }
+  } catch (_) { /* private mode */ }
   setTimeout(() => {
     suppressUnloadWarning = true;
-    location.replace('/');
+    location.replace(dest);
   }, delay || 0);
 }
 
@@ -3377,6 +3391,9 @@ function selectAccountTab(which) {
   signupTab.classList.toggle('hidden', authTab !== 'signup');
   forgotTab.classList.toggle('hidden', authTab !== 'forgot');
   accountStatus.classList.add('hidden');
+  try {
+    if (authTab === 'signup' && sessionStorage.getItem('tl_plus_intent')) { accountStatus.textContent = t('plusNeedAccount'); accountStatus.classList.remove('hidden'); }
+  } catch (_) { /* private mode */ }
   const [titleKey, subKey] = AUTH_COPY[authTab];
   authTitle.dataset.i18n = titleKey;
   authTitle.textContent = t(titleKey);
@@ -11572,25 +11589,15 @@ const UPSELL_TITLES = { gender: 'upsellGenderTitle', likes: 'upsellLikesTitle', 
 function showPremiumUpsell(message, perk = 'countries') {
   document.getElementById('puTitle').textContent = t(UPSELL_TITLES[perk] || 'upsellCountriesTitle');
   document.getElementById('puReason').textContent = message;
-  document.getElementById('puSoon').textContent = t('upsellComingSoon');
   premiumUpsellModal.querySelectorAll('[data-perk]').forEach((li) => li.classList.toggle('is-hit', li.dataset.perk === perk));
-  // Already on the list: nothing more to sign up for, so the plans are next.
-  const signedUp = notifySignedUp('premium');
-  document.getElementById('puNotifyLabel').textContent = t(signedUp ? 'upsellSeePlans' : 'upsellNotify');
-  document.getElementById('puPlansLink').classList.toggle('hidden', signedUp);
+  document.getElementById('puNotifyLabel').textContent = t('upsellGetPlus');
+  document.getElementById('puPlansLink').classList.remove('hidden');
   trackGrowthEvent('premium_upsell_view');
   openModal(premiumUpsellModal);
 }
 document.getElementById('puNotifyBtn').addEventListener('click', () => {
   trackGrowthEvent('premium_upsell_click');
-  closeModal(premiumUpsellModal);
-  if (notifySignedUp('premium')) {
-    location.href = '/pricing?utm_source=app&utm_medium=upsell&utm_campaign=premium';
-    return;
-  }
-  // The rail's own Notify me button runs the sign-up and marks itself done.
-  const notify = document.querySelector('[data-notify="premium"]');
-  if (notify) notify.click();
+  plusGo();
 });
 document.getElementById('puCloseBtn').addEventListener('click', () => closeModal(premiumUpsellModal));
 premiumUpsellModal.addEventListener('click', (e) => { if (e.target === premiumUpsellModal) closeModal(premiumUpsellModal); });
