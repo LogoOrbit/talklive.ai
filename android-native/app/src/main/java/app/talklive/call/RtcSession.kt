@@ -168,6 +168,7 @@ class RtcSession(
         runCatching { remoteAudio?.removeSink(spectrum) }
         spectrum.reset()
         runCatching { pc.dispose() }
+        runCatching { localTrack.dispose() }
         runCatching { audioSource.dispose() }
     }
 

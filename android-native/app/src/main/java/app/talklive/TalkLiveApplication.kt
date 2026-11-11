@@ -22,6 +22,9 @@ class TalkLiveApplication : Application(), coil.ImageLoaderFactory {
     @Inject lateinit var sounds: app.talklive.sound.SoundDirector
     @Inject lateinit var notifier: app.talklive.push.LocalNotifier
     @Inject lateinit var fx: app.talklive.sound.Sounds
+    // Created at start: it signs the saved account back in on the first
+    // registration, which can arrive before any screen has asked for it.
+    @Inject lateinit var auth: app.talklive.auth.AuthRepository
 
     override fun onCreate() {
         CrashReporter.install(this)
@@ -93,6 +96,10 @@ class TalkLiveApplication : Application(), coil.ImageLoaderFactory {
             else add(coil.decode.GifDecoder.Factory())
         }
         .crossfade(true)
+        // Chat GIFs are large and many. Coil's defaults let them take a quarter
+        // of the app's memory and up to 250 MB of the phone's storage.
+        .memoryCache { coil.memory.MemoryCache.Builder(this).maxSizePercent(0.15).build() }
+        .diskCache { coil.disk.DiskCache.Builder().directory(cacheDir.resolve("image_cache")).maxSizeBytes(48L * 1024 * 1024).build() }
         .build()
 
     companion object {

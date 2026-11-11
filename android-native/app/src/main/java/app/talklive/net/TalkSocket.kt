@@ -47,8 +47,13 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
             .setReconnectionDelayMax(10_000)
             .build().apply {
                 // A real app identity, and the app's shared connection pool.
-                callFactory = Http.client
-                webSocketFactory = Http.client
+                // No read timeout: a long-poll is held open by the server
+                // for up to its 25 s ping interval, and OkHttp's default of
+                // 10 s cut every one of them short on networks that never
+                // upgrade to a WebSocket.
+                val client = Http.client.newBuilder().readTimeout(0, java.util.concurrent.TimeUnit.SECONDS).build()
+                callFactory = client
+                webSocketFactory = client
             },
     )
 
@@ -243,7 +248,9 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
     }
 
     fun connect() {
-        if (!socket.connected()) socket.connect()
+        if (socket.connected()) return
+        lastAttemptAt = System.nanoTime() / 1_000_000
+        socket.connect()
     }
 
     fun isConnected() = socket.connected()
@@ -258,9 +265,16 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
     /** Back in the foreground or back online: connect now instead of waiting out the retry backoff. */
     fun reconnectNow() {
         if (socket.connected()) { verify(); return }
+        // App start asks three times within a moment (connect, "network
+        // available", "app visible"); restarting each time threw away a
+        // handshake that was already half done.
+        val now = System.nanoTime() / 1_000_000
+        if (now - lastAttemptAt < 2_500) return
+        lastAttemptAt = now
         socket.disconnect()
         socket.connect()
     }
+    @Volatile private var lastAttemptAt = 0L
 
     // After the background or a network switch a socket can still say
     // "connected" while the link under it is gone (the phone slept, Wi-Fi

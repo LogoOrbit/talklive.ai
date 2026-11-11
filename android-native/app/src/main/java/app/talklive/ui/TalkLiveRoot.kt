@@ -107,7 +107,7 @@ fun TalkLiveRoot(vm: TalkViewModel = hiltViewModel()) {
     val onboarded by vm.onboarded.collectAsStateWithLifecycle()
     val account by vm.account.collectAsStateWithLifecycle()
     val animal by vm.animal.collectAsStateWithLifecycle()
-    var signingIn by remember { mutableStateOf(false) }
+    var signingIn by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(account) { if (account != null) signingIn = false }
     // Signing in (not opening the app already signed in) plays the welcome.
     var hadAccount by remember { mutableStateOf<Boolean?>(null) }
@@ -387,6 +387,15 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         else { vm.setMode(CallMode.Talk); withMic(::begin) }
     }
 
+    // A tapped notification: open the chat it is about, or the requests list.
+    val openTarget by app.talklive.data.LaunchActions.open.collectAsStateWithLifecycle()
+    LaunchedEffect(openTarget) {
+        val target = openTarget ?: return@LaunchedEffect
+        app.talklive.data.LaunchActions.open.value = null
+        if (target.startsWith("chat:")) { tab = MainTab.Chats; openChat = target.removePrefix("chat:") }
+        else if (target == "requests") tab = MainTab.Friends
+    }
+
     val noticeText = state.notice?.let { n ->
         when (n) {
             is CallNotice.PartnerLeft -> stringResource(if (n.dropped) R.string.partner_dropped else R.string.partner_left, n.name)
@@ -405,7 +414,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     val inCall = state.phase !is CallPhase.Idle
     // Back on a live voice call shrinks it to a bar at the top, so the rest of
     // the app can be used while talking; tapping the bar brings it back.
-    var callMinimized by remember { mutableStateOf(false) }
+    var callMinimized by rememberSaveable { mutableStateOf(false) }
     val liveVoice = state.phase is CallPhase.Connected && state.mode == CallMode.Talk
     LaunchedEffect(liveVoice) { if (!liveVoice) callMinimized = false }
     val showFullCall = inCall && !callMinimized

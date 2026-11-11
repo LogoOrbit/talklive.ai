@@ -24,7 +24,9 @@ class Spectrum : AudioTrackSink {
     private val _bands = MutableStateFlow(FloatArray(BANDS))
     val bands: StateFlow<FloatArray> = _bands
 
+    // Ring buffer: [pos] is the next write slot, and once full also the oldest sample.
     private val window = FloatArray(N)
+    private var pos = 0
     private var filled = 0
     private var sinceLast = 0
     private val smooth = FloatArray(BANDS)
@@ -39,20 +41,27 @@ class Spectrum : AudioTrackSink {
         synchronized(this) {
             for (i in 0 until frames) {
                 val v = if (i * ch < s.limit()) s.get(i * ch) / 32768f else 0f
-                if (filled < N) window[filled++] = v
-                else { System.arraycopy(window, 1, window, 0, N - 1); window[N - 1] = v }
+                window[pos] = v
+                pos = if (pos + 1 == N) 0 else pos + 1
+                if (filled < N) filled++
             }
             sinceLast += frames
             if (filled < N || sinceLast < sampleRate / 30) return
             sinceLast = 0
+            // Nobody is watching the bars, so skip the FFT (the ring buffer keeps filling).
+            if (_bands.subscriptionCount.value == 0) return
             analyse(sampleRate)
         }
     }
 
-    fun reset() = synchronized(this) { filled = 0; smooth.fill(0f); _bands.value = FloatArray(BANDS) }
+    fun reset() = synchronized(this) { filled = 0; pos = 0; smooth.fill(0f); _bands.value = FloatArray(BANDS) }
 
     private fun analyse(rate: Int) {
-        for (i in 0 until N) { re[i] = window[i] * hann[i]; im[i] = 0f }
+        // Copy out oldest-first so the window is in time order for the FFT.
+        for (i in 0 until N) {
+            val idx = if (pos + i >= N) pos + i - N else pos + i
+            re[i] = window[idx] * hann[i]; im[i] = 0f
+        }
         fft(re, im)
         val out = FloatArray(BANDS)
         val binHz = rate.toFloat() / N

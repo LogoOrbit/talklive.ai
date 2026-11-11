@@ -45,7 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -162,7 +162,7 @@ fun HomeScreen(
             }
         }
         Spacer(Modifier.height(18.dp))
-        val placed = online.filter { it.countryCode != null }
+        val placed = remember(online) { online.filter { it.countryCode != null } }
         if (placed.size >= 3) OnlineNow(placed, enabled = connected, onFindIn = onFindIn)
         else HowItWorks(mode == app.talklive.call.CallMode.Chat)
         if (plusCard != null && !premium) {
@@ -271,14 +271,12 @@ private fun HowItWorks(text: Boolean) {
 @Composable
 private fun MicOrb(text: Boolean = false, fit: Float = 1f) {
     val still = app.talklive.ui.theme.LocalReduceMotion.current
-    val halo: Float = if (still) 1.02f else {
-        val t = rememberInfiniteTransition(label = "orb")
-        val h by t.animateFloat(0.9f, 1.15f, infiniteRepeatable(tween(1600), RepeatMode.Reverse), label = "halo")
-        h
-    }
+    // Not read here: the scale is applied in the layer, so the breathing doesn't recompose the orb.
+    val halo = if (still) null else rememberInfiniteTransition(label = "orb")
+        .animateFloat(0.9f, 1.15f, infiniteRepeatable(tween(1600), RepeatMode.Reverse), label = "halo")
     Box(contentAlignment = Alignment.Center) {
         Box(
-            Modifier.size(220.dp * fit).scale(halo).clip(CircleShape)
+            Modifier.size(220.dp * fit).graphicsLayer { val s = halo?.value ?: 1.02f; scaleX = s; scaleY = s }.clip(CircleShape)
                 .background(Brush.radialGradient(listOf(BrandTeal.copy(alpha = 0.18f), BrandTeal.copy(alpha = 0.0f)))),
         )
         Box(Modifier.size(160.dp * fit).clip(CircleShape).background(BrandViolet.copy(alpha = 0.10f)))

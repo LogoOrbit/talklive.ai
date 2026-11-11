@@ -49,7 +49,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
@@ -79,6 +78,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleStartEffect
 import app.talklive.R
 import app.talklive.ui.theme.Danger
 import app.talklive.ui.theme.LocalAccents
@@ -95,10 +95,11 @@ fun rememberTilt(paused: Boolean = false): State<Offset> {
     val ctx = LocalContext.current
     val still = LocalReduceMotion.current || paused
     val tilt = remember { mutableStateOf(Offset.Zero) }
-    DisposableEffect(still) {
+    // Only listen while the screen is started: no sensor wakeups in the background.
+    LifecycleStartEffect(still) {
         val sm = ctx.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
         val sensor = sm?.getDefaultSensor(Sensor.TYPE_GRAVITY) ?: sm?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-        if (still || sm == null || sensor == null) return@DisposableEffect onDispose {}
+        if (still || sm == null || sensor == null) return@LifecycleStartEffect onStopOrDispose {}
         val l = object : SensorEventListener {
             override fun onSensorChanged(e: SensorEvent) {
                 val x = (-e.values[0] / 9.81f).coerceIn(-1f, 1f)
@@ -108,8 +109,8 @@ fun rememberTilt(paused: Boolean = false): State<Offset> {
             }
             override fun onAccuracyChanged(s: Sensor?, a: Int) {}
         }
-        sm.registerListener(l, sensor, SensorManager.SENSOR_DELAY_GAME)
-        onDispose { sm.unregisterListener(l) }
+        sm.registerListener(l, sensor, SensorManager.SENSOR_DELAY_UI)
+        onStopOrDispose { sm.unregisterListener(l) }
     }
     return tilt
 }
@@ -176,6 +177,8 @@ fun SpectrumRing(bands: () -> FloatArray, active: Boolean, size: Dp, inner: Dp, 
             val r0 = inner.toPx() / 2 + 6.dp.toPx()
             val maxLen = (this.size.minDimension / 2 - r0 - 4.dp.toPx()).coerceAtLeast(1f)
             val stroke = (2 * PI * r0 / n * 0.55f).toFloat().coerceIn(2f, 9.dp.toPx())
+            // One solid colour per bar (the old gradient's midpoint): no brush allocated per bar per frame.
+            val barColor = androidx.compose.ui.graphics.lerp(color.copy(alpha = 0.95f), accents.b.copy(alpha = 0.55f), 0.5f)
             rotate(spin) {
                 for (i in 0 until n) {
                     val v = b[if (i < b.size) i else n - 1 - i]
@@ -183,10 +186,7 @@ fun SpectrumRing(bands: () -> FloatArray, active: Boolean, size: Dp, inner: Dp, 
                     val a = (2 * PI * i / n - PI / 2).toFloat()
                     val start = Offset(center.x + cos(a) * r0, center.y + sin(a) * r0)
                     val end = Offset(center.x + cos(a) * (r0 + len), center.y + sin(a) * (r0 + len))
-                    drawLine(
-                        Brush.linearGradient(listOf(color.copy(alpha = 0.95f), accents.b.copy(alpha = 0.55f)), start, end),
-                        start, end, strokeWidth = stroke, cap = StrokeCap.Round,
-                    )
+                    drawLine(barColor, start, end, strokeWidth = stroke, cap = StrokeCap.Round)
                 }
             }
         },

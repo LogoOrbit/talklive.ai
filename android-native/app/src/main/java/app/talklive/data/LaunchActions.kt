@@ -8,4 +8,7 @@ object LaunchActions {
 
     /** Consumed by the main screen once it is ready. */
     val pending = MutableStateFlow<Action?>(null)
+
+    /** Where a tapped notification leads: "chat:<clientId>" or "requests". */
+    val open = MutableStateFlow<String?>(null)
 }

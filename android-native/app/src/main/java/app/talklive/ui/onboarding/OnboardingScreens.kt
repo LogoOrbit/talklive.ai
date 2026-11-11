@@ -219,17 +219,6 @@ internal fun WelcomeScreen(onDone: () -> Unit, onPlus: () -> Unit = onDone) {
     val pager = rememberPagerState { slides.size }
     val scope = rememberCoroutineScope()
     val last = pager.currentPage == slides.lastIndex
-    val spin = androidx.compose.animation.core.rememberInfiniteTransition(label = "orbit")
-    val angle by spin.animateFloat(
-        0f, 360f,
-        androidx.compose.animation.core.infiniteRepeatable(tween(40_000, easing = androidx.compose.animation.core.LinearEasing)),
-        label = "angle",
-    )
-    val pulse by spin.animateFloat(
-        1f, 1.08f,
-        androidx.compose.animation.core.infiniteRepeatable(tween(1400), androidx.compose.animation.core.RepeatMode.Reverse),
-        label = "pulse",
-    )
 
     Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(24.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -241,43 +230,6 @@ internal fun WelcomeScreen(onDone: () -> Unit, onPlus: () -> Unit = onDone) {
             val s = slides[page]
             if (page == 0) { WelcomeHero(s.faces, Modifier.graphicsLayer { alpha = 1f - offset.coerceIn(0f, 1f) * 0.6f }); return@HorizontalPager }
             if (page == slides.lastIndex) { PlusIntroPage(Modifier.graphicsLayer { alpha = 1f - offset.coerceIn(0f, 1f) * 0.6f }); return@HorizontalPager }
-            Column(
-                Modifier.fillMaxSize().graphicsLayer {
-                    alpha = 1f - offset.coerceIn(0f, 1f) * 0.6f
-                    val scale = 1f - offset.coerceIn(0f, 1f) * 0.1f
-                    scaleX = scale; scaleY = scale
-                },
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Box(Modifier.size(260.dp), contentAlignment = Alignment.Center) {
-                    Box(
-                        Modifier.size(210.dp).clip(CircleShape)
-                            .background(Brush.linearGradient(listOf(BrandTeal.copy(alpha = 0.14f), BrandTeal.copy(alpha = 0.14f)))),
-                    )
-                    Box(
-                        Modifier.size(116.dp).graphicsLayer { scaleX = pulse; scaleY = pulse }
-                            .clip(CircleShape).background(Brush.linearGradient(listOf(BrandTeal, BrandTeal))),
-                        contentAlignment = Alignment.Center,
-                    ) { Icon(s.icon, null, tint = Color.White, modifier = Modifier.size(52.dp)) }
-                    // People around the circle, drifting slowly.
-                    s.faces.forEachIndexed { i, id ->
-                        val a = Math.toRadians((angle * (if (page == 1) -1 else 1) + i * 360f / s.faces.size).toDouble())
-                        AnimalAvatarAt(id, kotlin.math.cos(a).toFloat() * 105f, kotlin.math.sin(a).toFloat() * 105f)
-                    }
-                }
-                Spacer(Modifier.height(36.dp))
-                Text(
-                    stringResource(s.title), style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.onBackground, textAlign = TextAlign.Center,
-                )
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    stringResource(s.body), style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 12.dp),
-                )
-            }
         }
         Row(Modifier.fillMaxWidth().padding(vertical = 24.dp), horizontalArrangement = Arrangement.Center) {
             repeat(slides.size) { i ->

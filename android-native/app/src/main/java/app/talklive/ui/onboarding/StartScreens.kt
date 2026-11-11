@@ -41,7 +41,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
@@ -87,13 +86,17 @@ fun AuroraBackground(modifier: Modifier = Modifier, content: @Composable () -> U
     val bg = MaterialTheme.colorScheme.background
     val dark = bg.luminance() < 0.5f
     Box(modifier.fillMaxSize().background(bg)) {
-        Canvas(Modifier.fillMaxSize().blur(60.dp)) {
+        // No blur layer (a full-screen blur redrawn every frame is costly): the glows
+        // fade to transparent on their own, so their edges stay soft.
+        Canvas(Modifier.fillMaxSize()) {
             val w = size.width; val h = size.height
             val pa = if (still) 0.3f else a
             val pb = if (still) 0.6f else b
-            drawCircle(Color(0xFF2A6FE8).copy(alpha = if (dark) 0.30f else 0.20f), radius = w * 0.62f, center = Offset(w * (0.15f + 0.35f * pa), h * (0.18f + 0.12f * pb)))
-            drawCircle(BrandTeal.copy(alpha = if (dark) 0.26f else 0.18f), radius = w * 0.55f, center = Offset(w * (0.9f - 0.3f * pb), h * (0.42f + 0.1f * pa)))
-            drawCircle(BrandTeal.copy(alpha = if (dark) 0.12f else 0.10f), radius = w * 0.4f, center = Offset(w * (0.4f + 0.2f * pb), h * (0.62f - 0.08f * pa)))
+            fun glow(color: Color, radius: Float, center: Offset) =
+                drawCircle(Brush.radialGradient(listOf(color, Color.Transparent), center = center, radius = radius), radius = radius, center = center)
+            glow(Color(0xFF2A6FE8).copy(alpha = if (dark) 0.30f else 0.20f), w * 0.62f, Offset(w * (0.15f + 0.35f * pa), h * (0.18f + 0.12f * pb)))
+            glow(BrandTeal.copy(alpha = if (dark) 0.26f else 0.18f), w * 0.55f, Offset(w * (0.9f - 0.3f * pb), h * (0.42f + 0.1f * pa)))
+            glow(BrandTeal.copy(alpha = if (dark) 0.12f else 0.10f), w * 0.4f, Offset(w * (0.4f + 0.2f * pb), h * (0.62f - 0.08f * pa)))
         }
         content()
     }

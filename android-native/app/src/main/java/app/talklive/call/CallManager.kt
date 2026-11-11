@@ -406,11 +406,13 @@ class CallManager @Inject constructor(
                 }
             }
             is ServerEvent.SearchRefused -> {
+                icePrefetch?.cancel()
                 teardown()
                 audio.stop()
                 _state.update { CallState(speakerOn = it.speakerOn, notice = CallNotice.Refused(e.reason)) }
             }
             ServerEvent.Banned -> {
+                icePrefetch?.cancel()
                 teardown()
                 audio.stop()
                 _state.update { CallState(notice = CallNotice.Banned) }

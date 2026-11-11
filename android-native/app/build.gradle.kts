@@ -24,6 +24,12 @@ if (firebaseText.contains("\"app.talklive\"")) {
     }
 }
 
+// -PabiSplit builds one release APK per phone chip instead of one that carries
+// both. The WebRTC library is most of the app, so the APK a phone actually
+// installs is 16 MB (64-bit) or 11 MB (32-bit) instead of 23 MB. Google Play
+// already does this from the bundle; this is for APKs handed out directly.
+val abiSplit = project.hasProperty("abiSplit")
+
 android {
     namespace = "app.talklive"
     compileSdk = 36
@@ -62,7 +68,7 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             signingConfig = signingConfigs.getByName("debug")
-            ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
+            if (!abiSplit) ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
             // Point a debug build at a local server with:
             //   ./gradlew installDebug -PserverUrl=http://10.0.2.2:5000
             (project.findProperty("serverUrl") as String?)?.let {
@@ -72,11 +78,30 @@ android {
         release {
             // Phones only: without this the APK also carried the WebRTC library
             // for desktop-emulator chips, which made the download twice the size.
-            ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
+            if (!abiSplit) ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             if (System.getenv("TALKLIVE_KEYSTORE") != null) signingConfig = signingConfigs.getByName("release")
+        }
+    }
+
+    splits {
+        abi {
+            isEnable = abiSplit
+            reset()
+            include("arm64-v8a", "armeabi-v7a")
+            isUniversalApk = false
+        }
+    }
+
+    // Files libraries leave in the APK that nothing on a phone reads.
+    packaging {
+        resources {
+            excludes += setOf(
+                "META-INF/**/LICENSE.txt", "META-INF/AL2.0", "META-INF/LGPL2.1", "META-INF/*.version",
+                "DebugProbesKt.bin", "kotlin-tooling-metadata.json",
+            )
         }
     }
 

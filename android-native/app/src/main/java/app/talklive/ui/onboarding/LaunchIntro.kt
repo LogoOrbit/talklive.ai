@@ -48,8 +48,9 @@ fun LaunchIntro(onDone: () -> Unit) {
             launch { kotlinx.coroutines.delay(260); logo.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessMediumLow)) }
             launch { kotlinx.coroutines.delay(420); word.animateTo(1f, tween(380, easing = FastOutSlowInEasing)) }
         }
-        kotlinx.coroutines.delay(220)
-        out.animateTo(0f, tween(320))
+        // Straight into the app once the name has landed: every launch waits on this.
+        kotlinx.coroutines.delay(60)
+        out.animateTo(0f, tween(220))
         onDone()
     }
     Box(

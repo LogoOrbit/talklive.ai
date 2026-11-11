@@ -82,6 +82,22 @@ jobs:
           name: talklive-native-release
           path: android-native/app/build/outputs/bundle/release/app-release.aab
 
+      # Signed APKs to hand out directly, one per phone chip (arm64-v8a is
+      # every phone from the last several years; armeabi-v7a is older ones).
+      # Each is about a third smaller than one APK carrying both.
+      - name: Build signed release APKs
+        if: env.TALKLIVE_KEYSTORE != ''
+        working-directory: android-native
+        env:
+          TALKLIVE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: ./gradlew --no-daemon assembleRelease -PabiSplit
+
+      - uses: actions/upload-artifact@v4
+        if: env.TALKLIVE_KEYSTORE != ''
+        with:
+          name: talklive-native-release-apks
+          path: android-native/app/build/outputs/apk/release/*.apk
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
