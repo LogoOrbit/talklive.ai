@@ -4602,8 +4602,6 @@ function quarantined(profile, socketId) {
 // only ever nudge ordering among candidates that already passed every filter.
 const MATCH_MODEL = process.env.MATCH_MODEL !== '0';
 const TRUST_TIERS = process.env.TRUST_TIERS !== '0';
-const TIER_HIGH_WAIT_MS = 20000; // a high-trust waiter may be paired with a low-trust one after this
-const TIER_PREFER = 1; // score nudge: low-low preferred, low-with-others avoided
 const featBuf = new Array(matchModel.N);
 let modelLearned = 0;
 function pairCtx(a, b, mode, now) {
@@ -5004,9 +5002,9 @@ function findBestMatch(socketId) {
   let bestIdx = -1;
   let bestScore = -Infinity;
   const now = Date.now();
-  const seekerTier = TRUST_TIERS && !seekerQuarantined ? reputation.tier(seeker.clientId, now) : 'normal';
-  const seekerWait = now - (seeker.searchSince || seeker.queuedAt || now);
-  const useModel = MATCH_MODEL && !seekerQuarantined && matchModel.ready();
+  const seekerTier = TRUST_TIERS && !seekerQuarantined && waitingQueue.length >= matchModel.MIN_POOL_FOR_RANKING ? reputation.tier(seeker.clientId, now) : 'normal';
+  const rankPool = !seekerQuarantined && waitingQueue.length >= matchModel.MIN_POOL_FOR_RANKING;
+  const useModel = rankPool && MATCH_MODEL && matchModel.ready();
   const seekerMode = seeker.mode || 'talk';
 
   for (let i = 0; i < waitingQueue.length; i++) {
@@ -5017,24 +5015,13 @@ function findBestMatch(socketId) {
     if (quarantined(candidate, candidateId) !== seekerQuarantined) continue;
     if (!mutuallyCompatible(seeker, candidate)) continue;
 
-    // Soft trust tiers (quarantine above stays the hard split): low-trust people
-    // prefer each other, and a high-trust person is only offered a low-trust
-    // one after waiting TIER_HIGH_WAIT_MS, so nobody starves.
+    // Ranking preference only (see matchModel.rankScore): never skips a
+    // candidate, and does nothing unless the pool is big enough to choose from.
     let adj = 0;
-    if (TRUST_TIERS && !seekerQuarantined) {
-      const ct = reputation.tier(candidate.clientId, now);
-      if (ct === 'low' && seekerTier === 'low') adj += TIER_PREFER;
-      else if ((ct === 'low') !== (seekerTier === 'low')) {
-        if (ct === 'high' || seekerTier === 'high') {
-          const highWait = seekerTier === 'high' ? seekerWait : now - (candidate.searchSince || candidate.queuedAt || now);
-          if (highWait <= TIER_HIGH_WAIT_MS) continue;
-        }
-        adj -= TIER_PREFER;
-      }
-    }
-    if (useModel) {
-      const ctx = pairCtx(seeker, candidate, seekerMode, now);
-      adj += matchModel.adjust(seeker, candidate, ctx, featBuf);
+    if (rankPool) {
+      const ct = TRUST_TIERS && !seekerQuarantined ? reputation.tier(candidate.clientId, now) : 'normal';
+      const md = useModel ? matchModel.adjust(seeker, candidate, pairCtx(seeker, candidate, seekerMode, now), featBuf) : 0;
+      adj = matchModel.rankAdjust(seekerTier, ct, md);
     }
 
     const score = matchScore(seeker, candidate) + adj;

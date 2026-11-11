@@ -83,4 +83,28 @@ m.load(j);
 ok('dump/load round trip', m.summary().samples === nBefore && Math.abs(m.predict(mk(), mk(), goodC) - pBefore) < 1e-9);
 ok('load rejects garbage', m.load({ v: 1, w: [1, 2] }) === false && m.summary().samples === 0);
 
+// Ranking is a preference only: same selection loop as findBestMatch.
+// cands: [{tier, base, delta}]; returns chosen index, -1 only if there are none.
+function pick(seekerTier, cands, pool, enabled) {
+  let best = -1, bs = -Infinity;
+  const ranked = enabled && pool >= m.MIN_POOL_FOR_RANKING;
+  cands.forEach((c, i) => {
+    const sc = c.base + (ranked ? m.rankAdjust(seekerTier, c.tier, c.delta) : 0);
+    if (sc > bs) { bs = sc; best = i; }
+  });
+  return best;
+}
+const hi = { tier: 'high', base: 0, delta: 0.9 }, lo = { tier: 'low', base: 0, delta: -0.9 };
+ok('(a) two waiting users, high vs low, match at once', pick('high', [lo], 2, true) === 0 && pick('low', [hi], 2, true) === 0);
+const small = [{ tier: 'low', base: 0, delta: -0.5 }, { tier: 'high', base: 0, delta: 0.8 }];
+ok('(b) small pool picks exactly what the old code picks', pick('high', small, 5, true) === pick('high', small, 5, false));
+const big = [{ tier: 'high', base: 0, delta: -0.4 }, { tier: 'low', base: 0, delta: 0.1 }, { tier: 'low', base: 0, delta: 0.6 }];
+ok('(c) large pool prefers same-tier and higher-predicted', pick('low', big, 8, true) === 2 && pick('low', big, 8, false) === 0);
+let never = true;
+for (let n = 1; n < 12; n++) for (const t of ['low', 'normal', 'high']) {
+  const cs = Array.from({ length: n }, (_, i) => ({ tier: ['low', 'normal', 'high'][i % 3], base: i % 2, delta: (i % 5) / 5 - 0.4 }));
+  if ((pick(t, cs, n, false) === -1) !== (pick(t, cs, n, true) === -1)) never = false;
+}
+ok('(d) ranking never defers or removes a match that exists without it', never);
+
 process.exit(failed ? 1 : 0);

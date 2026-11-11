@@ -20,6 +20,19 @@ const BUCKETS = 10;
 const SCORE_W = 3;
 const MAX_SHIFT = 1;
 
+// Ranking applies only when this many people wait; below it matching is exactly
+// the old behaviour. It never excludes a candidate, only reorders them.
+const MIN_POOL_FOR_RANKING = 6;
+const TIER_PREFER = 1;
+// Added to the base score: low-trust pairs preferred, low-with-other avoided,
+// plus the (already bounded) model delta. Always finite, never a filter.
+function rankAdjust(seekerTier, candTier, modelDelta) {
+  let adj = Number.isFinite(modelDelta) ? modelDelta : 0;
+  if (seekerTier === 'low' && candTier === 'low') adj += TIER_PREFER;
+  else if ((seekerTier === 'low') !== (candTier === 'low')) adj -= TIER_PREFER;
+  return adj;
+}
+
 let w = new Array(N).fill(0);
 let g = new Array(N).fill(1e-8); // Adagrad accumulators
 let samples = 0, positives = 0, logLossEma = Math.LN2;
@@ -139,4 +152,4 @@ function label(ms, positive) {
   return null;
 }
 
-module.exports = { NAMES, N, features, predict, adjust, learn, summary, dump, load, reset, label, ready, baseline, MIN_SAMPLES, SCORE_W, MAX_SHIFT, W_CLIP };
+module.exports = { MIN_POOL_FOR_RANKING, TIER_PREFER, rankAdjust, NAMES, N, features, predict, adjust, learn, summary, dump, load, reset, label, ready, baseline, MIN_SAMPLES, SCORE_W, MAX_SHIFT, W_CLIP };

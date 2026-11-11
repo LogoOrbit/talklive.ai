@@ -3506,8 +3506,7 @@ async function viewIntel(){
       <div><div class="k muted">Is it honest? Predicted chance (across) vs what happened (up)</div><svg class="ix-svg" style="max-width:240px" viewBox="0 0 ${W} ${W}" role="img" aria-label="Calibration"><rect x="${pad}" y="${pad}" width="${W-2*pad}" height="${W-2*pad}" fill="none" stroke="var(--grid)"/><line x1="${pad}" y1="${W-pad}" x2="${W-pad}" y2="${pad}" stroke="var(--muted)" stroke-dasharray="3 3"/>${dots}</svg><div class="muted">Dots on the dashed line mean the predictions are accurate.</div></div></div>`;
   })();
   const card=(t,sub,body)=>`<div class="card"><h2>${t} <span class="sub">${sub}</span></h2>${body}</div>`;
-  $('#main').innerHTML=`<div class="muted" style="margin-bottom:4px">Updated ${new Date(d.generatedAt).toLocaleTimeString()}. Refreshes at most every 5 minutes.</div>
-    ${card('Site health','one score for how well conversations are going',healthCard)}
+  $('#main').innerHTML=`${card('Site health','one score for how well conversations are going',healthCard)}
     ${card('Alerts','what is unusual right now',alertsCard)}
     ${card('Next 7 days','forecast from the last weeks of activity',forecastCard)}
     ${card('Do people come back?','share of new people who return',retCard)}
