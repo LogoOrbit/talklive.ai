@@ -38,6 +38,9 @@ class PushRegistrar @Inject constructor(
 
     val available: Boolean get() = FirebaseApp.getApps(context).isNotEmpty()
 
+    /** The server holds this phone's push token, so it can reach the app without a live connection. */
+    val registered: Boolean get() = available && prefs.getString("sent", null) != null
+
     init {
         // Registering (or adopting an account's profile) can change the identity.
         scope.launch { socket.events.collect { if (it == ServerEvent.Registered) refresh() } }

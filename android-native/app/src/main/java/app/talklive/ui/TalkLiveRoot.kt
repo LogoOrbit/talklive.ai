@@ -363,11 +363,14 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
             if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
                 add(Manifest.permission.RECORD_AUDIO)
             }
-            if (Build.VERSION.SDK_INT >= 33 &&
-                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-            ) add(Manifest.permission.POST_NOTIFICATIONS)
+            // Bluetooth is only asked for when a Bluetooth headset is connected right now
+            // (listing devices needs no permission); notifications are asked for on Home.
             if (Build.VERSION.SDK_INT >= 31 &&
-                ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED
+                ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED &&
+                context.getSystemService(android.media.AudioManager::class.java).getDevices(android.media.AudioManager.GET_DEVICES_OUTPUTS).any {
+                    it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO || it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP ||
+                        it.type == android.media.AudioDeviceInfo.TYPE_BLE_HEADSET
+                }
             ) add(Manifest.permission.BLUETOOTH_CONNECT)
         }
         if (needed.isEmpty()) action() else { afterMic = action; permissions.launch(needed.toTypedArray()) }

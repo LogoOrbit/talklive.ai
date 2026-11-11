@@ -249,6 +249,7 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
 
     fun connect() {
         if (socket.connected()) return
+        sleeping = false
         lastAttemptAt = System.nanoTime() / 1_000_000
         socket.connect()
     }
@@ -262,8 +263,30 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
         return kotlinx.coroutines.withTimeoutOrNull(ms) { _connected.first { it } } == true
     }
 
-    /** Back in the foreground or back online: connect now instead of waiting out the retry backoff. */
-    fun reconnectNow() {
+    // Dropped on purpose after a while in the background (see [sleep]). Nothing
+    // reconnects it by itself; the app opening, or something that needs to send, does.
+    @Volatile private var sleeping = false
+
+    /** Closes the connection for good until the app is opened or something needs to send. */
+    fun sleep() {
+        if (sleeping) return
+        // Just woken to send something (a reply from a notification): let it go out first.
+        if (System.nanoTime() / 1_000_000 - lastAttemptAt < 30_000) return
+        sleeping = true
+        socket.disconnect()
+    }
+
+    /**
+     * Back in the foreground or back online: connect now instead of waiting out the retry backoff.
+     * [fromNetwork]: only the network coming back, which must not wake a sleeping socket in the background.
+     */
+    fun reconnectNow(fromNetwork: Boolean = false) {
+        if (sleeping) {
+            if (fromNetwork && hidden) return
+            sleeping = false
+            // A sleep is not a recent attempt: the guard below must not hold the wake-up back.
+            lastAttemptAt = Long.MIN_VALUE / 2
+        }
         if (socket.connected()) { verify(); return }
         // App start asks three times within a moment (connect, "network
         // available", "app visible"); restarting each time threw away a
@@ -289,7 +312,7 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
         Thread {
             runCatching { Thread.sleep(1_500) }
             verifying = false
-            if (!answered.get()) {
+            if (!answered.get() && !sleeping) {
                 Log.i(TAG, "connection stale, reconnecting")
                 socket.disconnect()
                 socket.connect()
@@ -311,6 +334,8 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
     }.getOrDefault(emptyMap())
 
     fun emit(event: String, payload: Any? = null) {
+        // A reply or decline from a notification can arrive while asleep.
+        if (sleeping) reconnectNow()
         if (payload == null) socket.emit(event) else socket.emit(event, payload)
     }
 

@@ -72,16 +72,34 @@ class TalkLiveApplication : Application(), coil.ImageLoaderFactory {
         socket.connect()
         runCatching {
             getSystemService(android.net.ConnectivityManager::class.java).registerDefaultNetworkCallback(object : android.net.ConnectivityManager.NetworkCallback() {
-                override fun onAvailable(network: android.net.Network) { socket.reconnectNow() }
+                override fun onAvailable(network: android.net.Network) { socket.reconnectNow(fromNetwork = true) }
             })
         }
         // Foreground/background: the server pushes to a backgrounded app, and a
         // text-chat partner sees "switched away".
+        // A minute after the app goes to the background the connection is closed
+        // (the server pushes from then on), unless a call, a search or a friend
+        // call is going on; it is looked at again every minute while away.
+        var sleepJob: kotlinx.coroutines.Job? = null
         androidx.lifecycle.ProcessLifecycleOwner.get().lifecycle.addObserver(
             androidx.lifecycle.LifecycleEventObserver { _, event ->
                 when (event) {
-                    androidx.lifecycle.Lifecycle.Event.ON_START -> { socket.reconnectNow(); socket.hidden = false; calls.appVisible(true) }
-                    androidx.lifecycle.Lifecycle.Event.ON_STOP -> { socket.hidden = true; calls.appVisible(false) }
+                    androidx.lifecycle.Lifecycle.Event.ON_START -> {
+                        sleepJob?.cancel()
+                        socket.reconnectNow(); socket.hidden = false; calls.appVisible(true)
+                    }
+                    androidx.lifecycle.Lifecycle.Event.ON_STOP -> {
+                        socket.hidden = true; calls.appVisible(false)
+                        sleepJob?.cancel()
+                        sleepJob = kotlinx.coroutines.MainScope().launch {
+                            while (true) {
+                                kotlinx.coroutines.delay(60_000)
+                                // Only when push can reach this phone: without it the open
+                                // connection is the one way a message still gets through.
+                                if (push.registered && calls.state.value.phase is app.talklive.call.CallPhase.Idle && social.incoming.value == null && social.outgoing.value == null) socket.sleep()
+                            }
+                        }
+                    }
                     else -> Unit
                 }
             },
