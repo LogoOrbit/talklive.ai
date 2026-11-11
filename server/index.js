@@ -2801,6 +2801,8 @@ function lastMessageBetween(me, other) {
     voice: !!m.voice,
     ts: m.ts,
     seen: !!m.seen,
+    // Seen implies delivered; the list and the thread read the same flags.
+    delivered: !!(m.delivered || m.seen),
   };
 }
 
@@ -2938,7 +2940,21 @@ function pushCopyFor(notif) {
     case 'message':
       // Each lands where the tap meant to go: the conversation itself, or the
       // request waiting for an answer - not a panel to hunt through.
-      return { topic: `msg:${notif.fromClientId}`, title: `${notif.username} messaged you`, body: 'Open TalkLive to read it.', url: `/?open=chat&with=${encodeURIComponent(notif.fromClientId)}`, kind: 'message' };
+      return {
+        topic: `msg:${notif.fromClientId}`, title: `${notif.username} messaged you`, body: 'Open TalkLive to read it.',
+        url: `/?open=chat&with=${encodeURIComponent(notif.fromClientId)}`, kind: 'message',
+        // Android app only (web push never carries the text): the app builds
+        // its own notification from this, with the preview and a Reply action.
+        data: {
+          kind: 'message',
+          fromClientId: notif.fromClientId,
+          fromName: String(notif.username || '').slice(0, 60),
+          preview: notif.media === 'gif' ? 'GIF' : notif.media === 'voice' ? 'Voice message' : String(notif.text || '').slice(0, 120),
+          media: notif.media || '',
+          msgId: String(notif.msgId || ''),
+          ts: String(notif.ts || Date.now()),
+        },
+      };
     case 'friend_request':
       return { topic: `req:${notif.fromClientId}`, title: `${notif.username} wants to be friends`, body: 'Tap to accept or decline.', url: '/?open=requests', kind: 'social' };
     case 'friend_accepted':
@@ -3400,6 +3416,33 @@ function readVoicePayload(raw) {
   return { bytes, mime, ms: Math.min(ms, VOICE_MAX_MS), id: cleanMsgId(raw.id), replyTo: cleanMsgId(raw.replyTo), transcript };
 }
 
+// "Delivered" means the recipient's device got the message: it was pushed to
+// their live socket, or they connected afterwards and were synced. Stored on
+// the message so a later thread or list fetch reports what the live events
+// already announced. Returns the ids newly marked.
+function markDelivered(fromClientId, toClientId) {
+  const list = friendChats.get(pairKey(fromClientId, toClientId));
+  const ids = [];
+  if (!list) return ids;
+  for (const m of list) {
+    if (m.from !== fromClientId || m.delivered || m.seen) continue;
+    m.delivered = true;
+    ids.push(m.id);
+  }
+  if (ids.length) persistSocial();
+  return ids;
+}
+// A client that just connected has now received everything waiting for it.
+function deliverPendingTo(clientId) {
+  const senders = new Set();
+  for (const n of notifications.get(clientId) || []) if (n.type === 'message' && n.fromClientId) senders.add(n.fromClientId);
+  for (const from of senders) {
+    const ids = markDelivered(from, clientId);
+    const s = ids.length && getSocketByClientId(from);
+    if (s) s.emit('friend-message-delivered', { toClientId: clientId, ids });
+  }
+}
+
 // Stores a direct message that has passed every check, and delivers it: the
 // thread, the transcript, the recipient's socket or push, and the sender's
 // acknowledgement. Shared by text/GIF messages and voice notes.
@@ -3470,6 +3513,8 @@ function deliverFriendMessage(socket, me, toClientId, parsed, msgId) {
   const targetSocket = getSocketByClientId(toClientId);
   if (targetSocket) {
     targetSocket.emit('friend-message', wire);
+    msg.delivered = true;
+    persistSocial();
     if (theirsAdded) syncClientState(targetSocket, toClientId);
   }
   if (mineAdded) syncClientState(socket, me.clientId);
@@ -3480,10 +3525,12 @@ function deliverFriendMessage(socket, me, toClientId, parsed, msgId) {
     username: me.username,
     text: msg.text || (msg.voice ? '🎤 Voice message' : '[GIF]'),
     msgId: msg.id,
+    media: msg.voice ? 'voice' : msg.gif && !msg.text ? 'gif' : undefined,
   });
 
   socket.emit('friend-message-sent', {
     toClientId, text: msg.text, ts: msg.ts, id: msg.id, replyTo: msg.replyTo || null, gif: msg.gif || null, voice: msg.voice || null,
+    delivered: !!msg.delivered,
   });
   return msg;
 }
@@ -6497,6 +6544,7 @@ io.on('connection', (socket) => {
     socket.emit('register-result', { ok: true });
     refreshFriendSnapshots(clientId, profiles.get(socket.id));
     syncClientState(socket, clientId);
+    deliverPendingTo(clientId);
     // A signed-in browser gets its account ID from 'resume-session' instead,
     // so it is never handed a guest code it would drop a moment later.
     if (socketAuth.get(socket.id) || !data.signedIn || resumeRefused) {
@@ -7833,6 +7881,7 @@ io.on('connection', (socket) => {
       if (dup && dup.from === me.clientId && dup.text === trimmed) {
         return socket.emit('friend-message-sent', {
           toClientId, text: dup.text, ts: dup.ts, id: dup.id, replyTo: dup.replyTo || null, gif: dup.gif || null,
+          delivered: !!(dup.delivered || dup.seen), seen: !!dup.seen,
         });
       }
       if (dup) msgId = null;
@@ -8180,7 +8229,7 @@ io.on('connection', (socket) => {
     let changed = false;
     if (list) {
       for (const m of list) {
-        if (m.from === friendClientId && !m.seen) { m.seen = true; changed = true; }
+        if (m.from === friendClientId && !m.seen) { m.seen = true; m.delivered = true; changed = true; }
       }
       if (changed) persistSocial();
     }

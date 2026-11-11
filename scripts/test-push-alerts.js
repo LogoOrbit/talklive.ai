@@ -16,6 +16,7 @@ const BASE = `http://127.0.0.1:${PORT}`;
 const DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'tl-push-'));
 const SENT_LOG = path.join(DATA_DIR, 'sent.jsonl');
 const STUB = path.join(DATA_DIR, 'stub.js');
+const FCM_LOG = path.join(DATA_DIR, 'fcm.jsonl');
 
 // Replaces the real push service: every send is written to SENT_LOG.
 fs.writeFileSync(STUB, `
@@ -24,6 +25,14 @@ const webpush = require(${JSON.stringify(require.resolve('web-push'))});
 webpush.sendNotification = async (sub, payload) => {
   fs.appendFileSync(${JSON.stringify(SENT_LOG)}, JSON.stringify({ endpoint: sub.endpoint, ...JSON.parse(payload) }) + '\\n');
   return { statusCode: 201 };
+};
+// Firebase: no token exchange, and the send is written to FCM_LOG.
+require(${JSON.stringify(require.resolve('google-auth-library'))}).GoogleAuth.prototype.getAccessToken = async () => 'stub-token';
+const realFetch = global.fetch;
+global.fetch = async (url, opts) => {
+  if (!String(url).startsWith('https://fcm.googleapis.com/')) return realFetch(url, opts);
+  fs.appendFileSync(${JSON.stringify(FCM_LOG)}, JSON.parse(opts.body).message ? opts.body + '\\n' : '');
+  return { ok: true, status: 200, json: async () => ({}) };
 };
 `);
 
@@ -79,6 +88,7 @@ async function subscribe(clientId, endpoint) {
   const srv = spawn(process.execPath, ['-r', STUB, path.join(__dirname, '..', 'server', 'index.js')], {
     env: {
       ...process.env, PORT: String(PORT), DATA_DIR, NODE_ENV: 'development', GIPHY_API_KEY: '',
+      FCM_SERVICE_ACCOUNT: JSON.stringify({ project_id: 'tl-test', client_email: 'x@tl-test.iam.gserviceaccount.com', private_key: 'unused' }),
       VAPID_PUBLIC_KEY: vapid.publicKey, VAPID_PRIVATE_KEY: vapid.privateKey, FRIEND_ONLINE_QUIET_MS: '200',
     },
     stdio: ['ignore', 'ignore', 'inherit'],
@@ -124,6 +134,31 @@ async function subscribe(clientId, endpoint) {
     a.emit('friend-message', { toClientId: B, text: 'you there?', id: 'away1' });
     await wait(300);
     ok('message pushed', sentTo(B_ENDPOINT).some((p) => /Alpha messaged you/.test(p.title)), sentTo(B_ENDPOINT));
+
+    // The Android app: a direct message arrives as data only (no notification
+    // block), carrying the sender's name and a text preview, and a quick
+    // second and third message from the same friend still go out.
+    const FCM_TOKEN = 'fcm-token-bravo-0123456789abcdef';
+    const nativeRes = await fetch(BASE + '/push/native-subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientId: B, identityToken: identityTokens[B], token: FCM_TOKEN, platform: 'android' }),
+    });
+    ok('native subscribe accepted', nativeRes.status === 204, nativeRes.status);
+    const filler = ['are', 'you', 'around', 'later', 'today', 'for', 'a', 'quick', 'chat', 'about', 'the', 'weekend', 'plans', 'we', 'made', 'before', 'because', 'I', 'forgot', 'what', 'time', 'works', 'best', 'for', 'everyone'];
+    for (let i = 0; i < 3; i++) a.emit('friend-message', { toClientId: B, text: `fcm line ${i} ${filler.slice(i).join(' ')} ${filler.slice(0, i + 2).join(' ')}`, id: 'fcm' + i });
+    a.emit('friend-message', { toClientId: B, text: '', gif: { url: 'https://media.giphy.com/media/abc/giphy.gif', preview: 'https://media.giphy.com/media/abc/200.gif', w: 200, h: 200, alt: 'g' }, id: 'fcmgif' });
+    await wait(600);
+    const fcmSent = fs.existsSync(FCM_LOG) ? fs.readFileSync(FCM_LOG, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l).message) : [];
+    const first = fcmSent[0] || {};
+    ok('app message is data-only', fcmSent.length >= 3 && !first.notification && first.token === FCM_TOKEN, fcmSent);
+    ok('data carries kind, sender, id and url', first.data && first.data.kind === 'message' && first.data.fromClientId === A
+      && first.data.fromName === 'Alpha' && first.data.msgId === 'fcm0' && first.data.url === `/?open=chat&with=${A}`, first.data);
+    ok('preview is the first 120 characters', first.data && first.data.preview.length === 120 && first.data.preview.startsWith('fcm line 0'), first.data);
+    ok('android message is high priority', first.android && first.android.priority === 'high' && !first.android.notification);
+    ok('each message in a burst is sent', fcmSent.filter((m) => m.data && /^fcm[012]$/.test(m.data.msgId)).length === 3, fcmSent.map((m) => m.data && m.data.msgId));
+    ok('a GIF says GIF', fcmSent.some((m) => m.data && m.data.msgId === 'fcmgif' && m.data.preview === 'GIF'), fcmSent.map((m) => m.data));
+    ok('web push still has no message text', sentTo(B_ENDPOINT).every((p) => !/fcm line/.test(p.body)));
 
     const calling = once(a, 'call-back-request-result');
     a.emit('call-back-request', { targetClientId: B });
