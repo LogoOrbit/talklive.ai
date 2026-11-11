@@ -282,4 +282,21 @@ class ScreenshotTest {
     @Test fun inCall() = shot("09_in_call") {
         CallScreen(CallState(phase = CallPhase.Connected(partner, System.currentTimeMillis() - 83_000)), true, "fox", { 0.2f }, onNext = {}, onEnd = {}, onMute = {}, onSpeaker = {}, onReport = {})
     }
+
+    @Test fun adHome() = shot("ad_home") { HomeScreen(true, 3412, "fox", "You", false, {}, {}, {}, premium = false) }
+    @Test fun adSearching() = shot("ad_searching") {
+        CallScreen(CallState(phase = CallPhase.Searching(4)), true, "fox", { 0f }, onNext = {}, onEnd = {}, onMute = {}, onSpeaker = {}, onReport = {})
+    }
+    @Test fun adCall() = shot("ad_call") {
+        val bands = FloatArray(28) { i -> (0.25f + 0.6f * kotlin.math.sin(i / 3.0).toFloat().let { it * it }).coerceIn(0f, 1f) }
+        CallScreen(CallState(phase = CallPhase.Connected(Partner("c_2", "Maya", "United States", "US", "owl", false), now - 2_000)), true, "fox", { 0.3f }, onNext = {}, onEnd = {}, onMute = {}, onSpeaker = {}, onReport = {}, bands = { bands })
+    }
+    @Test fun adFriends() = shot("ad_friends") {
+        app.talklive.ui.social.FriendsScreen(socialVm {
+            seedForPreview(
+                friends = listOf(p("m", "Maya", "US", "owl", true), p("b", "Kenji", "JP", "panda", false), p("c", "Amara", "NG", "cat", true), p("a", "Sofia", "ES", "dolphin", false)),
+                requests = emptyList(), history = emptyList(),
+            )
+        }, {}, {})
+    }
 }

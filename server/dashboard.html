@@ -249,6 +249,26 @@ main{padding:18px 22px;min-width:0;padding-bottom:calc(84px + env(safe-area-inse
 .card{background:var(--surface);backdrop-filter:blur(12px);border:1px solid var(--ring);border-radius:18px;padding:16px;margin-top:12px;overflow-x:auto}
 .card h2{font-size:.95rem;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .card h2 .sub{font-weight:400;color:var(--muted);font-size:.78rem}
+/* Intelligence tab: no motion, one blue scale for the cohort table. */
+.ix-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr))}
+.ix-health{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.ix-score{font-size:3rem;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.ix-parts{flex:1;min-width:240px;display:grid;gap:8px}
+.ix-part{display:grid;grid-template-columns:minmax(120px,1.1fr) 2fr auto;gap:8px;align-items:center;font-size:.8rem}
+.ix-part .bar{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.ix-part .bar i{display:block;height:100%;background:#2a6fe8}
+.ix-part.weak .bar i{background:var(--warn)}
+.ix-alert{border:1px solid var(--ring);border-left:4px solid var(--warn);border-radius:10px;padding:9px 12px;margin-top:8px;font-size:.85rem;background:var(--surface)}
+.ix-alert.critical{border-left-color:var(--crit)}
+.ix-alert b{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:2px}
+.ix-ok{border-left:4px solid var(--good);border:1px solid var(--ring);border-left-width:4px;border-left-color:var(--good);border-radius:10px;padding:9px 12px;font-size:.85rem}
+table.ix-coh{min-width:0}
+table.ix-coh td.num{border-radius:6px;text-align:center}
+.ix-svg{width:100%;height:auto;display:block}
+.ix-svg text{fill:var(--muted);font-size:10px}
+.ix-two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:600px){.ix-two{grid-template-columns:1fr}.ix-part{grid-template-columns:1fr 1fr auto}}
+.ix-w{display:flex;justify-content:space-between;gap:8px;font-size:.82rem;padding:4px 0;border-bottom:1px solid var(--grid)}
 .legend{display:flex;gap:14px;font-size:.76rem;color:var(--ink2);margin-bottom:8px;flex-wrap:wrap}
 .legend i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:-1px}
 table{width:100%;border-collapse:collapse;font-size:.85rem;min-width:560px}
@@ -998,6 +1018,7 @@ const NAV=[
     ['features','New features','✨',[['features','New features','✨']]],
     ['activity','Activity','📅',[['activity','Today & trends','📅'],['daily','Daily log','📋']]],
     ['traffic','Traffic','🔎',[['traffic','Traffic','🔎']]],
+    ['intel','Intelligence','◈',[['intel','Intelligence','◈']]],
     ['audience','Audience','⚧',[['audience','Who uses it','⚧'],['experience','Experience','🩺']]],
     ['ai','AI Agent','🤖',[['ai','AI Agent','🤖']]]]],
   ['Moderation',[
@@ -1035,7 +1056,7 @@ let tab='overview',timer=null,counts={},paused=false,lastLoadTs=0,loadFailures=0
 let loadSeq=0,renderedTab=null,quiet=false,lastStatusTs=0;
 /* Health and Traffic show Google data cached for 30+ minutes; polling them
    every 12s only repaints the same numbers. */
-const REFRESH_MS=()=>(tab==='live'||tab==='support')?10000:(tab==='ai'||tab==='health'||tab==='traffic'||tab==='settings'||tab==='audit')?120000:30000;
+const REFRESH_MS=()=>(tab==='live'||tab==='support')?10000:(tab==='ai'||tab==='intel'||tab==='health'||tab==='traffic'||tab==='settings'||tab==='audit')?120000:30000;
 
 function navBadge(id){
   if(id==='support'&&counts.supportWaiting)return `<span class="badge">${counts.supportWaiting}</span>`;
@@ -1266,6 +1287,7 @@ async function load(force){
     else if(tab==='activity')await viewActivity();
     else if(tab==='daily')await viewDaily();
     else if(tab==='traffic')await viewTraffic();
+    else if(tab==='intel')await viewIntel();
     else if(tab==='health')await viewHealth();
     else if(tab==='ai')await viewBot();
     else if(tab==='audience')await viewAudience();
@@ -3415,6 +3437,83 @@ function hlUptime(u){
     ${(u.monitors||[]).map(m=>`<tr><td>${esc(m.name)}</td><td>${hlBadge(m.status,m.status==='up'?'good':m.status==='paused'?'':'bad')}</td><td class="num">${m.uptime.d1}%</td><td class="num">${m.uptime.d7}%</td><td class="num">${m.uptime.d30}%</td><td class="num">${m.avgResponseMs?m.avgResponseMs+' ms':'-'}</td>
       <td>${m.incidents.length?m.incidents.slice(0,3).map(i=>`${esc(new Date(i.at).toLocaleString())} (${i.minutes} min)`).join('<br>'):'<span class="muted">none</span>'}</td></tr>`).join('')}</table></div></div>`;
 }
+/* ---------- Intelligence: health, alerts, forecast, retention, trust, match model ----------
+   Fetched only when the tab opens and reused for 5 minutes (the server caches
+   it for 10), so polling never rebuilds it. No animation anywhere. */
+let intelCache=null;
+async function viewIntel(){
+  if(!intelCache||Date.now()-intelCache.at>300000){
+    const d=await vapi('insights');
+    if(d===STALE)return;
+    intelCache={at:Date.now(),d};
+  }
+  const d=intelCache.d;
+  const none='<div class="muted">Not enough data yet.</div>';
+  const bad=(x)=>!x||x.error;
+  const words=(n)=>String(n).replace(/[_.]/g,' ').replace(/([a-z])([A-Z])/g,'$1 $2').toLowerCase();
+  const blue=(v)=>v==null?'':`background:rgba(42,111,232,${(0.08+Math.min(100,v)/100*0.62).toFixed(2)})`;
+  const cell=(v)=>v==null?'<td class="num muted">-</td>':`<td class="num" style="${blue(v)}">${v}%</td>`;
+  /* Health */
+  const H=d.health;
+  const healthCard=bad(H)||H.score==null?none:(()=>{
+    const hue=H.score>=75?'var(--good)':H.score>=50?'var(--warn)':'var(--crit)';
+    const fmt={audioSuccess:v=>Math.round(v*100)+'% of calls had sound',medianMatchSec:v=>dur(v)+' typical conversation',quickSkipShare:v=>Math.round(v*100)+'% skipped within seconds',reportRate:v=>(v*100).toFixed(1)+' reports per 100 matches'};
+    const weak=H.components.find(c=>c.key===H.weakest);
+    return `<div class="ix-health"><div><div class="ix-score" style="color:${hue}">${H.score}</div><div class="muted">out of 100, last 7 days</div></div>
+      <div class="ix-parts">${H.components.map(c=>`<div class="ix-part${c.key===H.weakest&&H.components.length>1?' weak':''}"><span title="${esc(c.hint)}">${esc(c.label)}</span><span class="bar"><i style="width:${c.score}%"></i></span><span>${c.score}</span></div><div class="muted" style="margin:-4px 0 0">${esc(fmt[c.key]?fmt[c.key](c.value):'')}</div>`).join('')}</div></div>
+      ${weak&&H.components.length>1?`<div class="muted" style="margin-top:10px">Weakest part: <b>${esc(weak.label)}</b> (${esc(weak.hint)}). Fixing this moves the score most.</div>`:''}`;
+  })();
+  /* Alerts */
+  const A=d.alerts;
+  const alertsCard=bad(A)?none:`<div class="muted" style="margin-bottom:4px">Compared with the same hour in earlier weeks. Latest complete hour: ${esc(A.hour||'-')}.${A.checked?'':' Not enough history yet to judge.'}</div>`+
+    (A.diagnoses.map(x=>`<div class="ix-alert ${x.severity==='critical'?'critical':''}"><b>${esc(x.title)}</b>${esc(x.sentence)}</div>`).join('')+
+    A.alerts.map(x=>`<div class="ix-alert ${x.severity==='critical'?'critical':''}"><b>${x.severity==='critical'?'Critical':'Warning'} · ${esc(x.label)}</b>${esc(x.sentence)}</div>`).join('')||(A.checked?'<div class="ix-ok">All normal. Nothing is unusual for this hour of the week.</div>':''));
+  /* Forecast */
+  const F=d.forecast;
+  const spark=(f,color)=>{
+    if(!f||f.insufficient||!f.points)return none;
+    const P=f.points,W=600,Ht=150,pl=34,pb=22,pt=8,pr=8;
+    const max=Math.max(1,...P.map(p=>p.high)),x=i=>pl+i*(W-pl-pr)/(P.length-1),y=v=>pt+(1-v/max)*(Ht-pt-pb);
+    const band=P.map((p,i)=>`${x(i)},${y(p.high)}`).concat(P.map((p,i)=>`${x(P.length-1-i)},${y(P[P.length-1-i].low)}`)).join(' ');
+    return `<svg class="ix-svg" viewBox="0 0 ${W} ${Ht}" role="img" aria-label="7 day forecast"><line x1="${pl}" x2="${W-pr}" y1="${y(0)}" y2="${y(0)}" stroke="var(--grid)"/><text x="2" y="${y(max)+4}">${num(max)}</text><text x="2" y="${y(0)+4}">0</text>
+      <polygon points="${band}" fill="${color}" fill-opacity=".18"/>
+      <polyline points="${P.map((p,i)=>`${x(i)},${y(p.point)}`).join(' ')}" fill="none" stroke="${color}" stroke-width="2"/>
+      ${P.map((p,i)=>`<circle cx="${x(i)}" cy="${y(p.point)}" r="3" fill="${color}"><title>${esc(p.day)}: about ${num(p.point)} (likely ${num(p.low)} to ${num(p.high)})</title></circle><text x="${x(i)}" y="${Ht-6}" text-anchor="middle">${new Date(p.day+'T12:00:00Z').toLocaleDateString(undefined,{weekday:'short',timeZone:'UTC'})}</text>`).join('')}</svg>
+      <div class="muted">Expected ${num(P.reduce((a,p)=>a+p.point,0))} over 7 days. Shaded: likely range.</div>`;
+  };
+  let peak='';
+  if(F&&F.peakHour){const dt=new Date(Date.UTC(2026,0,1,F.peakHour.hourUtc));peak=`<div class="muted" style="margin-top:8px">Busiest hour of the day: about ${esc(dt.toLocaleTimeString([], {hour:'numeric',timeZone:undefined}))} your time (${String(F.peakHour.hourUtc).padStart(2,'0')}:00 UTC), averaging ${F.peakHour.avgConnections} connections.</div>`;}
+  const forecastCard=bad(F)?none:`<div class="ix-two"><div><div class="k muted">People active per day</div>${spark(F.activeUsers,'#2a6fe8')}</div><div><div class="k muted">Matches per day</div>${spark(F.matches,'var(--s2)')}</div></div>${peak}`;
+  /* Retention */
+  const R=d.retention;
+  const retCard=bad(R)?none:(R.cohorts.length?`<table class="ix-coh"><thead><tr><th>People first seen in week of</th><th class="num">People</th><th class="num" title="Came back the next day">Next day</th><th class="num" title="Came back about a week later">After 1 week</th><th class="num" title="Came back about a month later">After 1 month</th></tr></thead><tbody>${R.cohorts.map(c=>`<tr><td>${esc(c.weekStart)}</td><td class="num">${num(c.size)}</td>${cell(c.d1)}${cell(c.d7)}${cell(c.d30)}</tr>`).join('')}</tbody></table>`:none)+
+    `<div class="muted" style="margin-top:8px">${R.stickiness?`Daily-to-monthly ratio: <b>${R.stickiness.ratio}%</b> (about ${num(R.stickiness.dau)} people a day out of ${num(R.stickiness.mau)} in the last 30 days). `:''}Only 30 days of history are kept, so one-month return is often blank. Based on ${num(R.sample.users)} people${R.sample.sampled?` (a sample of ${num(R.sample.total)})`:''}.</div>`;
+  /* Trust */
+  const T=d.trust;
+  const trustCard=bad(T)?none:(()=>{
+    const mx=Math.max(1,...T.histogram),W=300,Ht=110,bw=W/10;
+    return `<svg class="ix-svg" viewBox="0 0 ${W} ${Ht+16}" role="img" aria-label="Trust score distribution">${T.histogram.map((n,i)=>`<rect x="${i*bw+3}" y="${Ht-n/mx*(Ht-6)}" width="${bw-6}" height="${Math.max(1,n/mx*(Ht-6))}" fill="${i<3?'var(--warn)':'#2a6fe8'}"><title>Score ${i*10} to ${i*10+10}: ${num(n)} people</title></rect><text x="${i*bw+bw/2}" y="${Ht+12}" text-anchor="middle">${i*10}</text>`).join('')}</svg>
+      <div class="muted">${num(T.users)} people scored, average ${Math.round(T.mean*10)/10} out of 100. ${num(T.low)} have a low trust score (matched less often); ${num(T.high)} have a high one.</div>`;
+  })();
+  /* Match model */
+  const M=d.model;
+  const modelCard=bad(M)?none:(()=>{
+    const W=200,pad=14;const dots=(M.calibration||[]).map(c=>`<circle cx="${pad+c.p*(W-2*pad)}" cy="${W-pad-c.actual*(W-2*pad)}" r="${Math.min(8,2+Math.sqrt(c.n||1)/3)}" fill="#2a6fe8" fill-opacity=".75"><title>Predicted ${Math.round(c.p*100)}%, actually ${Math.round(c.actual*100)}% (${num(c.n)} matches)</title></circle>`).join('');
+    const list=(a,sign)=>a.length?a.map(w=>`<div class="ix-w"><span>${esc(words(w.name))}</span><b>${sign}${Math.abs(w.weight).toFixed(2)}</b></div>`).join(''):'<div class="muted">None yet.</div>';
+    return `<div class="grid tiles"><div class="tile"><div class="k">Matches learned from</div><div class="v">${num(M.samples)}</div><div class="s">conversations the model has seen</div></div>
+      <div class="tile"><div class="k">Prediction error</div><div class="v">${M.logLossEma==null?'-':M.logLossEma.toFixed(3)}</div><div class="s">lower is better${M.baseline!=null?` · guessing blindly scores ${M.baseline.toFixed(3)}`:''}</div></div></div>
+      <div class="ix-grid" style="margin-top:12px"><div><div class="k muted">Raises the odds of a good match</div>${list(M.positive,'+')}</div><div><div class="k muted">Lowers the odds</div>${list(M.negative,'-')}</div>
+      <div><div class="k muted">Is it honest? Predicted chance (across) vs what happened (up)</div><svg class="ix-svg" style="max-width:240px" viewBox="0 0 ${W} ${W}" role="img" aria-label="Calibration"><rect x="${pad}" y="${pad}" width="${W-2*pad}" height="${W-2*pad}" fill="none" stroke="var(--grid)"/><line x1="${pad}" y1="${W-pad}" x2="${W-pad}" y2="${pad}" stroke="var(--muted)" stroke-dasharray="3 3"/>${dots}</svg><div class="muted">Dots on the dashed line mean the predictions are accurate.</div></div></div>`;
+  })();
+  const card=(t,sub,body)=>`<div class="card"><h2>${t} <span class="sub">${sub}</span></h2>${body}</div>`;
+  $('#main').innerHTML=`<div class="muted" style="margin-bottom:4px">Updated ${new Date(d.generatedAt).toLocaleTimeString()}. Refreshes at most every 5 minutes.</div>
+    ${card('Site health','one score for how well conversations are going',healthCard)}
+    ${card('Alerts','what is unusual right now',alertsCard)}
+    ${card('Next 7 days','forecast from the last weeks of activity',forecastCard)}
+    ${card('Do people come back?','share of new people who return',retCard)}
+    <div class="ix-grid">${card('Trust','how reliable people have been',trustCard)}${card('Match model','what the matcher has learned',modelCard)}</div>`;
+}
+
 async function viewHealth(refresh){
   const h=await vapi('health'+(refresh?'?refresh=1':''));
   if(h===STALE)return;

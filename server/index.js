@@ -26,6 +26,8 @@ const NICK_ERRORS = {
   nickNotAllowed: 'That name is not allowed. Please pick a friendly one.',
 };
 const store = require('./store');
+const reputation = require('./reputation');
+const matchModel = require('./match-model');
 const { TrackedMap } = require('./doc-json');
 const modTags = require('./moderation-tags');
 const { createAutomod } = require('./automod');
@@ -2457,6 +2459,9 @@ function hydrateFromStore() {
     if (rec && rec.until > Date.now()) quarantine.set(key, { until: rec.until, strikes: rec.strikes || 1 });
     else delete store.data.quarantine[key];
   }
+  // Trust scores live directly in store.data.reputation; the match model is tiny.
+  store.attachReputation();
+  matchModel.load(store.data.matchModel);
   const social = store.data.social || {};
   for (const [cid, m] of Object.entries(social.friends || {})) {
     friends.set(cid, new Map(Object.entries(m)));
@@ -4591,6 +4596,44 @@ function quarantined(profile, socketId) {
   return !!byIp && byIp.until > now && !(socketId && establishedAccount(socketId)) && !isPremium(profile.clientId);
 }
 
+// --- Trust and match-quality model --------------------------------------------
+// reputation.js scores each client from what happened in their matches;
+// match-model.js learns which pairs go well. Both are small, O(1) per event and
+// only ever nudge ordering among candidates that already passed every filter.
+const MATCH_MODEL = process.env.MATCH_MODEL !== '0';
+const TRUST_TIERS = process.env.TRUST_TIERS !== '0';
+const TIER_HIGH_WAIT_MS = 20000; // a high-trust waiter may be paired with a low-trust one after this
+const TIER_PREFER = 1; // score nudge: low-low preferred, low-with-others avoided
+const featBuf = new Array(matchModel.N);
+let modelLearned = 0;
+function pairCtx(a, b, mode, now) {
+  return {
+    trustA: reputation.score(a.clientId, now), trustB: reputation.score(b.clientId, now),
+    quickA: reputation.quickRate(a.clientId, now), quickB: reputation.quickRate(b.clientId, now),
+    hour: new Date(now).getUTCHours(), mode,
+  };
+}
+function noteMatchOutcome(socketId, profile, partnerProfile, ms) {
+  if (profile.clientId !== partnerProfile.clientId) {
+    // The one who ended it carries any quick-skip; both earn credit for a real talk.
+    reputation.note(profile.clientId, 'end', { ms, self: true });
+    reputation.note(partnerProfile.clientId, 'end', { ms, self: false });
+  }
+  if (MATCH_MODEL) {
+    const x = profile.mx || partnerProfile.mx;
+    const y = matchModel.label(ms, profile.mPos || partnerProfile.mPos);
+    if (x && y !== null && matchModel.learn(x, y)) {
+      store.recordFeature('model_learn');
+      if (++modelLearned % 25 === 0) { store.data.matchModel = matchModel.dump(); store.save(); }
+    }
+  }
+  profile.mx = partnerProfile.mx = null;
+}
+// A heart or accepted friend request during a live match makes it a good one.
+function markMatchPositive(a, b) {
+  if (a && b && a.matchedAt && b.matchedAt) a.mPos = b.mPos = true;
+}
+
 function disconnectPartner(socketId, opts = {}) {
   const partnerId = partners.get(socketId);
   if (!partnerId) return null;
@@ -4609,13 +4652,14 @@ function disconnectPartner(socketId, opts = {}) {
   if (startedAt) {
     const ms = Date.now() - startedAt;
     if (!quarantined(profile || partnerProfile, socketId)) store.recordFeature(ms >= REAL_CONVERSATION_MS ? 'conversation_real' : 'conversation_brief');
+    if (!opts.failed && profile && partnerProfile && !quarantined(profile, socketId)) noteMatchOutcome(socketId, profile, partnerProfile, ms);
     if (ms >= REAL_CONVERSATION_MS) {
       if (profile) settleReferral(profile.clientId);
       if (partnerProfile) settleReferral(partnerProfile.clientId);
     }
   }
-  if (profile) profile.matchedAt = 0;
-  if (partnerProfile) partnerProfile.matchedAt = 0;
+  if (profile) { profile.matchedAt = 0; profile.mx = null; profile.mPos = false; }
+  if (partnerProfile) { partnerProfile.matchedAt = 0; partnerProfile.mx = null; partnerProfile.mPos = false; }
 
   if (profile && partnerProfile) {
     notePairParted(profile.clientId, partnerProfile.clientId, opts.failed);
@@ -4958,7 +5002,12 @@ function findBestMatch(socketId) {
   }
 
   let bestIdx = -1;
-  let bestScore = -1;
+  let bestScore = -Infinity;
+  const now = Date.now();
+  const seekerTier = TRUST_TIERS && !seekerQuarantined ? reputation.tier(seeker.clientId, now) : 'normal';
+  const seekerWait = now - (seeker.searchSince || seeker.queuedAt || now);
+  const useModel = MATCH_MODEL && !seekerQuarantined && matchModel.ready();
+  const seekerMode = seeker.mode || 'talk';
 
   for (let i = 0; i < waitingQueue.length; i++) {
     const candidateId = waitingQueue[i];
@@ -4968,7 +5017,27 @@ function findBestMatch(socketId) {
     if (quarantined(candidate, candidateId) !== seekerQuarantined) continue;
     if (!mutuallyCompatible(seeker, candidate)) continue;
 
-    const score = matchScore(seeker, candidate);
+    // Soft trust tiers (quarantine above stays the hard split): low-trust people
+    // prefer each other, and a high-trust person is only offered a low-trust
+    // one after waiting TIER_HIGH_WAIT_MS, so nobody starves.
+    let adj = 0;
+    if (TRUST_TIERS && !seekerQuarantined) {
+      const ct = reputation.tier(candidate.clientId, now);
+      if (ct === 'low' && seekerTier === 'low') adj += TIER_PREFER;
+      else if ((ct === 'low') !== (seekerTier === 'low')) {
+        if (ct === 'high' || seekerTier === 'high') {
+          const highWait = seekerTier === 'high' ? seekerWait : now - (candidate.searchSince || candidate.queuedAt || now);
+          if (highWait <= TIER_HIGH_WAIT_MS) continue;
+        }
+        adj -= TIER_PREFER;
+      }
+    }
+    if (useModel) {
+      const ctx = pairCtx(seeker, candidate, seekerMode, now);
+      adj += matchModel.adjust(seeker, candidate, ctx, featBuf);
+    }
+
+    const score = matchScore(seeker, candidate) + adj;
     if (score > bestScore) {
       bestScore = score;
       bestIdx = i;
@@ -5022,6 +5091,14 @@ function pairSockets(socketId, partnerId, opts = {}) {
   }
 
   const mode = seekerProfile.mode || 'talk';
+  // Feature vector captured now, learned from when the match ends.
+  seekerProfile.mPos = partnerProfile.mPos = false;
+  partnerProfile.mx = null;
+  seekerProfile.mx = null;
+  if (!quarantined(seekerProfile, socketId)) {
+    if (MATCH_MODEL) seekerProfile.mx = matchModel.features(seekerProfile, partnerProfile, pairCtx(seekerProfile, partnerProfile, mode, seekerProfile.matchedAt));
+    if (TRUST_TIERS && reputation.tier(seekerProfile.clientId) === 'low' && reputation.tier(partnerProfile.clientId) === 'low') store.recordFeature('trust_low_pair');
+  }
   // Quarantined pairs are counted on their own, so the dashboard's matches are people.
   store.recordFeature(quarantined(seekerProfile) ? 'bot_match' : (mode === 'chat' ? 'chat_match' : 'match'));
   const samePersonality = sharedPersonality(seekerProfile, partnerProfile);
@@ -6699,6 +6776,7 @@ io.on('connection', (socket) => {
       const partnerSocket = io.sockets.sockets.get(partnerId);
       const reportedIp = partnerSocket ? getClientIp(partnerSocket) : null;
       store.recordFeature('report');
+      reputation.note(partner.clientId, 'reported', { reporter: seeker.clientId });
       const rec = store.addReport({
         reporter: { clientId: seeker.clientId, username: seeker.username, country: seeker.countryName, city: seeker.city },
         reported: { clientId: partner.clientId, username: partner.username, country: partner.countryName, city: partner.city, ip: reportedIp },
@@ -6756,6 +6834,7 @@ io.on('connection', (socket) => {
     const targetSocket = targetSocketId ? io.sockets.sockets.get(targetSocketId) : null;
     const targetProfile = targetSocketId ? profiles.get(targetSocketId) : null;
     store.recordFeature('report');
+    reputation.note(targetClientId, 'reported', { reporter: me.clientId });
     const rec = store.addReport({
       reporter: { clientId: me.clientId, username: me.username, country: me.countryName, city: me.city },
       reported: {
@@ -6920,6 +6999,8 @@ io.on('connection', (socket) => {
       if (!hearts.has(key)) hearts.set(key, new Set());
       const set = hearts.get(key);
       const wasMutual = set.size === 2;
+      if (!set.has(seeker.clientId)) reputation.note(partner.clientId, 'heart', { from: seeker.clientId });
+      markMatchPositive(seeker, partner);
       set.add(seeker.clientId);
       // Stamped so the sweeper can retire it. A heart is only consumed if the
       // pair actually meets again; without an expiry, every one-sided heart
@@ -7376,6 +7457,10 @@ io.on('connection', (socket) => {
         username: myInfo.username,
       });
       socket.emit('friend-request-result', { ok: true, accepted: true });
+      reputation.note(fromClientId, 'friend', { from: me.clientId });
+      reputation.note(me.clientId, 'friend', { from: fromClientId });
+      const theirSocket = clientSockets.get(fromClientId);
+      if (theirSocket && partners.get(socket.id) === theirSocket) markMatchPositive(me, profiles.get(theirSocket));
     }
 
     syncClientState(socket, me.clientId);
@@ -7544,6 +7629,7 @@ io.on('connection', (socket) => {
     const mine = blocks.get(me.clientId);
     if (mine && mine.size >= MAX_BLOCKS && !mine.has(friendClientId)) return;
     store.recordFeature('block');
+    reputation.note(friendClientId, 'blocked', { from: me.clientId });
     endPairingWith(socket.id, friendClientId);
     blockPair(me.clientId, friendClientId);
     syncClientState(socket, me.clientId);

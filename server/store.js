@@ -19,6 +19,7 @@ const path = require('path');
 const crypto = require('crypto');
 const os = require('os');
 const docJson = require('./doc-json');
+const reputation = require('./reputation');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const DATA_FILE = path.join(DATA_DIR, 'owner-data.json');
@@ -127,6 +128,10 @@ function defaults() {
     // Bot quarantine, so a restart does not hand scripted clients a clean slate:
     // 'c:<clientId>' | 'i:<ip>' -> { until, strikes }.
     quarantine: {},
+    // Trust scores (server/reputation.js): clientId -> [a, b, lastTs, quickRate].
+    reputation: {},
+    // Online match-quality model weights (server/match-model.js).
+    matchModel: null,
     // Stripe Checkout session id -> ms the pass was granted, so a redelivered or
     // concurrent webhook never extends Plus twice.
     billingPasses: {},
@@ -2226,6 +2231,7 @@ function addAgeBlock(clientId, ip) {
   const until = Date.now() + AGE_BLOCK_MS;
   if (clientId) blocks['c:' + clientId] = until;
   if (ip) blocks['i:' + ip] = until;
+  if (clientId) attachReputation().note(clientId, 'age');
   save();
 }
 
@@ -2236,6 +2242,7 @@ function ageBlocked(clientId, ip, byIp = true) {
 }
 
 function addBan({ clientId, ip, username, country, city, reason, minutes }) {
+  if (clientId) attachReputation().note(clientId, 'ban');
   const rec = {
     id: crypto.randomUUID(),
     clientId: clientId || null,
@@ -3433,11 +3440,21 @@ function compactAnalytics() {
 }
 
 // Run all of it; called after start and then daily.
+// store.data can be replaced wholesale on load; the reputation module works on
+// the live object, so (re)attach it before use.
+function attachReputation() {
+  if (!data.reputation || typeof data.reputation !== 'object') data.reputation = {};
+  if (!reputation.attached(data.reputation)) reputation.load(data.reputation);
+  return reputation;
+}
+
 function compactStore() {
+  attachReputation();
   const result = {
     talkTime: pruneTalkTime(), engage: pruneEngage(), games: pruneGames(), analyticsDays: compactAnalytics(),
+    reputation: reputation.prune(Date.now()),
   };
-  if (result.talkTime || result.engage || result.games || result.analyticsDays) save();
+  if (result.talkTime || result.engage || result.games || result.analyticsDays || result.reputation) save();
   return result;
 }
 
@@ -4001,6 +4018,7 @@ module.exports = {
   pruneGames,
   compactAnalytics,
   compactStore,
+  attachReputation,
   getNotifPrefs,
   setNotifPrefs,
   moveReferralClaim,

@@ -16,6 +16,7 @@ try { QRCode = require('qrcode'); } catch (_) { /* optional */ }
 const mail = require('./mailer');
 const searchConsole = require('./search-console');
 const health = require('./health');
+const insights = require('./insights');
 
 const SESSION_HOURS = 12;
 const OWNER_EMAIL = process.env.OWNER_EMAIL || '';
@@ -1692,6 +1693,86 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
   // (server/health.js). ?refresh=1 bypasses the caches.
   router.get('/api/health', async (req, res) => {
     res.json(await health.report(store, { refresh: req.query.refresh === '1' }));
+  });
+
+  // Intelligence tab (server/insights.js). Built from the hourly/daily
+  // analytics and the talk-time records, cached for 10 minutes (an owner
+  // opening the tab twice, or two tabs, costs one build). Each section is
+  // computed on its own so one failure shows as { error: true } for that
+  // card and never takes the others down. The 8-week hourly series is at
+  // most ~1,400 small rows.
+  const INSIGHTS_TTL = 10 * 60000;
+  let insightsCache = null;
+  // Hourly counters the store may record under several names; the first that
+  // exists is used, a missing one simply skips that check.
+  const pick = (h, ...names) => { for (const n of names) if (typeof h[n] === 'number') return h[n]; return undefined; };
+  function hourlySeries(days, keys) {
+    const rows = [];
+    for (const k of keys) {
+      const d = days[k];
+      if (!d || !d.hours) continue;
+      const base = Date.parse(k + 'T00:00:00Z');
+      for (const hr of Object.keys(d.hours)) {
+        const h = d.hours[hr];
+        if (!h) continue;
+        rows.push({
+          t: base + Number(hr) * 3600000,
+          connections: pick(h, 'connections'), newIds: pick(h, 'newIds', 'newClients', 'uniques'),
+          searches: pick(h, 'searches', 'search'), matches: pick(h, 'matches'),
+          mediaOk: pick(h, 'mediaOk', 'callMediaOk', 'call_media_ok'), mediaFailed: pick(h, 'mediaFailed', 'callMediaFailed', 'call_media_failed'),
+          reports: pick(h, 'reports'), quickSkips: pick(h, 'quickSkips', 'quickSkip', 'quick_skip'),
+          botMatch: pick(h, 'botMatch', 'bot_match'), botSearch: pick(h, 'botSearch', 'bot_search'),
+          botQuarantine: pick(h, 'botQuarantine', 'bot_quarantine'), talkSeconds: pick(h, 'talkSeconds'),
+        });
+      }
+    }
+    return rows;
+  }
+  function buildInsights() {
+    const now = Date.now();
+    const days = store.data.analytics.days || {};
+    const keys = Object.keys(days).sort().slice(-56);
+    const talk = store.data.talkTime || {};
+    const today = store.dayKey(now);
+    const section = (fn) => { try { return fn(); } catch (e) { console.log('[owner] insights section failed:', e.message); return { error: true }; } };
+    let hourly = null;
+    try { hourly = hourlySeries(days, keys); } catch (e) { console.log('[owner] insights series failed:', e.message); }
+    const out = { generatedAt: now };
+    out.alerts = hourly ? section(() => insights.anomalies(hourly, now)) : { error: true };
+    out.forecast = section(() => {
+      const dailyRows = keys.filter((k) => k < today).map((k) => ({
+        day: k, dau: days[k].uniques || 0, matches: days[k].matches || 0,
+      }));
+      return insights.forecast(dailyRows, 7, hourly || []);
+    });
+    out.retention = section(() => ({ ...insights.retention(talk, now), stickiness: insights.stickiness(talk, now) }));
+    out.health = section(() => {
+      const week = keys.filter((k) => k < today).slice(-7);
+      let ok = 0; let bad = 0; let matches = 0; let reports = 0; let quick = 0; let haveQuick = false;
+      for (const k of week) {
+        const d = days[k]; const f = d.features || {};
+        ok += f.call_media_ok || 0; bad += f.call_media_failed || 0;
+        matches += d.matches || 0; reports += d.reports || 0;
+        if (typeof f.quick_skip === 'number') { quick += f.quick_skip; haveQuick = true; }
+      }
+      return insights.health({
+        audioSuccess: ok + bad >= 10 ? ok / (ok + bad) : null,
+        medianMatchSec: insights.medianCallSeconds(talk, now),
+        quickSkipShare: haveQuick && matches >= 20 ? quick / matches : null,
+        reportRate: matches >= 20 ? reports / matches : null,
+      });
+    });
+    out.trust = section(() => insights.trustPanel());
+    out.model = section(() => insights.modelPanel());
+    return out;
+  }
+  router.get('/api/insights', (req, res) => {
+    try {
+      if (!insightsCache || Date.now() - insightsCache.at > INSIGHTS_TTL) insightsCache = { at: Date.now(), body: buildInsights() };
+      res.json(insightsCache.body);
+    } catch (e) {
+      res.json({ generatedAt: Date.now(), alerts: { error: true }, forecast: { error: true }, retention: { error: true }, health: { error: true }, trust: null, model: null });
+    }
   });
 
   router.get('/api/games', (req, res) => {
