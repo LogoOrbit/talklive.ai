@@ -9,11 +9,11 @@ val Characters: List<Animal> = listOf(
     Animal("c:wizard", "Wizard", "", Color(0xFF5B4BC4), R.drawable.character_wizard),
     Animal("c:pirate", "Pirate", "", Color(0xFF0E7490), R.drawable.character_pirate),
     Animal("c:detective", "Detective", "", Color(0xFF92400E), R.drawable.character_detective),
+    Animal("c:robot", "Robot", "", Color(0xFF475569), R.drawable.character_robot),
+    Animal("c:ninja", "Ninja", "", Color(0xFF334155), R.drawable.character_ninja),
     Animal("c:hero", "Superhero", "", Color(0xFFDC2626), R.drawable.character_hero),
     Animal("c:cowboy", "Cowboy", "", Color(0xFFEA580C), R.drawable.character_cowboy),
-    Animal("c:robot", "Robot", "", Color(0xFF475569), R.drawable.character_robot),
     Animal("c:vampire", "Vampire", "", Color(0xFF3B0764), R.drawable.character_vampire),
-    Animal("c:ninja", "Ninja", "", Color(0xFF334155), R.drawable.character_ninja),
     Animal("c:astronaut", "Astronaut", "", Color(0xFF1E1B4B), R.drawable.character_astronaut),
     Animal("c:zombie", "Zombie", "", Color(0xFF14532D), R.drawable.character_zombie),
     Animal("c:alien", "Alien", "", Color(0xFF134E4A), R.drawable.character_alien),
@@ -32,4 +32,34 @@ val Characters: List<Animal> = listOf(
     Animal("c:witch", "Witch", "", Color(0xFF4C1D95), R.drawable.character_witch),
     Animal("c:elf", "Elf", "", Color(0xFF15803D), R.drawable.character_elf),
     Animal("c:clown", "Clown", "", Color(0xFFF59E0B), R.drawable.character_clown),
+)
+
+/** The faces a free account may pick (isFree in public/animals.js); every other animal and character is Plus. */
+val FREE_FACES: Set<String> = setOf(
+    "lion",
+    "fox",
+    "cat",
+    "dog",
+    "panda",
+    "c:wizard",
+    "c:pirate",
+    "c:detective",
+    "c:robot",
+    "c:ninja",
+)
+
+/** Characters with a Plus scene (public/avatar-scenes.css), with their art minus the round tile the scene replaces. */
+val CharacterBare: Map<String, Int> = mapOf(
+    "c:wizard" to R.drawable.character_wizard_bare,
+    "c:pirate" to R.drawable.character_pirate_bare,
+    "c:detective" to R.drawable.character_detective_bare,
+    "c:robot" to R.drawable.character_robot_bare,
+    "c:ninja" to R.drawable.character_ninja_bare,
+    "c:hero" to R.drawable.character_hero_bare,
+    "c:cowboy" to R.drawable.character_cowboy_bare,
+    "c:vampire" to R.drawable.character_vampire_bare,
+    "c:astronaut" to R.drawable.character_astronaut_bare,
+    "c:knight" to R.drawable.character_knight_bare,
+    "c:queen" to R.drawable.character_queen_bare,
+    "c:king" to R.drawable.character_king_bare,
 )

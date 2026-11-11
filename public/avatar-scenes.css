@@ -1,0 +1,350 @@
+/* TalkLive Plus: a themed, slowly moving scene behind a character avatar.
+   characters.js adds `tl-scene tl-s-<id>` and an empty <i class="tl-sc"> to the
+   avatar for Plus members, and loads this file the first time that happens.
+
+   Layers are one gradient base on .tl-sc plus two animated pseudo-elements.
+   Only transform and opacity animate. A moving layer is twice as wide (or tall)
+   as the avatar and holds two identical tiles, so sliding it by 50% loops with
+   no jump. Small avatars (.tl-still) and prefers-reduced-motion keep the scene
+   as a still picture. */
+
+.tl-scene {
+  position: relative;
+  overflow: hidden;
+  border-radius: 50%;
+  isolation: isolate;
+}
+/* Only characters with a scene below clear their own round tile (bg() in
+   characters.js reads --tlc-bg); the rest of the cast stay as drawn. */
+.tl-s-astronaut, .tl-s-knight, .tl-s-queen, .tl-s-king, .tl-s-wizard, .tl-s-pirate,
+.tl-s-detective, .tl-s-hero, .tl-s-cowboy, .tl-s-robot, .tl-s-vampire, .tl-s-ninja {
+  --tlc-bg: transparent;
+}
+.tl-scene > svg { position: relative; z-index: 1; }
+
+.tl-sc {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  overflow: hidden;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.tl-sc::before,
+.tl-sc::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 200%;
+  height: 100%;
+  background-repeat: repeat;
+  background-size: 50% 100%;
+  animation-duration: 20s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+/* Layers that travel up or down hold their two tiles one above the other. */
+.tl-s-knight .tl-sc::before, .tl-s-knight .tl-sc::after,
+.tl-s-wizard .tl-sc::after,
+.tl-s-ninja .tl-sc::before {
+  width: 100%;
+  height: 200%;
+  background-size: 100% 50%;
+}
+
+@keyframes tl-pan { to { transform: translateX(-50%); } }
+@keyframes tl-pan-r { from { transform: translateX(-50%); } }
+@keyframes tl-rise { to { transform: translateY(-50%); } }
+@keyframes tl-fall { from { transform: translateY(-50%); } }
+@keyframes tl-spin { to { transform: rotate(360deg); } }
+@keyframes tl-twinkle { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+@keyframes tl-breathe { 0%, 100% { opacity: 0.45; transform: scale(0.94); } 50% { opacity: 1; transform: scale(1.06); } }
+@keyframes tl-pulse { from { opacity: 0.7; transform: scale(0.5); } to { opacity: 0; transform: scale(1.35); } }
+@keyframes tl-sweep { 0%, 55% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+@keyframes tl-scan { from { transform: translateY(-110%); } to { transform: translateY(380%); } }
+@keyframes tl-slash { 0%, 90%, 100% { opacity: 0; transform: translate(-12%, -6%); } 93% { opacity: 1; } 97% { opacity: 0; transform: translate(10%, 6%); } }
+
+/* ---- Astronaut: drifting stars over a slow nebula ---------------------- */
+.tl-s-astronaut .tl-sc {
+  background:
+    radial-gradient(circle at 28% 72%, rgba(124, 58, 237, 0.55), transparent 58%),
+    radial-gradient(circle at 78% 26%, rgba(14, 116, 190, 0.5), transparent 55%),
+    #070a22;
+}
+.tl-s-astronaut .tl-sc::before {
+  background-image:
+    radial-gradient(circle at 12% 22%, #fff 0, #fff 0.9px, transparent 1.5px),
+    radial-gradient(circle at 38% 64%, #fff 0, #fff 1.2px, transparent 1.9px),
+    radial-gradient(circle at 63% 18%, #dbeafe 0, #dbeafe 0.8px, transparent 1.4px),
+    radial-gradient(circle at 82% 78%, #fff 0, #fff 1px, transparent 1.6px),
+    radial-gradient(circle at 92% 40%, #fef3c7 0, #fef3c7 0.8px, transparent 1.4px);
+  animation-name: tl-pan;
+  animation-duration: 46s;
+}
+.tl-s-astronaut .tl-sc::after {
+  left: -15%;
+  top: -15%;
+  width: 130%;
+  height: 130%;
+  background: radial-gradient(ellipse at 50% 50%, rgba(217, 70, 239, 0.38), transparent 62%);
+  animation-name: tl-breathe;
+  animation-duration: 12s;
+  animation-timing-function: ease-in-out;
+}
+
+/* ---- Knight: castle-banner red with rising embers ----------------------- */
+.tl-s-knight .tl-sc {
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.14) 0 9%, transparent 9% 18%),
+    linear-gradient(180deg, #991b1b, #450a0a);
+}
+.tl-s-knight .tl-sc::before {
+  background-image:
+    radial-gradient(circle at 18% 80%, #fb923c 0, #fb923c 1.2px, transparent 2px),
+    radial-gradient(circle at 52% 58%, #fdba74 0, #fdba74 1px, transparent 1.7px),
+    radial-gradient(circle at 80% 90%, #f97316 0, #f97316 1.3px, transparent 2px),
+    radial-gradient(circle at 34% 20%, #fed7aa 0, #fed7aa 0.9px, transparent 1.5px);
+  animation-name: tl-rise;
+  animation-duration: 9s;
+}
+.tl-s-knight .tl-sc::after {
+  background-image:
+    radial-gradient(circle at 70% 70%, #fbbf24 0, #fbbf24 1px, transparent 1.7px),
+    radial-gradient(circle at 10% 38%, #fb923c 0, #fb923c 0.9px, transparent 1.5px),
+    radial-gradient(circle at 46% 12%, #fde68a 0, #fde68a 0.8px, transparent 1.4px);
+  animation-name: tl-rise;
+  animation-duration: 14s;
+}
+
+/* ---- Queen and King: gold shimmer sweep and sparkles ------------------- */
+.tl-s-queen .tl-sc { background: linear-gradient(145deg, #831843, #db2777 48%, #9d174d); }
+.tl-s-king .tl-sc { background: linear-gradient(145deg, #422006, #b8860b 48%, #6b4a08); }
+.tl-s-queen .tl-sc::before,
+.tl-s-king .tl-sc::before {
+  width: 100%;
+  background-image: linear-gradient(105deg, transparent 34%, rgba(255, 244, 196, 0.6) 50%, transparent 66%);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  animation-name: tl-sweep;
+  animation-duration: 6s;
+  animation-timing-function: ease-in-out;
+}
+.tl-s-queen .tl-sc::after,
+.tl-s-king .tl-sc::after {
+  width: 100%;
+  background-image:
+    radial-gradient(circle at 16% 24%, #fff 0, #fff 1px, rgba(255, 240, 180, 0.5) 2px, transparent 3px),
+    radial-gradient(circle at 80% 18%, #fff 0, #fff 0.8px, rgba(255, 240, 180, 0.5) 1.8px, transparent 2.6px),
+    radial-gradient(circle at 88% 70%, #fff 0, #fff 1px, rgba(255, 240, 180, 0.5) 2px, transparent 3px),
+    radial-gradient(circle at 24% 84%, #fff 0, #fff 0.8px, rgba(255, 240, 180, 0.5) 1.8px, transparent 2.6px);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  animation-name: tl-twinkle;
+  animation-duration: 3.4s;
+  animation-timing-function: ease-in-out;
+}
+
+/* ---- Wizard: purple swirl with floating sparkles ------------------------ */
+.tl-s-wizard .tl-sc {
+  background: radial-gradient(circle at 50% 50%, #6d3fd6, #2a1466 72%);
+}
+.tl-s-wizard .tl-sc::before {
+  left: -30%;
+  top: -30%;
+  width: 160%;
+  height: 160%;
+  background-image: conic-gradient(from 0deg, transparent 0, rgba(196, 181, 253, 0.5) 12%, transparent 30%, rgba(244, 114, 182, 0.34) 55%, transparent 78%);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  animation-name: tl-spin;
+  animation-duration: 22s;
+}
+.tl-s-wizard .tl-sc::after {
+  background-image:
+    radial-gradient(circle at 20% 78%, #fde68a 0, #fde68a 1.2px, transparent 2px),
+    radial-gradient(circle at 72% 52%, #fff 0, #fff 1px, transparent 1.7px),
+    radial-gradient(circle at 40% 24%, #e9d5ff 0, #e9d5ff 1px, transparent 1.7px),
+    radial-gradient(circle at 86% 90%, #fde68a 0, #fde68a 0.9px, transparent 1.6px);
+  animation-name: tl-rise;
+  animation-duration: 11s;
+}
+
+/* ---- Pirate: sea under a warm sky, two bands of waves ------------------ */
+.tl-s-pirate .tl-sc { background: linear-gradient(180deg, #7dd3fc, #fde68a 62%); }
+.tl-s-pirate .tl-sc::before,
+.tl-s-pirate .tl-sc::after {
+  top: auto;
+  bottom: 0;
+  height: 44%;
+  background-size: 25% 100%;
+}
+.tl-s-pirate .tl-sc::before {
+  background-image: radial-gradient(ellipse 62% 78% at 50% 100%, #0e7490 0 96%, transparent 100%);
+  height: 38%;
+  animation-name: tl-pan;
+  animation-duration: 9s;
+}
+.tl-s-pirate .tl-sc::after {
+  background-image: radial-gradient(ellipse 62% 70% at 50% 100%, #155e75 0 96%, transparent 100%);
+  height: 24%;
+  animation-name: tl-pan-r;
+  animation-duration: 6s;
+}
+
+/* ---- Detective: drifting fog under a street lamp ----------------------- */
+.tl-s-detective .tl-sc {
+  background:
+    radial-gradient(circle at 18% 14%, rgba(251, 191, 36, 0.4), transparent 42%),
+    linear-gradient(180deg, #475569, #1e293b);
+}
+.tl-s-detective .tl-sc::before {
+  top: 38%;
+  height: 50%;
+  background-image:
+    radial-gradient(ellipse at 28% 50%, rgba(226, 232, 240, 0.42), transparent 62%),
+    radial-gradient(ellipse at 78% 44%, rgba(226, 232, 240, 0.3), transparent 58%);
+  animation-name: tl-pan;
+  animation-duration: 26s;
+}
+.tl-s-detective .tl-sc::after {
+  top: 8%;
+  height: 40%;
+  background-image:
+    radial-gradient(ellipse at 56% 50%, rgba(203, 213, 225, 0.32), transparent 60%),
+    radial-gradient(ellipse at 12% 56%, rgba(203, 213, 225, 0.22), transparent 55%);
+  animation-name: tl-pan-r;
+  animation-duration: 38s;
+}
+
+/* ---- Superhero: radial speed lines and a pulse ------------------------- */
+.tl-s-hero .tl-sc {
+  background: radial-gradient(circle at 50% 50%, #fde047 0, #f97316 38%, #b91c1c 100%);
+}
+.tl-s-hero .tl-sc::before {
+  left: -25%;
+  top: -25%;
+  width: 150%;
+  height: 150%;
+  background-image: repeating-conic-gradient(from 0deg at 50% 50%, rgba(255, 255, 255, 0.3) 0 4deg, transparent 4deg 12deg);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  -webkit-mask-image: radial-gradient(circle, transparent 26%, #000 64%);
+  mask-image: radial-gradient(circle, transparent 26%, #000 64%);
+  animation-name: tl-spin;
+  animation-duration: 40s;
+}
+.tl-s-hero .tl-sc::after {
+  width: 100%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.75) 0, rgba(255, 255, 255, 0) 62%);
+  background-size: 100% 100%;
+  animation-name: tl-pulse;
+  animation-duration: 2.6s;
+  animation-timing-function: ease-out;
+}
+
+/* ---- Cowboy: sunset over the desert, blowing dust ---------------------- */
+.tl-s-cowboy .tl-sc {
+  background:
+    radial-gradient(circle at 50% 62%, rgba(254, 243, 199, 0.9) 0, rgba(254, 215, 170, 0.5) 12%, transparent 34%),
+    linear-gradient(180deg, #6d28d9 0%, #f97316 46%, #fcd34d 63%, #a16207 63.5%, #78350f 100%);
+}
+.tl-s-cowboy .tl-sc::before {
+  top: 50%;
+  height: 50%;
+  background-image:
+    radial-gradient(circle at 14% 30%, rgba(254, 215, 170, 0.8) 0, rgba(254, 215, 170, 0.8) 1.2px, transparent 2px),
+    radial-gradient(circle at 46% 70%, rgba(253, 186, 116, 0.8) 0, rgba(253, 186, 116, 0.8) 1px, transparent 1.8px),
+    radial-gradient(circle at 78% 40%, rgba(254, 215, 170, 0.8) 0, rgba(254, 215, 170, 0.8) 1.4px, transparent 2.2px);
+  animation-name: tl-pan;
+  animation-duration: 8s;
+}
+.tl-s-cowboy .tl-sc::after {
+  top: 55%;
+  height: 40%;
+  background-image:
+    radial-gradient(ellipse at 30% 60%, rgba(254, 215, 170, 0.42), transparent 60%),
+    radial-gradient(ellipse at 82% 40%, rgba(254, 215, 170, 0.3), transparent 55%);
+  animation-name: tl-pan;
+  animation-duration: 16s;
+}
+
+/* ---- Robot: scanning grid and a circuit pulse -------------------------- */
+.tl-s-robot .tl-sc { background: linear-gradient(180deg, #0b2233, #07131f); }
+.tl-s-robot .tl-sc::before {
+  width: 100%;
+  background-image:
+    linear-gradient(rgba(34, 211, 238, 0.2) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.2) 1px, transparent 1px);
+  background-size: 12px 12px;
+  animation-name: tl-breathe;
+  animation-duration: 4s;
+  animation-timing-function: ease-in-out;
+}
+.tl-s-robot .tl-sc::after {
+  width: 100%;
+  height: 30%;
+  background-image: linear-gradient(180deg, transparent, rgba(34, 211, 238, 0.5), transparent);
+  background-size: 100% 100%;
+  animation-name: tl-scan;
+  animation-duration: 3.2s;
+}
+
+/* ---- Vampire: night sky, glowing moon, drifting bats ------------------- */
+.tl-s-vampire .tl-sc {
+  background:
+    radial-gradient(circle at 78% 20%, #fef9c3 0, #fef08a 7%, rgba(254, 240, 138, 0.28) 14%, transparent 34%),
+    linear-gradient(180deg, #2e1065, #4c1d95 62%, #7f1d1d);
+}
+.tl-s-vampire .tl-sc::before {
+  /* One tile holds both bats; the layer is two tiles wide. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='%230b0618'%3E%3Cpath transform='translate(14 22) scale(.54)' d='M14 4L16 6Q21 0 28 2Q24 4 24 9Q21 6 19 10L14 13L9 10Q7 6 4 9Q4 4 0 2Q7 0 12 6Z'/%3E%3Cpath transform='translate(64 56) scale(.4)' d='M14 4L16 6Q21 0 28 2Q24 4 24 9Q21 6 19 10L14 13L9 10Q7 6 4 9Q4 4 0 2Q7 0 12 6Z'/%3E%3C/g%3E%3C/svg%3E");
+  animation-name: tl-pan;
+  animation-duration: 15s;
+}
+.tl-s-vampire .tl-sc::after {
+  width: 100%;
+  background: radial-gradient(circle at 78% 20%, rgba(254, 249, 195, 0.5), transparent 30%);
+  background-size: 100% 100%;
+  animation-name: tl-breathe;
+  animation-duration: 6s;
+  animation-timing-function: ease-in-out;
+}
+
+/* ---- Ninja: dark night with falling leaves and a flash of steel -------- */
+.tl-s-ninja .tl-sc {
+  background:
+    radial-gradient(circle at 80% 18%, rgba(148, 163, 184, 0.35), transparent 30%),
+    linear-gradient(180deg, #111827, #020617);
+}
+.tl-s-ninja .tl-sc::before {
+  background-image:
+    radial-gradient(ellipse 3.4px 1.7px at 22% 16%, #65a30d 0, #65a30d 60%, transparent 100%),
+    radial-gradient(ellipse 3px 1.5px at 64% 46%, #4d7c0f 0, #4d7c0f 60%, transparent 100%),
+    radial-gradient(ellipse 3.2px 1.6px at 84% 82%, #84cc16 0, #84cc16 60%, transparent 100%),
+    radial-gradient(ellipse 2.6px 1.3px at 40% 70%, #3f6212 0, #3f6212 60%, transparent 100%);
+  animation-name: tl-fall;
+  animation-duration: 10s;
+}
+.tl-s-ninja .tl-sc::after {
+  width: 100%;
+  background-image: linear-gradient(118deg, transparent 46%, rgba(255, 255, 255, 0.95) 49.4%, rgba(255, 255, 255, 0.95) 50.2%, transparent 53%);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  opacity: 0;
+  animation-name: tl-slash;
+  animation-duration: 7s;
+}
+
+/* Still pictures: small avatars and anyone who asks for less motion. */
+.tl-still .tl-sc::before,
+.tl-still .tl-sc::after { animation: none; }
+.tl-still.tl-s-ninja .tl-sc::after { opacity: 0; }
+.tl-still.tl-s-hero .tl-sc::after { opacity: 0.25; }
+@media (prefers-reduced-motion: reduce) {
+  .tl-sc::before,
+  .tl-sc::after { animation: none; }
+  .tl-s-ninja .tl-sc::after { opacity: 0; }
+  .tl-s-hero .tl-sc::after { opacity: 0.25; }
+}

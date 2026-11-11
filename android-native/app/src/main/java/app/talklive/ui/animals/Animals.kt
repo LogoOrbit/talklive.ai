@@ -9,13 +9,13 @@ data class Animal(val id: String, val name: String, val trait: String, val color
 /** The spirit animals, in the website's picker order. */
 val Animals: List<Animal> = listOf(
     Animal("lion", "Lion", "Bold and big-hearted", Color(0xFFF0A92C), R.drawable.animal_lion),
-    Animal("tiger", "Tiger", "Fearless and driven", Color(0xFFFB923C), R.drawable.animal_tiger),
-    Animal("wolf", "Wolf", "Loyal and independent", Color(0xFF94A3B8), R.drawable.animal_wolf),
     Animal("fox", "Fox", "Clever and playful", Color(0xFFF97316), R.drawable.animal_fox),
     Animal("cat", "Cat", "Calm and curious", Color(0xFFA78BFA), R.drawable.animal_cat),
     Animal("dog", "Dog", "Friendly and fun", Color(0xFFC98A4B), R.drawable.animal_dog),
-    Animal("bear", "Bear", "Warm and protective", Color(0xFF9C6741), R.drawable.animal_bear),
     Animal("panda", "Panda", "Chill and easy-going", Color(0xFF64748B), R.drawable.animal_panda),
+    Animal("tiger", "Tiger", "Fearless and driven", Color(0xFFFB923C), R.drawable.animal_tiger),
+    Animal("wolf", "Wolf", "Loyal and independent", Color(0xFF94A3B8), R.drawable.animal_wolf),
+    Animal("bear", "Bear", "Warm and protective", Color(0xFF9C6741), R.drawable.animal_bear),
     Animal("rabbit", "Rabbit", "Gentle and quick-witted", Color(0xFFEC7F9B), R.drawable.animal_rabbit),
     Animal("owl", "Owl", "A good listener", Color(0xFFA16207), R.drawable.animal_owl),
     Animal("penguin", "Penguin", "Sweet and funny", Color(0xFF38BDF8), R.drawable.animal_penguin),

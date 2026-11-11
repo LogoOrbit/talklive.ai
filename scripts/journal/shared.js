@@ -22,7 +22,7 @@ const { snippet } = require('../data/serp');
 
 const SITE = 'https://talklive.app';
 const PUBLIC = path.join(__dirname, '..', '..', 'public');
-const OG_IMAGE = `${SITE}/og-image.png?v=2`;
+const OG_IMAGE = `${SITE}/og-image.png?v=74c36de039`;
 const CSS_VERSION = '20261109acct';
 const CTA_JS_VERSION = '20261006callbtn';
 
@@ -230,7 +230,7 @@ ${p.article ? `<meta property="article:published_time" content="${p.date}" />
 ${preloads(p.preload)}
 <link rel="stylesheet" href="/journal.css?v=${CSS_VERSION}" />
 <style>${p.css}${ctaVars(p.slug || (p.path === '/blog/' ? 'blog' : ''))}</style>
-<script defer src="/pwa.js?v=20261109push"></script>
+<script defer src="/pwa.js?v=d5bc87601a"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>`;
 }

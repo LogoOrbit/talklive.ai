@@ -614,14 +614,14 @@ private fun CompareTable(modifier: Modifier = Modifier) {
     val rows = listOf(
         Triple(R.string.cmp_calls, yes, yes),
         // Numbers are the product's own limits: server FREE_LIMITS (2 countries, 2 interests, Plus 50 and 10),
-        // FREE_HISTORY 3, PLUS_FREEZES 2, PLUS_FACES 8, AppTheme (Dark and Light free, Ocean and Sunset Plus).
+        // FREE_HISTORY 3, PLUS_FREEZES 2, FREE_FACES, AppTheme (Dark and Light free, Ocean and Sunset Plus).
         Triple(R.string.cmp_countries_n, "2", "50"),
         Triple(R.string.cmp_interests_n, "2", "10"),
         Triple(R.string.cmp_gender_n, no, yes),
         Triple(R.string.plus_perk_likes, no, yes),
         Triple(R.string.cmp_history, "3", "∞"),
         Triple(R.string.cmp_freezes_n, "0", "2"),
-        Triple(R.string.cmp_faces_n, "0", "8"),
+        Triple(R.string.cmp_faces_n, app.talklive.ui.animals.FREE_FACES.size.toString(), (app.talklive.ui.animals.Animals.size + app.talklive.ui.animals.Characters.size).toString()),
         Triple(R.string.cmp_themes_n, "2", "4"),
         Triple(R.string.plus_perk_undo, no, yes),
         Triple(R.string.plus_perk_queue, no, yes),

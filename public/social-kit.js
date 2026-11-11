@@ -22,10 +22,10 @@
   // A person's picture: their avatar (a spirit animal `a:<id>`, or a gendered
   // bust `m*`/`f*`) for friends and recent people; for a stranger in a live
   // chat, whose avatar is never shown, the spirit animal they picked.
-  function face(avatarId, size, animal) {
+  function face(avatarId, size, animal, plus) {
     size = size || 30;
     if (typeof avatarId === 'string' && avatarId.slice(0, 2) === 'c:' && window.TalkLiveCharacters) {
-      var ch = window.TalkLiveCharacters.html(avatarId.slice(2), size);
+      var ch = window.TalkLiveCharacters.html(avatarId.slice(2), size, plus);
       if (ch) return ch;
     }
     if (typeof avatarId === 'string' && avatarId.slice(0, 2) === 'a:') {

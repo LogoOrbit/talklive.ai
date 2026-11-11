@@ -214,7 +214,7 @@
       else if (!document.getElementById('tgjs')) {
         const s = document.createElement('script');
         s.id = 'tgjs';
-        s.src = '/talkguard.js?v=20261027tg';
+        s.src = '/talkguard.js?v=2b180e6471';
         s.onload = () => { if (window.TalkGuard) window.TalkGuard.load(); };
         document.head.appendChild(s);
       }

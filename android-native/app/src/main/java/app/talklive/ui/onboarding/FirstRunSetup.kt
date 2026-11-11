@@ -101,7 +101,7 @@ fun FirstRunSetup(onBack: () -> Unit = {}, onDone: (animal: String, gender: Stri
                     // Gender and age band are no longer asked: the age band comes from the
                     // date of birth given at the start.
                     PrimaryButton(stringResource(R.string.continue_), onClick = { onDone(animal ?: Animals.first().id, "unspecified", "unspecified") }, enabled = animal != null)
-                    TextButton(onClick = { animal = Animals.random().id }, modifier = Modifier.align(Alignment.CenterHorizontally)) { Text(stringResource(R.string.surprise_me)) }
+                    TextButton(onClick = { animal = app.talklive.ui.animals.randomFreeAnimal().id }, modifier = Modifier.align(Alignment.CenterHorizontally)) { Text(stringResource(R.string.surprise_me)) }
                 }
                 else -> AboutYou(gender, age, onGender = { gender = it }, onAge = { age = it }, onNext = { onDone(animal ?: Animals.first().id, gender, age) })
             }

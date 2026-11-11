@@ -246,6 +246,9 @@ function defaults() {
     // Apple's CDN, never by us.
     favFilms: {},
     plusLook: {},
+    // The avatar each profile last wore ('' = none): clientId -> 'a:fox' | 'c:wizard'.
+    // Locked faces are refused only on a change (see faceAllowed in server/index.js).
+    heldFace: {},
     // Account settings saved in the cloud (theme, sounds, privacy switches):
     // username (lowercase) -> { key: boolean | number | short string }.
     accountSettings: {},
@@ -331,6 +334,7 @@ function applyParsed(parsed) {
   data.contactCapture = parsed.contactCapture || {};
   data.favFilms = parsed.favFilms || {};
   data.plusLook = parsed.plusLook || {};
+  data.heldFace = parsed.heldFace || {};
   data.accountSettings = parsed.accountSettings || {};
   data.notifPrefs = parsed.notifPrefs || {};
   data.subscribers = parsed.subscribers || {};
@@ -2546,6 +2550,17 @@ function extendPlusLook(clientId, ms) {
   save();
   return rec;
 }
+// undefined = never seen, '' = seen without a face.
+function heldFace(clientId) {
+  return data.heldFace ? data.heldFace[clientId] : undefined;
+}
+function noteFace(clientId, face) {
+  if (!clientId) return;
+  if (!data.heldFace) data.heldFace = {};
+  if (data.heldFace[clientId] === face) return;
+  data.heldFace[clientId] = face;
+  save();
+}
 function setPlusLookFace(clientId, face) {
   const rec = plusLook(clientId);
   if (!rec || rec.face) return;
@@ -2663,7 +2678,7 @@ function deleteAccount(usernameLower) {
 // exception: a live Stripe or Play subscription must keep its record so a
 // renewal or refund notice still finds it, so only the extras go.
 function purgeClientData(clientId) {
-  for (const key of ['engage', 'favFilms', 'talkTime', 'likes', 'push', 'notifPrefs', 'plusLook',
+  for (const key of ['engage', 'favFilms', 'talkTime', 'likes', 'push', 'notifPrefs', 'plusLook', 'heldFace',
     'contactConsent', 'contactCapture', 'identityEpochs']) {
     if (data[key]) delete data[key][clientId];
   }
@@ -4033,6 +4048,8 @@ module.exports = {
   mergeAccountSettings,
   extendPlusLook,
   setPlusLookFace,
+  heldFace,
+  noteFace,
   trialUsed,
   markTrial,
   RESERVED_KEYS,
