@@ -19,7 +19,9 @@ if (firebaseText.contains("\"app.talklive\"")) {
     apply(plugin = "com.google.gms.google-services")
     if (!firebaseText.contains("\"app.talklive.debug\"")) {
         tasks.configureEach {
-            if (name.startsWith("process") && name.contains("Debug") && name.endsWith("GoogleServices")) enabled = false
+            // -PtestBuild gives the release build the test id too (see below).
+            val testId = name.contains("Debug") || (name.contains("Release") && project.hasProperty("testBuild"))
+            if (name.startsWith("process") && testId && name.endsWith("GoogleServices")) enabled = false
         }
     }
 }
@@ -83,6 +85,13 @@ android {
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             if (System.getenv("TALKLIVE_KEYSTORE") != null) signingConfig = signingConfigs.getByName("release")
+            // -PtestBuild: the real, optimised app as a test install. It gets the
+            // test id and test key, so it installs next to the Play Store app
+            // instead of being refused for not matching its signature.
+            if (project.hasProperty("testBuild")) {
+                applicationIdSuffix = ".debug"
+                signingConfig = signingConfigs.getByName("debug")
+            }
         }
     }
 
