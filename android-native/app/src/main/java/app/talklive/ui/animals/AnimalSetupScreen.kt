@@ -44,7 +44,7 @@ fun AnimalSetupScreen(initial: String? = null, onDone: (String) -> Unit) {
         AnimalCaption(pick, Modifier.padding(vertical = 12.dp))
         PrimaryButton(stringResource(R.string.continue_), onClick = { pick?.let(onDone) }, enabled = pick != null)
         TextButton(
-            onClick = { pick = Animals.random().id },
+            onClick = { pick = randomFreeAnimal().id },
             modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 8.dp),
         ) {
             Icon(Icons.Rounded.Casino, null)

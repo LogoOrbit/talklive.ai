@@ -100,14 +100,14 @@ import app.talklive.ui.onboarding.AuthViewModel
 import app.talklive.ui.onboarding.OnboardingFlow
 import app.talklive.ui.profile.ProfileScreen
 
-private enum class RootScreen { Onboarding, SignIn, Animal, Main }
+private enum class RootScreen { Onboarding, SignIn, Main }
 
 @Composable
 fun TalkLiveRoot(vm: TalkViewModel = hiltViewModel()) {
     val onboarded by vm.onboarded.collectAsStateWithLifecycle()
     val account by vm.account.collectAsStateWithLifecycle()
     val animal by vm.animal.collectAsStateWithLifecycle()
-    var signingIn by remember { mutableStateOf(false) }
+    var signingIn by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(account) { if (account != null) signingIn = false }
     // Signing in (not opening the app already signed in) plays the welcome.
     var hadAccount by remember { mutableStateOf<Boolean?>(null) }
@@ -118,13 +118,21 @@ fun TalkLiveRoot(vm: TalkViewModel = hiltViewModel()) {
         hadAccount = now
     }
 
+    // A new guest gets a random face instead of one more screen; it can be
+    // changed from Profile. A signed-in account already has its own.
+    val context = LocalContext.current
+    val engageVm: app.talklive.ui.engage.EngageViewModel = hiltViewModel()
+    LaunchedEffect(onboarded, animal, account) {
+        if (onboarded && animal == null && account == null) {
+            engageVm.setAgeGroup(app.talklive.data.AgeGate.ageGroup(context))
+            vm.setAnimal(app.talklive.ui.animals.randomFreeAnimal().id)
+        }
+    }
+
     AnimatedContent(
         targetState = when {
             !onboarded -> RootScreen.Onboarding
             signingIn -> RootScreen.SignIn
-            // Only a new guest picks an avatar here: a signed-in account
-            // already has its own (restored from the server).
-            animal == null && account == null -> RootScreen.Animal
             else -> RootScreen.Main
         },
         transitionSpec = { (fadeIn(tween(300)) + scaleIn(initialScale = 0.96f)) togetherWith fadeOut(tween(200)) },
@@ -134,14 +142,6 @@ fun TalkLiveRoot(vm: TalkViewModel = hiltViewModel()) {
         when (screen) {
             RootScreen.Onboarding -> OnboardingFlow(hiltViewModel<AuthViewModel>())
             RootScreen.SignIn -> OnboardingFlow(hiltViewModel<AuthViewModel>(), start = AuthRoute.Choose, onClose = { signingIn = false })
-            RootScreen.Animal -> {
-                val context = LocalContext.current
-                val engageVm: app.talklive.ui.engage.EngageViewModel = hiltViewModel()
-                app.talklive.ui.onboarding.FirstRunSetup(onBack = { signingIn = true }) { a, g, age ->
-                    engageVm.setAgeGroup(app.talklive.data.AgeGate.ageGroup(context))
-                    vm.setAnimal(a)
-                }
-            }
             RootScreen.Main -> MainScreen(vm, onSignIn = { signingIn = true })
         }
     }
@@ -303,6 +303,8 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     }
     LaunchedEffect(Unit) {
         engageVm.moments.collect { m ->
+            // Celebrations wait for a quiet moment: never over a call or a search.
+            if (state.phase !is CallPhase.Idle) return@collect
             snackbar.say(
                 when (m) {
                     is app.talklive.engage.EngageMoment.StreakUp -> context.getString(R.string.moment_streak, m.days)
@@ -363,11 +365,14 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
             if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
                 add(Manifest.permission.RECORD_AUDIO)
             }
-            if (Build.VERSION.SDK_INT >= 33 &&
-                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-            ) add(Manifest.permission.POST_NOTIFICATIONS)
+            // Bluetooth is only asked for when a Bluetooth headset is connected right now
+            // (listing devices needs no permission); notifications are asked for on Home.
             if (Build.VERSION.SDK_INT >= 31 &&
-                ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED
+                ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED &&
+                context.getSystemService(android.media.AudioManager::class.java).getDevices(android.media.AudioManager.GET_DEVICES_OUTPUTS).any {
+                    it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO || it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP ||
+                        it.type == android.media.AudioDeviceInfo.TYPE_BLE_HEADSET
+                }
             ) add(Manifest.permission.BLUETOOTH_CONNECT)
         }
         if (needed.isEmpty()) action() else { afterMic = action; permissions.launch(needed.toTypedArray()) }
@@ -387,6 +392,15 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         else { vm.setMode(CallMode.Talk); withMic(::begin) }
     }
 
+    // A tapped notification: open the chat it is about, or the requests list.
+    val openTarget by app.talklive.data.LaunchActions.open.collectAsStateWithLifecycle()
+    LaunchedEffect(openTarget) {
+        val target = openTarget ?: return@LaunchedEffect
+        app.talklive.data.LaunchActions.open.value = null
+        if (target.startsWith("chat:")) { tab = MainTab.Chats; openChat = target.removePrefix("chat:") }
+        else if (target == "requests") tab = MainTab.Friends
+    }
+
     val noticeText = state.notice?.let { n ->
         when (n) {
             is CallNotice.PartnerLeft -> stringResource(if (n.dropped) R.string.partner_dropped else R.string.partner_left, n.name)
@@ -396,16 +410,17 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         }
     }
     LaunchedEffect(state.notice) {
-        if (noticeText != null) {
-            snackbar.say(noticeText)
-            vm.dismissNotice()
-        }
+        val n = state.notice ?: return@LaunchedEffect
+        // "X left" says what the screen already shows (searching again, or back
+        // home): only a dropped line, an ended friend call or a refusal is news.
+        if (noticeText != null && !(n is CallNotice.PartnerLeft && !n.dropped)) snackbar.say(noticeText)
+        vm.dismissNotice()
     }
 
     val inCall = state.phase !is CallPhase.Idle
     // Back on a live voice call shrinks it to a bar at the top, so the rest of
     // the app can be used while talking; tapping the bar brings it back.
-    var callMinimized by remember { mutableStateOf(false) }
+    var callMinimized by rememberSaveable { mutableStateOf(false) }
     val liveVoice = state.phase is CallPhase.Connected && state.mode == CallMode.Talk
     LaunchedEffect(liveVoice) { if (!liveVoice) callMinimized = false }
     val showFullCall = inCall && !callMinimized
@@ -455,7 +470,9 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         if (premium.active && skipped != null) scope.launch {
             val r = snackbar.say(
                 context.getString(R.string.skipped_name, skipped), actionLabel = context.getString(R.string.undo),
-                duration = androidx.compose.material3.SnackbarDuration.Long,
+                // Four seconds, not ten: long enough to change your mind, short
+                // enough not to sit over the next conversation.
+                duration = androidx.compose.material3.SnackbarDuration.Short,
             )
             if (r == androidx.compose.material3.SnackbarResult.ActionPerformed) {
                 vm.undoSkip()?.let { why ->
@@ -664,7 +681,9 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
             onInvite = vm::inviteGame, onCell = vm::tapCell, onEdge = vm::drawEdge, onRematch = vm::rematch,
             onClose = { vm.leaveGame(); showGames = false },
         )
-    } else if (inCall && game.stage == app.talklive.game.Stage.Invited) {
+    }
+    // Shown over the sheet too: with the sheet open there is no other way to answer.
+    if (inCall && game.stage == app.talklive.game.Stage.Invited) {
         app.talklive.ui.game.GameInviteDialog(game.kind, partnerName, onAccept = { vm.acceptGame(); showGames = true }, onDecline = vm::declineGame)
     }
 

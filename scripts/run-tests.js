@@ -15,8 +15,8 @@ const { spawn, spawnSync } = require('child_process');
 const DIR = __dirname;
 const CRITICAL = [
   'test-billing', 'test-play-billing', 'test-nickname-rules', 'test-auth-sessions', 'test-client-ip', 'test-password-reset',
-  'test-referral', 'test-premium-perks', 'test-subscribe', 'test-settings-merge', 'test-disappearing', 'test-store-compact', 'test-bot-quarantine', 'test-pricing',
-  'test-social', 'test-social-safety', 'test-social-delivery', 'test-social-extras',
+  'test-referral', 'test-premium-perks', 'test-avatar-tiers', 'test-subscribe', 'test-settings-merge', 'test-disappearing', 'test-store-compact', 'test-bot-quarantine', 'test-pricing',
+  'test-social', 'test-social-safety', 'test-social-delivery', 'test-dm-receipts', 'test-social-extras',
   'test-social-privacy', 'test-social-edit', 'test-friend-id', 'test-discovery',
   'test-chat-extras', 'test-chat-away', 'test-chat-guard', 'test-chat-spam',
   'test-matchmaking', 'test-malformed-packets', 'test-voice-notes', 'test-delete-account-purge',
@@ -59,6 +59,11 @@ function run(name, env = {}) {
 
 (async () => {
   const failedSuites = [];
+  // A changed file whose ?v= stamp was not renewed never reaches a browser
+  // that has the old one (see stamp-assets.js).
+  const stamps = spawnSync(process.execPath, [path.join(DIR, 'stamp-assets.js'), '--check'], { encoding: 'utf8' });
+  process.stdout.write(`${stamps.stdout || ''}${stamps.stderr || ''}`);
+  if (stamps.status !== 0) failedSuites.push('check:stamps');
   for (const name of suites) {
     const ok = name === 'test-password-reset'
       ? await withServer((env) => run(name, env))

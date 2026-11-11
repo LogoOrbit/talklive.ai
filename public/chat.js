@@ -10,7 +10,9 @@
 (function () {
   'use strict';
 
-  var socket = io();
+  // WebSocket first, as on the call page: the default opens a long-poll and
+  // upgrades, which is two or three extra round trips before "connected".
+  var socket = io({ transports: ['websocket', 'polling'] });
 
   // Forward uncaught errors on this page to the owner dashboard. /chat is a
   // separate sub-app from the main one, and until this was added it reported
@@ -492,6 +494,17 @@
     if (mine && (animalOf(mine) || characterOf(mine)) && ids.indexOf(mine) === -1) ids[ids.length - 1] = mine;
     return ids;
   }
+  // Plus faces: open to Plus and to the invite reward's one face, and the face
+  // already worn stays selectable so nobody loses the avatar they had.
+  var faceLook = null;
+  function faceLockedNote() {
+    var s = t('premiumFaceLocked');
+    return s === 'premiumFaceLocked' ? 'This avatar comes with TalkLive Plus. Five animals and five characters are free.' : s;
+  }
+  function faceOk(id) {
+    return Animals.isFree(id) || isPremiumUser || id === storedAvatar()
+      || !!(faceLook && (!faceLook.face || faceLook.face === id));
+  }
   function faceTile(id) {
     var mine = storedAvatar();
     var an = animalOf(id), ch = characterOf(id);
@@ -502,6 +515,10 @@
     btn.dataset.avatar = id;
     btn.setAttribute('role', 'radio');
     btn.setAttribute('aria-checked', mine === id ? 'true' : 'false');
+    if (!Animals.isFree(id)) {
+      btn.classList.add('tl-plus-face');
+      btn.dataset.lock = faceOk(id) ? '\u{1F48E}' : '\u{1F512}';
+    }
     if (an) {
       btn.style.setProperty('--animal-color', Animals.color(an));
       btn.innerHTML = Animals.icon(an, 44) + '<span class="animal-option-name">' + escapeHtml(Animals.name(an)) + '</span>';
@@ -593,6 +610,7 @@
         renderAnimalPicker();
         return;
       }
+      if (!faceOk(option.dataset.avatar)) { flashSearchNote(faceLockedNote()); return; }
       setMyAvatarChoice(option.dataset.avatar);
     });
     renderAnimalPicker();
@@ -880,6 +898,8 @@
   }, true);
   socket.on('premium-status', function (data) {
     isPremiumUser = !!(data && data.premium);
+    faceLook = data && data.look ? data.look : null;
+    renderAnimalPicker();
     document.documentElement.classList.toggle('tl-free', !isPremiumUser);
     clearTimeout(themeRevertTimer);
     if (!isPremiumUser) themeRevertTimer = setTimeout(function () {
@@ -1483,7 +1503,7 @@
     if (!settingsPanelLoading) {
       settingsPanelLoading = [];
       var s = document.createElement('script');
-      s.src = '/settings-panel.js?v=20261019seo';
+      s.src = '/settings-panel.js?v=fef14af34b';
       s.async = true;
       s.onload = function () {
         window.TalkLiveSettingsPanel.ready.then(function () {
@@ -1503,7 +1523,7 @@
       // server enforces them either way), so they can arrive late too.
       if (!window.TalkLiveNickname) {
         var n = document.createElement('script');
-        n.src = '/nickname-rules.js?v=20260924nick';
+        n.src = '/nickname-rules.js?v=077c943b4d';
         n.async = true;
         document.head.appendChild(n);
       }
@@ -1627,7 +1647,7 @@
       });
     }
     var q = function (s) { return myProfileSheet.querySelector(s); };
-    q('.my-profile-face').innerHTML = window.TalkLiveSocial ? window.TalkLiveSocial.face(localStorage.getItem('talklive_avatar'), 84, myAnimal) : '';
+    q('.my-profile-face').innerHTML = window.TalkLiveSocial ? window.TalkLiveSocial.face(localStorage.getItem('talklive_avatar'), 84, myAnimal, isPremiumUser) : '';
     q('.my-profile-name').textContent = accountNickname || tempUsername || (myProfile && myProfile.username) || t('you');
     q('.my-profile-sub').textContent = t('friends') + ': ' + friendsState.friends.length;
     q('.my-profile-id-label').textContent = t('yourFriendId');
@@ -2940,7 +2960,7 @@
     if (!filmsLoading) {
       filmsLoading = new Promise(function (resolve, reject) {
         var s = document.createElement('script');
-        s.src = '/fav-films.js?v=20261101same';
+        s.src = '/fav-films.js?v=5206e035f2';
         s.async = true;
         s.onload = resolve;
         s.onerror = function () { filmsLoading = null; reject(); };
@@ -3445,7 +3465,7 @@
     if (!ownerWarningLoad) {
       ownerWarningLoad = new Promise(function (resolve) {
         var s = document.createElement('script');
-        s.src = '/owner-warning.js?v=1';
+        s.src = '/owner-warning.js?v=2c8f1949a2';
         s.onload = resolve;
         s.onerror = function () { ownerWarningLoad = null; };
         document.head.appendChild(s);
@@ -3460,7 +3480,7 @@
     if (!feedbackReplyLoad) {
       feedbackReplyLoad = new Promise(function (resolve) {
         var s = document.createElement('script');
-        s.src = '/feedback-reply.js?v=1';
+        s.src = '/feedback-reply.js?v=6827637846';
         s.onload = resolve;
         s.onerror = function () { feedbackReplyLoad = null; };
         document.head.appendChild(s);
@@ -3473,7 +3493,7 @@
     function show() { if (window.TalkLiveRate) window.TalkLiveRate.show(socket, d); }
     if (window.TalkLiveRate) return show();
     var s = document.createElement('script');
-    s.src = '/rate-prompt.js?v=1';
+    s.src = '/rate-prompt.js?v=860ca7b0d8';
     s.onload = show;
     document.head.appendChild(s);
   });
@@ -3492,6 +3512,7 @@
     sendAdsConversion();
     currentPartner = data.partner;
     partnerHere = true;
+    if (games) games.reset(); // never carry the last partner's game or invite over
     // Before anything else: a disabled input cannot take focus, and the box is
     // left disabled when a chat ends. It used to be re-enabled by a second
     // 'matched' listener further down, which ran after the focus call below

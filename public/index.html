@@ -53,19 +53,19 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      first paint is already in Plus Jakarta rather than swapping out of the
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
-<link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=20260922type" crossorigin />
-<link rel="stylesheet" href="style.css?v=20261111plus" />
-<link rel="stylesheet" href="chat-extras.css?v=20261111chat" />
-<link rel="stylesheet" href="games.css?v=20261110blue" />
+<link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=153fc85b70" crossorigin />
+<link rel="stylesheet" href="style.css?v=ec6a52371e" />
+<link rel="stylesheet" href="chat-extras.css?v=4b7b6398b3" />
+<link rel="stylesheet" href="games.css?v=27142968d1" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=20261111plus" />
-<link rel="stylesheet" href="auth.css?v=20261109cloud" />
+<link rel="stylesheet" href="ui.css?v=2136ece6af" />
+<link rel="stylesheet" href="auth.css?v=aae37ee102" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
      on every screen of the product. -->
-<link rel="stylesheet" href="nav.css?v=20261110blue" />
+<link rel="stylesheet" href="nav.css?v=5b17399adb" />
 <script defer src="/config.js"></script>
 <!-- Google Identity Services is not loaded here: app.js fetches it when the
      Log in / Sign up page opens (loadGoogleSignIn). -->
@@ -148,8 +148,8 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 <link rel="apple-touch-icon" href="/favicon-192.png" />
 <link rel="manifest" href="/site.webmanifest" />
 <!-- Mobile app only (mobile/): load the native bridge. A no-op in browsers, which never download it. -->
-<script>if(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()){var s=document.createElement('script');s.src='/native.js?v=20261008app';s.async=false;document.head.appendChild(s);}</script>
-<script defer src="/pwa.js?v=20261109push"></script>
+<script>if(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()){var s=document.createElement('script');s.src='/native.js?v=7985935f24';s.async=false;document.head.appendChild(s);}</script>
+<script defer src="/pwa.js?v=d5bc87601a"></script>
 <link rel="preconnect" href="https://flagcdn.com" crossorigin />
 <link rel="dns-prefetch" href="https://flagcdn.com" />
 
@@ -245,7 +245,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
     <header class="tl-authpage-top">
       <a href="/" id="authHomeLink" class="tl-authpage-brand" data-i18n-aria="authBackHome" aria-label="Back to TalkLive">
         <svg class="tl-authpage-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
-        <img src="/favicon.svg?v=20260923logo" width="28" height="28" alt="TalkLive logo" aria-hidden="true" decoding="async" />
+        <img src="/favicon.svg?v=2b70993fa4" width="28" height="28" alt="TalkLive logo" aria-hidden="true" decoding="async" />
         <span>Talk<span class="brand-name-live">Live</span></span>
       </a>
       <button type="button" id="closeAccountBtn" class="tl-panel-close" data-i18n-aria="close" aria-label="Close">&times;</button>
@@ -430,7 +430,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
       <div class="nav-brand">
         <button type="button" id="brandHome" class="nav-logo" data-i18n-title="goHome" data-i18n-aria="goHome" aria-label="TalkLive home" title="TalkLive home">
           <span class="brand-logo" aria-hidden="true">
-            <img src="/favicon.svg?v=20260923logo" width="30" height="30" alt="TalkLive logo" decoding="async" />
+            <img src="/favicon.svg?v=2b70993fa4" width="30" height="30" alt="TalkLive logo" decoding="async" />
             <span id="brandDot" class="brand-dot is-online" data-i18n-title="netOnline" title="You are online"></span>
           </span>
           <span class="brand-name">Talk<span class="brand-name-live">Live</span></span>
@@ -927,7 +927,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
     <aside id="navDrawer" class="tl-drawer hidden" role="dialog" data-i18n-aria="more" aria-label="More">
       <header class="tl-drawer-head">
         <span class="tl-drawer-brand">
-          <img src="/favicon.svg?v=20260923logo" width="26" height="26" alt="TalkLive logo" aria-hidden="true" decoding="async" />
+          <img src="/favicon.svg?v=2b70993fa4" width="26" height="26" alt="TalkLive logo" aria-hidden="true" decoding="async" />
           <span>Talk<span class="brand-name-live">Live</span></span>
         </span>
         <button type="button" id="closeNavDrawerBtn" class="tl-panel-close" data-i18n-aria="close" aria-label="Close">&times;</button>
@@ -1160,6 +1160,9 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                not emoji, so they look the same on every device. -->
           <!-- Filled by engage.js; here from the start so the page does not jump when it is. -->
           <section class="tl-engage" id="tlEngage"></section>
+          <!-- A first-time visitor gets the one-line strip, not the three tiles:
+               hold that much room, so the avatar picker does not jump up. -->
+          <script>try{if(!localStorage.getItem('tl_engage_state')&&!localStorage.getItem('tl_streak'))document.getElementById('tlEngage').classList.add('is-fresh')}catch(e){}</script>
           <section class="animal-picker" aria-labelledby="animalPickerTitle">
             <div role="heading" aria-level="2" class="ui-h2 animal-picker-title" id="animalPickerTitle" data-i18n="pickAnimal">Your avatar</div>
             <p class="animal-picker-hint" data-i18n="pickAnimalHint">Everyone you talk to sees it - an easy way to start talking.</p>
@@ -1609,7 +1612,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             <li data-perk="themes"><span class="pu-ico" aria-hidden="true"><i class="ti ti-brush" aria-hidden="true"></i></span><span data-i18n="upsellPerkThemes">Ocean and Sunset themes</span></li>
             <li data-perk="rematch"><span class="pu-ico" aria-hidden="true"><i class="ti ti-bolt" aria-hidden="true"></i></span><span data-i18n="upsellPerkRematch">Instant rematch: skip the queue</span></li>
             <li data-perk="alive"><span class="pu-ico" aria-hidden="true"><i class="ti ti-spark" aria-hidden="true"></i></span><span>A living avatar, gold name &amp; ring</span></li>
-            <li data-perk="avatars"><span class="pu-ico" aria-hidden="true"><i class="ti ti-crown" aria-hidden="true"></i></span><span>8 legendary avatars</span></li>
+            <li data-perk="avatars"><span class="pu-ico" aria-hidden="true"><i class="ti ti-crown" aria-hidden="true"></i></span><span>Every avatar, with animated character scenes</span></li>
             <li data-perk="history"><span class="pu-ico" aria-hidden="true"><i class="ti ti-clock" aria-hidden="true"></i></span><span>Everyone you met</span></li>
             <li data-perk="streak"><span class="pu-ico" aria-hidden="true"><i class="ti ti-snow" aria-hidden="true"></i></span><span>Streak freezes &amp; restore</span></li>
           </ul>
@@ -2143,8 +2146,8 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        stage in the middle column, so it starts right below the hero instead of
        below the (taller) activity rail. Its stylesheet loads without blocking first paint (all of this is below
        the fold); the inline script at the end drives the stepper. -->
-  <link rel="preload" href="/home-tour.css?v=20261110blue" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-  <noscript><link rel="stylesheet" href="/home-tour.css?v=20261110blue" /></noscript>
+  <link rel="preload" href="/home-tour.css?v=504d6eee28" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="/home-tour.css?v=504d6eee28" /></noscript>
   <section id="tour" class="tt" aria-labelledby="ttTitle">
     <div class="tt-in">
       <header class="tt-head tt-rv">
@@ -2161,11 +2164,11 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           <li class="tt-step"><button type="button" aria-controls="ttStage"><strong>Add a friend, or move on</strong><span>Enjoyed it? Tap Add friend to talk again later. Not a fit? Hang up - auto next finds someone new.</span><b class="tt-bar"><i></i></b></button></li>
         </ol>
         <div class="tt-stage tt-rv" id="ttStage" aria-live="polite">
-          <figure class="is-on"><picture><source type="image/avif" srcset="/images/home-tour/step-1-animal-480.avif?v=20261007a 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" /><img src="/images/home-tour/step-1-animal-480.webp?v=20261007a" srcset="/images/home-tour/step-1-animal-480.webp?v=20261007a 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" width="1000" height="1000" alt="TalkLive home screen with the Fox avatar selected" loading="lazy" decoding="async" /></picture></figure>
-          <figure><picture><source type="image/avif" srcset="/images/home-tour/step-2-start-480.avif?v=20261007a 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" /><img src="/images/home-tour/step-2-start-480.webp?v=20261007a" srcset="/images/home-tour/step-2-start-480.webp?v=20261007a 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" width="1000" height="1000" alt="Tap to Talk and Tap to Chat buttons highlighted" loading="lazy" decoding="async" /></picture></figure>
-          <figure><picture><source type="image/avif" srcset="/images/home-tour/step-3-rules-480.avif?v=20261007a 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" /><img src="/images/home-tour/step-3-rules-480.webp?v=20261007a" srcset="/images/home-tour/step-3-rules-480.webp?v=20261007a 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" width="1000" height="1000" alt="The 18+ agreement and the house rules screens" loading="lazy" decoding="async" /></picture></figure>
-          <figure><picture><source type="image/avif" srcset="/images/home-tour/step-4-connected-480.avif?v=20261007a 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" /><img src="/images/home-tour/step-4-connected-480.webp?v=20261007a" srcset="/images/home-tour/step-4-connected-480.webp?v=20261007a 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" width="1000" height="1000" alt="A connected TalkLive voice call showing the other person's avatar" loading="lazy" decoding="async" /></picture></figure>
-          <figure><picture><source type="image/avif" srcset="/images/home-tour/step-5-next-480.avif?v=20261007a 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" /><img src="/images/home-tour/step-5-next-480.webp?v=20261007a" srcset="/images/home-tour/step-5-next-480.webp?v=20261007a 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" width="1000" height="1000" alt="Add friend button and the auto next toggle during a call" loading="lazy" decoding="async" /></picture></figure>
+          <figure class="is-on"><picture><source type="image/avif" srcset="/images/home-tour/step-1-animal-480.avif?v=c950492a2a 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" /><img src="/images/home-tour/step-1-animal-480.webp?v=59a23fec4a" srcset="/images/home-tour/step-1-animal-480.webp?v=59a23fec4a 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" width="1000" height="1000" alt="TalkLive home screen with the Fox avatar selected" loading="lazy" decoding="async" /></picture></figure>
+          <figure><picture><source type="image/avif" srcset="/images/home-tour/step-2-start-480.avif?v=e44bd0614b 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" /><img src="/images/home-tour/step-2-start-480.webp?v=cb713a0b32" srcset="/images/home-tour/step-2-start-480.webp?v=cb713a0b32 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" width="1000" height="1000" alt="Tap to Talk and Tap to Chat buttons highlighted" loading="lazy" decoding="async" /></picture></figure>
+          <figure><picture><source type="image/avif" srcset="/images/home-tour/step-3-rules-480.avif?v=8313b324e5 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" /><img src="/images/home-tour/step-3-rules-480.webp?v=1cf012ce68" srcset="/images/home-tour/step-3-rules-480.webp?v=1cf012ce68 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" width="1000" height="1000" alt="The 18+ agreement and the house rules screens" loading="lazy" decoding="async" /></picture></figure>
+          <figure><picture><source type="image/avif" srcset="/images/home-tour/step-4-connected-480.avif?v=d6e34d8bce 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" /><img src="/images/home-tour/step-4-connected-480.webp?v=3e7f3365cd" srcset="/images/home-tour/step-4-connected-480.webp?v=3e7f3365cd 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" width="1000" height="1000" alt="A connected TalkLive voice call showing the other person's avatar" loading="lazy" decoding="async" /></picture></figure>
+          <figure><picture><source type="image/avif" srcset="/images/home-tour/step-5-next-480.avif?v=0491661a9f 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" /><img src="/images/home-tour/step-5-next-480.webp?v=1cc0eb559f" srcset="/images/home-tour/step-5-next-480.webp?v=1cc0eb559f 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" width="1000" height="1000" alt="Add friend button and the auto next toggle during a call" loading="lazy" decoding="async" /></picture></figure>
         </div>
       </div>
 
@@ -2174,33 +2177,33 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           <h2 class="tt-h2">More than a <span class="tt-grad">random call</span></h2>
         </header>
         <article class="tt-feat tt-rv">
-          <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-chat-in-call-640.avif?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-chat-in-call-640.webp?v=20261007a" srcset="/images/home-tour/feat-chat-in-call-640.webp?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="Text messages sent during a live TalkLive voice call" loading="lazy" decoding="async" /></picture></div>
+          <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-chat-in-call-640.avif?v=9b29504dcf 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-chat-in-call-640.webp?v=46eaeb5a5e" srcset="/images/home-tour/feat-chat-in-call-640.webp?v=46eaeb5a5e 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="Text messages sent during a live TalkLive voice call" loading="lazy" decoding="async" /></picture></div>
           <div><span class="tt-ico" aria-hidden="true"><i class="ti ti-chat" aria-hidden="true"></i></span><h3>Talk and text at the same time</h3><p>Open the chat during any call to share a word you cannot pronounce, a link or an emoji. Send quick reactions without interrupting.</p><div class="tt-tags"><span>In-call chat</span><span>👍 😊 ❤️ reactions</span><span>Their local time</span></div></div>
         </article>
         <article class="tt-feat tt-rv">
-          <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-games-640.avif?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-games-640.webp?v=20261007a" srcset="/images/home-tour/feat-games-640.webp?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="Tic Tac Toe being played during a TalkLive call" loading="lazy" decoding="async" /></picture></div>
+          <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-games-640.avif?v=fbd906c0a3 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-games-640.webp?v=4818da7e5e" srcset="/images/home-tour/feat-games-640.webp?v=4818da7e5e 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="Tic Tac Toe being played during a TalkLive call" loading="lazy" decoding="async" /></picture></div>
           <div><span class="tt-ico" aria-hidden="true"><i class="ti ti-game" aria-hidden="true"></i></span><h3>Play games while you talk</h3><p>Silence is easier with something to do. Challenge the other person to a game without leaving the call.</p><div class="tt-tags"><span>Tic Tac Toe</span><span>Dots &amp; Boxes</span></div></div>
         </article>
         <article class="tt-feat tt-rv">
-          <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-text-chat-640.avif?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-text-chat-640.webp?v=20261007a" srcset="/images/home-tour/feat-text-chat-640.webp?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="A TalkLive text chat used for English practice" loading="lazy" decoding="async" /></picture></div>
+          <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-text-chat-640.avif?v=1ce81f65f6 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-text-chat-640.webp?v=006f0995d5" srcset="/images/home-tour/feat-text-chat-640.webp?v=006f0995d5 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="A TalkLive text chat used for English practice" loading="lazy" decoding="async" /></picture></div>
           <div><span class="tt-ico" aria-hidden="true">⌨️</span><h3>Text chat, no mic needed</h3><p>For late nights, shared rooms and shy days. Text chat is light enough for any phone and slow networks - and great for language practice.</p><div class="tt-tags"><span>No microphone</span><span>Next in one tap</span><span>17 languages</span></div></div>
         </article>
         <article class="tt-feat tt-rv">
-          <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-friends-640.avif?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-friends-640.webp?v=20261007a" srcset="/images/home-tour/feat-friends-640.webp?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="An incoming friend request and the Friends panel" loading="lazy" decoding="async" /></picture></div>
+          <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-friends-640.avif?v=6aba461986 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-friends-640.webp?v=7a5db03fc1" srcset="/images/home-tour/feat-friends-640.webp?v=7a5db03fc1 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="An incoming friend request and the Friends panel" loading="lazy" decoding="async" /></picture></div>
           <div><span class="tt-ico" aria-hidden="true"><i class="ti ti-people" aria-hidden="true"></i></span><h3>Keep the people you click with</h3><p>Add a friend mid-call and call or message them later, without ever swapping phone numbers. Share your Friend ID to be found.</p><div class="tt-tags"><span>Friend requests</span><span>Friend ID</span><span>Call back</span></div></div>
         </article>
         <article class="tt-feat tt-rv">
-          <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-filters-640.avif?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-filters-640.webp?v=20261007a" srcset="/images/home-tour/feat-filters-640.webp?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="Match filters and call history panels" loading="lazy" decoding="async" /></picture></div>
+          <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-filters-640.avif?v=36fb6d7df3 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-filters-640.webp?v=7673025034" srcset="/images/home-tour/feat-filters-640.webp?v=7673025034 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="Match filters and call history panels" loading="lazy" decoding="async" /></picture></div>
           <div><span class="tt-ico" aria-hidden="true"><i class="ti ti-globe" aria-hidden="true"></i></span><h3>Filters and call history</h3><p>Choose countries you would like to meet, or never meet, and find recent conversations in your call history. A planned Premium plan adds gender filters.</p><div class="tt-tags"><span>Country filters</span><span>Call history</span><span>Premium soon</span></div></div>
         </article>
         <article class="tt-feat tt-rv">
-          <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-safety-640.avif?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-safety-640.webp?v=20261007a" srcset="/images/home-tour/feat-safety-640.webp?v=20261007a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="Report and mute controls and the TalkLive house rules" loading="lazy" decoding="async" /></picture></div>
+          <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-safety-640.avif?v=31d681d7d4 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-safety-640.webp?v=cd1d8ae90a" srcset="/images/home-tour/feat-safety-640.webp?v=cd1d8ae90a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="Report and mute controls and the TalkLive house rules" loading="lazy" decoding="async" /></picture></div>
           <div><span class="tt-ico" aria-hidden="true"><i class="ti ti-shield" aria-hidden="true"></i></span><h3>Built for safe conversations</h3><p>Mute, hang up or report in one tap. Automatic safety checks run during calls, calls are never recorded by TalkLive, and the whole service is 18+. <a href="/safety">Safety center</a></p><div class="tt-tags"><span>Report &amp; block</span><span>Not recorded</span><span>18+ only</span></div></div>
         </article>
       </div>
 
       <a class="tt-story tt-rv" href="/what-is-talklive">
-        <picture><source type="image/avif" srcset="/images/what-is-talklive/cover-800.avif?v=20261007a 800w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/what-is-talklive/cover-800.webp?v=20261007a" srcset="/images/what-is-talklive/cover-800.webp?v=20261007a 800w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1600" height="900" alt="TalkLive on desktop and phone" loading="lazy" decoding="async" /></picture>
+        <picture><source type="image/avif" srcset="/images/what-is-talklive/cover-800.avif?v=b5c7785376 800w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/what-is-talklive/cover-800.webp?v=24bc0217d0" srcset="/images/what-is-talklive/cover-800.webp?v=24bc0217d0 800w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1600" height="900" alt="TalkLive on desktop and phone" loading="lazy" decoding="async" /></picture>
         <div class="tt-story-body"><h3>What is TalkLive?</h3><p>The why behind one-tap voice chat, avatars and a camera-free internet.</p><span class="tt-more">Read the article →</span></div>
       </a>
       <div class="tt-guides tt-rv">
@@ -2224,20 +2227,20 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
     if (!('IntersectionObserver' in window)) return;
     root.classList.add('js-tt');
     var steps = root.querySelectorAll('.tt-step'), figs = root.querySelectorAll('#ttStage figure');
-    var cur = 0, timer = null, auto = !lite && !matchMedia('(prefers-reduced-motion: reduce)').matches, DUR = 6000;
+    var cur = 0, started = false, timer = null, auto = !lite && !matchMedia('(prefers-reduced-motion: reduce)').matches, DUR = 6000;
     function show(i) {
       cur = (i + steps.length) % steps.length;
       for (var k = 0; k < steps.length; k++) {
         steps[k].classList.toggle('is-on', k === cur); figs[k].classList.toggle('is-on', k === cur);
         figs[k].classList.toggle('is-next', k === (cur + 1) % steps.length);
         steps[k].querySelector('button').setAttribute('aria-current', k === cur ? 'step' : 'false');
-        var bar = steps[k].querySelector('.tt-bar i'); bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = '';
+        if (started) { var bar = steps[k].querySelector('.tt-bar i'); bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = ''; }
       }
     }
     function play() { stop(); if (!auto) return; steps[cur].classList.add('is-auto'); timer = setTimeout(function () { show(cur + 1); play(); }, DUR); }
     function stop() { clearTimeout(timer); for (var k = 0; k < steps.length; k++) steps[k].classList.remove('is-auto'); }
     steps.forEach(function (s, i) { s.querySelector('button').addEventListener('click', function () { auto = false; stop(); show(i); }); });
-    show(0);
+    show(0); started = true;
     var io = new IntersectionObserver(function (es) {
       es.forEach(function (e) {
         if (e.target.id === 'ttStage') { if (e.isIntersecting) { e.target.classList.add('in'); play(); } else stop(); }
@@ -2584,20 +2587,20 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        and `defer` keeps them running in document order (so socket.io, the data
        modules and i18n are all in place before app.js), while letting the
        browser finish parsing and paint the page first. -->
-  <script defer src="/socket.io/socket.io.min.js"></script>
-  <script defer src="countries.js?v=20260828fix"></script>
-  <script defer src="i18n.js?v=20261111plus"></script>
-  <script defer src="chat-time.js?v=20260916navbar"></script>
-  <script defer src="animals.js?v=20261008more"></script>
-  <script defer src="characters.js?v=20261008more"></script>
-  <script defer src="social-kit.js?v=20261006chars"></script>
-  <script defer src="moderation.js?v=20261027tg"></script>
-  <script defer src="error-reporter.js?v=20260928err"></script>
-  <script defer src="chat-extras.js?v=20261109acct"></script>
-  <script defer src="voice-notes.js?v=20261001mic"></script>
-  <script defer src="games.js?v=20261101rr"></script>
-  <script defer src="nickname-rules.js?v=20261101nick"></script>
-  <script defer src="app.js?v=20261111plus"></script>
+  <script defer src="/vendor/socket.io.min.js?v=7bcff1b4f1"></script>
+  <script defer src="countries.js?v=30bcd7f146"></script>
+  <script defer src="i18n.js?v=5bd4b6ea4d"></script>
+  <script defer src="chat-time.js?v=9d4e50bcf7"></script>
+  <script defer src="animals.js?v=e934300459"></script>
+  <script defer src="characters.js?v=7df196acd3"></script>
+  <script defer src="social-kit.js?v=fa26a36909"></script>
+  <script defer src="moderation.js?v=7a69fce698"></script>
+  <script defer src="error-reporter.js?v=0e5b1c5f7d"></script>
+  <script defer src="chat-extras.js?v=722851ac47"></script>
+  <script defer src="voice-notes.js?v=8e48c58788"></script>
+  <script defer src="games.js?v=192e9d4f2d"></script>
+  <script defer src="nickname-rules.js?v=077c943b4d"></script>
+  <script defer src="app.js?v=7afabb16ff"></script>
 
 <!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

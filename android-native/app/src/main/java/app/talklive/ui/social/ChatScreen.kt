@@ -167,13 +167,20 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(clientId) { vm.openChat(clientId) }
-    androidx.compose.runtime.DisposableEffect(clientId) { onDispose { vm.openChat(null) } }
+    // Open only while the app is on screen: with the phone in a pocket, a new
+    // message was marked read and the sender saw "Seen" for something unread.
+    androidx.lifecycle.compose.LifecycleStartEffect(clientId) {
+        vm.openChat(clientId)
+        onStopOrDispose { vm.openChat(null) }
+    }
     BackHandler(onBack = onBack)
     var showProfile by remember { mutableStateOf(false) }
     if (showProfile) PersonSheet(person, isFriend, onCall = { vm.call(person) }, onMessage = null, requested = clientId in sent, onAddFriend = { vm.sendRequest(clientId) }) { showProfile = false }
     // New message or typing: glide to the bottom.
-    LaunchedEffect(messages.size, typing) { if (messages.isNotEmpty()) listState.animateScrollToItem(0) }
+    // Not while they are reading further up, unless the new message is their own.
+    LaunchedEffect(messages.size, typing) {
+        if (messages.isNotEmpty() && (listState.firstVisibleItemIndex <= 2 || messages.lastOrNull()?.mine == true)) listState.animateScrollToItem(0)
+    }
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).imePadding()) {
         // Header.

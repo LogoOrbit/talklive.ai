@@ -28,8 +28,13 @@ object GoogleSignIn {
         } else {
             Result.Failed("Google did not return an account.")
         }
-    } catch (_: GetCredentialCancellationException) {
-        Result.Cancelled
+    } catch (e: GetCredentialCancellationException) {
+        // Picking an account and coming straight back with "[16] Account reauth
+        // failed" is Google refusing this app (its package and signing key are
+        // not registered), reported as if the person had cancelled. Saying
+        // nothing left them on the same screen, tapping again and again.
+        val m = e.message.orEmpty()
+        if (m.contains("[16]") || m.contains("reauth", true)) Result.Failed(NOT_SET_UP) else Result.Cancelled
     } catch (e: androidx.credentials.exceptions.NoCredentialException) {
         // Also what Google answers when this app's package + signing key are not
         // registered as an Android OAuth client (see README, Google sign-in).

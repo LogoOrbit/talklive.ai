@@ -1094,6 +1094,10 @@ const PROVIDER_TIMEOUT_MS = 4000;
 
 let providerCache = null; // { servers, expiresAt }
 let providerInFlight = null;
+// While a renewal is under way the current set is still handed out, as long
+// as it has this long left to run.
+const PROVIDER_USABLE_MARGIN_MS = 8 * 60 * 1000;
+let providerFailedAt = 0;
 
 function normaliseIceEntries(raw) {
   // Cloudflare answers with a single object, Metered with an array. Keep only
@@ -1187,7 +1191,12 @@ function getManagedTurnServers() {
   if (providerCache && providerCache.expiresAt - PROVIDER_REFRESH_MARGIN_MS > now) {
     return Promise.resolve(providerCache.servers);
   }
-  if (providerInFlight) return providerInFlight;
+  // Close to expiry but still valid: hand these out now and renew behind the
+  // caller's back, so no call ever waits on the provider's API to start.
+  const usable = providerCache && providerCache.expiresAt - PROVIDER_USABLE_MARGIN_MS > now ? providerCache.servers : null;
+  if (providerInFlight) return usable ? Promise.resolve(usable) : providerInFlight;
+  // Both providers just failed: do not make every caller wait out the timeout again.
+  if (now - providerFailedAt < 20000) return Promise.resolve(usable || (providerCache ? providerCache.servers : []));
 
   providerInFlight = Promise.all([
     fetchCloudflareTurn().catch((err) => {
@@ -1202,8 +1211,10 @@ function getManagedTurnServers() {
     const servers = cloudflare.concat(metered);
     if (servers.length) {
       providerCache = { servers, expiresAt: Date.now() + PROVIDER_TTL_SECONDS * 1000 };
+      providerFailedAt = 0;
       return servers;
     }
+    providerFailedAt = Date.now();
     // Every provider failed. Stale-but-unexpired credentials still relay media,
     // and a relay that might work beats no relay at all; only once they are
     // genuinely expired is it honest to drop them.
@@ -1214,7 +1225,7 @@ function getManagedTurnServers() {
     providerInFlight = null;
   });
 
-  return providerInFlight;
+  return usable ? Promise.resolve(usable) : providerInFlight;
 }
 
 function hasRelay(servers) {
@@ -1493,7 +1504,15 @@ function sendPendingFeedbackReplies(socket) {
   }
 }
 
-const gameTracker = createGameTracker({ store, profileOf: (sid) => profiles.get(sid) });
+const gameTracker = createGameTracker({
+  store,
+  profileOf: (sid) => profiles.get(sid),
+  // An unanswered invite timed out: the inviter hears "no", the invitee's prompt goes away.
+  onExpire: ({ from, to }) => {
+    io.to(from).emit('game', { type: 'decline' });
+    io.to(to).emit('game', { type: 'left' });
+  },
+});
 // For the owner's Users tab: per person, how many friends they have, the
 // avatar others see for them, whether they are online, and (when `since` is
 // given) how many friend messages they sent before that time.
@@ -1981,6 +2000,16 @@ function cleanFilm(f) {
   return { t: f.t, id, title, year, art: f.art, url: f.url };
 }
 
+// The Socket.IO client. Socket.IO serves its own copy at /socket.io/, but with
+// max-age=0 and compressed afresh for every request, and every page waits on
+// it before its own script can run. Here it gets a stamped URL, so a browser
+// fetches it once and never asks again. (/socket.io/socket.io.min.js stays for
+// pages already open and for the Android wrapper.)
+const SOCKET_IO_CLIENT = path.join(path.dirname(require.resolve('socket.io/package.json')), 'client-dist', 'socket.io.min.js');
+app.get('/vendor/socket.io.min.js', (req, res) => {
+  res.sendFile(SOCKET_IO_CLIENT, { cacheControl: false, headers: { 'Cache-Control': /[?&]v=/.test(req.url) ? 'public, max-age=31536000, immutable' : 'public, max-age=86400' } });
+});
+
 // Minified copies of the scripts (scripts/minify-assets.js, run in CI), each
 // served only while it still matches the source in public/.
 app.use(minifiedScripts(PUBLIC_DIR, path.join(__dirname, '..', 'build', 'min'), staticHeaders));
@@ -2218,6 +2247,8 @@ socketAuth.set = function set(socketId, usernameLower) {
     // A character face lives in the avatar slot; an animal in the animal slot.
     if (sanitizeAnimal(account.animal)) profile.animal = account.animal;
     else if (sanitizeFace(account.animal)) { profile.animal = null; profile.avatar = account.animal; }
+    // The account's saved face is already earned, so it is the one held.
+    if (profile.clientId) store.noteFace(profile.clientId, faceKey(account.animal) || '');
   } else if (profile && account && profile.animal) { account.animal = profile.animal; persistAccount(usernameLower); }
   return result;
 };
@@ -2770,6 +2801,8 @@ function lastMessageBetween(me, other) {
     voice: !!m.voice,
     ts: m.ts,
     seen: !!m.seen,
+    // Seen implies delivered; the list and the thread read the same flags.
+    delivered: !!(m.delivered || m.seen),
   };
 }
 
@@ -2907,7 +2940,21 @@ function pushCopyFor(notif) {
     case 'message':
       // Each lands where the tap meant to go: the conversation itself, or the
       // request waiting for an answer - not a panel to hunt through.
-      return { topic: `msg:${notif.fromClientId}`, title: `${notif.username} messaged you`, body: 'Open TalkLive to read it.', url: `/?open=chat&with=${encodeURIComponent(notif.fromClientId)}`, kind: 'message' };
+      return {
+        topic: `msg:${notif.fromClientId}`, title: `${notif.username} messaged you`, body: 'Open TalkLive to read it.',
+        url: `/?open=chat&with=${encodeURIComponent(notif.fromClientId)}`, kind: 'message',
+        // Android app only (web push never carries the text): the app builds
+        // its own notification from this, with the preview and a Reply action.
+        data: {
+          kind: 'message',
+          fromClientId: notif.fromClientId,
+          fromName: String(notif.username || '').slice(0, 60),
+          preview: notif.media === 'gif' ? 'GIF' : notif.media === 'voice' ? 'Voice message' : String(notif.text || '').slice(0, 120),
+          media: notif.media || '',
+          msgId: String(notif.msgId || ''),
+          ts: String(notif.ts || Date.now()),
+        },
+      };
     case 'friend_request':
       return { topic: `req:${notif.fromClientId}`, title: `${notif.username} wants to be friends`, body: 'Tap to accept or decline.', url: '/?open=requests', kind: 'social' };
     case 'friend_accepted':
@@ -3369,6 +3416,33 @@ function readVoicePayload(raw) {
   return { bytes, mime, ms: Math.min(ms, VOICE_MAX_MS), id: cleanMsgId(raw.id), replyTo: cleanMsgId(raw.replyTo), transcript };
 }
 
+// "Delivered" means the recipient's device got the message: it was pushed to
+// their live socket, or they connected afterwards and were synced. Stored on
+// the message so a later thread or list fetch reports what the live events
+// already announced. Returns the ids newly marked.
+function markDelivered(fromClientId, toClientId) {
+  const list = friendChats.get(pairKey(fromClientId, toClientId));
+  const ids = [];
+  if (!list) return ids;
+  for (const m of list) {
+    if (m.from !== fromClientId || m.delivered || m.seen) continue;
+    m.delivered = true;
+    ids.push(m.id);
+  }
+  if (ids.length) persistSocial();
+  return ids;
+}
+// A client that just connected has now received everything waiting for it.
+function deliverPendingTo(clientId) {
+  const senders = new Set();
+  for (const n of notifications.get(clientId) || []) if (n.type === 'message' && n.fromClientId) senders.add(n.fromClientId);
+  for (const from of senders) {
+    const ids = markDelivered(from, clientId);
+    const s = ids.length && getSocketByClientId(from);
+    if (s) s.emit('friend-message-delivered', { toClientId: clientId, ids });
+  }
+}
+
 // Stores a direct message that has passed every check, and delivers it: the
 // thread, the transcript, the recipient's socket or push, and the sender's
 // acknowledgement. Shared by text/GIF messages and voice notes.
@@ -3439,6 +3513,8 @@ function deliverFriendMessage(socket, me, toClientId, parsed, msgId) {
   const targetSocket = getSocketByClientId(toClientId);
   if (targetSocket) {
     targetSocket.emit('friend-message', wire);
+    msg.delivered = true;
+    persistSocial();
     if (theirsAdded) syncClientState(targetSocket, toClientId);
   }
   if (mineAdded) syncClientState(socket, me.clientId);
@@ -3449,10 +3525,12 @@ function deliverFriendMessage(socket, me, toClientId, parsed, msgId) {
     username: me.username,
     text: msg.text || (msg.voice ? '🎤 Voice message' : '[GIF]'),
     msgId: msg.id,
+    media: msg.voice ? 'voice' : msg.gif && !msg.text ? 'gif' : undefined,
   });
 
   socket.emit('friend-message-sent', {
     toClientId, text: msg.text, ts: msg.ts, id: msg.id, replyTo: msg.replyTo || null, gif: msg.gif || null, voice: msg.voice || null,
+    delivered: !!msg.delivered,
   });
   return msg;
 }
@@ -3504,7 +3582,9 @@ const GAME_EVENT_TYPES = new Set(['invite', 'accept', 'decline', 'state', 'left'
 // A phone that switches apps keeps its socket open, and the ping timeout would
 // otherwise leave the stranger waiting up to ~85s for nobody.
 const chatAwayTimers = new Map();
-const CHAT_AWAY_DROP_MS = Number(process.env.CHAT_AWAY_DROP_MS) || 60000;
+// Five minutes: a minute ended chats when someone only answered a message in
+// another app. The stranger sees "switched away" meanwhile and can leave.
+const CHAT_AWAY_DROP_MS = Number(process.env.CHAT_AWAY_DROP_MS) || 5 * 60000;
 function clearChatAway(socketId) {
   const timer = chatAwayTimers.get(socketId);
   if (timer) { clearTimeout(timer); chatAwayTimers.delete(socketId); }
@@ -4091,21 +4171,45 @@ function placeFromHints(timezone, acceptLanguage) {
 // The picture friends and recent people see. Most people never pick an
 // avatar, but everyone who calls has a spirit animal - without this fallback
 // their friends saw a blank silhouette for someone they knew as "the Fox".
-// Legendary faces only Plus members can wear (android AnimalUi PLUS_FACES).
+// The faces free accounts may pick: five animals and five movie characters.
+// Every other animal and character is Plus. Mirrored by FREE_FACES in
+// public/animals.js and android AnimalUi.kt; keep the three lists identical.
+const FREE_FACES = new Set([
+  'a:lion', 'a:fox', 'a:cat', 'a:dog', 'a:panda',
+  'c:wizard', 'c:pirate', 'c:detective', 'c:robot', 'c:ninja',
+]);
 // The gold profile ring: Plus, or the invite reward's Plus look.
 function hasRing(clientId) { return isPremium(clientId) || !!store.plusLook(clientId); }
 function lookStatus(clientId) {
   const l = store.plusLook(clientId);
   return l && !isPremium(clientId) ? { until: l.expiresAt, face: l.face || null } : null;
 }
-const PLUS_FACES = new Set(['a:unicorn', 'a:dragon', 'a:eagle', 'a:shark', 'c:king', 'c:queen', 'c:knight', 'c:astronaut']);
+// `a:fox` / `c:wizard` for an animal or character in any of the shapes the
+// clients send (bare animal id, prefixed avatar id); null for a plain bust.
+function faceKey(value) {
+  if (typeof value !== 'string') return null;
+  if (value.startsWith('a:') || value.startsWith('c:')) return value;
+  return ANIMAL_IDS.has(value) ? `a:${value}` : null;
+}
+function isPlusFace(value) {
+  const key = faceKey(value);
+  return !!key && !FREE_FACES.has(key);
+}
+// Whether this person may wear the face. Locked faces need Plus or the invite
+// reward - except the one they already wear: avatars that were free before the
+// list shrank are kept, and a person the server has never seen is taken as
+// already wearing what they send. Only a CHANGE to a locked face is refused.
+function faceAllowed(clientId, value, premium) {
+  if (!isPlusFace(value) || premium) return true;
+  const held = store.heldFace(clientId);
+  if (held === undefined || held === faceKey(value)) return true;
+  const look = store.plusLook(clientId);
+  return !!look && (!look.face || look.face === faceKey(value));
+}
 function shownAvatar(p) {
   if (!p) return null;
   const face = p.avatar || (p.animal ? `a:${p.animal}` : null);
-  if (face && PLUS_FACES.has(face) && !isPremium(p.clientId)) {
-    const look = store.plusLook(p.clientId);
-    if (!look || look.face !== face) return null;
-  }
+  if (face && !faceAllowed(p.clientId, face, isPremium(p.clientId))) return null;
   return face;
 }
 
@@ -4140,11 +4244,18 @@ function isBotSocket(socketId) {
 }
 
 let lastOnlineCountSent = -1;
+// Called on every connect and disconnect. Sending to everyone each time meant
+// a burst of reconnects (a deploy, a mobile network blip) wrote to every
+// socket once per arrival; this batches a burst into one send of each.
+let onlineCountTimer = null;
 function broadcastOnlineCount() {
-  lastOnlineCountSent = onlineCount();
-  io.emit('online-count', lastOnlineCountSent);
-  broadcastVisitorCount();
-  broadcastOnlinePeople();
+  if (onlineCountTimer) return;
+  onlineCountTimer = setTimeout(() => {
+    onlineCountTimer = null;
+    broadcastVisitorCount();
+    broadcastOnlinePeople();
+  }, 250);
+  if (onlineCountTimer.unref) onlineCountTimer.unref();
 }
 
 // --- Visitors in the last 24 hours -----------------------------------------
@@ -6220,11 +6331,15 @@ io.on('connection', (socket) => {
       const incumbentAlive = (tokenOk && incumbent && !data.takeover)
         ? await new Promise((resolve) => {
           let settled = false;
-          const done = (alive) => { if (!settled) { settled = true; resolve(alive); } };
+          let giveUp = null;
+          const done = (alive) => { if (!settled) { settled = true; clearTimeout(giveUp); resolve(alive); } };
+          // A socket whose connection is already closing cannot answer: do
+          // not make the phone that is replacing it wait to find that out.
+          if (!incumbent.connected || (incumbent.conn && incumbent.conn.readyState !== 'open')) return done(false);
           try {
             incumbent.timeout(1200).emit('identity-ping', (err) => done(!err));
           } catch (_) { done(false); }
-          setTimeout(() => done(false), 1500);
+          giveUp = setTimeout(() => done(false), 1500);
         })
         : false;
 
@@ -6276,7 +6391,16 @@ io.on('connection', (socket) => {
     const authedAccount = socketAuth.get(socket.id) ? accounts.get(socketAuth.get(socket.id)) : null;
     const chosenName = (authedAccount && Nick.clean(authedAccount.nickname)) || Nick.clean(data.nickname);
     // A signed-in person's avatar is saved with the account, so it follows them.
-    const sentAnimal = sanitizeFace(data.animal);
+    let sentAnimal = sanitizeFace(data.animal);
+    let sentAvatar = sanitizeAvatar(data.avatar);
+    // A locked face is only accepted if it is the one already worn; anything
+    // else falls back to what this person had (see faceAllowed).
+    if (!faceAllowed(clientId, sentAnimal, premium) || !faceAllowed(clientId, sentAvatar, premium)) {
+      const held = store.heldFace(clientId) || null;
+      sentAnimal = held && held.startsWith('a:') ? held.slice(2) : held;
+      sentAvatar = held;
+    }
+    store.noteFace(clientId, faceKey(sentAvatar) || faceKey(sentAnimal) || '');
     const sentGender = audience.normGender(data.gender);
     const sentAge = audience.normAge(data.ageGroup);
     if (authedAccount && ((sentGender !== 'unspecified' && authedAccount.gender !== sentGender)
@@ -6286,10 +6410,7 @@ io.on('connection', (socket) => {
       persistAccount(socketAuth.get(socket.id));
     }
     // The invite reward unlocks one legendary face: the first one worn.
-    if (sentAnimal && !isPremium(clientId)) {
-      const key = sentAnimal.startsWith('c:') ? sentAnimal : 'a:' + sentAnimal;
-      if (PLUS_FACES.has(key)) store.setPlusLookFace(clientId, key);
-    }
+    if (sentAnimal && !premium && isPlusFace(sentAnimal)) store.setPlusLookFace(clientId, faceKey(sentAnimal));
     if (authedAccount && sentAnimal && authedAccount.animal !== sentAnimal) {
       authedAccount.animal = sentAnimal;
       persistAccount(socketAuth.get(socket.id));
@@ -6327,8 +6448,8 @@ io.on('connection', (socket) => {
       // avatar, validated against the same list the picker is built from so a
       // client cannot store an animal that does not exist.
       // The app sends a character face in `animal` ("c:wizard"); show it as the avatar.
-      avatar: sanitizeAvatar(data.avatar) || (String(data.animal || "").startsWith("c:") ? sanitizeFace(data.animal) : null),
-      animal: sanitizeAnimal(data.animal),
+      avatar: sentAvatar || (String(sentAnimal || '').startsWith('c:') ? sentAnimal : null),
+      animal: sanitizeAnimal(sentAnimal),
       // Which page this socket lives on. /chat is text only, and call-backs
       // must not ring or force-pair it (see canTakeCall).
       surface: data.surface === 'chat' ? 'chat' : 'call',
@@ -6423,6 +6544,7 @@ io.on('connection', (socket) => {
     socket.emit('register-result', { ok: true });
     refreshFriendSnapshots(clientId, profiles.get(socket.id));
     syncClientState(socket, clientId);
+    deliverPendingTo(clientId);
     // A signed-in browser gets its account ID from 'resume-session' instead,
     // so it is never handed a guest code it would drop a moment later.
     if (socketAuth.get(socket.id) || !data.signedIn || resumeRefused) {
@@ -6527,7 +6649,7 @@ io.on('connection', (socket) => {
     // property check rather than a truthiness one.
     if (Object.prototype.hasOwnProperty.call(opts, 'animal')) {
       const animal = sanitizeAnimal(opts.animal);
-      if (animal !== profile.animal) {
+      if (animal !== profile.animal && faceAllowed(profile.clientId, animal, isPremium(profile.clientId))) {
         profile.animal = animal;
         if (animal) store.recordFeature('animal_picked');
       }
@@ -7197,16 +7319,24 @@ io.on('connection', (socket) => {
   let gameRl = { start: 0, n: 0 };
   socket.on('game', (data) => {
     const partnerId = partners.get(socket.id);
-    if (!partnerId || !data || typeof data !== 'object' || !GAME_EVENT_TYPES.has(data.type)) return;
+    if (!data || typeof data !== 'object' || !GAME_EVENT_TYPES.has(data.type)) return;
+    if (!partnerId) {
+      // No partner any more (the pairing ended server-side): tell the sender its game is over.
+      if (data.type !== 'left' && data.type !== 'decline') socket.emit('game', { type: 'left' });
+      return;
+    }
     const now = Date.now();
     if (now - gameRl.start > 5000) gameRl = { start: now, n: 0 };
     if (++gameRl.n > 30) return;
     let size = 0;
     try { size = JSON.stringify(data).length; } catch (_) { return; }
     if (size > 4096) return;
+    const verdict = gameTracker.judge(socket.id, partnerId, data);
+    if (verdict.reply) socket.emit('game', verdict.reply);
+    if (!verdict.relay) return;
     if (data.type === 'invite') store.recordFeature('mini_game');
     try { gameTracker.onEvent(socket.id, partnerId, data); } catch (err) { console.warn('[games] stats:', err.message); }
-    io.to(partnerId).emit('game', data);
+    io.to(partnerId).emit('game', verdict.relay);
   });
 
   // --- Friends ---
@@ -7751,6 +7881,7 @@ io.on('connection', (socket) => {
       if (dup && dup.from === me.clientId && dup.text === trimmed) {
         return socket.emit('friend-message-sent', {
           toClientId, text: dup.text, ts: dup.ts, id: dup.id, replyTo: dup.replyTo || null, gif: dup.gif || null,
+          delivered: !!(dup.delivered || dup.seen), seen: !!dup.seen,
         });
       }
       if (dup) msgId = null;
@@ -8098,7 +8229,7 @@ io.on('connection', (socket) => {
     let changed = false;
     if (list) {
       for (const m of list) {
-        if (m.from === friendClientId && !m.seen) { m.seen = true; changed = true; }
+        if (m.from === friendClientId && !m.seen) { m.seen = true; m.delivered = true; changed = true; }
       }
       if (changed) persistSocial();
     }

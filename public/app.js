@@ -437,9 +437,9 @@ const AVATAR_STYLES = {
 // Everything that shows a person - the header button, the settings row, the
 // friends list, the rail - goes through this, so adding a kind of avatar is a
 // change in one function rather than in eight call sites.
-function avatarFaceHtml(id, size = 36) {
+function avatarFaceHtml(id, size = 36, plus = false) {
   const character = characterAvatarId(id);
-  if (character) return window.TalkLiveCharacters.html(character, size);
+  if (character) return window.TalkLiveCharacters.html(character, size, plus);
   const animal = animalAvatarId(id);
   if (animal && window.TalkLiveAnimals && window.TalkLiveAnimals.has(animal)) {
     window.TalkLiveAnimals.installSprite();
@@ -698,7 +698,7 @@ function loadVoiceGender() {
   if (!voiceGenderLoad) {
     voiceGenderLoad = new Promise((resolve, reject) => {
       const el = document.createElement('script');
-      el.src = 'voice-gender.js?v=20260928err';
+      el.src = 'voice-gender.js?v=2ae95509f9';
       el.onload = resolve;
       el.onerror = () => { voiceGenderLoad = null; reject(); };
       document.head.appendChild(el);
@@ -1688,13 +1688,13 @@ function closeQuickSettings() {
 // page over its size budget); it is fetched once the page is idle, or on the
 // first tap of the gear if that comes sooner.
 // It also brings settings.css, which the screen waits for (html.tl-set-css).
-var SETTINGS_PANEL_SRC = '/settings-panel.js?v=20261028nocoins';
+var SETTINGS_PANEL_SRC = '/settings-panel.js?v=fef14af34b';
 // Top 3 films on profiles (fav-films.js), loaded when a profile first opens.
 var filmsLoading = null;
 function withFilms(cb) {
   filmsLoading = filmsLoading || new Promise((ok, fail) => {
     const s = document.createElement('script');
-    s.src = '/fav-films.js?v=20261101same';
+    s.src = '/fav-films.js?v=5206e035f2';
     s.onload = ok;
     s.onerror = () => { filmsLoading = null; fail(); };
     document.head.appendChild(s);
@@ -1743,7 +1743,7 @@ function openQuickSettings() {
   if (!quickSettings && window.TalkLiveSettingsPanel) {
     const flip = (box, on) => { box.checked = on; box.dispatchEvent(new Event('change')); };
     quickSettings = window.TalkLiveSettingsPanel.mount(document.getElementById('quickSettings'), {
-      profileFace: (size) => (myAvatar ? avatarFaceHtml(myAvatar, size) : genderIcon(null, size)),
+      profileFace: (size) => (myAvatar ? avatarFaceHtml(myAvatar, size, isPremiumUser) : genderIcon(null, size)),
       profileName: () => currentDisplayName() || (myProfile && myProfile.username) || '',
       profileSub: () => t(accountNickname ? 'settingsRowAccount' : 'settingsRowGuest'),
       openProfile: () => { closeQuickSettings(); renderAccountState(); openMyProfile(); },
@@ -2613,8 +2613,8 @@ function renderFriendChatPresence() {
 
 // The avatar this user is wearing: their spirit animal if they picked one,
 // otherwise the plain gender silhouette.
-function myAvatarIcon(size) {
-  if (myAvatar) return avatarFaceHtml(myAvatar, size);
+function myAvatarIcon(size, plus) {
+  if (myAvatar) return avatarFaceHtml(myAvatar, size, plus);
   return (myAnimal && typeof Animals !== 'undefined' && Animals)
     ? Animals.icon(myAnimal, size)
     : genderIcon(myAvatar, size);
@@ -3177,7 +3177,7 @@ if (animalGrid) {
 
 // The stranger's animal, shown on their card once the call is actually
 // connected (same moment as their name - never before, see revealPartner).
-function renderPartnerAnimal(animalId, characterId) {
+function renderPartnerAnimal(animalId, characterId, plus) {
   if (!partnerAnimalEl) return;
   // Their avatar is a movie character rather than an animal: same card, the
   // character's art and name, no trait line.
@@ -3187,7 +3187,7 @@ function renderPartnerAnimal(animalId, characterId) {
     const same = myAvatar === 'c:' + characterId;
     partnerAnimalEl.style.removeProperty('--animal-color');
     partnerAnimalEl.innerHTML = `
-    <span class="partner-animal-art">${Ch.icon(characterId, 46)}</span>
+    <span class="partner-animal-art">${plus ? Ch.html(characterId, 46, true) : Ch.icon(characterId, 46)}</span>
     <span class="partner-animal-text">
       <span class="partner-animal-label">${escapeHtml(t('partnerAnimalLabel'))}</span>
       <strong class="partner-animal-name">${escapeHtml(Ch.name(characterId))}</strong>
@@ -3260,10 +3260,10 @@ function accountUi() {
     accountUiP = new Promise((resolve, reject) => {
       const css = document.createElement('link');
       css.rel = 'stylesheet';
-      css.href = '/account-ui.css?v=20261110blue';
+      css.href = '/account-ui.css?v=00ddfccc11';
       document.head.appendChild(css);
       const js = document.createElement('script');
-      js.src = '/account-ui.js?v=20261109b';
+      js.src = '/account-ui.js?v=8f13756e07';
       js.onload = () => resolve(window.AccountUI);
       js.onerror = (e) => { accountUiP = null; reject(e); };
       document.head.appendChild(js);
@@ -3560,7 +3560,7 @@ document.addEventListener('tl-films', () => { if (myProfileIsOpen()) renderMyPro
 function renderMyProfileCard() {
   if (!myProfileSheet) return;
   const name = accountNickname || (tempUsernameInput && tempUsernameInput.value) || t('you');
-  myProfileSheet.querySelector('.my-profile-face').innerHTML = myAvatar ? avatarFaceHtml(myAvatar, 92) : genderIcon(null, 92);
+  myProfileSheet.querySelector('.my-profile-face').innerHTML = myAvatar ? avatarFaceHtml(myAvatar, 92, isPremiumUser) : genderIcon(null, 92);
   myProfileSheet.querySelector('.my-profile-name').textContent = name;
   myProfileSheet.querySelector('.my-profile-id-value').textContent = myFriendId || '…';
   myProfileSheet.querySelector('.my-profile-copy').setAttribute('aria-label', t('copyFriendId'));
@@ -4171,7 +4171,7 @@ function forgetLocalAccount() {
   localStorage.removeItem('talklive_animal');
 }
 logoutBtn.addEventListener('click', () => accountUi().then((ui) => ui.signOut({
-  name: accountNickname, email: accountEmail, animal: myAnimal, avatarHtml: myAvatarIcon(64),
+  name: accountNickname, email: accountEmail, animal: myAnimal, avatarHtml: myAvatarIcon(64, isPremiumUser),
   send: (extra) => new Promise((resolve) => {
     const timer = setTimeout(resolve, 4000);
     socket.once('logout-result', () => { clearTimeout(timer); resolve(); });
@@ -7207,7 +7207,7 @@ function loadIcebreakers(done) {
   if (callIcebreakerLoading) return;
   callIcebreakerLoading = true;
   const s = document.createElement('script');
-  s.src = '/icebreakers.js?v=20260923ice';
+  s.src = '/icebreakers.js?v=42657c1791';
   s.async = true;
   s.onload = () => { callIcebreakerLoading = false; done(); };
   s.onerror = () => { callIcebreakerLoading = false; };
@@ -9391,7 +9391,7 @@ function loadTalkGuard() {
   if (document.getElementById('tgjs')) return;
   const s = document.createElement('script');
   s.id = 'tgjs';
-  s.src = '/talkguard.js?v=20261027tg';
+  s.src = '/talkguard.js?v=2b180e6471';
   s.onload = () => { if (window.TalkGuard) window.TalkGuard.load(); };
   document.head.appendChild(s);
 }
@@ -10634,7 +10634,7 @@ function revealPartner() {
   partnerMeta.innerHTML = countryName
     ? `${getFlagImg(partner.countryCode)}<span>${escapeHtml(countryName)}</span>` : '';
   partnerMeta.classList.toggle('hidden', !countryName);
-  renderPartnerAnimal(partner.animal, partner.character);
+  renderPartnerAnimal(partner.animal, partner.character, partner.premium);
   startPartnerClock(partner.timezone);
   if (window.TalkLiveEngage) window.TalkLiveEngage.onReveal(partner);
   if (twinNoticeFor !== partner) {
@@ -11139,7 +11139,7 @@ socket.on('owner-warning', (w) => {
   if (!ownerWarningLoad) {
     ownerWarningLoad = new Promise((resolve) => {
       const s = document.createElement('script');
-      s.src = '/owner-warning.js?v=1';
+      s.src = '/owner-warning.js?v=2c8f1949a2';
       s.onload = resolve;
       s.onerror = () => { ownerWarningLoad = null; };
       document.head.appendChild(s);
@@ -11154,7 +11154,7 @@ socket.on('feedback-reply', (r) => {
   if (!feedbackReplyLoad) {
     feedbackReplyLoad = new Promise((resolve) => {
       const s = document.createElement('script');
-      s.src = '/feedback-reply.js?v=1';
+      s.src = '/feedback-reply.js?v=6827637846';
       s.onload = resolve;
       s.onerror = () => { feedbackReplyLoad = null; };
       document.head.appendChild(s);
@@ -11168,7 +11168,7 @@ socket.on('rate-prompt', (d) => {
   const show = () => window.TalkLiveRate && window.TalkLiveRate.show(socket, d);
   if (window.TalkLiveRate) return show();
   const s = document.createElement('script');
-  s.src = '/rate-prompt.js?v=1';
+  s.src = '/rate-prompt.js?v=860ca7b0d8';
   s.onload = show;
   document.head.appendChild(s);
 });
@@ -11338,7 +11338,7 @@ window.addEventListener('i18n-changed', () => {
   excludeCountryWidget.renderChips();
   renderInterestTags();
   refreshAnimalLabels();
-  if (currentPartner && !partnerCard.classList.contains('hidden')) renderPartnerAnimal(currentPartner.animal, currentPartner.character);
+  if (currentPartner && !partnerCard.classList.contains('hidden')) renderPartnerAnimal(currentPartner.animal, currentPartner.character, currentPartner.premium);
 
   if (activeFriendChatId) {
     friendChatTitle.textContent = friendChatName(activeFriendChatId) || t('chat');
@@ -11616,6 +11616,10 @@ socket.on('friend-online', ({ clientId, username, countryCode, country } = {}) =
   const where = (countryCode && countryCode !== 'XX') ? (getCountryName(countryCode) || country || '') : '';
   // A friend you renamed comes online under the name you gave them.
   const name = labelForClientId(clientId, username);
+  // Every friend coming online, every time, was the noisiest pop-up in the app.
+  // Only pinned friends announce themselves, and never over a conversation.
+  const friend = personById(clientId);
+  if (!friend || !friend.pinned || currentPartner) return;
   // Tap the toast to ring them.
   showToast(where ? t('friendOnlineToast', { name, country: where }) : t('friendOnlineToastNoCountry', { name }), 'social',
     () => requestCallBack(clientId, name));
@@ -11626,7 +11630,7 @@ socket.on('friend-online', ({ clientId, username, countryCode, country } = {}) =
 // a call, so it loads once the page is up and stays out of the first paint.
 window.addEventListener('load', () => {
   const s = document.createElement('script');
-  s.src = '/engage.js?v=20261110plus';
+  s.src = '/engage.js?v=3bf078e8ea';
   s.async = true;
   document.head.appendChild(s);
 });

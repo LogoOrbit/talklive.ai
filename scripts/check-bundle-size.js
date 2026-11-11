@@ -31,6 +31,7 @@ const VIRTUAL = {
   '/config.js': null,
   '/socket.io/socket.io.js': path.join(ROOT, 'node_modules/socket.io/client-dist/socket.io.js'),
   '/socket.io/socket.io.min.js': path.join(ROOT, 'node_modules/socket.io/client-dist/socket.io.min.js'),
+  '/vendor/socket.io.min.js': path.join(ROOT, 'node_modules/socket.io/client-dist/socket.io.min.js'),
 };
 
 function localFile(ref, pageDir) {

@@ -213,7 +213,7 @@ class AuthRepository(
         identity.reset()
         // The account's face stays with the account; the guest gets a new one.
         identity.animalDirty = false
-        identity.animal = app.talklive.ui.animals.Animals.random().id
+        identity.animal = app.talklive.ui.animals.randomFreeAnimal().id
         socket.register()
     }
 
@@ -269,7 +269,7 @@ class AuthRepository(
             // face this phone shows and saves it, so nobody is asked to pick again.
             if (saved != null) { identity.animalDirty = false; identity.animal = saved }
             else {
-                if (identity.animal == null) identity.animal = app.talklive.ui.animals.Animals.random().id
+                if (identity.animal == null) identity.animal = app.talklive.ui.animals.randomFreeAnimal().id
                 identity.animalDirty = true
                 socket.register()
             }
@@ -279,7 +279,7 @@ class AuthRepository(
             if (saved == identity.animal) identity.animalDirty = false else socket.register()
         } else if (saved != null) { if (saved != identity.animal) identity.animal = saved }
         // An older account with no avatar saved: give it one instead of asking.
-        else if (identity.animal == null) identity.animal = app.talklive.ui.animals.Animals.random().id
+        else if (identity.animal == null) identity.animal = app.talklive.ui.animals.randomFreeAnimal().id
         cloudSettings.onSignedIn(res.optJSONObject("settings"))
         finishOnboarding()
         adoptProfile(res)

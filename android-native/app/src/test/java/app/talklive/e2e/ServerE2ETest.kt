@@ -168,11 +168,13 @@ class ServerE2ETest {
         // Direct message: delivered, confirmed, then seen when b opens it.
         a.social.send(b.identity.clientId, "hey friend")
         check("b receives the DM") { b.social.threads.value[a.identity.clientId]?.any { it.text == "hey friend" && !it.mine } == true }
-        check("a's copy confirmed") { a.social.threads.value[b.identity.clientId]?.any { it.text == "hey friend" && it.status == MsgStatus.Sent } == true }
+        check("a's copy confirmed") { a.social.threads.value[b.identity.clientId]?.any { it.text == "hey friend" && it.status.rank >= MsgStatus.Sent.rank } == true }
         check("b has it unread") { (b.social.unread.value[a.identity.clientId] ?: 0) > 0 }
         b.social.openChat = a.identity.clientId
         check("unread cleared") { (b.social.unread.value[a.identity.clientId] ?: 0) == 0 }
         check("a sees it seen") { a.social.threads.value[b.identity.clientId]?.any { it.text == "hey friend" && it.status == MsgStatus.Seen } == true }
+        // The conversation list reads the same receipt as the thread, and a stale list from the server cannot take it back.
+        check("list shows seen too") { a.social.friends.value.firstOrNull { it.clientId == b.identity.clientId }?.last?.seen == true }
 
         // Typing in a DM.
         b.social.typing(a.identity.clientId)
@@ -523,8 +525,9 @@ class ServerE2ETest {
 
         assertEquals(AuthResult.Ok, a.auth.updateNickname("Droid Tester"))
         assertEquals("Droid Tester", a.auth.account.value?.nickname)
-        // The picked avatar is saved with the account.
-        a.identity.animal = "owl"
+        // The picked avatar is saved with the account (a free one: the rest are Plus).
+        val picked = listOf("fox", "panda").first { it != a.identity.animal }
+        a.identity.animal = picked
         a.socket.register()
         Thread.sleep(500)
         assertEquals(AuthResult.Ok, a.auth.changePassword("secret123", "secret456"))
@@ -534,7 +537,7 @@ class ServerE2ETest {
         assertTrue(b.auth.login(email, "wrong-pass") is AuthResult.Error)
         assertEquals(AuthResult.Ok, b.auth.login(email, "secret456"))
         assertEquals("Droid Tester", b.auth.account.value?.nickname)
-        assertEquals("owl", b.identity.animal)
+        assertEquals(picked, b.identity.animal)
         // Gender and age group set on one phone come back on the other.
         a.engage.setMyGender("female")
         Thread.sleep(600)

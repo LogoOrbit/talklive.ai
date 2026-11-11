@@ -44,6 +44,12 @@
   }
   var INK = '#1f2637';
 
+  // Free faces; all others are Plus. Same list as server FREE_FACES and android.
+  // They lead LIST so the pickers show them first.
+  var FREE_FACES = ['a:lion', 'a:fox', 'a:cat', 'a:dog', 'a:panda',
+    'c:wizard', 'c:pirate', 'c:detective', 'c:robot', 'c:ninja'];
+  function isFree(face) { return FREE_FACES.indexOf(face) !== -1; }
+
   // --- The animals. Order is the order of the picker. -------------------------
   var LIST = [
     {
@@ -62,32 +68,6 @@
           + p('M28.4 39.2h7.2L32 44z', '#8a4b16')
           + line('M32 44v2.6M32 46.6q-3.2 2.6-5.8 0M32 46.6q3.2 2.6 5.8 0', '#8a4b16', 1.7)
           + eye(26, 32, 2.7) + eye(38, 32, 2.7);
-      },
-    },
-    {
-      id: 'tiger', name: 'Tiger', trait: 'Fearless and driven', color: '#fb923c',
-      art: function () {
-        return c(16, 20, 6.4, '#e07a26') + c(16, 20, 3.2, '#f9c9a4')
-          + c(48, 20, 6.4, '#e07a26') + c(48, 20, 3.2, '#f9c9a4')
-          + e(32, 36, 17, 16, '#fb923c')
-          + line('M23 22l2.4 7M32 20v7.5M41 22l-2.4 7', '#3f2a1d', 2.6)
-          + line('M15.5 35h6.5M15.5 40h5.5M48.5 35H42M48.5 40H43', '#3f2a1d', 2.4)
-          + e(32, 44, 10, 6.6, '#fff3e6')
-          + p('M28.4 40.4h7.2L32 45z', '#b04a2a')
-          + line('M32 45v2.4M32 47.4q-3 2.4-5.4 0M32 47.4q3 2.4 5.4 0', '#b04a2a', 1.6)
-          + eye(25, 34, 2.7) + eye(39, 34, 2.7);
-      },
-    },
-    {
-      id: 'wolf', name: 'Wolf', trait: 'Loyal and independent', color: '#94a3b8',
-      art: function () {
-        return p('M12 30L15.5 8.5 31 20.5z', '#94a3b8') + p('M16 25.5L18 14l8.5 7z', '#4b5563')
-          + p('M52 30L48.5 8.5 33 20.5z', '#94a3b8') + p('M48 25.5L46 14l-8.5 7z', '#4b5563')
-          + p('M32 17c11 0 19 8 19 17 0 7-5 12-10 15l-9 6-9-6c-5-3-10-8-10-15 0-9 8-17 19-17z', '#94a3b8')
-          + p('M32 33c6 0 10.5 4 10.5 9 0 6-6.5 11-10.5 13.6C28 52.9 21.5 48 21.5 42c0-5 4.5-9 10.5-9z', '#e2e8f0')
-          + e(32, 43.5, 3.4, 2.6, INK)
-          + line('M32 46v2.4M32 48.4q-3 2.4-5.4 0M32 48.4q3 2.4 5.4 0', '#64748b', 1.6)
-          + eye(24.5, 33, 2.7) + eye(39.5, 33, 2.7);
       },
     },
     {
@@ -129,18 +109,6 @@
       },
     },
     {
-      id: 'bear', name: 'Bear', trait: 'Warm and protective', color: '#9c6741',
-      art: function () {
-        return c(14, 18.5, 7, '#8a5a3b') + c(14, 18.5, 3.6, '#c08a63')
-          + c(50, 18.5, 7, '#8a5a3b') + c(50, 18.5, 3.6, '#c08a63')
-          + e(32, 36, 17.5, 16, '#9c6741')
-          + e(32, 44, 10, 7.4, '#e7c9a8')
-          + e(32, 41, 4.2, 3.2, '#3b2a1d')
-          + line('M32 44.4v2.4M32 46.8q-3.2 2.6-5.6 0M32 46.8q3.2 2.6 5.6 0', '#7a5233', 1.7)
-          + eye(25, 33, 2.7) + eye(39, 33, 2.7);
-      },
-    },
-    {
       id: 'panda', name: 'Panda', trait: 'Chill and easy-going', color: '#64748b',
       art: function () {
         return c(14, 18.5, 7, '#232a36') + c(50, 18.5, 7, '#232a36')
@@ -151,6 +119,44 @@
           + c(40.5, 34, 2.7, '#ffffff') + c(40.5, 34, 1.5, '#232a36')
           + e(32, 42.5, 3.8, 2.9, '#232a36')
           + line('M32 45.4v2.2M32 47.6q-3.2 2.6-5.6 0M32 47.6q3.2 2.6 5.6 0', '#232a36', 1.7);
+      },
+    },
+    {
+      id: 'tiger', name: 'Tiger', trait: 'Fearless and driven', color: '#fb923c',
+      art: function () {
+        return c(16, 20, 6.4, '#e07a26') + c(16, 20, 3.2, '#f9c9a4')
+          + c(48, 20, 6.4, '#e07a26') + c(48, 20, 3.2, '#f9c9a4')
+          + e(32, 36, 17, 16, '#fb923c')
+          + line('M23 22l2.4 7M32 20v7.5M41 22l-2.4 7', '#3f2a1d', 2.6)
+          + line('M15.5 35h6.5M15.5 40h5.5M48.5 35H42M48.5 40H43', '#3f2a1d', 2.4)
+          + e(32, 44, 10, 6.6, '#fff3e6')
+          + p('M28.4 40.4h7.2L32 45z', '#b04a2a')
+          + line('M32 45v2.4M32 47.4q-3 2.4-5.4 0M32 47.4q3 2.4 5.4 0', '#b04a2a', 1.6)
+          + eye(25, 34, 2.7) + eye(39, 34, 2.7);
+      },
+    },
+    {
+      id: 'wolf', name: 'Wolf', trait: 'Loyal and independent', color: '#94a3b8',
+      art: function () {
+        return p('M12 30L15.5 8.5 31 20.5z', '#94a3b8') + p('M16 25.5L18 14l8.5 7z', '#4b5563')
+          + p('M52 30L48.5 8.5 33 20.5z', '#94a3b8') + p('M48 25.5L46 14l-8.5 7z', '#4b5563')
+          + p('M32 17c11 0 19 8 19 17 0 7-5 12-10 15l-9 6-9-6c-5-3-10-8-10-15 0-9 8-17 19-17z', '#94a3b8')
+          + p('M32 33c6 0 10.5 4 10.5 9 0 6-6.5 11-10.5 13.6C28 52.9 21.5 48 21.5 42c0-5 4.5-9 10.5-9z', '#e2e8f0')
+          + e(32, 43.5, 3.4, 2.6, INK)
+          + line('M32 46v2.4M32 48.4q-3 2.4-5.4 0M32 48.4q3 2.4 5.4 0', '#64748b', 1.6)
+          + eye(24.5, 33, 2.7) + eye(39.5, 33, 2.7);
+      },
+    },
+    {
+      id: 'bear', name: 'Bear', trait: 'Warm and protective', color: '#9c6741',
+      art: function () {
+        return c(14, 18.5, 7, '#8a5a3b') + c(14, 18.5, 3.6, '#c08a63')
+          + c(50, 18.5, 7, '#8a5a3b') + c(50, 18.5, 3.6, '#c08a63')
+          + e(32, 36, 17.5, 16, '#9c6741')
+          + e(32, 44, 10, 7.4, '#e7c9a8')
+          + e(32, 41, 4.2, 3.2, '#3b2a1d')
+          + line('M32 44.4v2.4M32 46.8q-3.2 2.6-5.6 0M32 46.8q3.2 2.6 5.6 0', '#7a5233', 1.7)
+          + eye(25, 33, 2.7) + eye(39, 33, 2.7);
       },
     },
     {
@@ -511,10 +517,12 @@
     trait: trait,
     stored: stored,
     store: store,
-    // One of the set, at random. The pickers all gate something the user is
-    // trying to get past, so each of them offers a tap that answers the
-    // question without reading twenty options first.
-    random: function () { return LIST[Math.floor(Math.random() * LIST.length)].id; },
+    // A free animal at random: nobody is dealt a Plus face.
+    random: function () {
+      var ids = FREE_FACES.filter(function (f) { return f.charAt(0) === 'a'; });
+      return ids[Math.floor(Math.random() * ids.length)].slice(2);
+    },
+    isFree: isFree,
     STORAGE_KEY: STORAGE_KEY,
   };
 }(window));

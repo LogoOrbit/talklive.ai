@@ -12,10 +12,13 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -174,9 +177,11 @@ class SocialRepository @Inject constructor(
         socket.on("friend-typing") { a -> (a.firstOrNull() as? JSONObject)?.optString("fromClientId")?.let { scope.launch { onTyping(it) } } }
         socket.on("chat-seen") { a ->
             val by = (a.firstOrNull() as? JSONObject)?.optString("byClientId") ?: return@on
-            scope.launch {
-                updateThread(by) { list -> list.map { if (it.mine && it.status == MsgStatus.Sent) it.copy(status = MsgStatus.Seen) else it } }
-            }
+            scope.launch { raiseReceipt(by, MsgStatus.Seen) }
+        }
+        socket.on("friend-message-delivered") { a ->
+            val o = a.firstOrNull() as? JSONObject ?: return@on
+            scope.launch { raiseReceipt(o.optString("toClientId"), MsgStatus.Delivered, o.optJSONArray("ids").strings().toSet()) }
         }
         socket.on("friend-message-edited") { a ->
             val o = a.firstOrNull() as? JSONObject ?: return@on
@@ -417,6 +422,30 @@ class SocialRepository @Inject constructor(
         updateThread(toClientId) { list -> list.map { if (it.id == msg.id && it.status == MsgStatus.Sending) it.copy(status = MsgStatus.Failed) else it } }
     }
 
+    /**
+     * [send] for a caller that must keep the process alive until the message is
+     * really out (a reply typed in a notification while the app was closed):
+     * waits for the connection, then for the server's acknowledgement.
+     * True once the server has it.
+     */
+    suspend fun sendAndAwait(toClientId: String, text: String, timeoutMs: Long = 9_000): Boolean {
+        val body = text.trim().take(1000)
+        if (body.isEmpty()) return false
+        val msg = ChatMessage(id = newId(), mine = true, text = body, ts = System.currentTimeMillis(), status = MsgStatus.Sending, exp = expiryFor(toClientId))
+        updateThread(toClientId) { it + msg }
+        val deadline = System.nanoTime() + timeoutMs * 1_000_000
+        fun left() = ((deadline - System.nanoTime()) / 1_000_000).coerceAtLeast(1)
+        val sent = socket.awaitConnected(left()) && run {
+            emitMessage(toClientId, msg)
+            withTimeoutOrNull(left()) {
+                _threads.map { m -> m[toClientId]?.firstOrNull { it.id == msg.id }?.status }
+                    .first { it == null || it.rank >= MsgStatus.Sent.rank || it == MsgStatus.Failed }
+            }?.let { it != MsgStatus.Failed } == true
+        }
+        if (!sent) updateThread(toClientId) { list -> list.map { if (it.id == msg.id && it.status == MsgStatus.Sending) it.copy(status = MsgStatus.Failed) else it } }
+        return sent
+    }
+
     fun sendGif(toClientId: String, gif: Gif) = scope.launch {
         val msg = ChatMessage(id = newId(), mine = true, text = "", ts = System.currentTimeMillis(), gifUrl = gif.url, gif = gif, status = MsgStatus.Sending, exp = expiryFor(toClientId))
         updateThread(toClientId) { it + msg }
@@ -549,10 +578,10 @@ class SocialRepository @Inject constructor(
     // --- Server events -----------------------------------------------------
 
     private fun onStateSync(o: JSONObject) {
-        _friends.value = o.optJSONArray("friends").people()
+        _friends.value = o.optJSONArray("friends").people().keepingReceipts(_friends.value)
         _requests.value = o.optJSONArray("friendRequests").people()
         _sent.value = o.optJSONArray("sentRequests").people().map { it.clientId }.toSet()
-        _history.value = o.optJSONArray("chatHistory").people()
+        _history.value = o.optJSONArray("chatHistory").people().keepingReceipts(_history.value)
         _historyHidden.value = o.optInt("historyHidden")
         _muted.value = o.optJSONArray("muted").strings().toSet()
         val counts = mutableMapOf<String, Int>()
@@ -590,7 +619,7 @@ class SocialRepository @Inject constructor(
         if (from in archived.value) privacy?.setArchived(from, false)
         updateThread(from) { list -> if (list.any { it.id == msg.id }) list else list + msg }
         _typing.update { it - from }
-        bumpLast(from, LastMessage(false, msg.text, msg.gifUrl != null, msg.voiceMs != null, msg.ts, false))
+        bumpLast(from, LastMessage(false, msg.text, msg.gifUrl != null, msg.voiceMs != null, msg.ts, false, id = msg.id))
         val who = person(from)?.displayName ?: o.optString("username").ifBlank { "Someone" }
         _messageEvents.tryEmit(Triple(from, who, when { msg.gifUrl != null -> "GIF"; msg.voiceMs != null -> "🎤"; else -> msg.text.take(40) }))
         if (from == openChat) markRead(from) else _unread.update { it + (from to ((it[from] ?: 0) + 1)) }
@@ -600,8 +629,11 @@ class SocialRepository @Inject constructor(
         val to = o.optString("toClientId")
         val id = o.optString("id")
         val ts = o.optLong("ts")
-        updateThread(to) { list -> list.map { if (it.id == id && it.status != MsgStatus.Seen) it.copy(status = MsgStatus.Sent, ts = ts) else it } }
-        bumpLast(to, LastMessage(true, o.optString("text"), !o.isNull("gif"), !o.isNull("voice"), ts, false))
+        updateThread(to) { list -> list.map { if (it.id == id && it.status.rank < MsgStatus.Sent.rank) it.copy(status = MsgStatus.Sent, ts = ts) else it } }
+        bumpLast(to, LastMessage(true, o.optString("text"), !o.isNull("gif"), !o.isNull("voice"), ts, o.optBoolean("seen"), o.optBoolean("delivered") || o.optBoolean("seen"), id))
+        // A resend answered from the stored copy already knows how far it got.
+        if (o.optBoolean("seen")) raiseReceipt(to, MsgStatus.Seen, setOf(id))
+        else if (o.optBoolean("delivered")) raiseReceipt(to, MsgStatus.Delivered, setOf(id))
     }
 
     private fun onBlocked(o: JSONObject) {
@@ -630,8 +662,12 @@ class SocialRepository @Inject constructor(
             // Keep messages still on their way; the server copy wins for the rest.
             val pending = local.filter { it.status == MsgStatus.Sending || it.status == MsgStatus.Failed }
                 .filter { p -> fromServer.none { it.id == p.id } }
-            fromServer + pending
+            // A receipt already known never goes back to an older one.
+            val known = local.associate { it.id to it.status }
+            fromServer.map { m -> known[m.id]?.takeIf { it.rank > m.status.rank }?.let { m.copy(status = it) } ?: m } + pending
         }
+        _threads.value[id]?.lastOrNull()?.takeIf { it.mine && it.status.rank >= MsgStatus.Delivered.rank }
+            ?.let { raiseReceipt(id, it.status, setOf(it.id)) }
     }
 
     private fun onTyping(from: String) {
@@ -664,8 +700,31 @@ class SocialRepository @Inject constructor(
     }
 
     private fun bumpLast(id: String, last: LastMessage) {
-        _friends.update { list -> list.map { if (it.clientId == id) it.copy(last = last) else it } }
-        _history.update { list -> list.map { if (it.clientId == id) it.copy(last = last) else it } }
+        _friends.update { list -> list.map { if (it.clientId == id) it.copy(last = last.after(it.last)) else it } }
+        _history.update { list -> list.map { if (it.clientId == id) it.copy(last = last.after(it.last)) else it } }
+    }
+
+    /**
+     * Delivered / seen, announced live: raises the matching messages in the
+     * thread and the conversation list's last message together, so both screens
+     * show the same tick. [ids] null means every message of mine in that chat.
+     */
+    private fun raiseReceipt(who: String, to: MsgStatus, ids: Set<String>? = null) {
+        updateThread(who) { list ->
+            list.map { if (it.mine && (ids == null || it.id in ids) && it.status.rank >= MsgStatus.Sent.rank && it.status.rank < to.rank) it.copy(status = to) else it }
+        }
+        fun List<Person>.raised() = map { p ->
+            val l = p.last
+            if (p.clientId == who && l != null && (ids == null || l.id in ids || l.id.isBlank())) p.copy(last = l.raised(to)) else p
+        }
+        _friends.update { it.raised() }
+        _history.update { it.raised() }
+    }
+
+    /** A fresh list from the server keeps the receipts this phone already knows. */
+    private fun List<Person>.keepingReceipts(old: List<Person>): List<Person> {
+        val before = old.associate { it.clientId to it.last }
+        return map { p -> p.last?.let { l -> p.copy(last = l.after(before[p.clientId])) } ?: p }
     }
 
     private suspend fun request(event: String, payload: JSONObject, result: String): JSONObject? =

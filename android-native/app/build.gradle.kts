@@ -19,10 +19,18 @@ if (firebaseText.contains("\"app.talklive\"")) {
     apply(plugin = "com.google.gms.google-services")
     if (!firebaseText.contains("\"app.talklive.debug\"")) {
         tasks.configureEach {
-            if (name.startsWith("process") && name.contains("Debug") && name.endsWith("GoogleServices")) enabled = false
+            // -PtestBuild gives the release build the test id too (see below).
+            val testId = name.contains("Debug") || (name.contains("Release") && project.hasProperty("testBuild"))
+            if (name.startsWith("process") && testId && name.endsWith("GoogleServices")) enabled = false
         }
     }
 }
+
+// -PabiSplit builds one release APK per phone chip instead of one that carries
+// both. The WebRTC library is most of the app, so the APK a phone actually
+// installs is 16 MB (64-bit) or 11 MB (32-bit) instead of 23 MB. Google Play
+// already does this from the bundle; this is for APKs handed out directly.
+val abiSplit = project.hasProperty("abiSplit")
 
 android {
     namespace = "app.talklive"
@@ -34,8 +42,8 @@ android {
         applicationId = "app.talklive"
         minSdk = 26
         targetSdk = 36
-        versionCode = 125
-        versionName = "3.9.5"
+        versionCode = 126
+        versionName = "3.9.6"
         buildConfigField("String", "SERVER_URL", "\"https://talklive.app\"")
     }
 
@@ -62,7 +70,7 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             signingConfig = signingConfigs.getByName("debug")
-            ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
+            if (!abiSplit) ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
             // Point a debug build at a local server with:
             //   ./gradlew installDebug -PserverUrl=http://10.0.2.2:5000
             (project.findProperty("serverUrl") as String?)?.let {
@@ -72,11 +80,37 @@ android {
         release {
             // Phones only: without this the APK also carried the WebRTC library
             // for desktop-emulator chips, which made the download twice the size.
-            ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
+            if (!abiSplit) ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             if (System.getenv("TALKLIVE_KEYSTORE") != null) signingConfig = signingConfigs.getByName("release")
+            // -PtestBuild: the real, optimised app as a test install. It gets the
+            // test id and test key, so it installs next to the Play Store app
+            // instead of being refused for not matching its signature.
+            if (project.hasProperty("testBuild")) {
+                applicationIdSuffix = ".debug"
+                signingConfig = signingConfigs.getByName("debug")
+            }
+        }
+    }
+
+    splits {
+        abi {
+            isEnable = abiSplit
+            reset()
+            include("arm64-v8a", "armeabi-v7a")
+            isUniversalApk = false
+        }
+    }
+
+    // Files libraries leave in the APK that nothing on a phone reads.
+    packaging {
+        resources {
+            excludes += setOf(
+                "META-INF/**/LICENSE.txt", "META-INF/AL2.0", "META-INF/LGPL2.1", "META-INF/*.version",
+                "DebugProbesKt.bin", "kotlin-tooling-metadata.json",
+            )
         }
     }
 

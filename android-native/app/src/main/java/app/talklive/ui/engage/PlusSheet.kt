@@ -60,6 +60,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,7 +68,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -77,6 +78,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -215,9 +217,11 @@ fun PlusContent(
     }
     Box(Modifier.fillMaxSize().background(PlusBg)) {
         // Aurora: gold and violet light drifting behind everything.
-        val drift = if (still) 0.4f else rememberInfiniteTransition(label = "aurora").animateFloat(0f, 1f, infiniteRepeatable(tween(7000, easing = LinearEasing), RepeatMode.Reverse), label = "d").value
+        // The State is read in the draw lambda only, so the drift doesn't recompose the sheet.
+        val driftState = if (still) null else rememberInfiniteTransition(label = "aurora").animateFloat(0f, 1f, infiniteRepeatable(tween(7000, easing = LinearEasing), RepeatMode.Reverse), label = "d")
         Box(
             Modifier.fillMaxWidth().height(520.dp).drawBehind {
+                val drift = driftState?.value ?: 0.4f
                 val w = size.width; val h = size.height
                 val c1 = Offset(w * (0.2f + 0.5f * drift), h * 0.15f)
                 val c2 = Offset(w * (0.9f - 0.4f * drift), h * 0.35f)
@@ -418,10 +422,11 @@ fun PlusContent(
 @Composable
 internal fun GoldButton(text: String, busy: Boolean, onClick: () -> Unit) {
     val still = app.talklive.ui.theme.LocalReduceMotion.current
-    val shine = if (still) -9f else rememberInfiniteTransition(label = "shine").animateFloat(-0.4f, 1.4f, infiniteRepeatable(tween(2600, easing = LinearEasing)), label = "x").value
+    val shineState = if (still) null else rememberInfiniteTransition(label = "shine").animateFloat(-0.4f, 1.4f, infiniteRepeatable(tween(2600, easing = LinearEasing)), label = "x")
     Box(
         Modifier.fillMaxWidth().height(58.dp).tapOnce(enabled = !busy) { app.talklive.sound.Tap.pop(); onClick() }.clip(CircleShape).background(GoldBrush)
             .drawBehind {
+                val shine = shineState?.value ?: -9f
                 if (shine > -1f) drawRect(Brush.linearGradient(listOf(Color.Transparent, Color.White.copy(alpha = 0.45f), Color.Transparent), start = Offset(size.width * shine - 80f, 0f), end = Offset(size.width * shine + 80f, size.height)))
             },
         contentAlignment = Alignment.Center,
@@ -614,14 +619,14 @@ private fun CompareTable(modifier: Modifier = Modifier) {
     val rows = listOf(
         Triple(R.string.cmp_calls, yes, yes),
         // Numbers are the product's own limits: server FREE_LIMITS (2 countries, 2 interests, Plus 50 and 10),
-        // FREE_HISTORY 3, PLUS_FREEZES 2, PLUS_FACES 8, AppTheme (Dark and Light free, Ocean and Sunset Plus).
+        // FREE_HISTORY 3, PLUS_FREEZES 2, FREE_FACES, AppTheme (Dark and Light free, Ocean and Sunset Plus).
         Triple(R.string.cmp_countries_n, "2", "50"),
         Triple(R.string.cmp_interests_n, "2", "10"),
         Triple(R.string.cmp_gender_n, no, yes),
         Triple(R.string.plus_perk_likes, no, yes),
         Triple(R.string.cmp_history, "3", "∞"),
         Triple(R.string.cmp_freezes_n, "0", "2"),
-        Triple(R.string.cmp_faces_n, "0", "8"),
+        Triple(R.string.cmp_faces_n, app.talklive.ui.animals.FREE_FACES.size.toString(), (app.talklive.ui.animals.Animals.size + app.talklive.ui.animals.Characters.size).toString()),
         Triple(R.string.cmp_themes_n, "2", "4"),
         Triple(R.string.plus_perk_undo, no, yes),
         Triple(R.string.plus_perk_queue, no, yes),
@@ -651,15 +656,19 @@ private fun CompareTable(modifier: Modifier = Modifier) {
 /** A floating gem in a gold frame. */
 @Composable
 private fun Gem() {
-    var float = 0f
-    var tilt = 0f
+    // States are read in the offset / layer lambdas, not here, so the float doesn't recompose the sheet.
+    var float: State<Float>? = null
+    var tilt: State<Float>? = null
     if (!app.talklive.ui.theme.LocalReduceMotion.current) {
         val t = rememberInfiniteTransition(label = "gem")
-        float = t.animateFloat(-6f, 6f, infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "float").value
-        tilt = t.animateFloat(-5f, 5f, infiniteRepeatable(tween(2600, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "tilt").value
+        float = t.animateFloat(-6f, 6f, infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "float")
+        tilt = t.animateFloat(-5f, 5f, infiniteRepeatable(tween(2600, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "tilt")
     }
+    val floatState = float
+    val tiltState = tilt
     Box(
-        Modifier.padding(top = 4.dp).offset(y = float.dp).size(104.dp).rotate(tilt).clip(RoundedCornerShape(32.dp)).background(GoldBrush).padding(3.dp)
+        Modifier.padding(top = 4.dp).offset { IntOffset(0, (floatState?.value ?: 0f).dp.roundToPx()) }.size(104.dp)
+            .graphicsLayer { rotationZ = tiltState?.value ?: 0f }.clip(RoundedCornerShape(32.dp)).background(GoldBrush).padding(3.dp)
             .clip(RoundedCornerShape(29.dp)).background(Color(0xFF111522)),
         contentAlignment = Alignment.Center,
     ) { app.talklive.ui.components.PlusGem(56.dp) }

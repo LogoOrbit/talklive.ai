@@ -47,8 +47,8 @@ class AudioRouter @Inject constructor(@ApplicationContext context: Context) {
         .build()
 
     private val devices = object : AudioDeviceCallback() {
-        override fun onAudioDevicesAdded(added: Array<out AudioDeviceInfo>) { _headset.value = hasHeadset() }
-        override fun onAudioDevicesRemoved(removed: Array<out AudioDeviceInfo>) { _headset.value = hasHeadset() }
+        override fun onAudioDevicesAdded(added: Array<out AudioDeviceInfo>) { _headset.value = hasHeadset(); followBluetooth() }
+        override fun onAudioDevicesRemoved(removed: Array<out AudioDeviceInfo>) { _headset.value = hasHeadset(); followBluetooth() }
     }
 
     // Android's "in a call" audio mode is only switched on while someone is
@@ -86,6 +86,7 @@ class AudioRouter @Inject constructor(@ApplicationContext context: Context) {
             } else {
                 @Suppress("DEPRECATION")
                 am.isSpeakerphoneOn = false
+                scoOff()
             }
             am.mode = AudioManager.MODE_NORMAL
             _focusLost.value = false
@@ -96,18 +97,34 @@ class AudioRouter @Inject constructor(@ApplicationContext context: Context) {
         speakerOn = on
         if (!live) return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val list = am.availableCommunicationDevices
-            val pick = if (on) {
-                list.firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
-            } else {
-                list.firstOrNull { it.type in HEADSETS } ?: list.firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE }
+            // Picking a Bluetooth device throws without the Bluetooth permission.
+            runCatching {
+                val list = am.availableCommunicationDevices
+                val pick = if (on) {
+                    list.firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
+                } else {
+                    list.firstOrNull { it.type in HEADSETS } ?: list.firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE }
+                }
+                if (pick != null) am.setCommunicationDevice(pick) else am.clearCommunicationDevice()
             }
-            if (pick != null) am.setCommunicationDevice(pick) else am.clearCommunicationDevice()
         } else {
             @Suppress("DEPRECATION")
             am.isSpeakerphoneOn = on
+            // Before Android 12 a Bluetooth headset only gets the call audio once SCO is started.
+            if (!on && hasBluetoothHeadset()) scoOn() else scoOff()
         }
     }
+
+    /** A headset came or went mid-call (Android 11 and older): move the audio to match. */
+    private fun followBluetooth() {
+        if (live && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) setSpeaker(speakerOn)
+    }
+
+    @Suppress("DEPRECATION")
+    private fun scoOn() { runCatching { am.startBluetoothSco(); am.isBluetoothScoOn = true } }
+
+    @Suppress("DEPRECATION")
+    private fun scoOff() { runCatching { am.stopBluetoothSco(); am.isBluetoothScoOn = false } }
 
     fun stop() {
         setLive(false)
@@ -115,6 +132,8 @@ class AudioRouter @Inject constructor(@ApplicationContext context: Context) {
         active = false
         am.unregisterAudioDeviceCallback(devices)
     }
+
+    private fun hasBluetoothHeadset() = am.getDevices(AudioManager.GET_DEVICES_OUTPUTS).any { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO }
 
     private fun hasHeadset() = am.getDevices(AudioManager.GET_DEVICES_OUTPUTS).any { it.type in HEADSETS }
 

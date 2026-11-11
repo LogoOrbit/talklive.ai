@@ -12,6 +12,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -28,7 +29,25 @@ class VoicePlayer @Inject constructor(@ApplicationContext private val context: C
     private val _state = MutableStateFlow<Playback?>(null)
     val state: StateFlow<Playback?> = _state
 
+    init {
+        scope.launch(Dispatchers.IO) { pruneCache() }
+    }
+
     private fun cacheFile(id: String) = File(context.cacheDir, "vn_$id.m4a")
+
+    /** Keeps the voice cache under [MAX_CACHE_BYTES], dropping the oldest files first. */
+    private fun pruneCache() = runCatching {
+        val files = context.cacheDir.listFiles { f -> f.name.startsWith("vn_") } ?: return@runCatching
+        // Nothing is being written yet at startup, so leftover .tmp files are from a crash.
+        files.filter { it.name.endsWith(".tmp") }.forEach { it.delete() }
+        val cached = files.filter { it.name.endsWith(".m4a") }.sortedBy { it.lastModified() }
+        var total = cached.sumOf { it.length() }
+        for (f in cached) {
+            if (total <= MAX_CACHE_BYTES) break
+            val len = f.length()
+            if (f.delete()) total -= len
+        }
+    }
 
     /** Plays [id], fetching its audio with [load] the first time. Tapping the playing one pauses it. */
     fun toggle(id: String, load: suspend () -> ByteArray?) {
@@ -42,17 +61,23 @@ class VoicePlayer @Inject constructor(@ApplicationContext private val context: C
         _state.value = Playback(id, 0f, playing = false, loading = true)
         scope.launch {
             val f = cacheFile(id)
-            if (!f.exists()) {
-                val bytes = kotlinx.coroutines.withContext(Dispatchers.IO) { load() }
-                if (bytes == null) { _state.value = null; return@launch }
-                f.writeBytes(bytes)
+            val ready = withContext(Dispatchers.IO) {
+                if (f.exists()) return@withContext true
+                val bytes = load() ?: return@withContext false
+                // Write to a temp name and rename, so a crash mid-write never leaves a
+                // truncated file that a later tap would trust as a cache hit.
+                val tmp = File(f.parentFile, f.name + ".tmp")
+                runCatching { tmp.writeBytes(bytes) }.isSuccess && (tmp.renameTo(f) || run { tmp.delete(); false })
             }
+            if (!ready) { if (_state.value?.id == id) _state.value = null; return@launch }
             if (_state.value?.id != id) return@launch
             val mp = MediaPlayer()
             runCatching {
                 mp.setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
                 mp.setDataSource(f.absolutePath)
-                mp.prepare()
+                withContext(Dispatchers.IO) { mp.prepare() }
+                // Another message was tapped (or stop() called) while preparing.
+                if (_state.value?.id != id) { mp.release(); return@launch }
                 mp.setOnCompletionListener { stop() }
                 mp.start()
                 player = mp
@@ -79,5 +104,9 @@ class VoicePlayer @Inject constructor(@ApplicationContext private val context: C
                 delay(100)
             }
         }
+    }
+
+    private companion object {
+        const val MAX_CACHE_BYTES = 20L * 1024 * 1024
     }
 }

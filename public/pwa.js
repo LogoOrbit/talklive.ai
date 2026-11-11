@@ -350,7 +350,7 @@
   // 6. Chat Support bubble (support-chat.js), once the page is idle.
   function loadSupport() {
     var s = document.createElement('script');
-    s.src = '/support-chat.js?v=20261110ico';
+    s.src = '/support-chat.js?v=37b833cfc9';
     document.head.appendChild(s);
   }
   if (document.readyState === 'complete') setTimeout(loadSupport, 1500);

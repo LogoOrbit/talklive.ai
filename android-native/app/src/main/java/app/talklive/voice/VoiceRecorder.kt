@@ -15,6 +15,8 @@ class VoiceRecorder(private val context: Context) {
 
     fun start(): Boolean = runCatching {
         val f = File.createTempFile("voice", ".m4a", context.cacheDir)
+        // Assigned first so cancel() in the failure path deletes it.
+        file = f
         val r = if (Build.VERSION.SDK_INT >= 31) MediaRecorder(context) else @Suppress("DEPRECATION") MediaRecorder()
         r.setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
         r.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
@@ -26,7 +28,7 @@ class VoiceRecorder(private val context: Context) {
         r.setOutputFile(f.absolutePath)
         r.prepare()
         r.start()
-        recorder = r; file = f; startedAt = System.currentTimeMillis()
+        recorder = r; startedAt = System.currentTimeMillis()
         true
     }.getOrElse { cancel(); false }
 

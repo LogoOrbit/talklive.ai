@@ -1,5 +1,51 @@
 # Changelog
 
+## 2026-11-11 — Speed, storage and reliability pass (web + Android 3.9.6)
+
+**Website and server**
+- Repeat visits: a page the browser already has is answered with `304`
+  instead of being sent whole again (home was 44 KB every visit).
+- `?v=` stamps are now a hash of the file: `npm run stamp` writes them,
+  `npm test` and the site build check them. Hand-typed stamps had left some
+  files (`owner-warning.js?v=1`, `rate-prompt.js?v=1`) cached for a year
+  whatever changed, and linked the same file under two stamps on `/` and `/chat`.
+- Socket.IO client is served from a stamped URL (fetched once; it was
+  revalidated and recompressed on every page load). `/chat` connects by
+  WebSocket first.
+- Connect/disconnect bursts send the online count and people list once,
+  not once per arrival to every socket.
+- A phone reconnecting on a new network no longer waits 1.2 s on a ping to
+  its dead old connection. TURN credentials renew in the background.
+- Home: less layout shift for first-time visitors (0.055 -> 0.029 measured
+  with the support banner on, ~0.008 without), no forced reflow during parse.
+- Sign-in form and the Friends/History/Settings panels use the site typeface
+  (40+ controls were falling back to the system font).
+
+**Android**
+- Tapping a message or friend-request notification opens that chat / the
+  requests list (it opened Home).
+- "Seen" is no longer sent for messages that arrive while the app is in the
+  background with a chat open.
+- A shortcut launch no longer starts a second call after rotating the phone;
+  sign-in and a minimised call survive rotation.
+- Saved account signs back in even when the server answers before the first
+  screen exists.
+- Networks that block WebSockets: long-polls are no longer cut at 10 s.
+  App start no longer restarts its own connection attempt.
+- In calls: audio analysis no longer shifts a 1024-sample buffer per sample
+  and stops when the visualiser is not shown; tilt sensor pauses in the
+  background; no per-frame gradient allocations; the relay-credential refresh
+  loop ends when a search is refused.
+- Plus page, onboarding background and Home orb animate without recomposing
+  the screen each frame; full-screen blur removed from onboarding.
+- Chat no longer jumps to the bottom while reading older messages.
+- Storage: image cache capped at 48 MB (default allowed 250 MB), voice-note
+  cache at 20 MB; voice notes load off the main thread.
+- Launch animation hands over ~260 ms sooner.
+- `./gradlew assembleRelease -PabiSplit` builds one APK per chip: 16.3 MB
+  (arm64) / 11.3 MB (32-bit) instead of 22.9 MB. The workflow uploads them
+  as `talklive-native-release-apks` on manual runs.
+
 ## 2026-11-01 — New-feature usage, fixes from production errors
 
 - **Owner dashboard → New features** (`/owner#features`): people with a

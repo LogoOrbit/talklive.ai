@@ -30,11 +30,14 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var engage: app.talklive.engage.EngageRepository
     @Inject lateinit var social: app.talklive.social.SocialRepository
+    @Inject lateinit var calls: app.talklive.call.CallManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-        handle(intent)
+        // Only a fresh launch: a rotation or theme change re-runs onCreate with
+        // the same intent, and a shortcut launch started a second call.
+        if (savedInstanceState == null) handle(intent)
         setContent {
             val theme by themeStore.theme.collectAsStateWithLifecycle()
             val dark = theme.isDark
@@ -61,6 +64,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // A text chat runs without the call service, so closing the app has to end
+    // its search here (a rotation is not a close).
+    override fun onDestroy() {
+        if (isFinishing && !isChangingConfigurations && calls.state.value.phase !is app.talklive.call.CallPhase.Idle) calls.end()
+        super.onDestroy()
+    }
+
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
         handle(intent)
@@ -77,6 +87,18 @@ class MainActivity : ComponentActivity() {
                 androidx.core.app.NotificationManagerCompat.from(this).cancel(app.talklive.push.LocalNotifier.TAG_RING, 0)
             }
         }
+        // A tapped notification says where it leads: ours carry "open", the
+        // server's (shown by the system while the app is closed) carry its web
+        // link, /?open=chat&with=<id>.
+        val target = intent?.getStringExtra(app.talklive.push.LocalNotifier.EXTRA_OPEN)
+            ?: intent?.getStringExtra("url")?.let { runCatching { android.net.Uri.parse("https://talklive.app$it") }.getOrNull() }?.let { u ->
+                when (u.getQueryParameter("open")) {
+                    "chat" -> u.getQueryParameter("with")?.takeIf { it.isNotBlank() }?.let { "chat:$it" }
+                    "requests", "friends" -> "requests"
+                    else -> null
+                }
+            }
+        if (target != null) app.talklive.data.LaunchActions.open.value = target
         intent?.data?.getQueryParameter("ref")?.takeIf { it.matches(Regex("^[A-Za-z0-9]{3,16}$")) }?.let { engage.setReferral(it) }
     }
 }

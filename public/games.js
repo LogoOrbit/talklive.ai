@@ -585,7 +585,9 @@
       opts.closeModal(tttEndConfirmModal);
       syncPlayCard();
     }
+    let goneTimer = null;
     function resetGame() {
+      clearTimeout(goneTimer);
       hideInvitePopup();
       tttStage = 'idle';
       tttState = null;
@@ -606,7 +608,8 @@
 
     // Grayscale the board + show a red message when the call itself drops mid-game.
     function markGamePartnerGone() {
-      if (gameOverlay.classList.contains('hidden')) { resetGame(); return; }
+      // Only a board in play greys out; an invite or an idle picker just goes.
+      if (gameOverlay.classList.contains('hidden') || tttStage !== 'playing') { resetGame(); return; }
       tttBoardArea.classList.add('is-dead');
       tttDisconnectBanner.textContent = t('tttPartnerHungUp');
       tttDisconnectBanner.classList.remove('hidden');
@@ -621,6 +624,8 @@
 
     // The partner deliberately left the game (closed their window / End Game).
     function markGamePartnerLeft() {
+      if (tttStage === 'gone') return;
+      if (tttStage !== 'playing') { resetGame(); return; }
       tttDisconnectBanner.textContent = t('tttPartnerLeft');
       tttDisconnectBanner.classList.remove('hidden');
       tttBoardArea.classList.add('is-dead');
@@ -628,7 +633,8 @@
       tttStage = 'gone';
       sound('lose');
       // Auto-clear back to the invite screen after a moment so a rematch is easy.
-      setTimeout(() => {
+      clearTimeout(goneTimer);
+      goneTimer = setTimeout(() => {
         if (tttStage === 'gone' && opts.isConnected()) {
           tttStage = 'idle'; tttState = null; tttOverAnnounced = false;
           clearGameDisconnect();
@@ -765,27 +771,28 @@
           if (tttStage === 'inviting') onGameHandshake(inviteGame || (data.game === 'dab' ? 'dab' : 'ttt'));
           break;
         case 'decline':
+          // Only an invite of mine can be declined; a stray one must not end a game.
+          if (tttStage !== 'inviting') break;
           hideInvitePopup();
           tttStage = 'idle';
           tttState = null;
+          inviteGame = null;
           pendingInviteGame = null;
           updateGameUI();
           gameStatus.textContent = t('tttDeclined', { name });
           break;
         case 'state': {
-          if (!data.state) break;
+          // A board only counts inside a game both sides agreed to; one that
+          // arrives after this side closed the game must not reopen it.
+          if (!data.state || tttStage !== 'playing') break;
           hideInvitePopup();
           myPlayerIndex = opts.isHost() ? 0 : 1;
-          // Open the board on the first state (game start); afterwards just update -
-          // don't yank a closed board back open, so the "your move" badge can show.
-          const firstState = tttStage !== 'playing';
-          if (firstState) tttOverAnnounced = false;
-          tttStage = 'playing';
+          // A fresh board after a finished one is a new round: announce its result again.
+          if ((!tttState || tttState.phase === 'over') && data.state.phase !== 'over') tttOverAnnounced = false;
           activeGame = data.state.g === 'dab' ? 'dab' : 'ttt';
           tttState = data.state;
           buildTttBoard();
           clearGameDisconnect();
-          if (firstState) openGameOverlay();
           updateGameUI();
           break;
         }
@@ -795,9 +802,15 @@
           else { resetGame(); }
           break;
         case 'rematch':
-          if (opts.isHost()) startGame(activeGame);
+          if (opts.isHost() && tttStage === 'playing' && tttState && tttState.phase === 'over') startGame(activeGame);
           break;
       }
+    });
+
+    // The server pairing is gone with the socket, so nothing more can be relayed.
+    opts.socket.on('disconnect', () => {
+      if (tttStage === 'playing') markGamePartnerGone();
+      else if (tttStage !== 'idle' && tttStage !== 'gone') resetGame();
     });
 
     return {

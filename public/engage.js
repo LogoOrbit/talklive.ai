@@ -540,7 +540,6 @@
       + '@keyframes tl-pill{0%{opacity:0;transform:translate(-50%,-8px) scale(.8)}12%{opacity:1;transform:translate(-50%,0) scale(1)}85%{opacity:1}100%{opacity:0}}'
       + '.tl-blur-av{display:inline-grid;place-items:center;width:30px;height:30px;margin-right:10px;border-radius:50%;background:linear-gradient(135deg,rgba(245,196,81,.6),rgba(124,92,255,.5));color:#fff}'
       + '.tl-locked-row{display:block;width:100%;margin:8px 0;padding:12px 14px;border-radius:14px;border:1px solid rgba(245,196,81,.45);background:rgba(245,196,81,.1);color:inherit;text-align:left;cursor:pointer;font:inherit}'
-      + '.animal-option.tl-plus-face{box-shadow:inset 0 0 0 1.5px rgba(245,196,81,.7);position:relative}.animal-option.tl-plus-face::after{content:attr(data-lock);position:absolute;top:4px;right:6px;font-size:12px}'
       + '.tl-plus-alive{position:relative;overflow:hidden;border-radius:50%;animation:tl-alive 4.6s ease-in-out infinite}'
       + '.tl-plus-alive::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 35%,rgba(255,243,196,.55) 50%,transparent 65%);background-size:300% 100%;animation:tl-shine 4.6s linear infinite;pointer-events:none}'
       + '@keyframes tl-alive{0%,78%,100%{transform:none}82%{transform:rotate(-7deg)}86%{transform:rotate(5deg)}90%{transform:rotate(-2deg) translateY(-2px)}94%{transform:translateY(0)}}'
@@ -600,28 +599,35 @@
     window[name] = function () { var r = orig.apply(this, arguments); goldFriends(); if (name === 'renderHistory') lockedHistory(); return r; };
   });
 
-  // Legendary faces only Plus can wear (server/index.js PLUS_FACES).
-  var PLUS_FACES = { 'a:unicorn': 1, 'a:dragon': 1, 'a:eagle': 1, 'a:shark': 1, 'c:king': 1, 'c:queen': 1, 'c:knight': 1, 'c:astronaut': 1 };
+  // Only five animals and five characters are free (TalkLiveAnimals.FREE_FACES,
+  // mirrored by the server); every other face is Plus.
+  var FACE_BTN = '.animal-option[data-avatar], .avatar-option[data-avatar]';
+  function isPlusFace(id) { return /^[ac]:/.test(id) && !window.TalkLiveAnimals.isFree(id); }
   // The invite reward unlocks one legendary face: the first one picked.
   var look = null;
   socket.on('premium-status', function (st) { look = st && st.look ? st.look : null; markFaces(); });
-  function faceOk(id) { return isPremiumUser || (look && (!look.face || look.face === id)); }
+  // The face already worn stays selectable: nobody loses the avatar they had.
+  function faceOk(id) { return isPremiumUser || id === myAvatar || (look && (!look.face || look.face === id)); }
   function markFaces() {
-    document.querySelectorAll('.animal-option[data-avatar]').forEach(function (b) {
-      if (!PLUS_FACES[b.dataset.avatar]) return;
+    document.querySelectorAll(FACE_BTN).forEach(function (b) {
+      if (!isPlusFace(b.dataset.avatar)) return;
       b.classList.add('tl-plus-face');
       b.dataset.lock = faceOk(b.dataset.avatar) ? '💎' : '🔒';
     });
   }
   document.addEventListener('click', function (e) {
-    var b = e.target.closest && e.target.closest('.animal-option[data-avatar]');
-    if (!b || !PLUS_FACES[b.dataset.avatar] || faceOk(b.dataset.avatar)) return;
+    var b = e.target.closest && e.target.closest(FACE_BTN);
+    if (!b || !isPlusFace(b.dataset.avatar) || faceOk(b.dataset.avatar)) return;
     e.stopPropagation(); e.preventDefault();
     plusUpsell(t('plusMember'), 'avatars');
   }, true);
   if (typeof window.renderAnimalPicker === 'function') {
     var origPicker = window.renderAnimalPicker;
     window.renderAnimalPicker = function () { var r = origPicker.apply(this, arguments); markFaces(); return r; };
+  }
+  if (typeof window.renderAvatarGrid === 'function') {
+    var origGrid = window.renderAvatarGrid;
+    window.renderAvatarGrid = function () { var r = origGrid.apply(this, arguments); markFaces(); return r; };
   }
   markFaces();
   socket.on('premium-status', function () { setTimeout(function () { markFaces(); lockedHistory(); }, 0); });

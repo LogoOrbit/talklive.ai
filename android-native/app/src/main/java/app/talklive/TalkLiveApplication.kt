@@ -22,6 +22,9 @@ class TalkLiveApplication : Application(), coil.ImageLoaderFactory {
     @Inject lateinit var sounds: app.talklive.sound.SoundDirector
     @Inject lateinit var notifier: app.talklive.push.LocalNotifier
     @Inject lateinit var fx: app.talklive.sound.Sounds
+    // Created at start: it signs the saved account back in on the first
+    // registration, which can arrive before any screen has asked for it.
+    @Inject lateinit var auth: app.talklive.auth.AuthRepository
 
     override fun onCreate() {
         CrashReporter.install(this)
@@ -69,16 +72,34 @@ class TalkLiveApplication : Application(), coil.ImageLoaderFactory {
         socket.connect()
         runCatching {
             getSystemService(android.net.ConnectivityManager::class.java).registerDefaultNetworkCallback(object : android.net.ConnectivityManager.NetworkCallback() {
-                override fun onAvailable(network: android.net.Network) { socket.reconnectNow() }
+                override fun onAvailable(network: android.net.Network) { socket.reconnectNow(fromNetwork = true) }
             })
         }
         // Foreground/background: the server pushes to a backgrounded app, and a
         // text-chat partner sees "switched away".
+        // A minute after the app goes to the background the connection is closed
+        // (the server pushes from then on), unless a call, a search or a friend
+        // call is going on; it is looked at again every minute while away.
+        var sleepJob: kotlinx.coroutines.Job? = null
         androidx.lifecycle.ProcessLifecycleOwner.get().lifecycle.addObserver(
             androidx.lifecycle.LifecycleEventObserver { _, event ->
                 when (event) {
-                    androidx.lifecycle.Lifecycle.Event.ON_START -> { socket.reconnectNow(); socket.hidden = false; calls.appVisible(true) }
-                    androidx.lifecycle.Lifecycle.Event.ON_STOP -> { socket.hidden = true; calls.appVisible(false) }
+                    androidx.lifecycle.Lifecycle.Event.ON_START -> {
+                        sleepJob?.cancel()
+                        socket.reconnectNow(); socket.hidden = false; calls.appVisible(true)
+                    }
+                    androidx.lifecycle.Lifecycle.Event.ON_STOP -> {
+                        socket.hidden = true; calls.appVisible(false)
+                        sleepJob?.cancel()
+                        sleepJob = kotlinx.coroutines.MainScope().launch {
+                            while (true) {
+                                kotlinx.coroutines.delay(60_000)
+                                // Only when push can reach this phone: without it the open
+                                // connection is the one way a message still gets through.
+                                if (push.registered && calls.state.value.phase is app.talklive.call.CallPhase.Idle && social.incoming.value == null && social.outgoing.value == null) socket.sleep()
+                            }
+                        }
+                    }
                     else -> Unit
                 }
             },
@@ -93,6 +114,10 @@ class TalkLiveApplication : Application(), coil.ImageLoaderFactory {
             else add(coil.decode.GifDecoder.Factory())
         }
         .crossfade(true)
+        // Chat GIFs are large and many. Coil's defaults let them take a quarter
+        // of the app's memory and up to 250 MB of the phone's storage.
+        .memoryCache { coil.memory.MemoryCache.Builder(this).maxSizePercent(0.15).build() }
+        .diskCache { coil.disk.DiskCache.Builder().directory(cacheDir.resolve("image_cache")).maxSizeBytes(48L * 1024 * 1024).build() }
         .build()
 
     companion object {

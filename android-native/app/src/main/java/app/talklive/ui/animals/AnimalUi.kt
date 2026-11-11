@@ -68,8 +68,9 @@ import app.talklive.ui.components.BrandGradient
  * colour, or their initial on the brand gradient when they have none.
  */
 @Composable
-fun AnimalAvatar(animalId: String?, name: String?, size: Dp, modifier: Modifier = Modifier) {
+fun AnimalAvatar(animalId: String?, name: String?, size: Dp, modifier: Modifier = Modifier, scene: Boolean = LocalPlusAvatar.current) {
     val animal = animalById(animalId)
+    val reduce = app.talklive.ui.theme.LocalReduceMotion.current
     AnimatedContent(
         targetState = animal,
         transitionSpec = { (scaleIn(spring(dampingRatio = 0.55f)) + fadeIn()) togetherWith fadeOut() },
@@ -77,12 +78,18 @@ fun AnimalAvatar(animalId: String?, name: String?, size: Dp, modifier: Modifier 
         modifier = modifier,
     ) { a ->
         if (a != null) {
+            // Plus members' characters stand in a themed scene (AvatarScenes.kt), drawn
+            // behind the art without its round tile; still under 56dp or with reduced motion.
+            val bare = if (scene) CharacterBare[a.id] else null
+            val face = if (bare != null) remember(a.id) { a.copy(icon = bare) } else a
+            val fill = if (bare != null) 1f else 0.82f
             Box(
-                Modifier.size(size).clip(CircleShape).background(a.color.copy(alpha = 0.22f)),
+                Modifier.size(size).clip(CircleShape).background(a.color.copy(alpha = 0.22f))
+                    .then(if (bare != null) Modifier.characterScene(a.id, animate = !reduce && size >= 56.dp) else Modifier),
                 contentAlignment = Alignment.Center,
             ) {
-                if (LocalPlusAvatar.current && !app.talklive.ui.theme.LocalReduceMotion.current) LiveFace(a, size)
-                else Image(painterResource(a.icon), contentDescription = a.name, modifier = Modifier.size(size * 0.82f))
+                if (LocalPlusAvatar.current && !reduce) LiveFace(face, size, fill)
+                else Image(painterResource(face.icon), contentDescription = a.name, modifier = Modifier.size(size * fill))
             }
         } else {
             Box(Modifier.size(size).clip(CircleShape).background(BrandGradient), contentAlignment = Alignment.Center) {
@@ -107,7 +114,7 @@ val LocalPlusAvatar = androidx.compose.runtime.staticCompositionLocalOf { false 
  */
 @OptIn(androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi::class)
 @Composable
-private fun LiveFace(a: Animal, size: Dp) {
+private fun LiveFace(a: Animal, size: Dp, fill: Float = 0.82f) {
     val live = LiveAvatars[a.icon]
     var blink by remember { mutableStateOf(false) }
     val tilt = remember { androidx.compose.animation.core.Animatable(0f) }
@@ -155,7 +162,7 @@ private fun LiveFace(a: Animal, size: Dp) {
     ) {
         Image(
             painter, contentDescription = a.name,
-            modifier = Modifier.size(size * 0.82f).graphicsLayer {
+            modifier = Modifier.size(size * fill).graphicsLayer {
                 rotationZ = tilt.value
                 translationY = -bob.value * size.toPx() * 0.04f
                 scaleY = 1f - bob.value * 0.04f
@@ -165,8 +172,15 @@ private fun LiveFace(a: Animal, size: Dp) {
     }
 }
 
-/** Legendary faces only Plus members can wear (server/index.js PLUS_FACES, as a: / c: ids). */
-val PLUS_FACES = setOf("unicorn", "dragon", "eagle", "shark", "c:king", "c:queen", "c:knight", "c:astronaut")
+/**
+ * Faces a free account cannot pick: everything outside FREE_FACES (generated from
+ * the website's isFree, and mirrored by the server). Only a CHANGE to one is
+ * refused: whoever already wears it keeps it.
+ */
+fun isPlusFace(id: String?): Boolean = id != null && id !in FREE_FACES && animalById(id) != null
+
+/** A free animal at random: "Surprise me" and the automatic first pick never deal a Plus face. */
+fun randomFreeAnimal(): Animal = Animals.filter { it.id in FREE_FACES }.random()
 
 /** Grid of every animal; the chosen one lifts and gets its colour ring. */
 @Composable
@@ -181,7 +195,9 @@ fun AnimalGrid(
     look: Boolean = false,
     lookFace: String? = null,
 ) {
-    fun unlocked(id: String) = premium || (look && (lookFace == null || lookFace.removePrefix("a:") == id))
+    // The face worn when the grid opened stays pickable: nobody loses the avatar they had.
+    val held = remember { selected }
+    fun unlocked(id: String) = premium || id == held || (look && (lookFace == null || lookFace.removePrefix("a:") == id))
     val haptics = LocalHapticFeedback.current
     // Two families, two tabs, so the characters are never hidden below the animals.
     var tab by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(if (selected?.startsWith("c:") == true) 1 else 0) }
@@ -208,7 +224,7 @@ fun AnimalGrid(
     ) {
         // Spirit animals, then the website's movie characters.
         run {
-            val list = (if (tab == 0) Animals else Characters).sortedByDescending { it.id in PLUS_FACES }
+            val list = (if (tab == 0) Animals else Characters).sortedBy { isPlusFace(it.id) }
             items(list, key = { it.id }) { a ->
             val on = a.id == selected
             val scale by animateFloatAsState(if (on) 1.06f else 1f, spring(dampingRatio = 0.5f, stiffness = 500f), label = "s")
@@ -217,17 +233,17 @@ fun AnimalGrid(
                 Modifier.scale(scale).clip(RoundedCornerShape(20.dp))
                     .background(if (on) a.color.copy(alpha = 0.14f) else MaterialTheme.colorScheme.surface)
                     .border(2.dp, ring, RoundedCornerShape(20.dp))
-                    .then(if (a.id in PLUS_FACES) Modifier.border(1.5.dp, app.talklive.ui.components.PlusGold.copy(alpha = 0.7f), RoundedCornerShape(20.dp)) else Modifier)
+                    .then(if (isPlusFace(a.id)) Modifier.border(1.5.dp, app.talklive.ui.components.PlusGold.copy(alpha = 0.7f), RoundedCornerShape(20.dp)) else Modifier)
                     .clickable(remember { MutableInteractionSource() }, indication = null) {
                         haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        if (a.id in PLUS_FACES && !unlocked(a.id)) onLocked() else onSelect(a.id)
+                        if (isPlusFace(a.id) && !unlocked(a.id)) onLocked() else onSelect(a.id)
                     }
                     .padding(vertical = 10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Box {
                     Image(painterResource(a.icon), a.name, Modifier.fillMaxWidth(0.72f).aspectRatio(1f))
-                    if (a.id in PLUS_FACES) Box(Modifier.align(Alignment.TopEnd)) {
+                    if (isPlusFace(a.id)) Box(Modifier.align(Alignment.TopEnd)) {
                         if (unlocked(a.id)) app.talklive.ui.components.PlusGem(14.dp)
                         else androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Lock, null, tint = app.talklive.ui.theme.GoldText, modifier = Modifier.size(14.dp))
                     }

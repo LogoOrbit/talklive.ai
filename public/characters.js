@@ -33,7 +33,8 @@
     return c(x, y, r, INK) + c(x + r * 0.36, y - r * 0.42, r * 0.34, '#ffffff', ' opacity=".92"');
   }
   // The round tile, the shoulders and a face: what every character starts from.
-  function bg(color) { return c(32, 32, 32, color); }
+  // The tile's fill reads --tlc-bg so a Plus scene (avatar-scenes.css) can clear it.
+  function bg(color) { return c(32, 32, 32, color, ' style="fill:var(--tlc-bg,' + color + ')"'); }
   function body(color) { return p('M12 56c2-10 10-15 20-15s18 5 20 15a32 32 0 0 1-40 0z', color); }
   function face(skin) { return c(32, 30, 12, skin); }
   function eyes() { return eye(27.5, 30, 1.8) + eye(36.5, 30, 1.8); }
@@ -80,6 +81,28 @@
       },
     },
     {
+      id: 'robot', name: 'Robot',
+      art: function () {
+        return bg('#475569') + body('#64748b') + p('M28 39h8v5h-8z', '#94a3b8')
+          + line('M32 16V9', '#94a3b8', 2) + c(32, 8, 2.4, '#ef4444')
+          + c(17.5, 28, 2.6, '#94a3b8') + c(46.5, 28, 2.6, '#94a3b8')
+          + p('M23 16h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H23a5 5 0 0 1-5-5V21a5 5 0 0 1 5-5z', '#cbd5e1')
+          + p('M22 21h20a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H22a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2z', '#0f172a')
+          + c(27, 25.5, 2.4, '#22d3ee') + c(37, 25.5, 2.4, '#22d3ee')
+          + line('M26 35h12M28 33v4M32 33v4M36 33v4', '#64748b', 1.4);
+      },
+    },
+    {
+      id: 'ninja', name: 'Ninja',
+      art: function () {
+        return bg('#334155') + body('#0b0f19') + c(32, 30, 14, '#0b0f19')
+          + p('M20 26h24v7H20z', '#e0ac69') + eye(27, 29.5, 1.8) + eye(37, 29.5, 1.8)
+          + line('M24.5 27l4 .8M39.5 27l-4 .8', INK, 1.2)
+          + p('M18.5 21h27v3.5h-27z', '#dc2626')
+          + p('M45 22l8-3-2 5 3 3-9-2.5z', '#dc2626');
+      },
+    },
+    {
       id: 'hero', name: 'Superhero',
       art: function () {
         return bg('#dc2626') + body('#1d4ed8') + p('M27 47h10l-5 7z', '#facc15')
@@ -102,18 +125,6 @@
       },
     },
     {
-      id: 'robot', name: 'Robot',
-      art: function () {
-        return bg('#475569') + body('#64748b') + p('M28 39h8v5h-8z', '#94a3b8')
-          + line('M32 16V9', '#94a3b8', 2) + c(32, 8, 2.4, '#ef4444')
-          + c(17.5, 28, 2.6, '#94a3b8') + c(46.5, 28, 2.6, '#94a3b8')
-          + p('M23 16h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H23a5 5 0 0 1-5-5V21a5 5 0 0 1 5-5z', '#cbd5e1')
-          + p('M22 21h20a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H22a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2z', '#0f172a')
-          + c(27, 25.5, 2.4, '#22d3ee') + c(37, 25.5, 2.4, '#22d3ee')
-          + line('M26 35h12M28 33v4M32 33v4M36 33v4', '#64748b', 1.4);
-      },
-    },
-    {
       id: 'vampire', name: 'Vampire',
       art: function () {
         return bg('#3b0764') + body('#111827')
@@ -123,16 +134,6 @@
           + line('M24 26l5 1.5M40 26l-5 1.5', INK, 1.4)
           + line('M28.5 36h7', INK, 1.4)
           + p('M29.3 36.2l.9 2.2.9-2.2zM32.9 36.2l.9 2.2.9-2.2z', '#ffffff');
-      },
-    },
-    {
-      id: 'ninja', name: 'Ninja',
-      art: function () {
-        return bg('#334155') + body('#0b0f19') + c(32, 30, 14, '#0b0f19')
-          + p('M20 26h24v7H20z', '#e0ac69') + eye(27, 29.5, 1.8) + eye(37, 29.5, 1.8)
-          + line('M24.5 27l4 .8M39.5 27l-4 .8', INK, 1.2)
-          + p('M18.5 21h27v3.5h-27z', '#dc2626')
-          + p('M45 22l8-3-2 5 3 3-9-2.5z', '#dc2626');
       },
     },
     {
@@ -374,12 +375,21 @@
     return s === k ? ch.name : s;
   }
 
-  // The whole avatar, wrapped the way animal avatars are so every list that
-  // sizes `.avatar-animal` sizes these too. '' for an unknown id.
-  function html(id, size) {
+  // Plus members get a themed scene behind the character (avatar-scenes.css,
+  // fetched on first use); `plus` asks for it, under 56px it stays still.
+  var scenes = false;
+  function html(id, size, plus) {
     if (!BY_ID[id]) return '';
     installSprite();
-    return '<span class="avatar-animal" style="width:' + size + 'px;height:' + size + 'px">' + icon(id, size) + '</span>';
+    if (plus && !scenes) {
+      scenes = true;
+      var link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = '/avatar-scenes.css?v=39a9f792f0';
+      document.head.appendChild(link);
+    }
+    return '<span class="avatar-animal' + (plus ? ' tl-scene tl-s-' + id + (size < 56 ? ' tl-still' : '') : '')
+      + '" style="width:' + size + 'px;height:' + size + 'px">' + (plus ? '<i class="tl-sc"></i>' : '') + icon(id, size) + '</span>';
   }
 
   global.TalkLiveCharacters = {

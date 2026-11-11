@@ -114,8 +114,10 @@ const until = async (fn, ms = 3000) => { const t = Date.now(); while (Date.now()
     console.log('FAIL', err.message);
   } finally {
     sockets.forEach((s) => s.close());
-    srv.kill();
-    fs.rmSync(DATA_DIR, { recursive: true, force: true });
+    // Wait for the server to exit before deleting its folder: a save still in
+    // progress re-created files in it and the delete failed the run.
+    await new Promise((r) => { srv.once('exit', r); srv.kill(); setTimeout(r, 3000); });
+    try { fs.rmSync(DATA_DIR, { recursive: true, force: true }); } catch (_) { /* best effort */ }
     process.exit(failed ? 1 : 0);
   }
 })();
