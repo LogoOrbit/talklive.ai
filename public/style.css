@@ -111,7 +111,9 @@ html, body {
 }
 /* Form controls reset word-spacing to normal in the UA stylesheet, so every
    button kept the narrow gap ("Callinstead", "Gotit"). */
-button, input, select, textarea { word-spacing: inherit; }
+/* Form controls do not take the page's typeface unless told to: the sign-in
+   form and the Friends and History panels were showing the system font. */
+button, input, select, textarea { word-spacing: inherit; font-family: inherit; }
 /* Scroll the whole page from anywhere, with iOS momentum. Deliberately no
    scroll-behavior:smooth (it makes wheel/drag scrolling feel like it sticks)
    and no overscroll lock, so vertical scrolling is never swallowed. */
