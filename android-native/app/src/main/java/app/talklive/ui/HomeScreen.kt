@@ -270,8 +270,12 @@ private fun HowItWorks(text: Boolean) {
 /** The breathing mic: soft halo rings behind a gradient disc. */
 @Composable
 private fun MicOrb(text: Boolean = false, fit: Float = 1f) {
-    val t = rememberInfiniteTransition(label = "orb")
-    val halo by t.animateFloat(0.9f, 1.15f, infiniteRepeatable(tween(1600), RepeatMode.Reverse), label = "halo")
+    val still = app.talklive.ui.theme.LocalReduceMotion.current
+    val halo: Float = if (still) 1.02f else {
+        val t = rememberInfiniteTransition(label = "orb")
+        val h by t.animateFloat(0.9f, 1.15f, infiniteRepeatable(tween(1600), RepeatMode.Reverse), label = "halo")
+        h
+    }
     Box(contentAlignment = Alignment.Center) {
         Box(
             Modifier.size(220.dp * fit).scale(halo).clip(CircleShape)

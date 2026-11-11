@@ -375,13 +375,18 @@ private fun StatusPill(b: Banner) {
 /** Rings ripple out from your own animal while the app looks for someone. */
 @Composable
 private fun Radar(content: @Composable () -> Unit) {
-    val t = rememberInfiniteTransition(label = "radar")
-    val phases = (0 until 3).map { i ->
-        t.animateFloat(
-            0f, 1f,
-            infiniteRepeatable(tween(2400, delayMillis = 0, easing = LinearEasing), RepeatMode.Restart, initialStartOffset = androidx.compose.animation.core.StartOffset(i * 800)),
-            label = "ring$i",
-        )
+    val still = app.talklive.ui.theme.LocalReduceMotion.current
+    val phases: List<androidx.compose.runtime.State<Float>> = if (still) {
+        remember { listOf(0.2f, 0.55f, 0.9f).map { androidx.compose.runtime.mutableStateOf(it) } }
+    } else {
+        val t = rememberInfiniteTransition(label = "radar")
+        (0 until 3).map { i ->
+            t.animateFloat(
+                0f, 1f,
+                infiniteRepeatable(tween(2400, delayMillis = 0, easing = LinearEasing), RepeatMode.Restart, initialStartOffset = androidx.compose.animation.core.StartOffset(i * 800)),
+                label = "ring$i",
+            )
+        }
     }
     Box(
         Modifier.size(240.dp).drawBehind {
