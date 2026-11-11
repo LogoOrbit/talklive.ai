@@ -1442,8 +1442,10 @@
 /* Light theme: the same sky, but a bright one - a dark wash over a white
    page reads as a rendering fault rather than as weather. */
 [data-theme="light"] .tl-hero-sky {
+  /* A pale sky, not the full brand blue: the headline and subtitle are dark
+     on this theme, and dark text on saturated blue was barely readable. */
   background:
-    linear-gradient(var(--accent),var(--accent));
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 30%, #ffffff) 0%, color-mix(in srgb, var(--accent) 14%, #ffffff) 100%);
 }
 [data-theme="light"] .tl-hero-far { fill: color-mix(in srgb, var(--accent) 26%, #ffffff); opacity: 0.8; }
 [data-theme="light"] .tl-hero-near { fill: color-mix(in srgb, var(--accent) 40%, #ffffff); opacity: 0.9; }

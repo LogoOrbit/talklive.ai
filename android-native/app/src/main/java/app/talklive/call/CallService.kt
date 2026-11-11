@@ -58,6 +58,15 @@ class CallService : LifecycleService() {
         return super.onStartCommand(intent, flags, startId)
     }
 
+    // Swiped away from Recents: the person closed the app, so stop. The service
+    // kept the search going with nothing on screen, and a stranger could be
+    // connected minutes later to a phone in a pocket.
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        calls.end()
+        stopSelf()
+        super.onTaskRemoved(rootIntent)
+    }
+
     private fun notify(searching: Boolean) {
         getSystemService(android.app.NotificationManager::class.java).notify(NOTIFICATION_ID, notification(searching))
     }

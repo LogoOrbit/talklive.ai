@@ -71,6 +71,8 @@ data class CallState(
     /** Last measured round trip and packet loss, for the signal bars' card. */
     val rttMs: Int? = null,
     val lossPct: Float? = null,
+    /** The audio goes through the TURN relay rather than straight between the phones. */
+    val relayed: Boolean? = null,
     /** A call with a friend (started from Friends), not a random match. */
     val friendCall: Boolean = false,
     val mode: CallMode = CallMode.Talk,
@@ -627,7 +629,7 @@ class CallManager @Inject constructor(
                             loss > 0.02f || rtt > 300 -> LinkQuality.Fair
                             else -> LinkQuality.Good
                         }
-                        _state.update { it.copy(quality = q, rttMs = st.rttMs, lossPct = loss * 100f) }
+                        _state.update { it.copy(quality = q, rttMs = st.rttMs, lossPct = loss * 100f, relayed = st.relay) }
                         quality.add(st, loss, q == LinkQuality.Poor)
                     }
                 }

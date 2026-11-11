@@ -303,6 +303,8 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     }
     LaunchedEffect(Unit) {
         engageVm.moments.collect { m ->
+            // Celebrations wait for a quiet moment: never over a call or a search.
+            if (state.phase !is CallPhase.Idle) return@collect
             snackbar.say(
                 when (m) {
                     is app.talklive.engage.EngageMoment.StreakUp -> context.getString(R.string.moment_streak, m.days)
@@ -408,10 +410,11 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         }
     }
     LaunchedEffect(state.notice) {
-        if (noticeText != null) {
-            snackbar.say(noticeText)
-            vm.dismissNotice()
-        }
+        val n = state.notice ?: return@LaunchedEffect
+        // "X left" says what the screen already shows (searching again, or back
+        // home): only a dropped line, an ended friend call or a refusal is news.
+        if (noticeText != null && !(n is CallNotice.PartnerLeft && !n.dropped)) snackbar.say(noticeText)
+        vm.dismissNotice()
     }
 
     val inCall = state.phase !is CallPhase.Idle
@@ -467,7 +470,9 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         if (premium.active && skipped != null) scope.launch {
             val r = snackbar.say(
                 context.getString(R.string.skipped_name, skipped), actionLabel = context.getString(R.string.undo),
-                duration = androidx.compose.material3.SnackbarDuration.Long,
+                // Four seconds, not ten: long enough to change your mind, short
+                // enough not to sit over the next conversation.
+                duration = androidx.compose.material3.SnackbarDuration.Short,
             )
             if (r == androidx.compose.material3.SnackbarResult.ActionPerformed) {
                 vm.undoSkip()?.let { why ->

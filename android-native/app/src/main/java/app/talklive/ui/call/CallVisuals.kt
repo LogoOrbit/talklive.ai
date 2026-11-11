@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -348,61 +349,77 @@ fun LeaveButton(onClick: () -> Unit) {
 
 /**
  * Link quality as three small bars (like a phone's signal icon). Tapped, the
- * bars ripple up one after another and a small card says how the line is:
- * quality, round trip and loss, then it tucks itself away.
+ * bars ripple and a sheet explains the line in plain words: what the quality
+ * means for the call, the numbers behind it, and what to do when it is weak.
  */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-fun SignalBars(level: Int, color: Color, modifier: Modifier = Modifier, rttMs: Int? = null, lossPct: Float? = null) {
+fun SignalBars(
+    level: Int, color: Color, modifier: Modifier = Modifier,
+    rttMs: Int? = null, lossPct: Float? = null, relayed: Boolean? = null, onProblem: (() -> Unit)? = null,
+) {
     val dim = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
     val wave = remember { Animatable(1f) }
     var open by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
-    LaunchedEffect(open) { if (open) { kotlinx.coroutines.delay(3200); open = false } }
-    Box(modifier) {
-        Row(
-            Modifier.clip(RoundedCornerShape(10.dp))
-                .clickable {
-                    haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                    open = !open
-                    scope.launch { wave.snapTo(0f); wave.animateTo(1f, tween(900, easing = FastOutSlowInEasing)) }
-                }
-                .padding(8.dp)
-                .height(16.dp),
-            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(3.dp),
-            verticalAlignment = Alignment.Bottom,
-        ) {
-            listOf(6.dp, 11.dp, 16.dp).forEachIndexed { i, h ->
-                Box(
-                    Modifier.width(4.dp).height(h)
-                        .graphicsLayer {
-                            // Each bar jumps in turn: a small wave running up the bars.
-                            val local = ((wave.value * 3f) - i).coerceIn(0f, 1f)
-                            val bump = kotlin.math.sin(local * Math.PI).toFloat()
-                            scaleY = 1f + bump * 0.45f
-                            transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f)
-                        }
-                        .clip(RoundedCornerShape(2.dp)).background(if (i < level) color else dim),
-                )
+    Row(
+        modifier.clip(RoundedCornerShape(10.dp))
+            .clickable(onClickLabel = stringResource(R.string.line_title)) {
+                haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                open = true
+                scope.launch { wave.snapTo(0f); wave.animateTo(1f, tween(900, easing = FastOutSlowInEasing)) }
             }
+            .padding(8.dp)
+            .height(16.dp),
+        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(3.dp),
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        listOf(6.dp, 11.dp, 16.dp).forEachIndexed { i, h ->
+            Box(
+                Modifier.width(4.dp).height(h)
+                    .graphicsLayer {
+                        // Each bar jumps in turn: a small wave running up the bars.
+                        val local = ((wave.value * 3f) - i).coerceIn(0f, 1f)
+                        val bump = kotlin.math.sin(local * Math.PI).toFloat()
+                        scaleY = 1f + bump * 0.45f
+                        transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f)
+                    }
+                    .clip(RoundedCornerShape(2.dp)).background(if (i < level) color else dim),
+            )
         }
-        androidx.compose.animation.AnimatedVisibility(
-            visible = open,
-            enter = androidx.compose.animation.fadeIn(tween(160)) + androidx.compose.animation.scaleIn(spring(dampingRatio = 0.6f, stiffness = 500f), initialScale = 0.7f, transformOrigin = androidx.compose.ui.graphics.TransformOrigin(1f, 0f)),
-            exit = androidx.compose.animation.fadeOut(tween(140)) + androidx.compose.animation.scaleOut(targetScale = 0.85f, transformOrigin = androidx.compose.ui.graphics.TransformOrigin(1f, 0f)),
-            modifier = Modifier.align(Alignment.TopEnd).offset(y = 36.dp),
-        ) {
-            androidx.compose.material3.Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 6.dp) {
-                Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
-                    Text(
-                        stringResource(when (level) { 3 -> R.string.line_great; 2 -> R.string.line_ok; else -> R.string.line_weak }),
-                        style = MaterialTheme.typography.titleSmall, color = color,
-                    )
-                    val bits = listOfNotNull(
-                        rttMs?.takeIf { it > 0 }?.let { stringResource(R.string.line_delay, it) },
-                        lossPct?.let { stringResource(R.string.line_loss, kotlin.math.round(it * 10f) / 10f) },
-                    )
-                    if (bits.isNotEmpty()) Text(bits.joinToString(" · "), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+    if (!open) return
+    androidx.compose.material3.ModalBottomSheet(onDismissRequest = { open = false }) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 28.dp)) {
+            Text(stringResource(R.string.line_title), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(4.dp))
+            Text(
+                stringResource(when (level) { 3 -> R.string.line_great; 2 -> R.string.line_ok; else -> R.string.line_weak }),
+                style = MaterialTheme.typography.headlineSmall, color = color,
+            )
+            Text(
+                stringResource(when (level) { 3 -> R.string.line_great_body; 2 -> R.string.line_ok_body; else -> R.string.line_weak_body }),
+                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface,
+            )
+            Spacer(Modifier.height(16.dp))
+            @Composable fun Stat(label: String, value: String) {
+                Row(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+                    Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                }
+            }
+            rttMs?.takeIf { it > 0 }?.let { Stat(stringResource(R.string.line_delay_label), "$it ms") }
+            lossPct?.let { Stat(stringResource(R.string.line_loss_label), "${kotlin.math.round(it * 10f) / 10f}%") }
+            relayed?.let { Stat(stringResource(R.string.line_route_label), stringResource(if (it) R.string.line_route_relay else R.string.line_route_direct)) }
+            if (level < 3) {
+                Spacer(Modifier.height(12.dp))
+                Text(stringResource(R.string.line_tips), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (onProblem != null) {
+                    Spacer(Modifier.height(16.dp))
+                    androidx.compose.material3.OutlinedButton(onClick = { open = false; onProblem() }, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.line_report))
+                    }
                 }
             }
         }

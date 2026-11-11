@@ -658,6 +658,17 @@
     <string name="line_weak">Weak connection</string>
     <string name="line_delay">%1$d ms delay</string>
     <string name="line_loss">%1$s%% loss</string>
+    <string name="line_title">Connection</string>
+    <string name="line_great_body">Voices come through clearly both ways.</string>
+    <string name="line_ok_body">Mostly clear. A word may drop now and then.</string>
+    <string name="line_weak_body">Audio may break up or arrive late.</string>
+    <string name="line_delay_label">Delay</string>
+    <string name="line_loss_label">Audio lost</string>
+    <string name="line_route_label">Route</string>
+    <string name="line_route_direct">Direct between you</string>
+    <string name="line_route_relay">Through TalkLive\'s relay</string>
+    <string name="line_tips">To improve it: move closer to your Wi-Fi router, or switch between Wi-Fi and mobile data. Pausing downloads and videos helps too.</string>
+    <string name="line_report">Report a call problem</string>
     <string name="your_name">Your name</string>
     <string name="your_name_hint">What people see. You can change it later.</string>
     <string name="call_encrypted">Encrypted call</string>

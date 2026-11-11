@@ -11616,6 +11616,10 @@ socket.on('friend-online', ({ clientId, username, countryCode, country } = {}) =
   const where = (countryCode && countryCode !== 'XX') ? (getCountryName(countryCode) || country || '') : '';
   // A friend you renamed comes online under the name you gave them.
   const name = labelForClientId(clientId, username);
+  // Every friend coming online, every time, was the noisiest pop-up in the app.
+  // Only pinned friends announce themselves, and never over a conversation.
+  const friend = personById(clientId);
+  if (!friend || !friend.pinned || currentPartner) return;
   // Tap the toast to ring them.
   showToast(where ? t('friendOnlineToast', { name, country: where }) : t('friendOnlineToastNoCountry', { name }), 'social',
     () => requestCallBack(clientId, name));

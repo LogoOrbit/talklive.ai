@@ -98,7 +98,9 @@ fun AuroraBackground(modifier: Modifier = Modifier, content: @Composable () -> U
             glow(BrandTeal.copy(alpha = if (dark) 0.26f else 0.18f), w * 0.55f, Offset(w * (0.9f - 0.3f * pb), h * (0.42f + 0.1f * pa)))
             glow(BrandTeal.copy(alpha = if (dark) 0.12f else 0.10f), w * 0.4f, Offset(w * (0.4f + 0.2f * pb), h * (0.62f - 0.08f * pa)))
         }
-        content()
+        // Icons and text without a colour of their own (the back arrow) took
+        // the default black, which vanished on the dark themes.
+        androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides MaterialTheme.colorScheme.onBackground, content = content)
     }
 }
 
