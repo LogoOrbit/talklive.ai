@@ -296,6 +296,10 @@ function defaults() {
 
 let data = defaults();
 let saveTimer = null;
+// Set once SIGTERM/SIGINT arrives (flushAndExit); declared up here because
+// save() can run while the module is still loading.
+let shuttingDown = false;
+let changedWhileShuttingDown = false;
 // Public friend ID -> usernameLower. Rebuilt from the accounts on every load.
 let friendIdIndex = new Map();
 // Chosen account IDs ("asad#1234", lowercase) -> usernameLower, and the
@@ -1371,6 +1375,9 @@ const SAVE_DEBOUNCE_MS = Number(process.env.SAVE_DEBOUNCE_MS)
   || (process.env.NODE_ENV === 'production' ? 60000 : 2000);
 
 function save() {
+  // Shutting down: the server keeps answering until it exits, so a sign-in
+  // made now must still reach the disk (see flushAndExit).
+  if (shuttingDown) { changedWhileShuttingDown = true; return; }
   if (saveTimer) return;
   saveTimer = setTimeout(() => {
     saveTimer = null;
@@ -3963,7 +3970,6 @@ process.on('exit', () => { if (!shuttingDown && saveTimer) persistNow(); });
 // sends on every deploy/restart. Flush any debounced write before going down
 // so a signup seconds before a deploy is never lost: the mirror first (it is
 // instant), then wait for Postgres, but not past Fly's kill timeout.
-let shuttingDown = false;
 const SHUTDOWN_PG_WAIT_MS = Number(process.env.SHUTDOWN_PG_WAIT_MS) || 25000;
 async function flushAndExit(signal) {
   if (shuttingDown) return;
@@ -3982,6 +3988,15 @@ async function flushAndExit(signal) {
     // Must stay under fly.toml's kill_timeout.
     let done = false;
     await Promise.race([pgChain.then(() => { done = true; }), new Promise((r) => setTimeout(r, SHUTDOWN_PG_WAIT_MS))]);
+    // The database upload can take a minute, and the server answered people
+    // all that time: a sign-in in that window was in no saved copy, so the
+    // restarted server did not know its session and signed the phone out.
+    // Write once more, to the volume (instant) and, briefly, the database.
+    if (changedWhileShuttingDown) {
+      changedWhileShuttingDown = false;
+      persistNow();
+      await Promise.race([pgChain, new Promise((r) => setTimeout(r, 15000))]);
+    }
     // "final save done" is what move-region.yml waits for before it destroys
     // this machine, so it is only ever logged when Postgres has the store.
     // Written synchronously: console output to a pipe can be lost on exit.

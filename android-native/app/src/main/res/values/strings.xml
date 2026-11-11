@@ -659,6 +659,7 @@
     <string name="line_delay">%1$d ms delay</string>
     <string name="line_loss">%1$s%% loss</string>
     <string name="line_title">Connection</string>
+    <string name="skipped_short">Skipped</string>
     <string name="n_stranger_title">New message in your chat</string>
     <string name="line_great_body">Voices come through clearly both ways.</string>
     <string name="line_ok_body">Mostly clear. A word may drop now and then.</string>
