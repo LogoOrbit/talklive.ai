@@ -469,7 +469,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         vm.next()
         if (premium.active && skipped != null) scope.launch {
             val r = snackbar.say(
-                context.getString(R.string.skipped_name, skipped), actionLabel = context.getString(R.string.undo),
+                context.getString(R.string.skipped_short), actionLabel = context.getString(R.string.undo),
                 // Four seconds, not ten: long enough to change your mind, short
                 // enough not to sit over the next conversation.
                 duration = androidx.compose.material3.SnackbarDuration.Short,
@@ -867,9 +867,10 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         }
     }
 
-    // Messages show at the top of every screen, clear of the buttons below.
+    // A small pill under the top bar: it used to be a wide card over the bar
+    // itself, covering the close button and the screen's title.
     androidx.compose.foundation.layout.Box(
-        androidx.compose.ui.Modifier.fillMaxSize().statusBarsPadding().padding(top = 8.dp, start = 16.dp, end = 16.dp),
+        androidx.compose.ui.Modifier.fillMaxSize().statusBarsPadding().padding(top = 64.dp, start = 32.dp, end = 32.dp),
         contentAlignment = androidx.compose.ui.Alignment.TopCenter,
     ) {
         SnackbarHost(snackbar) { data ->
@@ -878,10 +879,10 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
             val dy = remember(data) { androidx.compose.animation.core.Animatable(0f) }
             val swipeScope = rememberCoroutineScope()
             androidx.compose.material3.Surface(
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                contentColor = MaterialTheme.colorScheme.onSurface,
-                shadowElevation = 6.dp,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(percent = 50),
+                color = MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.92f),
+                contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+                shadowElevation = 2.dp,
                 modifier = androidx.compose.ui.Modifier
                     .graphicsLayer {
                         translationX = dx.value; translationY = dy.value
@@ -904,12 +905,14 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                     .clickable { data.dismiss() },
             ) {
                 androidx.compose.foundation.layout.Row(
-                    androidx.compose.ui.Modifier.padding(start = 16.dp, end = 8.dp, top = 6.dp, bottom = 6.dp).heightIn(min = 40.dp),
+                    androidx.compose.ui.Modifier.padding(start = 14.dp, end = if (data.visuals.actionLabel != null) 4.dp else 14.dp, top = 4.dp, bottom = 4.dp).heightIn(min = 32.dp),
                     verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                 ) {
-                    Text(data.visuals.message, style = MaterialTheme.typography.bodyMedium, modifier = androidx.compose.ui.Modifier.weight(1f, fill = false).padding(end = 8.dp))
+                    Text(data.visuals.message, style = MaterialTheme.typography.bodySmall, maxLines = 2, modifier = androidx.compose.ui.Modifier.weight(1f, fill = false))
                     data.visuals.actionLabel?.let { label ->
-                        TextButton(onClick = { data.performAction() }) { Text(label) }
+                        TextButton(onClick = { data.performAction() }, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp)) {
+                            Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.inversePrimary)
+                        }
                     }
                 }
             }
