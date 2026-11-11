@@ -24,8 +24,12 @@ function isFreshBoard(s) {
   return Array.isArray(s.board) && s.board.every((x) => x === null);
 }
 
-function createGameTracker({ store, profileOf }) {
-  // pairKey -> { from, to, game, ts }: an invite waiting for an answer.
+// An invite nobody answers is withdrawn after this long, so neither side is
+// left on a "waiting" or "wants to play" screen for a game that cannot start.
+const INVITE_TTL_MS = Number(process.env.GAME_INVITE_TTL_MS) || 45000;
+
+function createGameTracker({ store, profileOf, onExpire }) {
+  // pairKey -> { from, to, game, ts, timer }: an invite waiting for an answer.
   const invites = new Map();
   // pairKey -> session: { game, mode, a, b, startedAt, host, round, rounds[] }
   const sessions = new Map();
@@ -41,6 +45,7 @@ function createGameTracker({ store, profileOf }) {
   function resolveInvite(key, outcome) {
     const inv = invites.get(key);
     if (!inv) return;
+    clearTimeout(inv.timer);
     invites.delete(key);
     const from = who(inv.from);
     const to = who(inv.to);
@@ -83,6 +88,39 @@ function createGameTracker({ store, profileOf }) {
     });
   }
 
+  // The server decides what a game message means for this pair, not the
+  // clients: an accept for an invite that is gone, a move for a game that
+  // ended, or a cancel that only echoes a finished game would otherwise start
+  // or kill a game on the partner's screen. Returns what to forward to the
+  // partner (null = nothing) and what to tell the sender (null = nothing); a
+  // sender whose message is refused is told 'left' so its screen resets.
+  function judge(senderId, partnerId, data) {
+    const key = pairKey(senderId, partnerId);
+    const pending = invites.get(key);
+    const session = sessions.get(key);
+    switch (data.type) {
+      case 'invite':
+        // Already playing: the sender is out of step, so unstick it.
+        return session ? { relay: null, reply: { type: 'decline' } } : { relay: data, reply: null };
+      case 'accept':
+        if (!pending || pending.to !== senderId) return { relay: null, reply: { type: 'left' } };
+        return { relay: data, reply: null };
+      case 'decline':
+      case 'left':
+        if (pending) {
+          // The inviter withdrawing is a cancel ('left'), the invitee backing
+          // out is a no ('decline'), whichever of the two events carried it.
+          return { relay: { type: pending.to === senderId ? 'decline' : 'left' }, reply: null };
+        }
+        return { relay: data.type === 'left' && session ? data : null, reply: null };
+      case 'state':
+      case 'rematch':
+        return session ? { relay: data, reply: null } : { relay: null, reply: { type: 'left' } };
+      default:
+        return { relay: null, reply: null };
+    }
+  }
+
   // Every relayed 'game' message, before it is forwarded to the partner.
   function onEvent(senderId, partnerId, data) {
     const key = pairKey(senderId, partnerId);
@@ -99,7 +137,14 @@ function createGameTracker({ store, profileOf }) {
           return;
         }
         if (pending) resolveInvite(key, 'ignored'); // a second invite replaces an unanswered one
-        invites.set(key, { from: senderId, to: partnerId, game, ts: now });
+        const timer = setTimeout(() => {
+          const inv = invites.get(key);
+          if (!inv || inv.timer !== timer) return;
+          resolveInvite(key, 'ignored');
+          if (onExpire) onExpire({ from: inv.from, to: inv.to });
+        }, INVITE_TTL_MS);
+        if (timer.unref) timer.unref();
+        invites.set(key, { from: senderId, to: partnerId, game, ts: now, timer });
         return;
       }
       case 'accept': {
@@ -176,7 +221,7 @@ function createGameTracker({ store, profileOf }) {
     return { sessions: out.sort((a, b) => a.startedAt - b.startedAt), pendingInvites: invites.size };
   }
 
-  return { onEvent, onPairEnd, live };
+  return { judge, onEvent, onPairEnd, live };
 }
 
 module.exports = { createGameTracker, isFreshBoard };

@@ -151,16 +151,20 @@ class Games @Inject constructor(private val socket: TalkSocket, private val call
         scope.launch { socket.events.collect { if (it is ServerEvent.Game) onGame(it.data) } }
         // A new partner (or none) starts from scratch.
         scope.launch {
-            calls.state.map { (it.phase as? CallPhase.Connected)?.partner?.clientId }.distinctUntilChanged().collect { reset() }
+            calls.state.map { (it.phase as? CallPhase.Connected)?.let { c -> c.partner.clientId to c.sinceMs } }.distinctUntilChanged().collect { reset() }
         }
     }
 
     fun invite(kind: GameKind) = scope.launch {
+        // One thing at a time: not while an invite or a game is already going.
+        if (_ui.value.stage != Stage.Idle || calls.state.value.phase !is CallPhase.Connected) return@launch
         _ui.update { it.copy(stage = Stage.Inviting, kind = kind, declined = false) }
         send(JSONObject().put("type", "invite").put("game", kind.wire))
     }
 
     fun accept() = scope.launch {
+        // The invite may have been withdrawn while the prompt was on screen.
+        if (_ui.value.stage != Stage.Invited) return@launch
         val kind = _ui.value.kind
         send(JSONObject().put("type", "accept").put("game", kind.wire))
         handshake(kind)
@@ -188,7 +192,12 @@ class Games @Inject constructor(private val socket: TalkSocket, private val call
     }
 
     fun leave() = scope.launch {
-        if (_ui.value.stage == Stage.Playing || _ui.value.stage == Stage.Inviting) send(JSONObject().put("type", "left"))
+        // Closing the sheet tells the partner whatever stage this was: a withdrawn invite, a refused one, a game left.
+        when (_ui.value.stage) {
+            Stage.Playing, Stage.Inviting, Stage.Waiting -> send(JSONObject().put("type", "left"))
+            Stage.Invited -> send(JSONObject().put("type", "decline"))
+            else -> Unit
+        }
         reset()
     }
 
@@ -211,14 +220,15 @@ class Games @Inject constructor(private val socket: TalkSocket, private val call
         val u = _ui.value
         when (d.optString("type")) {
             "invite" -> {
-                if (u.stage == Stage.Playing) return
+                if (u.stage == Stage.Playing || u.stage == Stage.Waiting) return
                 val kind = if (d.optString("game") == "dab") GameKind.Dots else GameKind.TicTacToe
                 if (u.stage == Stage.Inviting) handshake(if (isHost) u.kind else kind)
                 else _ui.update { it.copy(stage = Stage.Invited, kind = kind, declined = false) }
             }
             "accept" -> if (u.stage == Stage.Inviting) handshake(u.kind)
-            "decline" -> _ui.update { GameUi(declined = true) }
-            "state" -> d.optJSONObject("state")?.let { st ->
+            // Only an invite of mine can be declined; a stray one must not end a game.
+            "decline" -> if (u.stage == Stage.Inviting) _ui.update { GameUi(declined = true) }
+            "state" -> d.optJSONObject("state")?.takeIf { u.stage == Stage.Playing || u.stage == Stage.Waiting }?.let { st ->
                 val board = Board.from(st)
                 _ui.update { it.copy(stage = Stage.Playing, kind = board.kind, board = board, me = if (isHost) 0 else 1) }
             }
@@ -227,7 +237,7 @@ class Games @Inject constructor(private val socket: TalkSocket, private val call
                 goneJob?.cancel()
                 goneJob = scope.launch { delay(2600); if (_ui.value.stage == Stage.Gone) reset() }
             } else reset()
-            "rematch" -> if (isHost) start(u.kind)
+            "rematch" -> if (isHost && u.stage == Stage.Playing && u.board?.over == true) start(u.kind)
         }
     }
 
