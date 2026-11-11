@@ -250,6 +250,12 @@ main{padding:18px 22px;min-width:0;padding-bottom:calc(84px + env(safe-area-inse
 .card h2{font-size:.95rem;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .card h2 .sub{font-weight:400;color:var(--muted);font-size:.78rem}
 /* Intelligence tab: no motion, one blue scale for the cohort table. */
+.px-tiles{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.px-tile{background:var(--surface);border:1px solid var(--ring);border-radius:14px;padding:12px 14px}
+.px-tile .k{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.px-tile .v{font-size:1.5rem;font-weight:800;margin-top:4px;font-variant-numeric:tabular-nums}
+.px-tile .s{font-size:.76rem;color:var(--ink2);margin-top:2px}
+.px-pill{display:inline-block;border:1px solid var(--ring);border-radius:99px;padding:1px 8px;font-size:.72rem}
 .ix-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr))}
 .ix-health{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
 .ix-score{font-size:3rem;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
@@ -1030,7 +1036,7 @@ const NAV=[
     ['users','Users','🧑‍🤝‍🧑',[['users','All users','🧑‍🤝‍🧑'],['accounts','Accounts','👤'],['talktime','Talk time','⏱️'],['data','User data','🗂️']]],
     ['games','Games','🎮',[['games','Games','🎮']]]]],
   ['Business',[
-    ['revenue','Revenue','💎',[['revenue','Revenue','💎']]]]],
+    ['revenue','Revenue','💎',[['revenue','Revenue','💎'],['plus','Plus payments','＋']]]]],
   ['System',[
     ['health','Health','❤️',[['health','Site health','❤️'],['errors','Errors','🐛']]],
     ['settings','Settings','🛠️',[['settings','Settings','🛠️'],['audit','Audit log','🧾']]]]]
@@ -1262,6 +1268,8 @@ function startDash(){
 /* `force` defaults to true so every click and keypress repaints immediately;
    the poll timer passes false, because typing into a filter box or having a
    dialog open must not be interrupted by a repaint underneath. */
+const SWR_TABS=['chats','voicenotes','traffic','plus','intel'];
+const viewHtml={};
 async function load(force){
   scheduleRefresh();
   /* Signed in, the status carries the storage host and error text. Checked on
@@ -1280,6 +1288,12 @@ async function load(force){
     if(busy&&tab!=='support'&&Date.now()-lastLoadTs<60000)return;
   }
   const seq=++loadSeq,forTab=tab;
+  /* Heavy tabs show what was on screen last time straight away, labelled with
+     its age, and replace it when fresh data arrives. */
+  const sw=SWR_TABS.includes(forTab)&&viewHtml[forTab];
+  if(sw&&renderedTab!==forTab&&Date.now()-sw.at<600000){
+    $('#main').innerHTML=`<div class="muted" style="margin-bottom:8px">Showing data from ${Math.max(1,Math.round((Date.now()-sw.at)/1000))}s ago, updating...</div>`+sw.html;
+  }
   quiet=renderedTab===forTab;
   $('#main').classList.toggle('quiet',quiet);
   try{
@@ -1288,6 +1302,7 @@ async function load(force){
     else if(tab==='daily')await viewDaily();
     else if(tab==='traffic')await viewTraffic();
     else if(tab==='intel')await viewIntel();
+    else if(tab==='plus')await viewPlus();
     else if(tab==='health')await viewHealth();
     else if(tab==='ai')await viewBot();
     else if(tab==='audience')await viewAudience();
@@ -1314,6 +1329,7 @@ async function load(force){
     else if(tab==='settings')await viewSettings();
     if(seq!==loadSeq)return;
     renderedTab=forTab;
+    if(SWR_TABS.includes(forTab))viewHtml[forTab]={at:Date.now(),html:$('#main').innerHTML};
     /* Once the entrance animation has played, later repaints of this section
        (filters, sort, window presets) stay quiet too. */
     if(!quiet)setTimeout(()=>{if(seq===loadSeq){quiet=true;$('#main').classList.add('quiet');}},700);
@@ -2617,7 +2633,12 @@ window.unban=async(id)=>{try{await post('unban',{banId:id});toast('Ban lifted','
    skip a conversation without opening it, which is where the time actually
    goes. j/k move, Enter opens, Esc goes back, so a review pass never needs
    the mouse. */
-let chatQuery='',chatKind='',chatFlagged=false,chatSort='recent',chatOpen=null,chatRows=[],chatCursor=-1;
+let chatQuery='',chatKind='',chatFlagged=false,chatSort='recent',chatOpen=null,chatRows=[],chatCursor=-1,chatPage=1;
+/* Previous / next controls for a list the server pages (50 a page). */
+function pagerHtml(r,label){
+  if(!r||!(r.pages>1))return '';
+  return `<div class="pager" style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap"><button class="ghostbtn" data-pg="${r.page-1}" ${r.page<=1?'disabled':''}>Previous</button><span class="muted">Page ${num(r.page)} of ${num(r.pages)} · ${num(r.matched!=null?r.matched:r.total)} ${esc(label)}</span><button class="ghostbtn" data-pg="${r.page+1}" ${r.page>=r.pages?'disabled':''}>Next</button></div>`;
+}
 
 const FLAG_LABEL={minor:'age',sexual:'sexual',contact:'contact',link:'link',money:'money',abuse:'abuse'};
 const flagChips=(flags)=>(flags||[]).map(f=>`<span class="fl ${f}">${FLAG_LABEL[f]||esc(f)}</span>`).join('');
@@ -2651,9 +2672,11 @@ async function viewChats(){
   if(chatKind)params.set('kind',chatKind);
   if(chatFlagged)params.set('flagged','1');
   if(chatSort!=='recent')params.set('sort',chatSort);
+  if(chatPage>1)params.set('page',chatPage);
   const qs=params.toString();
   const r=await vapi('transcripts'+(qs?'?'+qs:''));
   chatRows=r.conversations||[];
+  chatPage=r.page||1;
   /* A conversation that fell out of the current filter must not stay selected -
      the thread pane would keep showing something the list no longer offers. */
   if(chatOpen&&!chatRows.some(c=>c.pair===chatOpen))chatOpen=null;
@@ -2682,16 +2705,18 @@ async function viewChats(){
   <div class="cvwrap${chatOpen?' reading':''}" id="cvwrap">
     <div class="cvlist" id="cvlist">
       ${chatRows.map(convRow).join('')||'<div class="cvempty">No conversations match. Clear the filters, or wait for people to talk.</div>'}
+      ${pagerHtml(r,'threads')}
     </div>
     <div class="cvthread" id="cvthread"><div class="cvempty">Pick a conversation to read it.<br><span class="muted">j / k to move, Enter to open, Esc to come back.</span></div></div>
   </div></div>`;
 
-  const go=()=>{chatQuery=$('#chatQ').value.trim();chatOpen=null;load();};
+  const go=()=>{chatQuery=$('#chatQ').value.trim();chatOpen=null;chatPage=1;load();};
+  document.querySelectorAll('#cvlist [data-pg]').forEach(b=>b.onclick=()=>{chatPage=+b.dataset.pg;chatOpen=null;load();});
   $('#chatQBtn').onclick=go;
   $('#chatQ').addEventListener('keydown',e=>{if(e.key==='Enter')go();});
-  document.querySelectorAll('[data-ck]').forEach(b=>b.onclick=()=>{chatKind=b.dataset.ck;chatOpen=null;load();});
-  document.querySelectorAll('[data-cs]').forEach(b=>b.onclick=()=>{chatSort=b.dataset.cs;load();});
-  $('#chatFlagBtn').onclick=()=>{chatFlagged=!chatFlagged;chatOpen=null;load();};
+  document.querySelectorAll('[data-ck]').forEach(b=>b.onclick=()=>{chatKind=b.dataset.ck;chatOpen=null;chatPage=1;load();});
+  document.querySelectorAll('[data-cs]').forEach(b=>b.onclick=()=>{chatSort=b.dataset.cs;chatPage=1;load();});
+  $('#chatFlagBtn').onclick=()=>{chatFlagged=!chatFlagged;chatOpen=null;chatPage=1;load();};
   /* One listener for the whole list rather than one per row. */
   $('#cvlist').addEventListener('click',e=>{
     const row=e.target.closest('.cvrow');
@@ -3437,6 +3462,62 @@ function hlUptime(u){
     ${(u.monitors||[]).map(m=>`<tr><td>${esc(m.name)}</td><td>${hlBadge(m.status,m.status==='up'?'good':m.status==='paused'?'':'bad')}</td><td class="num">${m.uptime.d1}%</td><td class="num">${m.uptime.d7}%</td><td class="num">${m.uptime.d30}%</td><td class="num">${m.avgResponseMs?m.avgResponseMs+' ms':'-'}</td>
       <td>${m.incidents.length?m.incidents.slice(0,3).map(i=>`${esc(new Date(i.at).toLocaleString())} (${i.minutes} min)`).join('<br>'):'<span class="muted">none</span>'}</td></tr>`).join('')}</table></div></div>`;
 }
+/* ---------- Plus: subscribers and payments (estimated money) ---------- */
+let plusView='subscribers',plusQ='',plusPage=1;
+async function viewPlus(){
+  const S=await vapi('plus');
+  if(S===STALE)return;
+  const usd=(v)=>'$'+(Math.round((v||0)*100)/100).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2});
+  const PLAN={monthly:'Monthly',yearly:'Yearly',pass:'Pass',pass_1d:'Pass 1 day',pass_7d:'Pass 7 days',pass_15d:'Pass 15 days'};
+  const SRC={stripe:'Stripe (web)',play:'Google Play','play-pass':'Google Play'};
+  const tile=(k,v,s)=>`<div class="px-tile"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s||''}</div></div>`;
+  if(S.empty){
+    $('#main').innerHTML=`<div class="card" style="margin-top:0"><h2>Plus payments</h2><div class="muted" style="padding:10px 0"><b>No payments yet.</b> When someone buys Plus on the web or in the Android app, their purchase appears here, with a running count of subscribers, renewals and estimated revenue.</div></div>`;
+    return;
+  }
+  const A=S.active,E=S.events,X=S.expiring;
+  const row=(l,a,b)=>`<tr><td>${l}</td><td class="num">${num(a)}</td><td class="num">${num(b)}</td></tr>`;
+  $('#main').innerHTML=`<div class="px-tiles" style="margin-top:0">
+    ${tile('Paying subscribers now',num(A.total),`${num(A.monthly)} monthly, ${num(A.yearly)} yearly, ${num(A.passes.pass_1d+A.passes.pass_7d+A.passes.pass_15d)} passes`)}
+    ${tile('Where they paid',`${num(A.stripe)} / ${num(A.play)}`,'web (Stripe) / Google Play')}
+    ${tile('Monthly revenue (estimated)',usd(S.mrrUsd),'subscriptions only, yearly counted as 1/12')}
+    ${tile('Last 30 days (estimated)',usd(S.revenue30Usd),'payments logged since tracking began')}
+    ${tile('Expiring in 7 days',num(X.in7),'paid plans that end soon')}
+    ${tile('Plus members',S.conversion==null?'-':S.conversion+'%',`${num(S.plusAll)} Plus of ${num(S.activeAccounts30)} people active in 30 days`)}
+  </div>
+  <div class="ix-grid">
+    <div class="card"><h2>Movement <span class="sub">from the payment log</span></h2>
+      <table style="min-width:0"><tr><th></th><th class="num">7 days</th><th class="num">30 days</th></tr>
+      ${row('New',E.d7.new,E.d30.new)}${row('Renewed',E.d7.renewed,E.d30.renewed)}${row('Cancelled',E.d7.cancelled,E.d30.cancelled)}${row('Expired (ran out)',X.expired7,X.expired30)}</table>
+      <div class="muted" style="margin-top:8px">${num(S.freePlus)} more people have Plus for free (referral, gift or trial) and are not counted above.</div></div>
+    <div class="card"><h2>Revenue by country <span class="sub">top 10, last 30 days, estimated</span></h2>
+      ${S.byCountry.length?`<table style="min-width:0"><tr><th>Country</th><th class="num">Payments</th><th class="num">Revenue</th></tr>${S.byCountry.map(c=>`<tr><td>${esc(c.country)}</td><td class="num">${num(c.payments)}</td><td class="num">${usd(c.usd)}</td></tr>`).join('')}</table>`:'<div class="muted">No payments in the last 30 days.</div>'}</div>
+  </div>
+  <div class="muted" style="margin-top:8px">${esc(S.note)}</div>
+  <div class="card"><h2>Details</h2>
+    <div class="tbar"><div class="seg" id="pxView"><button data-v="subscribers" class="${plusView==='subscribers'?'on':''}">Subscribers</button><button data-v="payments" class="${plusView==='payments'?'on':''}">Payment events</button></div></div>
+    <div class="searchbar"><input id="pxQ" placeholder="Search by email, account, ID, plan, country..." value="${esc(plusQ)}"><button class="btn" id="pxGo">Search</button></div>
+    <div id="pxTable" class="muted" style="margin-top:10px">Loading...</div></div>`;
+  const dt=(t)=>t?new Date(t).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'-';
+  const money=(r)=>r.amount?`${esc(r.currency)} ${num(r.amount)}${r.usd?` <span class="muted">(about ${usd(r.usd)})</span>`:''}`:'-';
+  async function table(){
+    const r=await api(`plus/${plusView}?page=${plusPage}&q=${encodeURIComponent(plusQ)}`);
+    plusPage=r.page;
+    const body=plusView==='subscribers'
+      ?`<tr><th>Account</th><th>Plan</th><th>Source</th><th>Country</th><th>Price</th><th>Status</th><th>Expires</th></tr>`+r.rows.map(x=>`<tr><td>${esc(x.account||x.clientId.slice(0,10))}</td><td>${esc(PLAN[x.plan]||x.plan)}</td><td>${esc(SRC[x.source]||x.source)}</td><td>${esc(x.country||'-')}</td><td>${money(x)}</td><td><span class="px-pill">${esc(x.status)}</span></td><td>${dt(x.expiresAt)}</td></tr>`).join('')
+      :`<tr><th>Date</th><th>Account</th><th>Event</th><th>Plan</th><th>Source</th><th>Country</th><th>Amount</th><th>Expires</th></tr>`+r.rows.map(x=>`<tr><td>${dt(x.t)}</td><td>${esc(x.account||x.clientId.slice(0,10))}</td><td><span class="px-pill">${esc(x.kind)}</span></td><td>${esc(PLAN[x.plan]||x.plan)}</td><td>${esc(SRC[x.source]||x.source)}</td><td>${esc(x.country||'-')}</td><td>${money(x)}</td><td>${dt(x.expiresAt)}</td></tr>`).join('');
+    const host=$('#pxTable');if(!host)return;
+    host.className='';
+    host.innerHTML=(r.rows.length?`<table style="min-width:640px">${body}</table>`:`<div class="muted">${plusQ?'Nothing matches that search.':plusView==='payments'?'No payment events logged yet.':'No paying subscribers yet.'}</div>`)+pagerHtml({page:r.page,pages:r.pages,total:r.total},plusView==='payments'?'events':'subscribers');
+    host.querySelectorAll('[data-pg]').forEach(b=>b.onclick=()=>{plusPage=+b.dataset.pg;table();});
+  }
+  const go=()=>{plusQ=$('#pxQ').value.trim();plusPage=1;table();};
+  $('#pxGo').onclick=go;
+  $('#pxQ').addEventListener('keydown',e=>{if(e.key==='Enter')go();});
+  document.querySelectorAll('#pxView button').forEach(b=>b.onclick=()=>{plusView=b.dataset.v;plusPage=1;document.querySelectorAll('#pxView button').forEach(o=>o.classList.toggle('on',o===b));table();});
+  table().catch(e=>{const h=$('#pxTable');if(h)h.textContent='Could not load: '+e.message;});
+}
+
 /* ---------- Intelligence: health, alerts, forecast, retention, trust, match model ----------
    Fetched only when the tab opens and reused for 5 minutes (the server caches
    it for 10), so polling never rebuilds it. No animation anywhere. */
@@ -3524,8 +3605,12 @@ async function viewHealth(refresh){
   clearTimeout(viewHealth.t);
   if(h.pageSpeed.running)viewHealth.t=setTimeout(()=>{if(location.hash==='#health')viewHealth();},10000);
 }
+let gscCache=null;
 async function viewTraffic(){
-  const [t,g]=await Promise.all([vapi('traffic?range='+tfRange),vapi('search-console?days='+gscDays).catch(()=>null)]);
+  /* Our own numbers paint at once; the Google card (a slow outside call the first time) fills in when it arrives. */
+  const t=await vapi('traffic?range='+tfRange);
+  if(t===STALE)return;
+  const g=gscCache&&gscCache.days===gscDays?gscCache.g:null;
   const rangeTxt=tfRange==='today'?'today (UTC)':'last '+tfRange.replace('d',' days');
   const med=Object.fromEntries(t.mediums);
   const top=(list)=>list[0]?`${esc(list[0][0])} · ${num(list[0][1])}`:'-';
@@ -3540,7 +3625,7 @@ async function viewTraffic(){
     <span class="muted" style="font-size:.8rem">${t.since?`Tracking since ${esc(t.since)}. `:'No arrivals recorded yet - tracking starts with this deploy. '}An arrival is a visit that came from outside the site; reloads within 30 min are not counted twice.</span>
     <span style="margin-left:auto">${exportLink('traffic','Export CSV').replace('traffic.csv','traffic.csv?range='+tfRange)}</span>
   </div>
-  ${gscCard(g)}
+  <div id="gscHost">${g?gscCard(g):'<div class="card"><h2>Google searches <span class="sub">loading from Search Console...</span></h2></div>'}</div>
   <div class="card anim"><h2>📈 Arrivals by channel <span class="sub">per UTC day</span></h2>
     <div class="legend">${Object.keys(MEDIUM_LABEL).map(k=>`<span><i style="background:${MEDIUM_COLOR[k]}"></i>${MEDIUM_LABEL[k].replace(/^\S+ /,'')}</span>`).join('')}</div>
     <div id="tfTrend"></div></div>
@@ -3563,12 +3648,18 @@ async function viewTraffic(){
   hbars($('#tfSources'),t.sources.slice(0,20),'var(--s1)');
   hbars($('#tfLandings'),t.landings.slice(0,20),'var(--s2)');
   hbars($('#tfPages'),t.pages.slice(0,20),'var(--s3)');
-  if(g&&g.configured&&!g.error){
-    hbars($('#gscCountries'),(g.countries||[]).map(r=>[r.country,r.clicks]),'var(--s1)');
-    hbars($('#gscDevices'),(g.devices||[]).map(r=>[r.device,r.clicks]),'var(--s2)');
-  }
+  const paintGsc=(g)=>{
+    const host=$('#gscHost');if(!host||tab!=='traffic')return;
+    host.innerHTML=gscCard(g);
+    if(g&&g.configured&&!g.error){
+      hbars($('#gscCountries'),(g.countries||[]).map(r=>[r.country,r.clicks]),'var(--s1)');
+      hbars($('#gscDevices'),(g.devices||[]).map(r=>[r.device,r.clicks]),'var(--s2)');
+    }
+    document.querySelectorAll('#gscDays button').forEach(b=>b.onclick=()=>{gscDays=+b.dataset.d;gscCache=null;viewTraffic();});
+  };
+  if(g)paintGsc(g);
+  else api('search-console?days='+gscDays).then(x=>{gscCache={days:gscDays,g:x};paintGsc(x);}).catch(()=>paintGsc(null));
   document.querySelectorAll('#tfRange button').forEach(b=>b.onclick=()=>{tfRange=b.dataset.r;viewTraffic();});
-  document.querySelectorAll('#gscDays button').forEach(b=>b.onclick=()=>{gscDays=+b.dataset.d;viewTraffic();});
 }
 
 /* ---------- revenue: subscriptions, referrals, push reach ---------- */
@@ -3661,15 +3752,17 @@ async function viewErrors(){
 }
 window.dismissError=async(id)=>{try{await post('errors/dismiss',{id});toast('Error dismissed','If it happens again it comes straight back.');load();}catch(e){toast('Could not dismiss',e.message,'bad');}};
 
-let vnQ='',vnFlagged=false,vnSort='recent';
+let vnQ='',vnFlagged=false,vnSort='recent',vnPage=1;
 function vnDur(ms){const s=Math.round((ms||0)/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
 async function viewVoiceNotes(){
   const params=new URLSearchParams();
   if(vnQ)params.set('q',vnQ);
   if(vnFlagged)params.set('flagged','1');
   if(vnSort!=='recent')params.set('sort',vnSort);
+  if(vnPage>1)params.set('page',vnPage);
   const qs=params.toString();
   const r=await vapi('voice-notes'+(qs?'?'+qs:''));
+  vnPage=r.page||1;
   const note=n=>{
     const t=n.tags||{};
     const flags=(t.flags||[]).map(f=>`<span class="pill ${['minor','sexual','abuse'].includes(f)?'crit':'warn'}">⚑ ${esc(f)}</span>`).join(' ');
@@ -3698,13 +3791,15 @@ async function viewVoiceNotes(){
     ${vnQ?'<button class="lnk" id="vnClear">Clear search</button>':''}
   </div>
   <div class="feed">${r.notes.map(note).join('')||`<div class="muted">${vnQ||vnFlagged?'No voice notes match.':'No voice notes yet.'}</div>`}</div>
+  ${pagerHtml(r,'voice notes')}
   </div>`;
-  const go=()=>{vnQ=$('#vnQ').value.trim();load();};
+  const go=()=>{vnQ=$('#vnQ').value.trim();vnPage=1;load();};
+  document.querySelectorAll('#main [data-pg]').forEach(b=>b.onclick=()=>{vnPage=+b.dataset.pg;load();});
   $('#vnQBtn').onclick=go;
   $('#vnQ').addEventListener('keydown',e=>{if(e.key==='Enter')go();});
-  document.querySelectorAll('[data-vs]').forEach(b=>b.onclick=()=>{vnSort=b.dataset.vs;load();});
-  $('#vnFlagBtn').onclick=()=>{vnFlagged=!vnFlagged;load();};
-  const cl=$('#vnClear');if(cl)cl.onclick=()=>{vnQ='';load();};
+  document.querySelectorAll('[data-vs]').forEach(b=>b.onclick=()=>{vnSort=b.dataset.vs;vnPage=1;load();});
+  $('#vnFlagBtn').onclick=()=>{vnFlagged=!vnFlagged;vnPage=1;load();};
+  const cl=$('#vnClear');if(cl)cl.onclick=()=>{vnQ='';vnPage=1;load();};
   /* One clip at a time. */
   document.querySelectorAll('#main audio').forEach(a=>a.addEventListener('play',()=>{
     document.querySelectorAll('#main audio').forEach(o=>{if(o!==a)o.pause();});

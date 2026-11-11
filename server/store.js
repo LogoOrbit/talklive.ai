@@ -1611,11 +1611,19 @@ function recordPeakLive(voice, text) {
   if (changed) save();
 }
 
+const HOURLY_FEATURES = {
+  search: 'searches', chat_search: 'searches', call_media_ok: 'mediaOk', call_media_failed: 'mediaFailed',
+  report: 'reports', quick_skip: 'quickSkips', bot_match: 'botMatch', bot_search: 'botSearch', bot_quarantine: 'botQuarantine',
+};
 function recordFeature(name) {
   const d = day();
   d.features[name] = (d.features[name] || 0) + 1;
   if (name === 'match') { d.matches += 1; hour().matches += 1; data.analytics.totals.matches += 1; }
   if (name === 'chat_message') { d.messages += 1; hour().messages += 1; data.analytics.totals.messages += 1; }
+  // Hourly copies of the few counters the dashboard's anomaly checks compare
+  // hour against hour. Written only when they happen, so old hours stay small.
+  const hk = HOURLY_FEATURES[name];
+  if (hk) { const h = hour(); h[hk] = (h[hk] || 0) + 1; }
   save();
 }
 

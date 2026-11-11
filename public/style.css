@@ -6041,9 +6041,11 @@ html.perf-lite .side-panel { box-shadow: none; }
   color: #fff;
   font-size: 15px;
   font-weight: 700;
-  opacity: 0.6;
-  cursor: not-allowed;
+  cursor: pointer;
 }
+
+.pass-buy:active { transform: scale(0.98); filter: brightness(0.92); }
+.pass-buy:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .pass-foot {
   margin: 8px 0 0;

@@ -3484,7 +3484,8 @@ button.tl-engage-news { width: 100%; color: var(--text); font: inherit; font-siz
 /* Plus-only themes (Ocean, Sunset) carry a small diamond on the free tier. */
 .tl-free [data-theme-pick="ocean"]::after, .tl-free [data-theme-pick="sunset"]::after,
 .tl-free .tl-theme-opt[data-value="ocean"]::after, .tl-free .tl-theme-opt[data-value="sunset"]::after {
-  content: " 💎"; font-size: 0.85em;
+  content: ""; display: inline-block; width: .85em; height: .85em; margin-left: .4em; vertical-align: -.1em;
+  background: currentColor; -webkit-mask: var(--tl-gem) center/contain no-repeat; mask: var(--tl-gem) center/contain no-repeat;
 }
 
 /* Line icons drawn as masks, coloured by the text around them (no emoji). */
@@ -3500,6 +3501,7 @@ button.tl-engage-news { width: 100%; color: var(--text); font: inherit; font-siz
 .ti-clock{--i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E")}
 .ti-snow{--i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2v20M3.3 7l17.4 10M20.7 7 3.3 17'/%3E%3C/svg%3E")}
 .ti-gem{--i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 4h12l4 6-10 11L2 10zM2 10h20M9 4l-2 6 5 11 5-11-2-6'/%3E%3C/svg%3E")}
+:root{--tl-gem:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 4h12l4 6-10 11L2 10zM2 10h20M9 4l-2 6 5 11 5-11-2-6'/%3E%3C/svg%3E")}
 .ti-book{--i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 21V5'/%3E%3C/svg%3E")}
 .ti-mic{--i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='9' y='3' width='6' height='11' rx='3'/%3E%3Cpath d='M5 11a7 7 0 0 0 14 0M12 18v3'/%3E%3C/svg%3E")}
 .ti-game{--i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2' y='7' width='20' height='11' rx='5'/%3E%3Cpath d='M7 11v3M5.5 12.5h3M16 11.5h.01M18.5 13.5h.01'/%3E%3C/svg%3E")}

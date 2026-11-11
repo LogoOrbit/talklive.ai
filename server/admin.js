@@ -600,7 +600,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
   const REPORT_TTL = 60000;
   const reportCache = new Map();
   router.use('/api', (req, res, next) => {
-    if (req.method !== 'GET') { reportCache.clear(); return next(); }
+    if (req.method !== 'GET') { reportCache.clear(); voiceCache = null; return next(); }
     if (/^\/(live\/stream|status|export\/|voice-notes\/.+\/audio|data(\/|$)|support)/.test(req.path)) return next();
     const key = req.originalUrl;
     const hit = reportCache.get(key);
@@ -1247,7 +1247,19 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
   // Folds the flat transcript store into conversations, newest activity first.
   // `store.data.transcripts` is newest-first and capped at 5000, so this is a
   // single pass over a bounded list.
+  // Rebuilt only when a message arrives (the newest timestamp or the count
+  // changes) or after 30s: every list view, search and thread used to redo the
+  // whole 5,000-message pass, including the risk-word scan of every message.
+  let convCache = { key: '', at: 0, map: null };
   function buildConversations() {
+    const t = store.data.transcripts;
+    const key = `${t.length}:${t.length ? t[0].ts : 0}`;
+    if (convCache.map && convCache.key === key && Date.now() - convCache.at < 30000) return convCache.map;
+    const map = buildConversationsUncached();
+    convCache = { key, at: Date.now(), map };
+    return map;
+  }
+  function buildConversationsUncached() {
     const byPair = new Map();
     for (const m of store.data.transcripts) {
       const key = m.pair || `${m.fromClientId}|${m.toClientId}`;
@@ -1354,19 +1366,29 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     else if (sort === 'risk') list.sort((a, b) => (b.severe - a.severe) || (b.flags.size - a.flags.size) || (b.end - a.end));
     else list.sort((a, b) => b.end - a.end);
 
+    // Server-side paging: 50 threads a page by default, so the list stays a
+    // few KB however many conversations match.
+    const size = Math.min(200, Math.max(10, Number(req.query.size) || 50));
+    const pages = Math.max(1, Math.ceil(list.length / size));
+    const page = Math.min(pages, Math.max(1, Number(req.query.page) || 1));
     res.json({
       total: store.data.transcripts.length,
-      conversations: list.slice(0, 250).map(conversationMeta),
+      conversations: list.slice((page - 1) * size, page * size).map(conversationMeta),
       matched: list.length,
+      page, pages, size,
     });
   });
 
   // Friend voice messages, newest first, with their transcript and triage
   // tags. Audio is fetched per clip, only when the owner presses play.
+  let voiceCache = null;
   router.get('/api/voice-notes', async (req, res) => {
     try {
       const q = String(req.query.q || '').toLowerCase().trim();
-      const all = await store.listVoiceNotes(500);
+      // Listing reads every clip's header from disk; the metadata is cached
+      // for 45s (any owner action clears it) and audio is never in the list.
+      if (!voiceCache || Date.now() - voiceCache.at > 45000) voiceCache = { at: Date.now(), all: await store.listVoiceNotes(500) };
+      const all = voiceCache.all;
       let list = all;
       if (req.query.flagged === '1') list = list.filter((n) => n.tags && n.tags.flags && n.tags.flags.length);
       if (q) {
@@ -1377,12 +1399,16 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
       const flagged = all.filter((n) => n.tags && n.tags.flags && n.tags.flags.length).length;
       const severe = (n) => ((n.tags && n.tags.flags) || []).some((f) => SEVERE.has(f));
       if (req.query.sort === 'risk') list = list.slice().sort((a, b) => (severe(b) - severe(a)) || (b.ts - a.ts));
+      const vsize = Math.min(100, Math.max(10, Number(req.query.size) || 50));
+      const vpages = Math.max(1, Math.ceil(list.length / vsize));
+      const vpage = Math.min(vpages, Math.max(1, Number(req.query.page) || 1));
       res.json({
         total: all.length,
         flagged,
         matched: list.length,
         ai: modTags.aiConfigured(),
-        notes: list.slice(0, 200).map((n) => ({ ...n, severe: severe(n) })),
+        notes: list.slice((vpage - 1) * vsize, vpage * vsize).map((n) => ({ ...n, severe: severe(n) })),
+        page: vpage, pages: vpages, size: vsize,
       });
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -1652,7 +1678,20 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
    * because they come from Google and take a moment.
    */
   const TRAFFIC_MEDIUMS = ['search', 'ai', 'social', 'referral', 'campaign', 'app', 'direct'];
+  // Summing up to 90 days of per-page, per-source and per-term maps is the
+  // slow part (about 100ms at 90 days) and only today's day still changes, so
+  // each range is kept for 2 minutes. Lists the page draws as "top 20" are cut
+  // to 50 here instead of shipping every key.
+  const trafficCache = new Map();
   function trafficReport(range) {
+    const hit = trafficCache.get(range);
+    if (hit && Date.now() - hit.at < 120000) return hit.body;
+    const body = trafficReportUncached(range);
+    if (trafficCache.size > 8) trafficCache.clear();
+    trafficCache.set(range, { at: Date.now(), body });
+    return body;
+  }
+  function trafficReportUncached(range) {
     const days = store.data.analytics.days;
     const n = { today: 1, '7d': 7, '30d': 30, '90d': 90 }[range] || 30;
     const keys = Object.keys(days).sort().slice(-n);
@@ -1663,15 +1702,16 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     };
     const tracked = Object.keys(days).sort().find((k) => days[k].sources && Object.keys(days[k].sources).length);
     const mediums = sum('mediums');
+    const pagesAll = sum('pages');
     return {
       range: range in { today: 1, '7d': 1, '30d': 1, '90d': 1 } ? range : '30d',
       since: tracked || null,
       arrivals: mediums.reduce((a, [, v]) => a + v, 0),
-      pageViews: sum('pages').reduce((a, [, v]) => a + v, 0),
+      pageViews: pagesAll.reduce((a, [, v]) => a + v, 0),
       mediums,
-      sources: sum('sources'),
-      landings: sum('landings'),
-      pages: sum('pages'),
+      sources: sum('sources').slice(0, 50),
+      landings: sum('landings').slice(0, 50),
+      pages: pagesAll.slice(0, 50),
       sourcePages: sum('sourcePages').slice(0, 100),
       searchTerms: sum('searchTerms').slice(0, 200),
       termPages: sum('termPages').slice(0, 200),

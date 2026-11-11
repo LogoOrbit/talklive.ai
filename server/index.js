@@ -4557,6 +4557,7 @@ function saveQuarantine(key, rec) {
 }
 function noteMatchEnd(socketId, profile, ms) {
   if (!profile || !profile.clientId) return;
+  if (ms < QUICK_END_MS && !quarantined(profile, socketId)) store.recordFeature('quick_skip');
   if (establishedAccount(socketId) || isPremium(profile.clientId)) return;
   const now = Date.now();
   const sock = io.sockets.sockets.get(socketId);

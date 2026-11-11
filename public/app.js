@@ -2673,9 +2673,7 @@ function renderPasses() {
   }
 }
 
-// Plus is bought in the Android app, not on the web. Guests make (or log in to)
-// an account first so the purchase follows them; the intent is remembered and
-// goHomeAfterAuth continues to the "Get Plus in the app" step afterwards.
+// Plus is bought in the Android app. Guests sign up first; goHomeAfterAuth then continues to /pricing?step=app.
 function plusGo() {
   if (accountNickname) { location.href = '/pricing?step=app'; return; }
   try { sessionStorage.setItem('tl_plus_intent', '1'); } catch (_) { /* private mode */ }
@@ -11582,8 +11580,7 @@ function updatePremiumUi() {
 }
 updatePremiumUi();
 
-// The Premium dialog: what limit was hit, what Premium adds (the perk that was
-// reached for is lit up), and the launch alert - Premium is not on sale yet.
+// The Plus dialog: the limit hit and what Plus adds (the perk reached for is lit).
 const premiumUpsellModal = document.getElementById('premiumUpsellModal');
 const UPSELL_TITLES = { gender: 'upsellGenderTitle', likes: 'upsellLikesTitle', undo: 'upsellUndoTitle', themes: 'upsellThemesTitle' };
 function showPremiumUpsell(message, perk = 'countries') {

@@ -461,7 +461,7 @@
       });
       anchor.parentNode.insertBefore(undoBtn, anchor.nextSibling);
     }
-    undoBtn.innerHTML = '↩ ' + esc(t('engageUndo')) + (isPremiumUser ? '' : ' <span class="tl-undo-gem">💎</span>');
+    undoBtn.innerHTML = '↩ ' + esc(t('engageUndo')) + (isPremiumUser ? '' : ' <i class="ti ti-gem" aria-hidden="true"></i>');
     undoBtn.classList.remove('hidden');
     clearTimeout(undoTimer);
     undoTimer = setTimeout(hideUndo, UNDO_MS);
@@ -493,7 +493,7 @@
     var face = document.getElementById('partnerAnimal');
     if (face) face.classList.toggle('tl-plus-alive', !!(partner && partner.premium));
     if (nameEl && partner && partner.premium) {
-      var b = el('span', 'tl-plus-tag', '💎 Plus');
+      var b = el('span', 'tl-plus-tag', '<i class="ti ti-gem" aria-hidden="true"></i> Plus');
       nameEl.appendChild(b);
       plusEntrance();
     }
@@ -738,7 +738,7 @@
     if (!bar) { bar = el('div', 'tl-notify-bar'); bar.id = 'tlNotifyBar'; list.parentNode.insertBefore(bar, list); }
     var html;
     if (state === 'on') html = '<span>✅ ' + esc(t('ntfOn')) + '</span><button type="button" data-ntf="test">' + esc(t('ntfTest')) + '</button>';
-    else if (state === 'blocked') html = '<span>🔕 ' + esc(t('ntfBlocked')) + '</span><button type="button" data-ntf="help">' + esc(t('ntfHow')) + '</button>';
+    else if (state === 'blocked') html = '<span>' + esc(t('ntfBlocked')) + '</span><button type="button" data-ntf="help">' + esc(t('ntfHow')) + '</button>';
     else if (state === 'ios') html = '<span>📱 ' + esc(t('ntfIos')) + '</span><button type="button" data-ntf="help">' + esc(t('ntfIosHow')) + '</button>';
     else html = '<span>🔔 ' + esc(t('ntfOffTitle')) + '</span><button type="button" data-ntf="on" class="is-primary">' + esc(t('ntfTurnOn')) + '</button>';
     bar.innerHTML = html;
