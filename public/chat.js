@@ -494,6 +494,17 @@
     if (mine && (animalOf(mine) || characterOf(mine)) && ids.indexOf(mine) === -1) ids[ids.length - 1] = mine;
     return ids;
   }
+  // Plus faces: open to Plus and to the invite reward's one face, and the face
+  // already worn stays selectable so nobody loses the avatar they had.
+  var faceLook = null;
+  function faceLockedNote() {
+    var s = t('premiumFaceLocked');
+    return s === 'premiumFaceLocked' ? 'This avatar comes with TalkLive Plus. Five animals and five characters are free.' : s;
+  }
+  function faceOk(id) {
+    return Animals.isFree(id) || isPremiumUser || id === storedAvatar()
+      || !!(faceLook && (!faceLook.face || faceLook.face === id));
+  }
   function faceTile(id) {
     var mine = storedAvatar();
     var an = animalOf(id), ch = characterOf(id);
@@ -504,6 +515,10 @@
     btn.dataset.avatar = id;
     btn.setAttribute('role', 'radio');
     btn.setAttribute('aria-checked', mine === id ? 'true' : 'false');
+    if (!Animals.isFree(id)) {
+      btn.classList.add('tl-plus-face');
+      btn.dataset.lock = faceOk(id) ? '\u{1F48E}' : '\u{1F512}';
+    }
     if (an) {
       btn.style.setProperty('--animal-color', Animals.color(an));
       btn.innerHTML = Animals.icon(an, 44) + '<span class="animal-option-name">' + escapeHtml(Animals.name(an)) + '</span>';
@@ -595,6 +610,7 @@
         renderAnimalPicker();
         return;
       }
+      if (!faceOk(option.dataset.avatar)) { flashSearchNote(faceLockedNote()); return; }
       setMyAvatarChoice(option.dataset.avatar);
     });
     renderAnimalPicker();
@@ -882,6 +898,8 @@
   }, true);
   socket.on('premium-status', function (data) {
     isPremiumUser = !!(data && data.premium);
+    faceLook = data && data.look ? data.look : null;
+    renderAnimalPicker();
     document.documentElement.classList.toggle('tl-free', !isPremiumUser);
     clearTimeout(themeRevertTimer);
     if (!isPremiumUser) themeRevertTimer = setTimeout(function () {
@@ -1629,7 +1647,7 @@
       });
     }
     var q = function (s) { return myProfileSheet.querySelector(s); };
-    q('.my-profile-face').innerHTML = window.TalkLiveSocial ? window.TalkLiveSocial.face(localStorage.getItem('talklive_avatar'), 84, myAnimal) : '';
+    q('.my-profile-face').innerHTML = window.TalkLiveSocial ? window.TalkLiveSocial.face(localStorage.getItem('talklive_avatar'), 84, myAnimal, isPremiumUser) : '';
     q('.my-profile-name').textContent = accountNickname || tempUsername || (myProfile && myProfile.username) || t('you');
     q('.my-profile-sub').textContent = t('friends') + ': ' + friendsState.friends.length;
     q('.my-profile-id-label').textContent = t('yourFriendId');

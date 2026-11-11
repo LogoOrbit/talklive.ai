@@ -523,8 +523,9 @@ class ServerE2ETest {
 
         assertEquals(AuthResult.Ok, a.auth.updateNickname("Droid Tester"))
         assertEquals("Droid Tester", a.auth.account.value?.nickname)
-        // The picked avatar is saved with the account.
-        a.identity.animal = "owl"
+        // The picked avatar is saved with the account (a free one: the rest are Plus).
+        val picked = listOf("fox", "panda").first { it != a.identity.animal }
+        a.identity.animal = picked
         a.socket.register()
         Thread.sleep(500)
         assertEquals(AuthResult.Ok, a.auth.changePassword("secret123", "secret456"))
@@ -534,7 +535,7 @@ class ServerE2ETest {
         assertTrue(b.auth.login(email, "wrong-pass") is AuthResult.Error)
         assertEquals(AuthResult.Ok, b.auth.login(email, "secret456"))
         assertEquals("Droid Tester", b.auth.account.value?.nickname)
-        assertEquals("owl", b.identity.animal)
+        assertEquals(picked, b.identity.animal)
         // Gender and age group set on one phone come back on the other.
         a.engage.setMyGender("female")
         Thread.sleep(600)

@@ -125,7 +125,7 @@ fun TalkLiveRoot(vm: TalkViewModel = hiltViewModel()) {
     LaunchedEffect(onboarded, animal, account) {
         if (onboarded && animal == null && account == null) {
             engageVm.setAgeGroup(app.talklive.data.AgeGate.ageGroup(context))
-            vm.setAnimal(app.talklive.ui.animals.Animals.random().id)
+            vm.setAnimal(app.talklive.ui.animals.randomFreeAnimal().id)
         }
     }
 

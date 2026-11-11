@@ -437,9 +437,9 @@ const AVATAR_STYLES = {
 // Everything that shows a person - the header button, the settings row, the
 // friends list, the rail - goes through this, so adding a kind of avatar is a
 // change in one function rather than in eight call sites.
-function avatarFaceHtml(id, size = 36) {
+function avatarFaceHtml(id, size = 36, plus = false) {
   const character = characterAvatarId(id);
-  if (character) return window.TalkLiveCharacters.html(character, size);
+  if (character) return window.TalkLiveCharacters.html(character, size, plus);
   const animal = animalAvatarId(id);
   if (animal && window.TalkLiveAnimals && window.TalkLiveAnimals.has(animal)) {
     window.TalkLiveAnimals.installSprite();
@@ -1743,7 +1743,7 @@ function openQuickSettings() {
   if (!quickSettings && window.TalkLiveSettingsPanel) {
     const flip = (box, on) => { box.checked = on; box.dispatchEvent(new Event('change')); };
     quickSettings = window.TalkLiveSettingsPanel.mount(document.getElementById('quickSettings'), {
-      profileFace: (size) => (myAvatar ? avatarFaceHtml(myAvatar, size) : genderIcon(null, size)),
+      profileFace: (size) => (myAvatar ? avatarFaceHtml(myAvatar, size, isPremiumUser) : genderIcon(null, size)),
       profileName: () => currentDisplayName() || (myProfile && myProfile.username) || '',
       profileSub: () => t(accountNickname ? 'settingsRowAccount' : 'settingsRowGuest'),
       openProfile: () => { closeQuickSettings(); renderAccountState(); openMyProfile(); },
@@ -2613,8 +2613,8 @@ function renderFriendChatPresence() {
 
 // The avatar this user is wearing: their spirit animal if they picked one,
 // otherwise the plain gender silhouette.
-function myAvatarIcon(size) {
-  if (myAvatar) return avatarFaceHtml(myAvatar, size);
+function myAvatarIcon(size, plus) {
+  if (myAvatar) return avatarFaceHtml(myAvatar, size, plus);
   return (myAnimal && typeof Animals !== 'undefined' && Animals)
     ? Animals.icon(myAnimal, size)
     : genderIcon(myAvatar, size);
@@ -3177,7 +3177,7 @@ if (animalGrid) {
 
 // The stranger's animal, shown on their card once the call is actually
 // connected (same moment as their name - never before, see revealPartner).
-function renderPartnerAnimal(animalId, characterId) {
+function renderPartnerAnimal(animalId, characterId, plus) {
   if (!partnerAnimalEl) return;
   // Their avatar is a movie character rather than an animal: same card, the
   // character's art and name, no trait line.
@@ -3187,7 +3187,7 @@ function renderPartnerAnimal(animalId, characterId) {
     const same = myAvatar === 'c:' + characterId;
     partnerAnimalEl.style.removeProperty('--animal-color');
     partnerAnimalEl.innerHTML = `
-    <span class="partner-animal-art">${Ch.icon(characterId, 46)}</span>
+    <span class="partner-animal-art">${plus ? Ch.html(characterId, 46, true) : Ch.icon(characterId, 46)}</span>
     <span class="partner-animal-text">
       <span class="partner-animal-label">${escapeHtml(t('partnerAnimalLabel'))}</span>
       <strong class="partner-animal-name">${escapeHtml(Ch.name(characterId))}</strong>
@@ -3560,7 +3560,7 @@ document.addEventListener('tl-films', () => { if (myProfileIsOpen()) renderMyPro
 function renderMyProfileCard() {
   if (!myProfileSheet) return;
   const name = accountNickname || (tempUsernameInput && tempUsernameInput.value) || t('you');
-  myProfileSheet.querySelector('.my-profile-face').innerHTML = myAvatar ? avatarFaceHtml(myAvatar, 92) : genderIcon(null, 92);
+  myProfileSheet.querySelector('.my-profile-face').innerHTML = myAvatar ? avatarFaceHtml(myAvatar, 92, isPremiumUser) : genderIcon(null, 92);
   myProfileSheet.querySelector('.my-profile-name').textContent = name;
   myProfileSheet.querySelector('.my-profile-id-value').textContent = myFriendId || '…';
   myProfileSheet.querySelector('.my-profile-copy').setAttribute('aria-label', t('copyFriendId'));
@@ -4171,7 +4171,7 @@ function forgetLocalAccount() {
   localStorage.removeItem('talklive_animal');
 }
 logoutBtn.addEventListener('click', () => accountUi().then((ui) => ui.signOut({
-  name: accountNickname, email: accountEmail, animal: myAnimal, avatarHtml: myAvatarIcon(64),
+  name: accountNickname, email: accountEmail, animal: myAnimal, avatarHtml: myAvatarIcon(64, isPremiumUser),
   send: (extra) => new Promise((resolve) => {
     const timer = setTimeout(resolve, 4000);
     socket.once('logout-result', () => { clearTimeout(timer); resolve(); });
@@ -10634,7 +10634,7 @@ function revealPartner() {
   partnerMeta.innerHTML = countryName
     ? `${getFlagImg(partner.countryCode)}<span>${escapeHtml(countryName)}</span>` : '';
   partnerMeta.classList.toggle('hidden', !countryName);
-  renderPartnerAnimal(partner.animal, partner.character);
+  renderPartnerAnimal(partner.animal, partner.character, partner.premium);
   startPartnerClock(partner.timezone);
   if (window.TalkLiveEngage) window.TalkLiveEngage.onReveal(partner);
   if (twinNoticeFor !== partner) {
@@ -11338,7 +11338,7 @@ window.addEventListener('i18n-changed', () => {
   excludeCountryWidget.renderChips();
   renderInterestTags();
   refreshAnimalLabels();
-  if (currentPartner && !partnerCard.classList.contains('hidden')) renderPartnerAnimal(currentPartner.animal, currentPartner.character);
+  if (currentPartner && !partnerCard.classList.contains('hidden')) renderPartnerAnimal(currentPartner.animal, currentPartner.character, currentPartner.premium);
 
   if (activeFriendChatId) {
     friendChatTitle.textContent = friendChatName(activeFriendChatId) || t('chat');
@@ -11630,7 +11630,7 @@ socket.on('friend-online', ({ clientId, username, countryCode, country } = {}) =
 // a call, so it loads once the page is up and stays out of the first paint.
 window.addEventListener('load', () => {
   const s = document.createElement('script');
-  s.src = '/engage.js?v=8e4b2d0019';
+  s.src = '/engage.js?v=3bf078e8ea';
   s.async = true;
   document.head.appendChild(s);
 });

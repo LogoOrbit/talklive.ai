@@ -582,7 +582,7 @@
     <string name="terms_full_hint">Read the full documents:</string>
     <string name="cmp_alive">Animated, shining avatar</string>
     <string name="cmp_gold">Gold name and Plus badge</string>
-    <string name="cmp_faces">8 legendary avatars</string>
+    <string name="cmp_faces">Every avatar, with animated scenes</string>
     <string name="cmp_friends">Friends</string>
     <string name="cmp_history">People you met, listed</string>
     <string name="cmp_films">Favourite films</string>
@@ -702,8 +702,8 @@
     <string name="plus_why_streak">Bring back your %1$d-day streak</string>
     <string name="plus_why_streak_none">Bring back your streak</string>
     <string name="plus_why_streak_body">Plus restores a lost streak, once a month.</string>
-    <string name="plus_why_avatar">Wear a legendary face</string>
-    <string name="plus_why_avatar_body">8 legendary avatars, only for Plus.</string>
+    <string name="plus_why_avatar">Wear any face</string>
+    <string name="plus_why_avatar_body">Every animal and character, with an animated scene behind each character. Free accounts get five of each.</string>
     <string name="plus_why_theme">Two more looks for the app</string>
     <string name="plus_why_theme_body">Ocean and Sunset. Light and Dark stay free.</string>
     <string name="plus_why_history">Keep everyone you meet</string>
@@ -715,7 +715,7 @@
     <string name="cmp_interests_n">Interests you can pick</string>
     <string name="cmp_gender_n">Choose women or men</string>
     <string name="cmp_freezes_n">Extra streak freezes a month</string>
-    <string name="cmp_faces_n">Legendary avatars</string>
+    <string name="cmp_faces_n">Avatars</string>
     <string name="cmp_themes_n">App themes</string>
     <string name="home_plus_card">Enjoying TalkLive? Plus is %1$s a day.</string>
     <string name="home_plus_card_close">Close</string>

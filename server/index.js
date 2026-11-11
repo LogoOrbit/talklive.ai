@@ -2247,6 +2247,8 @@ socketAuth.set = function set(socketId, usernameLower) {
     // A character face lives in the avatar slot; an animal in the animal slot.
     if (sanitizeAnimal(account.animal)) profile.animal = account.animal;
     else if (sanitizeFace(account.animal)) { profile.animal = null; profile.avatar = account.animal; }
+    // The account's saved face is already earned, so it is the one held.
+    if (profile.clientId) store.noteFace(profile.clientId, faceKey(account.animal) || '');
   } else if (profile && account && profile.animal) { account.animal = profile.animal; persistAccount(usernameLower); }
   return result;
 };
@@ -4122,21 +4124,45 @@ function placeFromHints(timezone, acceptLanguage) {
 // The picture friends and recent people see. Most people never pick an
 // avatar, but everyone who calls has a spirit animal - without this fallback
 // their friends saw a blank silhouette for someone they knew as "the Fox".
-// Legendary faces only Plus members can wear (android AnimalUi PLUS_FACES).
+// The faces free accounts may pick: five animals and five movie characters.
+// Every other animal and character is Plus. Mirrored by FREE_FACES in
+// public/animals.js and android AnimalUi.kt; keep the three lists identical.
+const FREE_FACES = new Set([
+  'a:lion', 'a:fox', 'a:cat', 'a:dog', 'a:panda',
+  'c:wizard', 'c:pirate', 'c:detective', 'c:robot', 'c:ninja',
+]);
 // The gold profile ring: Plus, or the invite reward's Plus look.
 function hasRing(clientId) { return isPremium(clientId) || !!store.plusLook(clientId); }
 function lookStatus(clientId) {
   const l = store.plusLook(clientId);
   return l && !isPremium(clientId) ? { until: l.expiresAt, face: l.face || null } : null;
 }
-const PLUS_FACES = new Set(['a:unicorn', 'a:dragon', 'a:eagle', 'a:shark', 'c:king', 'c:queen', 'c:knight', 'c:astronaut']);
+// `a:fox` / `c:wizard` for an animal or character in any of the shapes the
+// clients send (bare animal id, prefixed avatar id); null for a plain bust.
+function faceKey(value) {
+  if (typeof value !== 'string') return null;
+  if (value.startsWith('a:') || value.startsWith('c:')) return value;
+  return ANIMAL_IDS.has(value) ? `a:${value}` : null;
+}
+function isPlusFace(value) {
+  const key = faceKey(value);
+  return !!key && !FREE_FACES.has(key);
+}
+// Whether this person may wear the face. Locked faces need Plus or the invite
+// reward - except the one they already wear: avatars that were free before the
+// list shrank are kept, and a person the server has never seen is taken as
+// already wearing what they send. Only a CHANGE to a locked face is refused.
+function faceAllowed(clientId, value, premium) {
+  if (!isPlusFace(value) || premium) return true;
+  const held = store.heldFace(clientId);
+  if (held === undefined || held === faceKey(value)) return true;
+  const look = store.plusLook(clientId);
+  return !!look && (!look.face || look.face === faceKey(value));
+}
 function shownAvatar(p) {
   if (!p) return null;
   const face = p.avatar || (p.animal ? `a:${p.animal}` : null);
-  if (face && PLUS_FACES.has(face) && !isPremium(p.clientId)) {
-    const look = store.plusLook(p.clientId);
-    if (!look || look.face !== face) return null;
-  }
+  if (face && !faceAllowed(p.clientId, face, isPremium(p.clientId))) return null;
   return face;
 }
 
@@ -6318,7 +6344,16 @@ io.on('connection', (socket) => {
     const authedAccount = socketAuth.get(socket.id) ? accounts.get(socketAuth.get(socket.id)) : null;
     const chosenName = (authedAccount && Nick.clean(authedAccount.nickname)) || Nick.clean(data.nickname);
     // A signed-in person's avatar is saved with the account, so it follows them.
-    const sentAnimal = sanitizeFace(data.animal);
+    let sentAnimal = sanitizeFace(data.animal);
+    let sentAvatar = sanitizeAvatar(data.avatar);
+    // A locked face is only accepted if it is the one already worn; anything
+    // else falls back to what this person had (see faceAllowed).
+    if (!faceAllowed(clientId, sentAnimal, premium) || !faceAllowed(clientId, sentAvatar, premium)) {
+      const held = store.heldFace(clientId) || null;
+      sentAnimal = held && held.startsWith('a:') ? held.slice(2) : held;
+      sentAvatar = held;
+    }
+    store.noteFace(clientId, faceKey(sentAvatar) || faceKey(sentAnimal) || '');
     const sentGender = audience.normGender(data.gender);
     const sentAge = audience.normAge(data.ageGroup);
     if (authedAccount && ((sentGender !== 'unspecified' && authedAccount.gender !== sentGender)
@@ -6328,10 +6363,7 @@ io.on('connection', (socket) => {
       persistAccount(socketAuth.get(socket.id));
     }
     // The invite reward unlocks one legendary face: the first one worn.
-    if (sentAnimal && !isPremium(clientId)) {
-      const key = sentAnimal.startsWith('c:') ? sentAnimal : 'a:' + sentAnimal;
-      if (PLUS_FACES.has(key)) store.setPlusLookFace(clientId, key);
-    }
+    if (sentAnimal && !premium && isPlusFace(sentAnimal)) store.setPlusLookFace(clientId, faceKey(sentAnimal));
     if (authedAccount && sentAnimal && authedAccount.animal !== sentAnimal) {
       authedAccount.animal = sentAnimal;
       persistAccount(socketAuth.get(socket.id));
@@ -6369,8 +6401,8 @@ io.on('connection', (socket) => {
       // avatar, validated against the same list the picker is built from so a
       // client cannot store an animal that does not exist.
       // The app sends a character face in `animal` ("c:wizard"); show it as the avatar.
-      avatar: sanitizeAvatar(data.avatar) || (String(data.animal || "").startsWith("c:") ? sanitizeFace(data.animal) : null),
-      animal: sanitizeAnimal(data.animal),
+      avatar: sentAvatar || (String(sentAnimal || '').startsWith('c:') ? sentAnimal : null),
+      animal: sanitizeAnimal(sentAnimal),
       // Which page this socket lives on. /chat is text only, and call-backs
       // must not ring or force-pair it (see canTakeCall).
       surface: data.surface === 'chat' ? 'chat' : 'call',
@@ -6569,7 +6601,7 @@ io.on('connection', (socket) => {
     // property check rather than a truthiness one.
     if (Object.prototype.hasOwnProperty.call(opts, 'animal')) {
       const animal = sanitizeAnimal(opts.animal);
-      if (animal !== profile.animal) {
+      if (animal !== profile.animal && faceAllowed(profile.clientId, animal, isPremium(profile.clientId))) {
         profile.animal = animal;
         if (animal) store.recordFeature('animal_picked');
       }

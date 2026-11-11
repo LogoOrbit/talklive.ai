@@ -658,7 +658,7 @@ private fun ProfileSheetHost(sheet: ProfileSheet, vm: ProfileViewModel, animal: 
                     SheetTitle(stringResource(R.string.edit_profile), null)
                     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(contentAlignment = Alignment.BottomEnd) {
-                            AnimalAvatar(animal, account?.nickname, 96.dp, Modifier.clip(CircleShape).clickable { vm.open(ProfileSheet.Animal) })
+                            AnimalAvatar(animal, account?.nickname, 96.dp, Modifier.clip(CircleShape).clickable { vm.open(ProfileSheet.Animal) }, scene = premium)
                             Box(Modifier.size(30.dp).clip(CircleShape).background(BrandGradient).clickable { vm.open(ProfileSheet.Animal) }, contentAlignment = Alignment.Center) {
                                 Icon(Icons.Rounded.Edit, null, tint = Color.White, modifier = Modifier.size(15.dp))
                             }
