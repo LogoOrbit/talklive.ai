@@ -10,8 +10,8 @@ Files you upload:
 | What | File |
 |---|---|
 | App bundle | `TalkLive-3.9.6-126.aab` (signed with your upload key, SHA-1 `6B:85:B9:…:F9:83:98`) |
-| Phone screenshots (1080 x 1920) | `play-screenshots/01-…png` to `08-…png` |
-| Feature graphic (1024 x 500) | `play-screenshots/feature-graphic.png` |
+| Phone screenshots (1080 x 1920) | `android-native/play-screenshots/01-home.png` … `08-plus_ready.png` |
+| Feature graphic (1024 x 500) | `android-native/play-screenshots/feature-graphic.png` |
 | App icon (512 x 512) | `mobile/store/icon-512.png` |
 
 ---
