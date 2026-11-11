@@ -10,6 +10,7 @@ import app.talklive.auth.AuthRepository
 import app.talklive.auth.AuthResult
 import app.talklive.auth.GoogleSignIn
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -184,9 +185,12 @@ class AuthViewModel @Inject constructor(private val auth: AuthRepository) : View
         }
     }
 
+    private var resendJob: Job? = null
+
     private fun startResendTimer() {
         resendIn = 30
-        viewModelScope.launch {
+        resendJob?.cancel()
+        resendJob = viewModelScope.launch {
             while (resendIn > 0) { delay(1000); resendIn-- }
         }
     }

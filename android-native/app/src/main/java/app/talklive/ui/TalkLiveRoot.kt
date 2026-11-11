@@ -100,7 +100,7 @@ import app.talklive.ui.onboarding.AuthViewModel
 import app.talklive.ui.onboarding.OnboardingFlow
 import app.talklive.ui.profile.ProfileScreen
 
-private enum class RootScreen { Onboarding, SignIn, Animal, Main }
+private enum class RootScreen { Onboarding, SignIn, Main }
 
 @Composable
 fun TalkLiveRoot(vm: TalkViewModel = hiltViewModel()) {
@@ -118,13 +118,21 @@ fun TalkLiveRoot(vm: TalkViewModel = hiltViewModel()) {
         hadAccount = now
     }
 
+    // A new guest gets a random face instead of one more screen; it can be
+    // changed from Profile. A signed-in account already has its own.
+    val context = LocalContext.current
+    val engageVm: app.talklive.ui.engage.EngageViewModel = hiltViewModel()
+    LaunchedEffect(onboarded, animal, account) {
+        if (onboarded && animal == null && account == null) {
+            engageVm.setAgeGroup(app.talklive.data.AgeGate.ageGroup(context))
+            vm.setAnimal(app.talklive.ui.animals.Animals.random().id)
+        }
+    }
+
     AnimatedContent(
         targetState = when {
             !onboarded -> RootScreen.Onboarding
             signingIn -> RootScreen.SignIn
-            // Only a new guest picks an avatar here: a signed-in account
-            // already has its own (restored from the server).
-            animal == null && account == null -> RootScreen.Animal
             else -> RootScreen.Main
         },
         transitionSpec = { (fadeIn(tween(300)) + scaleIn(initialScale = 0.96f)) togetherWith fadeOut(tween(200)) },
@@ -134,14 +142,6 @@ fun TalkLiveRoot(vm: TalkViewModel = hiltViewModel()) {
         when (screen) {
             RootScreen.Onboarding -> OnboardingFlow(hiltViewModel<AuthViewModel>())
             RootScreen.SignIn -> OnboardingFlow(hiltViewModel<AuthViewModel>(), start = AuthRoute.Choose, onClose = { signingIn = false })
-            RootScreen.Animal -> {
-                val context = LocalContext.current
-                val engageVm: app.talklive.ui.engage.EngageViewModel = hiltViewModel()
-                app.talklive.ui.onboarding.FirstRunSetup(onBack = { signingIn = true }) { a, g, age ->
-                    engageVm.setAgeGroup(app.talklive.data.AgeGate.ageGroup(context))
-                    vm.setAnimal(a)
-                }
-            }
             RootScreen.Main -> MainScreen(vm, onSignIn = { signingIn = true })
         }
     }
