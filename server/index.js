@@ -1094,6 +1094,10 @@ const PROVIDER_TIMEOUT_MS = 4000;
 
 let providerCache = null; // { servers, expiresAt }
 let providerInFlight = null;
+// While a renewal is under way the current set is still handed out, as long
+// as it has this long left to run.
+const PROVIDER_USABLE_MARGIN_MS = 8 * 60 * 1000;
+let providerFailedAt = 0;
 
 function normaliseIceEntries(raw) {
   // Cloudflare answers with a single object, Metered with an array. Keep only
@@ -1187,7 +1191,12 @@ function getManagedTurnServers() {
   if (providerCache && providerCache.expiresAt - PROVIDER_REFRESH_MARGIN_MS > now) {
     return Promise.resolve(providerCache.servers);
   }
-  if (providerInFlight) return providerInFlight;
+  // Close to expiry but still valid: hand these out now and renew behind the
+  // caller's back, so no call ever waits on the provider's API to start.
+  const usable = providerCache && providerCache.expiresAt - PROVIDER_USABLE_MARGIN_MS > now ? providerCache.servers : null;
+  if (providerInFlight) return usable ? Promise.resolve(usable) : providerInFlight;
+  // Both providers just failed: do not make every caller wait out the timeout again.
+  if (now - providerFailedAt < 20000) return Promise.resolve(usable || (providerCache ? providerCache.servers : []));
 
   providerInFlight = Promise.all([
     fetchCloudflareTurn().catch((err) => {
@@ -1202,8 +1211,10 @@ function getManagedTurnServers() {
     const servers = cloudflare.concat(metered);
     if (servers.length) {
       providerCache = { servers, expiresAt: Date.now() + PROVIDER_TTL_SECONDS * 1000 };
+      providerFailedAt = 0;
       return servers;
     }
+    providerFailedAt = Date.now();
     // Every provider failed. Stale-but-unexpired credentials still relay media,
     // and a relay that might work beats no relay at all; only once they are
     // genuinely expired is it honest to drop them.
@@ -1214,7 +1225,7 @@ function getManagedTurnServers() {
     providerInFlight = null;
   });
 
-  return providerInFlight;
+  return usable ? Promise.resolve(usable) : providerInFlight;
 }
 
 function hasRelay(servers) {
@@ -1980,6 +1991,16 @@ function cleanFilm(f) {
   const year = /^\d{4}$/.test(String(f.year)) ? String(f.year) : '';
   return { t: f.t, id, title, year, art: f.art, url: f.url };
 }
+
+// The Socket.IO client. Socket.IO serves its own copy at /socket.io/, but with
+// max-age=0 and compressed afresh for every request, and every page waits on
+// it before its own script can run. Here it gets a stamped URL, so a browser
+// fetches it once and never asks again. (/socket.io/socket.io.min.js stays for
+// pages already open and for the Android wrapper.)
+const SOCKET_IO_CLIENT = path.join(path.dirname(require.resolve('socket.io/package.json')), 'client-dist', 'socket.io.min.js');
+app.get('/vendor/socket.io.min.js', (req, res) => {
+  res.sendFile(SOCKET_IO_CLIENT, { cacheControl: false, headers: { 'Cache-Control': /[?&]v=/.test(req.url) ? 'public, max-age=31536000, immutable' : 'public, max-age=86400' } });
+});
 
 // Minified copies of the scripts (scripts/minify-assets.js, run in CI), each
 // served only while it still matches the source in public/.
@@ -4140,11 +4161,18 @@ function isBotSocket(socketId) {
 }
 
 let lastOnlineCountSent = -1;
+// Called on every connect and disconnect. Sending to everyone each time meant
+// a burst of reconnects (a deploy, a mobile network blip) wrote to every
+// socket once per arrival; this batches a burst into one send of each.
+let onlineCountTimer = null;
 function broadcastOnlineCount() {
-  lastOnlineCountSent = onlineCount();
-  io.emit('online-count', lastOnlineCountSent);
-  broadcastVisitorCount();
-  broadcastOnlinePeople();
+  if (onlineCountTimer) return;
+  onlineCountTimer = setTimeout(() => {
+    onlineCountTimer = null;
+    broadcastVisitorCount();
+    broadcastOnlinePeople();
+  }, 250);
+  if (onlineCountTimer.unref) onlineCountTimer.unref();
 }
 
 // --- Visitors in the last 24 hours -----------------------------------------
@@ -6220,11 +6248,15 @@ io.on('connection', (socket) => {
       const incumbentAlive = (tokenOk && incumbent && !data.takeover)
         ? await new Promise((resolve) => {
           let settled = false;
-          const done = (alive) => { if (!settled) { settled = true; resolve(alive); } };
+          let giveUp = null;
+          const done = (alive) => { if (!settled) { settled = true; clearTimeout(giveUp); resolve(alive); } };
+          // A socket whose connection is already closing cannot answer: do
+          // not make the phone that is replacing it wait to find that out.
+          if (!incumbent.connected || (incumbent.conn && incumbent.conn.readyState !== 'open')) return done(false);
           try {
             incumbent.timeout(1200).emit('identity-ping', (err) => done(!err));
           } catch (_) { done(false); }
-          setTimeout(() => done(false), 1500);
+          giveUp = setTimeout(() => done(false), 1500);
         })
         : false;
 

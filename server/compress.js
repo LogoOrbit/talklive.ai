@@ -187,7 +187,18 @@ module.exports = function compress() {
       // representation, so its validator must differ too, or a cache can serve
       // the compressed body to a client that revalidated the raw one.
       if (etag) {
-        res.setHeader('ETag', `W/"${digest}-${encoding}"`);
+        const tag = `W/"${digest}-${encoding}"`;
+        res.setHeader('ETag', tag);
+        // The route compared If-None-Match with its own validator before the
+        // one above replaced it, so a browser revalidating with the validator
+        // it was actually given never matched and was sent the whole page
+        // again on every visit. Answer that revalidation here.
+        if (res.statusCode === 200 && req.method === 'GET'
+          && String(req.headers['if-none-match'] || '').split(',').some((t) => t.trim() === tag)) {
+          res.statusCode = 304;
+          for (const h of ['Content-Encoding', 'Content-Length', 'Content-Type', 'Accept-Ranges']) res.removeHeader(h);
+          return origEnd(undefined, undefined, cb);
+        }
       }
       // Byte ranges no longer line up with the identity body.
       res.removeHeader('Content-Range');

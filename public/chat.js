@@ -10,7 +10,9 @@
 (function () {
   'use strict';
 
-  var socket = io();
+  // WebSocket first, as on the call page: the default opens a long-poll and
+  // upgrades, which is two or three extra round trips before "connected".
+  var socket = io({ transports: ['websocket', 'polling'] });
 
   // Forward uncaught errors on this page to the owner dashboard. /chat is a
   // separate sub-app from the main one, and until this was added it reported
@@ -1483,7 +1485,7 @@
     if (!settingsPanelLoading) {
       settingsPanelLoading = [];
       var s = document.createElement('script');
-      s.src = '/settings-panel.js?v=20261019seo';
+      s.src = '/settings-panel.js?v=fef14af34b';
       s.async = true;
       s.onload = function () {
         window.TalkLiveSettingsPanel.ready.then(function () {
@@ -1503,7 +1505,7 @@
       // server enforces them either way), so they can arrive late too.
       if (!window.TalkLiveNickname) {
         var n = document.createElement('script');
-        n.src = '/nickname-rules.js?v=20260924nick';
+        n.src = '/nickname-rules.js?v=077c943b4d';
         n.async = true;
         document.head.appendChild(n);
       }
@@ -2940,7 +2942,7 @@
     if (!filmsLoading) {
       filmsLoading = new Promise(function (resolve, reject) {
         var s = document.createElement('script');
-        s.src = '/fav-films.js?v=20261101same';
+        s.src = '/fav-films.js?v=5206e035f2';
         s.async = true;
         s.onload = resolve;
         s.onerror = function () { filmsLoading = null; reject(); };
@@ -3445,7 +3447,7 @@
     if (!ownerWarningLoad) {
       ownerWarningLoad = new Promise(function (resolve) {
         var s = document.createElement('script');
-        s.src = '/owner-warning.js?v=1';
+        s.src = '/owner-warning.js?v=2c8f1949a2';
         s.onload = resolve;
         s.onerror = function () { ownerWarningLoad = null; };
         document.head.appendChild(s);
@@ -3460,7 +3462,7 @@
     if (!feedbackReplyLoad) {
       feedbackReplyLoad = new Promise(function (resolve) {
         var s = document.createElement('script');
-        s.src = '/feedback-reply.js?v=1';
+        s.src = '/feedback-reply.js?v=6827637846';
         s.onload = resolve;
         s.onerror = function () { feedbackReplyLoad = null; };
         document.head.appendChild(s);
@@ -3473,7 +3475,7 @@
     function show() { if (window.TalkLiveRate) window.TalkLiveRate.show(socket, d); }
     if (window.TalkLiveRate) return show();
     var s = document.createElement('script');
-    s.src = '/rate-prompt.js?v=1';
+    s.src = '/rate-prompt.js?v=860ca7b0d8';
     s.onload = show;
     document.head.appendChild(s);
   });

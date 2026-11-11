@@ -59,6 +59,11 @@ function run(name, env = {}) {
 
 (async () => {
   const failedSuites = [];
+  // A changed file whose ?v= stamp was not renewed never reaches a browser
+  // that has the old one (see stamp-assets.js).
+  const stamps = spawnSync(process.execPath, [path.join(DIR, 'stamp-assets.js'), '--check'], { encoding: 'utf8' });
+  process.stdout.write(`${stamps.stdout || ''}${stamps.stderr || ''}`);
+  if (stamps.status !== 0) failedSuites.push('check:stamps');
   for (const name of suites) {
     const ok = name === 'test-password-reset'
       ? await withServer((env) => run(name, env))

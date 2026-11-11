@@ -31,7 +31,7 @@ const SLUGS = [
 ];
 const COUNTRIES = SLUGS.map((slug) => require(`./${slug}`));
 const SITE = S.SITE;
-const OG_IMAGE = `${SITE}/og-image.png?v=2`;
+const OG_IMAGE = `${SITE}/og-image.png?v=74c36de039`;
 
 // Structure only. Colour and type belong to each page.
 const BASE_CSS = `
@@ -147,7 +147,7 @@ function head(page, wordCount) {
 ${preloads}
 <link rel="stylesheet" href="/journal.css?v=${S.CSS_VERSION}" />
 <style>${BASE_CSS}${c.css}${S.ctaVars(c.slug)}</style>
-<script defer src="/pwa.js?v=20261109push"></script>
+<script defer src="/pwa.js?v=d5bc87601a"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>`;
 }

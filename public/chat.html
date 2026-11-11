@@ -34,13 +34,13 @@
   document.head.appendChild(s);
 })();
 </script>
-<link rel="stylesheet" href="/chat.css?v=20261111chat" />
-<link rel="stylesheet" href="/chat-extras.css?v=20261111chat" />
-<link rel="stylesheet" href="/games.css?v=20261110blue" />
-<link rel="stylesheet" href="/ui.css?v=20261111plus" />
+<link rel="stylesheet" href="/chat.css?v=c92b27e652" />
+<link rel="stylesheet" href="/chat-extras.css?v=4b7b6398b3" />
+<link rel="stylesheet" href="/games.css?v=27142968d1" />
+<link rel="stylesheet" href="/ui.css?v=bf28136572" />
 <!-- The top bar, shared with / and /call: one button language, one radius,
      one focus ring on every screen of the product. -->
-<link rel="stylesheet" href="/nav.css?v=20261110blue" />
+<link rel="stylesheet" href="/nav.css?v=5b17399adb" />
 <style>
   .skip-link {
     position: fixed;
@@ -96,8 +96,8 @@
 <link rel="apple-touch-icon" href="/favicon-192.png" />
 <link rel="manifest" href="/site.webmanifest" />
 <!-- Mobile app only (mobile/): load the native bridge. A no-op in browsers, which never download it. -->
-<script>if(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()){var s=document.createElement('script');s.src='/native.js?v=20261008app';s.async=false;document.head.appendChild(s);}</script>
-<script defer src="/pwa.js?v=20261109push"></script>
+<script>if(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()){var s=document.createElement('script');s.src='/native.js?v=7985935f24';s.async=false;document.head.appendChild(s);}</script>
+<script defer src="/pwa.js?v=d5bc87601a"></script>
 <script type="application/ld+json">[{"@type":"Service","@context":"https://schema.org","name":"TalkLive Chat","url":"https://talklive.app/chat","description":"TalkLive text chat - one-to-one conversations with people around the world.","brand":{"@type":"Brand","name":"TalkLive"},"offers":{"@type":"Offer","price":"0","priceCurrency":"USD","availability":"https://schema.org/InStock","url":"https://talklive.app/"},"additionalType":"https://schema.org/WebApplication","serviceType":"Random voice and text chat","category":"CommunicationApplication","provider":{"@type":"Organization","name":"TalkLive","url":"https://talklive.app","logo":"https://talklive.app/favicon.svg","sameAs":["https://www.instagram.com/talklive.app/","https://www.facebook.com/people/TalkLive/61591751700039/","https://x.com/talkliveapp","https://www.tiktok.com/@talkliveapp","https://www.youtube.com/@talkliveapp","https://www.pinterest.com/talklive.app/","https://www.crunchbase.com/organization/talklive"]},"areaServed":"Worldwide","availableChannel":{"@type":"ServiceChannel","serviceUrl":"https://talklive.app/chat"}}]</script>
 </head>
 <body>
@@ -154,7 +154,7 @@
       <div class="nav-brand">
         <a class="nav-logo" id="brandHome" href="/" data-i18n-title="goHome" data-i18n-aria="goHome" aria-label="TalkLive home" title="TalkLive home">
           <span class="brand-logo" aria-hidden="true">
-            <img src="/favicon.svg?v=20260923logo" width="30" height="30" alt="TalkLive logo" decoding="async" />
+            <img src="/favicon.svg?v=2b70993fa4" width="30" height="30" alt="TalkLive logo" decoding="async" />
             <!-- Network status, wired in chat.js exactly as it is in app.js. -->
             <span id="brandDot" class="brand-dot is-online" data-i18n-title="netOnline" title="You are online"></span>
           </span>
@@ -328,7 +328,7 @@
             <span class="cs-halo h1"></span>
             <span class="cs-halo h2"></span>
             <div class="cs-beacon">
-              <img src="/favicon.svg?v=20260923logo" alt="TalkLive" width="76" height="76" decoding="async" />
+              <img src="/favicon.svg?v=2b70993fa4" alt="TalkLive" width="76" height="76" decoding="async" />
             </div>
           </div>
           <p id="searchLine" class="search-line" aria-live="polite">Scanning the globe…</p>
@@ -465,7 +465,7 @@
     <div class="modal-box gate-box" role="dialog" aria-modal="true" aria-labelledby="genderGateTitle">
       <div class="modal-body gate-body">
         <span class="gate-mark" aria-hidden="true">
-          <img src="/favicon.svg?v=20260923logo" width="62" height="62" alt="TalkLive logo" decoding="async" />
+          <img src="/favicon.svg?v=2b70993fa4" width="62" height="62" alt="TalkLive logo" decoding="async" />
         </span>
         <h2 id="genderGateTitle" class="gate-title" data-i18n="chooseGenderTitle">Choose your gender</h2>
         <p class="gate-sub" data-i18n="chooseGenderSub">Required for matching. It keeps gender preferences accurate and helps build safer conversations.</p>
@@ -813,19 +813,19 @@
     </div>
   </div>
 
-  <script defer src="/socket.io/socket.io.min.js"></script>
-  <script defer src="/countries.js?v=20260828fix"></script>
-  <script defer src="/i18n.js?v=20261111plus"></script>
-  <script defer src="/chat-time.js?v=20260916navbar"></script>
-  <script defer src="/animals.js?v=20261008more"></script>
-  <script defer src="/characters.js?v=20261008more"></script>
-  <script defer src="/social-kit.js?v=20261006chars"></script>
-  <script defer src="/error-reporter.js?v=20260928err"></script>
-  <script defer src="/chat-extras.js?v=20261109acct"></script>
-  <script defer src="/games.js?v=20261101rr"></script>
-  <script defer src="/icebreakers.js?v=20260923ice"></script>
-  <script defer src="/talkguard.js?v=20261027tg"></script>
-  <script defer src="/chat.js?v=20261106passes"></script>
+  <script defer src="/vendor/socket.io.min.js?v=7bcff1b4f1"></script>
+  <script defer src="/countries.js?v=30bcd7f146"></script>
+  <script defer src="/i18n.js?v=5bd4b6ea4d"></script>
+  <script defer src="/chat-time.js?v=9d4e50bcf7"></script>
+  <script defer src="/animals.js?v=91bae1a145"></script>
+  <script defer src="/characters.js?v=b7f9a3f57d"></script>
+  <script defer src="/social-kit.js?v=54f18771b3"></script>
+  <script defer src="/error-reporter.js?v=0e5b1c5f7d"></script>
+  <script defer src="/chat-extras.js?v=722851ac47"></script>
+  <script defer src="/games.js?v=b4a6dbb88e"></script>
+  <script defer src="/icebreakers.js?v=42657c1791"></script>
+  <script defer src="/talkguard.js?v=2b180e6471"></script>
+  <script defer src="/chat.js?v=5ed72d203c"></script>
 
 <!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

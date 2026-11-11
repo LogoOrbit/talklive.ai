@@ -698,7 +698,7 @@ function loadVoiceGender() {
   if (!voiceGenderLoad) {
     voiceGenderLoad = new Promise((resolve, reject) => {
       const el = document.createElement('script');
-      el.src = 'voice-gender.js?v=20260928err';
+      el.src = 'voice-gender.js?v=2ae95509f9';
       el.onload = resolve;
       el.onerror = () => { voiceGenderLoad = null; reject(); };
       document.head.appendChild(el);
@@ -1688,13 +1688,13 @@ function closeQuickSettings() {
 // page over its size budget); it is fetched once the page is idle, or on the
 // first tap of the gear if that comes sooner.
 // It also brings settings.css, which the screen waits for (html.tl-set-css).
-var SETTINGS_PANEL_SRC = '/settings-panel.js?v=20261028nocoins';
+var SETTINGS_PANEL_SRC = '/settings-panel.js?v=fef14af34b';
 // Top 3 films on profiles (fav-films.js), loaded when a profile first opens.
 var filmsLoading = null;
 function withFilms(cb) {
   filmsLoading = filmsLoading || new Promise((ok, fail) => {
     const s = document.createElement('script');
-    s.src = '/fav-films.js?v=20261101same';
+    s.src = '/fav-films.js?v=5206e035f2';
     s.onload = ok;
     s.onerror = () => { filmsLoading = null; fail(); };
     document.head.appendChild(s);
@@ -3260,10 +3260,10 @@ function accountUi() {
     accountUiP = new Promise((resolve, reject) => {
       const css = document.createElement('link');
       css.rel = 'stylesheet';
-      css.href = '/account-ui.css?v=20261110blue';
+      css.href = '/account-ui.css?v=00ddfccc11';
       document.head.appendChild(css);
       const js = document.createElement('script');
-      js.src = '/account-ui.js?v=20261109b';
+      js.src = '/account-ui.js?v=8f13756e07';
       js.onload = () => resolve(window.AccountUI);
       js.onerror = (e) => { accountUiP = null; reject(e); };
       document.head.appendChild(js);
@@ -7207,7 +7207,7 @@ function loadIcebreakers(done) {
   if (callIcebreakerLoading) return;
   callIcebreakerLoading = true;
   const s = document.createElement('script');
-  s.src = '/icebreakers.js?v=20260923ice';
+  s.src = '/icebreakers.js?v=42657c1791';
   s.async = true;
   s.onload = () => { callIcebreakerLoading = false; done(); };
   s.onerror = () => { callIcebreakerLoading = false; };
@@ -9391,7 +9391,7 @@ function loadTalkGuard() {
   if (document.getElementById('tgjs')) return;
   const s = document.createElement('script');
   s.id = 'tgjs';
-  s.src = '/talkguard.js?v=20261027tg';
+  s.src = '/talkguard.js?v=2b180e6471';
   s.onload = () => { if (window.TalkGuard) window.TalkGuard.load(); };
   document.head.appendChild(s);
 }
@@ -11139,7 +11139,7 @@ socket.on('owner-warning', (w) => {
   if (!ownerWarningLoad) {
     ownerWarningLoad = new Promise((resolve) => {
       const s = document.createElement('script');
-      s.src = '/owner-warning.js?v=1';
+      s.src = '/owner-warning.js?v=2c8f1949a2';
       s.onload = resolve;
       s.onerror = () => { ownerWarningLoad = null; };
       document.head.appendChild(s);
@@ -11154,7 +11154,7 @@ socket.on('feedback-reply', (r) => {
   if (!feedbackReplyLoad) {
     feedbackReplyLoad = new Promise((resolve) => {
       const s = document.createElement('script');
-      s.src = '/feedback-reply.js?v=1';
+      s.src = '/feedback-reply.js?v=6827637846';
       s.onload = resolve;
       s.onerror = () => { feedbackReplyLoad = null; };
       document.head.appendChild(s);
@@ -11168,7 +11168,7 @@ socket.on('rate-prompt', (d) => {
   const show = () => window.TalkLiveRate && window.TalkLiveRate.show(socket, d);
   if (window.TalkLiveRate) return show();
   const s = document.createElement('script');
-  s.src = '/rate-prompt.js?v=1';
+  s.src = '/rate-prompt.js?v=860ca7b0d8';
   s.onload = show;
   document.head.appendChild(s);
 });
@@ -11626,7 +11626,7 @@ socket.on('friend-online', ({ clientId, username, countryCode, country } = {}) =
 // a call, so it loads once the page is up and stays out of the first paint.
 window.addEventListener('load', () => {
   const s = document.createElement('script');
-  s.src = '/engage.js?v=20261110plus';
+  s.src = '/engage.js?v=8e4b2d0019';
   s.async = true;
   document.head.appendChild(s);
 });
