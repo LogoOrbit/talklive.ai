@@ -80,34 +80,51 @@ function fcmConfigured() {
 const CHANNEL_FOR_KIND = { call: 'calls_v2', message: 'messages_v2', social: 'social_v2' };
 const SOUND_FOR_KIND = { call: 'tl_ring', message: 'tl_message', social: 'tl_friend' };
 
-async function sendFcm(token, { title, body, url, tag, kind }) {
-  const accessToken = await fcm.auth.getAccessToken();
+// The FCM message for one device. A direct message to an Android device is
+// data-only: with a `notification` block Android draws it itself while the app
+// is closed, with no message text, no Reply and no per-friend stacking. As
+// data the app builds the notification (TalkLiveMessagingService), also when
+// its process was dead. iOS has no such hook, so it keeps a plain alert.
+function fcmMessage(token, { title, body, url, tag, kind, data }) {
   const call = kind === 'call';
+  const apns = {
+    headers: { 'apns-priority': '10', 'apns-collapse-id': String(tag || 'talklive').slice(0, 64) },
+    payload: { aps: { sound: 'default' } },
+  };
+  if (data) {
+    apns.payload.aps.alert = { title, body };
+    return {
+      token,
+      data: { ...data, url: url || '/' },
+      android: { priority: 'high', ttl: '3600s' },
+      apns,
+    };
+  }
+  return {
+    token,
+    notification: { title, body },
+    data: { url: url || '/' },
+    android: {
+      priority: 'high',
+      // A request to talk is stale within a minute; a message can wait.
+      ttl: call ? '60s' : '3600s',
+      notification: {
+        channel_id: CHANNEL_FOR_KIND[kind] || 'messages',
+        tag: tag || 'talklive',
+        sound: SOUND_FOR_KIND[kind] || 'tl_message',
+        default_vibrate_timings: !call,
+      },
+    },
+    apns,
+  };
+}
+
+async function sendFcm(token, opts) {
+  const accessToken = await fcm.auth.getAccessToken();
   const res = await fetch(`https://fcm.googleapis.com/v1/projects/${fcm.projectId}/messages:send`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      message: {
-        token,
-        notification: { title, body },
-        data: { url: url || '/' },
-        android: {
-          priority: 'high',
-          // A request to talk is stale within a minute; a message can wait.
-          ttl: call ? '60s' : '3600s',
-          notification: {
-            channel_id: CHANNEL_FOR_KIND[kind] || 'messages',
-            tag: tag || 'talklive',
-            sound: SOUND_FOR_KIND[kind] || 'tl_message',
-            default_vibrate_timings: !call,
-          },
-        },
-        apns: {
-          headers: { 'apns-priority': '10', 'apns-collapse-id': String(tag || 'talklive').slice(0, 64) },
-          payload: { aps: { sound: 'default' } },
-        },
-      },
-    }),
+    body: JSON.stringify({ message: fcmMessage(token, opts) }),
   });
   if (res.ok) return 'ok';
   const err = await res.json().catch(() => ({}));
@@ -139,8 +156,10 @@ function throttled(clientId, topic) {
   // Messages, calls and requests always go out (the shared tag replaces the
   // earlier notification instead of stacking). Holding them back for minutes
   // made a second or third message arrive with no notification at all. Only
-  // a burst within a couple of seconds is folded into one.
-  const window = /^online:/.test(String(topic)) ? THROTTLE_MS : 2500;
+  // a burst within a couple of seconds is folded into one - except messages:
+  // the app stacks each one as a line, so none may be dropped.
+  const t = String(topic);
+  const window = /^online:/.test(t) ? THROTTLE_MS : t.startsWith('msg:') ? 0 : 2500;
   if (now - last < window) return true;
   lastSent.set(key, now);
   return false;
@@ -171,7 +190,7 @@ function categoryOf(topic, kind) {
   return null;
 }
 
-async function send(clientId, { topic, title, body, url, tag, kind }) {
+async function send(clientId, { topic, title, body, url, tag, kind, data }) {
   const category = categoryOf(topic, kind);
   if (category && !allowFn(clientId, category)) return 0;
   if ((!ready && !fcm) || !clientId) return 0;
@@ -193,7 +212,7 @@ async function send(clientId, { topic, title, body, url, tag, kind }) {
     if (sub.endpoint.startsWith(FCM_PREFIX)) {
       if (!fcm) return;
       try {
-        const outcome = await sendFcm(sub.endpoint.slice(FCM_PREFIX.length), { title, body, url, tag: tag || topic, kind });
+        const outcome = await sendFcm(sub.endpoint.slice(FCM_PREFIX.length), { title, body, url, tag: tag || topic, kind, data });
         if (outcome === 'gone') store.removePushSubscription(clientId, sub.endpoint);
         else delivered += 1;
       } catch (err) {
@@ -221,5 +240,5 @@ async function send(clientId, { topic, title, body, url, tag, kind }) {
 }
 
 module.exports = {
-  setFilter,
+  setFilter, fcmMessage,
   categoryOf, configured, fcmConfigured, publicKey, send, FCM_PREFIX };

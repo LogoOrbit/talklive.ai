@@ -168,11 +168,13 @@ class ServerE2ETest {
         // Direct message: delivered, confirmed, then seen when b opens it.
         a.social.send(b.identity.clientId, "hey friend")
         check("b receives the DM") { b.social.threads.value[a.identity.clientId]?.any { it.text == "hey friend" && !it.mine } == true }
-        check("a's copy confirmed") { a.social.threads.value[b.identity.clientId]?.any { it.text == "hey friend" && it.status == MsgStatus.Sent } == true }
+        check("a's copy confirmed") { a.social.threads.value[b.identity.clientId]?.any { it.text == "hey friend" && it.status.rank >= MsgStatus.Sent.rank } == true }
         check("b has it unread") { (b.social.unread.value[a.identity.clientId] ?: 0) > 0 }
         b.social.openChat = a.identity.clientId
         check("unread cleared") { (b.social.unread.value[a.identity.clientId] ?: 0) == 0 }
         check("a sees it seen") { a.social.threads.value[b.identity.clientId]?.any { it.text == "hey friend" && it.status == MsgStatus.Seen } == true }
+        // The conversation list reads the same receipt as the thread, and a stale list from the server cannot take it back.
+        check("list shows seen too") { a.social.friends.value.firstOrNull { it.clientId == b.identity.clientId }?.last?.seen == true }
 
         // Typing in a DM.
         b.social.typing(a.identity.clientId)

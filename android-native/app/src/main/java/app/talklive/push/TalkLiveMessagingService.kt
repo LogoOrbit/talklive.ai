@@ -15,13 +15,14 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 /**
- * While the app is closed Android shows the server's notifications itself.
- * This only covers the app being in the background-but-alive state; in the
- * foreground the app already shows the message or the ringing screen.
+ * While the app is closed Android shows the server's notifications itself,
+ * except direct messages, which arrive as data and are built by [LocalNotifier].
+ * In the foreground the app already shows the message or the ringing screen.
  */
 @AndroidEntryPoint
 class TalkLiveMessagingService : FirebaseMessagingService() {
     @Inject lateinit var registrar: PushRegistrar
+    @Inject lateinit var notifier: LocalNotifier
 
     override fun onNewToken(token: String) {
         registrar.onNewToken(token)
@@ -29,6 +30,13 @@ class TalkLiveMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         val foreground = ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
+        // A direct message comes as data only, so the app builds the notification
+        // itself (text, per-friend stacking, Reply), also when it was not running.
+        val d = message.data
+        if (d["kind"] == "message") {
+            if (!foreground) notifier.onPush(d["fromClientId"].orEmpty(), d["fromName"].orEmpty(), d["preview"].orEmpty(), d["msgId"].orEmpty(), d["ts"]?.toLongOrNull() ?: System.currentTimeMillis())
+            return
+        }
         val n = message.notification ?: return
         if (foreground) return
         val channel = n.channelId ?: TalkLiveApplication.CHANNEL_MESSAGES

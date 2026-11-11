@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Done
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.NotificationsOff
 import androidx.compose.material3.Icon
@@ -199,7 +200,7 @@ private fun ConversationRow(c: Conversation, modifier: Modifier, onLongClick: ()
                 } else {
                     if (last?.mine == true) {
                         Icon(
-                            Icons.Rounded.DoneAll, null, Modifier.size(16.dp),
+                            if (last.status == app.talklive.social.MsgStatus.Sent) Icons.Rounded.Done else Icons.Rounded.DoneAll, null, Modifier.size(16.dp),
                             tint = if (last.seen) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Spacer(Modifier.width(4.dp))

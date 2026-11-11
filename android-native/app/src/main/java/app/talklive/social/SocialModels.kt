@@ -6,7 +6,31 @@ import org.json.JSONObject
 /** "a:fox" (the server's avatar field) to "fox". */
 internal fun animalOf(avatar: String?): String? = avatar?.takeIf { it.startsWith("a:") }?.substring(2)
 
-data class LastMessage(val mine: Boolean, val text: String, val gif: Boolean, val voice: Boolean, val ts: Long, val seen: Boolean) {
+data class LastMessage(
+    val mine: Boolean, val text: String, val gif: Boolean, val voice: Boolean, val ts: Long, val seen: Boolean,
+    val delivered: Boolean = seen, val id: String = "",
+) {
+    /** What the list's tick shows; the same ladder as a bubble in the thread. */
+    val status: MsgStatus get() = when { seen -> MsgStatus.Seen; delivered -> MsgStatus.Delivered; else -> MsgStatus.Sent }
+
+    private fun sameMessage(o: LastMessage) = mine == o.mine && (if (id.isNotBlank() && o.id.isNotBlank()) id == o.id else ts == o.ts)
+
+    /**
+     * This message as just reported, without losing what is already known
+     * about it: a receipt never goes back (a stale list from the server must not
+     * turn "Seen" into "Sent"), and an older snapshot of our own message does not
+     * replace a newer one.
+     */
+    fun after(known: LastMessage?): LastMessage = when {
+        known == null || !mine || !known.mine -> this
+        sameMessage(known) -> copy(seen = seen || known.seen, delivered = delivered || seen || known.delivered || known.seen, id = id.ifBlank { known.id })
+        known.ts > ts -> known
+        else -> this
+    }
+
+    fun raised(to: MsgStatus): LastMessage =
+        if (!mine || to.rank <= status.rank) this else copy(seen = seen || to == MsgStatus.Seen, delivered = true)
+
     val preview: String get() = when {
         voice -> "🎤 Voice message"
         gif -> "GIF"
@@ -15,7 +39,8 @@ data class LastMessage(val mine: Boolean, val text: String, val gif: Boolean, va
 
     companion object {
         fun from(o: JSONObject?) = o?.let {
-            LastMessage(it.optBoolean("mine"), it.optString("text"), it.optBoolean("gif"), it.optBoolean("voice"), it.optLong("ts"), it.optBoolean("seen"))
+            LastMessage(it.optBoolean("mine"), it.optString("text"), it.optBoolean("gif"), it.optBoolean("voice"), it.optLong("ts"), it.optBoolean("seen"),
+                it.optBoolean("delivered") || it.optBoolean("seen"), it.optString("id"))
         }
     }
 }
@@ -73,7 +98,12 @@ data class Person(
     }
 }
 
-enum class MsgStatus { Sending, Sent, Seen, Failed }
+enum class MsgStatus {
+    Sending, Sent, Delivered, Seen, Failed;
+
+    /** Order of a message's life: receipts only ever move up this ladder. */
+    val rank: Int get() = when (this) { Failed -> 0; Sending -> 1; Sent -> 2; Delivered -> 3; Seen -> 4 }
+}
 
 /** A Giphy GIF as the server accepts it (server/index.js cleanGif). */
 data class Gif(val url: String, val preview: String, val w: Int, val h: Int, val alt: String) {
@@ -124,7 +154,11 @@ data class ChatMessage(
             gifUrl = o.optJSONObject("gif")?.optNullableString("url"),
             voiceMs = o.optJSONObject("voice")?.optLong("ms"),
             voiceId = o.optJSONObject("voice")?.optString("id")?.takeIf { it.isNotBlank() },
-            status = if (o.optBoolean("seen")) MsgStatus.Seen else MsgStatus.Sent,
+            status = when {
+                o.optBoolean("seen") -> MsgStatus.Seen
+                o.optBoolean("delivered") -> MsgStatus.Delivered
+                else -> MsgStatus.Sent
+            },
             exp = o.optLong("exp").takeIf { it > 0 },
         )
     }
