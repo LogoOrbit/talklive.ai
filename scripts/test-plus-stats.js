@@ -2,13 +2,13 @@
 'use strict';
 /*
  * Tests for server/plus-stats.js (owner Plus tab) and the payment log wrapper
- * in server/billing.js. Pure functions, no server needed.
+ * in server/payment-log.js. Pure functions, no server needed.
  *
  * Run: node scripts/test-plus-stats.js
  */
 const assert = require('assert');
 const ps = require('../server/plus-stats');
-const billing = require('../server/billing');
+const paymentLog = require('../server/payment-log');
 
 let passed = 0;
 let failed = 0;
@@ -93,26 +93,23 @@ test('payment log wrapper records renewals, passes and cancels, capped at 5000',
   const store = {
     data: { premium: {}, talkTime: { u1: { country: 'Germany' } } },
     setPremium(id, info) { this.data.premium[id] = { ...this.data.premium[id], ...info, revokedAt: null }; },
-    extendPremium(id, ms, info) { this.data.premium[id] = { ...info, expiresAt: Date.now() + ms }; },
     revokePremium(id) { this.data.premium[id].revokedAt = Date.now(); },
   };
-  billing.installPaymentLog(store);
-  store.setPremium('u1', { source: 'stripe', lastEvent: 'checkout completed', expiresAt: Date.now() + DAY });
-  assert.strictEqual((store.data.paymentLog || []).length, 0);
-  store.setPremium('u1', { source: 'stripe', lastEvent: 'invoice paid', expiresAt: Date.now() + 30 * DAY });
-  store.setPremium('u1', { source: 'stripe', lastEvent: 'invoice paid', expiresAt: Date.now() + 30 * DAY }); // replay: same period
+  paymentLog.installPaymentLog(store);
+  store.setPremium('u1', { source: 'play', lastEvent: 'play:active', expiresAt: Date.now() + 30 * DAY });
+  store.setPremium('u1', { source: 'play', lastEvent: 'play:active', expiresAt: Date.now() + 30 * DAY }); // replay: same period
   assert.strictEqual(store.data.paymentLog.length, 1);
   assert.strictEqual(store.data.paymentLog[0].kind, 'new');
   assert.strictEqual(store.data.paymentLog[0].country, 'DE');
-  store.setPremium('u1', { source: 'stripe', lastEvent: 'invoice paid', expiresAt: Date.now() + 61 * DAY });
+  store.setPremium('u1', { source: 'play', lastEvent: 'play:active', expiresAt: Date.now() + 61 * DAY });
   assert.strictEqual(store.data.paymentLog[1].kind, 'renewed');
-  store.extendPremium('u2', 7 * DAY, { source: 'stripe', lastEvent: 'pass:pass_7d' });
+  store.setPremium('u2', { source: 'play-pass', lastEvent: 'play:pass', expiresAt: Date.now() + 7 * DAY });
   assert.strictEqual(store.data.paymentLog[2].plan, 'pass_7d');
-  store.extendPremium('u3', 7 * DAY, { source: 'referral', lastEvent: 'x' });
+  store.setPremium('u3', { source: 'referral', lastEvent: 'x', expiresAt: Date.now() + 7 * DAY });
   assert.strictEqual(store.data.paymentLog.length, 3);
   store.revokePremium('u1', {});
   assert.strictEqual(store.data.paymentLog[3].kind, 'cancelled');
-  for (let i = 0; i < 5100; i++) store.extendPremium('p' + i, DAY, { source: 'stripe', lastEvent: 'pass:pass_1d' });
+  for (let i = 0; i < 5100; i++) store.setPremium('p' + i, { source: 'play-pass', lastEvent: 'play:pass', expiresAt: Date.now() + DAY });
   assert.strictEqual(store.data.paymentLog.length, 5000);
 });
 

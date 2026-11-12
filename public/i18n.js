@@ -332,7 +332,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "billingEmailHint": "Link an email to your account and receipts will have somewhere to go once passes exist.",
     "billingCardsKicker": "SAVED PAYMENT METHODS",
     "billingCardsValue": "Not stored by TalkLive",
-    "billingCardsHint": "Payments will be handled through Stripe Checkout. Card details are never stored on TalkLive servers.",
+    "billingCardsHint": "Plus is bought in the TalkLive Android app through Google Play. Card details are never stored on TalkLive servers.",
     "billingBoostKicker": "CURRENT PASS",
     "billingBoostValue": "No active pass",
     "billingBoostHint": "Every feature is free. You have not been charged for anything.",

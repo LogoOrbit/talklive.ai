@@ -18,7 +18,7 @@ const searchConsole = require('./search-console');
 const health = require('./health');
 const insights = require('./insights');
 const plusStats = require('./plus-stats');
-const billing = require('./billing');
+const paymentLog = require('./payment-log');
 
 const SESSION_HOURS = 12;
 const OWNER_EMAIL = process.env.OWNER_EMAIL || '';
@@ -420,7 +420,7 @@ function generateConclusion(runtime, report) {
 // --- Module wiring ---
 function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats, automod, talkguard, patterns, support, grantPlus }) {
   if (automod) automod.setAlert(sendAlertEmail);
-  try { billing.installPaymentLog(store); } catch (e) { console.log('[owner] payment log not installed:', e.message); }
+  try { paymentLog.installPaymentLog(store); } catch (e) { console.log('[owner] payment log not installed:', e.message); }
   const router = express.Router();
   router.use(express.json({ limit: '64kb' }));
 

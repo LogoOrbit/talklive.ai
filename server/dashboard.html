@@ -3645,7 +3645,7 @@ async function viewPlus(){
   if(S===STALE)return;
   const usd=(v)=>'$'+(Math.round((v||0)*100)/100).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2});
   const PLAN={monthly:'Monthly',yearly:'Yearly',pass:'Pass',pass_1d:'Pass 1 day',pass_7d:'Pass 7 days',pass_15d:'Pass 15 days'};
-  const SRC={stripe:'Stripe (web)',play:'Google Play','play-pass':'Google Play'};
+  const SRC={stripe:'Web (earlier)',play:'Google Play','play-pass':'Google Play'};
   const tile=(k,v,s)=>`<div class="px-tile"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s||''}</div></div>`;
   if(S.empty){
     $('#main').innerHTML=`<div class="card" style="margin-top:0"><h2>Plus payments</h2><div class="muted" style="padding:10px 0"><b>No payments yet.</b> When someone buys Plus on the web or in the Android app, their purchase appears here, with a running count of subscribers, renewals and estimated revenue.</div></div>`;
@@ -3655,7 +3655,7 @@ async function viewPlus(){
   const row=(l,a,b)=>`<tr><td>${l}</td><td class="num">${num(a)}</td><td class="num">${num(b)}</td></tr>`;
   $('#main').innerHTML=`<div class="px-tiles" style="margin-top:0">
     ${tile('Paying subscribers now',num(A.total),`${num(A.monthly)} monthly, ${num(A.yearly)} yearly, ${num(A.passes.pass_1d+A.passes.pass_7d+A.passes.pass_15d)} passes`)}
-    ${tile('Where they paid',`${num(A.stripe)} / ${num(A.play)}`,'web (Stripe) / Google Play')}
+    ${tile('Where they paid',`${num(A.stripe)} / ${num(A.play)}`,'earlier web / Google Play')}
     ${tile('Monthly revenue (estimated)',usd(S.mrrUsd),'subscriptions only, yearly counted as 1/12')}
     ${tile('Last 30 days (estimated)',usd(S.revenue30Usd),'payments logged since tracking began')}
     ${tile('Expiring in 7 days',num(X.in7),'paid plans that end soon')}
@@ -3885,7 +3885,7 @@ async function viewRevenue(){
     </div>
     <div class="card anim"><h2>Where Plus comes from <span class="sub">active grants by source</span></h2>
       ${r.bySource.map(([src,n])=>`<div class="hrow"><div>${esc(src)}</div><div><div class="hbar" style="width:${Math.max(2,n/Math.max(1,t.active)*100)}%;background:${srcColor[src]||'var(--s5)'}"></div></div><div class="n">${num(n)}</div></div>`).join('')||'<div class="muted">Nobody is on Plus yet.</div>'}
-      <div class="muted" style="margin-top:10px">stripe = paid · referral = invite reward · client = granted for testing or support</div>
+      <div class="muted" style="margin-top:10px">stripe = earlier web purchase · referral = invite reward · client = granted for testing or support</div>
     </div>
   </div>
 
@@ -3907,7 +3907,7 @@ async function viewRevenue(){
   <td>${esc(x.source)}${x.paying?' <span class="pill info">paid</span>':''}</td>
   <td>${x.activatedAt?fmtTs(x.activatedAt):'-'}</td>
   <td>${x.expiresAt?fmtTs(x.expiresAt):x.status==='active'?'<span class="muted">never</span>':'-'}</td>
-  <td class="muted">${esc(x.lastEvent||'')}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">No subscriptions yet. Once Stripe checkout or a referral reward runs, it shows up here.</td></tr>'}</table></div>`;
+  <td class="muted">${esc(x.lastEvent||'')}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">No subscriptions yet. Once a Google Play purchase or a referral reward comes in, it shows up here.</td></tr>'}</table></div>`;
   $('#gpGo').onclick=grantPlusFromForm;
   $('#gpWho').onkeydown=e=>{if(e.key==='Enter')grantPlusFromForm();};
   animateCounters();

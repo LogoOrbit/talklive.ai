@@ -228,7 +228,7 @@
   "billingEmailHint": "اربط بريدًا إلكترونيًا بحسابك لتصلك الإيصالات عندما تتوفر التذاكر.",
   "billingCardsKicker": "طرق الدفع المحفوظة",
   "billingCardsValue": "لا يخزنها TalkLive",
-  "billingCardsHint": "ستتم المدفوعات عبر Stripe Checkout. لا تُخزَّن بيانات البطاقات على خوادم TalkLive أبدًا.",
+  "billingCardsHint": "يُشترى Plus من تطبيق TalkLive لأندرويد عبر Google Play. لا تُخزَّن بيانات البطاقات على خوادم TalkLive أبدًا.",
   "billingBoostKicker": "التذكرة الحالية",
   "billingBoostValue": "لا توجد تذكرة نشطة",
   "billingBoostHint": "جميع الميزات مجانية. لم يتم تحصيل أي رسوم منك.",

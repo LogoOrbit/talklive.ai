@@ -228,7 +228,7 @@
   "billingEmailHint": "Liez un e-mail à votre compte pour recevoir les reçus quand les pass existeront.",
   "billingCardsKicker": "MOYENS DE PAIEMENT ENREGISTRÉS",
   "billingCardsValue": "Non stockés par TalkLive",
-  "billingCardsHint": "Les paiements passeront par Stripe Checkout. Les données de carte ne sont jamais stockées sur les serveurs de TalkLive.",
+  "billingCardsHint": "Plus s'achète dans l'application TalkLive pour Android via Google Play. Les données de carte ne sont jamais stockées sur les serveurs de TalkLive.",
   "billingBoostKicker": "PASS ACTUEL",
   "billingBoostValue": "Aucun pass actif",
   "billingBoostHint": "Toutes les fonctions sont gratuites. Rien ne vous a été facturé.",

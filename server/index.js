@@ -35,7 +35,6 @@ const { createTalkGuard } = require('./talkguard');
 const { createPatterns } = require('./patterns');
 const { createChatGuard } = require('./chat-guard');
 const compress = require('./compress');
-const billing = require('./billing');
 const pricing = require('./pricing');
 const playBilling = require('./play-billing');
 const play = playBilling.createPlayBilling();
@@ -408,8 +407,8 @@ const FREE_LIMITS = {
   interests: 2, // interest tags used for matching (Plus: up to 10)
 };
 // Premium registry lives in the persistent store (Postgres/file) so grants
-// survive restarts and deploys. Grants come from three places now: a Stripe
-// subscription (server/billing.js), a referral reward, or a manual grant
+// survive restarts and deploys. Grants come from: Google Play (server/play-billing.js;
+// earlier Stripe grants just run to their expiry), a referral reward, or a manual grant
 // (PREMIUM_CLIENT_IDS / store.setPremium) for testing and support.
 const envPremiumClients = new Set(
   (process.env.PREMIUM_CLIENT_IDS || '').split(',').map((s) => s.trim()).filter(Boolean)
@@ -431,11 +430,6 @@ app.get('/premium-status', httpRateLimit('premium-status', 60, 60000), (req, res
     // the identity token: a clientId alone is not a secret.
     ...(validIdentityToken(clientId, String(req.query.identityToken || ''))
       ? { expiresAt: envPremiumClients.has(clientId) ? null : store.premiumExpiry(clientId) } : {}),
-    // The pricing page swaps its "coming soon" card for real buttons based on
-    // this, so a deployment with no Stripe keys keeps the honest copy it has
-    // today instead of showing a button that cannot charge anyone.
-    checkout: billing.configured(),
-    plans: billing.plans(),
   });
 });
 
@@ -582,94 +576,10 @@ app.get('/subscribe/confirm', httpRateLimit('subscribe-confirm', 30, 10 * 60000)
   res.status(email ? 200 : 410).type('html').send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TalkLive email updates</title><style>body{font-family:system-ui,sans-serif;background:#0b0d12;color:#e6e8ee;margin:0;padding:48px 16px;text-align:center}main{max-width:480px;margin:0 auto}a{display:inline-block;margin-top:16px;padding:12px 22px;border-radius:999px;background:#16a34a;color:#fff;text-decoration:none;font-weight:700}</style></head><body><main>${msg}<a href="/">Start talking</a></main></body></html>`);
 });
 
-billing.warnIfHalfConfigured();
-
 // Plus prices for wherever the visitor is (server/pricing.js).
 app.get('/pricing.json', (req, res) => {
   res.setHeader('Cache-Control', 'private, max-age=3600');
-  res.json({ ...pricing.forCountry(lookupGeo(clientIp(req)).country), checkout: billing.configured() });
-});
-
-app.post('/billing/checkout', httpRateLimit('checkout', 10, 60000), express.json({ limit: '2kb' }), async (req, res) => {
-  if (!billing.configured()) return res.status(503).json({ error: 'Checkout is not available yet.' });
-  const clientId = String((req.body && req.body.clientId) || '');
-  const token = String((req.body && req.body.identityToken) || '');
-  // The clientId decides who gets premium, so an unproven one would let anyone
-  // buy a subscription onto someone else's browser id - or, more usefully to an
-  // attacker, discover which ids exist. Same HMAC the socket layer uses.
-  if (!clientId || !validIdentityToken(clientId, token)) {
-    return res.status(403).json({ error: 'Unrecognised client.' });
-  }
-  // Age-assurance gate (fix list 3.1). A no-op while the flag is off.
-  const ageGate = ageAssurance.check('premium', { clientId, country: lookupGeo(clientIp(req)).country });
-  if (!ageGate.ok) return res.status(403).json({ error: ageGate.message, ageCheck: ageGate.reason });
-  try {
-    const url = await billing.createCheckout({
-      clientId,
-      plan: String((req.body && req.body.plan) || 'monthly'),
-      origin: `https://${CANONICAL_HOST}`,
-      country: lookupGeo(clientIp(req)).country,
-    });
-    store.recordFeature('premium_checkout_start');
-    res.json({ url });
-  } catch (err) {
-    console.error('[billing] checkout failed:', err.message);
-    res.status(err.status === 400 ? 400 : 502).json({ error: 'Could not start checkout.' });
-  }
-});
-
-// Stripe signs the exact bytes it sent, so this route must see the raw body -
-// hence express.raw here rather than the express.json used everywhere else.
-app.post('/billing/webhook', express.raw({ type: 'application/json', limit: '1mb' }), async (req, res) => {
-  const event = billing.verifyWebhook(req.body && req.body.toString('utf8'), req.headers['stripe-signature']);
-  // A bad signature is either a misconfigured secret or a forgery. Either way
-  // Stripe should retry rather than believe it was accepted.
-  if (!event) return res.status(400).send('invalid signature');
-  if (billing.alreadyProcessed(event.id)) return res.json({ received: true, duplicate: true });
-
-  // A one-time pass: add its days on top of whatever Plus time is left.
-  const pass = billing.passFromEvent(event);
-  if (pass) {
-    // Recorded before the grant and kept on disk: a redelivery after a restart,
-    // or two deliveries at once, must not add the days twice.
-    if (!store.claimBillingPass(String(event.data.object.id || event.id))) {
-      billing.markProcessed(event.id);
-      return res.json({ received: true, duplicate: true });
-    }
-    store.extendPremium(pass.clientId, pass.days * 24 * 60 * 60 * 1000, { source: 'stripe', lastEvent: `pass:${pass.pass}` });
-    store.recordFeature('premium_pass_bought');
-    store.persistNow();
-    await Promise.race([store.whenPersisted(), new Promise((r) => setTimeout(r, 8000))]);
-    emitPremiumStatus(pass.clientId);
-    billing.markProcessed(event.id);
-    return res.json({ received: true });
-  }
-
-  const decision = billing.decide(event);
-  // Ordering, duplicate and "which subscription" rules live in billing.nextPremium.
-  const premium = store.data.premium;
-  const existing = decision.clientId && Object.prototype.hasOwnProperty.call(premium, decision.clientId)
-    ? premium[decision.clientId] : null;
-  const step = billing.nextPremium(existing, decision, Number(event.created) * 1000 || 0);
-  if (step.op === 'set') {
-    store.setPremium(decision.clientId, step.info);
-    store.recordFeature('premium_activated');
-  } else if (step.op === 'revoke') {
-    store.revokePremium(decision.clientId, step.info);
-    store.recordFeature('premium_cancelled');
-  } else if (decision.action !== 'ignore') {
-    console.log(`[billing] ${event.type} for ${decision.clientId} skipped: ${step.reason}`);
-  }
-  if (step.op !== 'skip') {
-    // Write now, not on the 15s debounce: once Stripe has its 200 it will not
-    // send this event again, so a crash before the save would lose a payment.
-    store.persistNow();
-    await Promise.race([store.whenPersisted(), new Promise((r) => setTimeout(r, 8000))]);
-  }
-  billing.markProcessed(event.id);
-  // Anything unhandled is still a 200: replying non-2xx makes Stripe retry an
-  // event we have deliberately ignored, forever.
-  res.json({ received: true });
+  res.json(pricing.forCountry(lookupGeo(clientIp(req)).country));
 });
 
 // --- Google Play subscriptions (the Android app) ------------------------------
@@ -696,7 +606,7 @@ async function applyPlayPurchase(clientId, token, sub, productId) {
     store.recordFeature('premium_cancelled');
   }
   if (step.op !== 'skip') {
-    // A payment must survive a crash: write now, as the Stripe webhook does.
+    // A payment must survive a crash: write now rather than on the debounce.
     store.persistNow();
     await Promise.race([store.whenPersisted(), new Promise((r) => setTimeout(r, 8000))]);
     emitPremiumStatus(clientId);
@@ -4562,9 +4472,8 @@ function recordEngageCall(profile, country, seconds) {
 
 
 // Re-send premium state to every live socket belonging to a clientId. Used
-// whenever a grant changes outside registration (a referral reward now; a
-// Stripe webhook is the same shape of event, though that user is usually on the
-// Stripe-hosted page rather than connected at the time).
+// whenever a grant changes outside registration (a referral reward, a Play
+// notification).
 function emitPremiumStatus(clientId) {
   for (const [sid, profile] of profiles) {
     if (profile.clientId !== clientId) continue;
@@ -4577,10 +4486,8 @@ function emitPremiumStatus(clientId) {
       look: lookStatus(clientId),
       expiresAt: envPremiumClients.has(clientId) ? null : store.premiumExpiry(clientId),
       limits: FREE_LIMITS,
-      checkout: billing.configured(),
       // The Android app can sell Plus through Google Play.
       play: play.configured(),
-      plans: billing.plans(),
     });
   }
 }
@@ -6509,10 +6416,8 @@ io.on('connection', (socket) => {
       look: lookStatus(clientId),
       expiresAt: envPremiumClients.has(clientId) ? null : store.premiumExpiry(clientId),
       limits: FREE_LIMITS,
-      checkout: billing.configured(),
       // The Android app can sell Plus through Google Play.
       play: play.configured(),
-      plans: billing.plans(),
     });
     socket.emit('identity-token', { clientId, token: issuedIdentityToken });
     socket.emit('engage-state', Engage.view(store.engageGet(clientId), { tz: profiles.get(socket.id).timezone, plus: isPremium(clientId) }));

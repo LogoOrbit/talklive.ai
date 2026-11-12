@@ -228,7 +228,7 @@
   "billingEmailHint": "আপনার অ্যাকাউন্টে একটি ইমেল যুক্ত করুন, পাস এলে রসিদ সেখানে যাবে।",
   "billingCardsKicker": "সেভ করা পেমেন্ট পদ্ধতি",
   "billingCardsValue": "TalkLive সংরক্ষণ করে না",
-  "billingCardsHint": "পেমেন্ট হবে Stripe Checkout-এর মাধ্যমে। কার্ডের তথ্য কখনো TalkLive সার্ভারে রাখা হয় না।",
+  "billingCardsHint": "Plus কেনা হয় TalkLive Android অ্যাপে, Google Play-এর মাধ্যমে। কার্ডের তথ্য কখনো TalkLive সার্ভারে সংরক্ষিত হয় না।",
   "billingBoostKicker": "বর্তমান পাস",
   "billingBoostValue": "কোনো সক্রিয় পাস নেই",
   "billingBoostHint": "সব ফিচার বিনামূল্যে। আপনার কাছ থেকে কোনো টাকা নেওয়া হয়নি।",

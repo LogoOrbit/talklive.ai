@@ -78,7 +78,12 @@
 .plan li .i{width:18px;height:18px;flex:none;border-radius:50%;background:currentColor;opacity:.9;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9.6 16.6 5 12l1.4-1.4 3.2 3.2 8-8L19 7.2z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9.6 16.6 5 12l1.4-1.4 3.2 3.2 8-8L19 7.2z'/%3E%3C/svg%3E") center/contain no-repeat}
 .pass[data-pass]{cursor:pointer}.pass.is-picked{outline:2px solid currentColor;outline-offset:2px}
 .cta[aria-busy=true]{opacity:.6;pointer-events:none}
-.app-step{max-width:560px;margin:0 auto 26px;text-align:center;outline:none}.app-step h2{margin:0 0 8px}.app-step>p{color:var(--muted)}.app-step-prices{margin:14px 0 18px;display:grid;gap:8px}.app-step-prices div{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:2px 12px;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,0.05);text-align:left}.app-step-prices b{text-align:right}.app-step[hidden]{display:none}.plan li .i{margin-top:3px}
+.plan li .i{margin-top:3px}
+.cta.soon, .cta.soon:hover { background: rgba(255,255,255,0.08); color: var(--muted); border: 1px dashed rgba(255,255,255,0.28); cursor: not-allowed; transform: none; filter: none; }
+.app-link { display: block; text-align: center; margin-top: 12px; font-weight: 700; font-size: 0.92rem; color: #f2c14e; text-decoration: underline; text-underline-offset: 3px; }
+.app-banner { max-width: 620px; margin: 18px auto 0; padding: 16px 18px; text-align: center; border-radius: 16px; background: rgba(242,193,78,0.10); border: 1px solid rgba(242,193,78,0.35); }
+.app-banner p { margin: 0 0 12px; color: #e7eaf5; }
+.app-banner .cta { display: inline-block; width: auto; padding: 12px 22px; }
 .cta:active{transform:scale(.98);filter:brightness(.95)}
 
 </style>
@@ -105,12 +110,9 @@
 
   <div id="premiumActiveNote" class="status-note ok" hidden>You have TalkLive Plus. Everything is unlocked. Enjoy!</div>
 
-  <section id="appStep" class="card app-step" hidden tabindex="-1" aria-labelledby="appStepTitle">
-    <h2 id="appStepTitle">Get Plus in the app</h2>
-    <p>Plus is bought in the TalkLive Android app. It unlocks on the website too when you sign in with the same account.</p>
-    <div class="app-step-prices" id="appStepPrices"></div>
-    <a id="appStepBtn" class="cta violet" href="https://play.google.com/store/apps/details?id=app.talklive" rel="noopener">Download the app</a>
-    <p class="small-note">Your account: <b id="appStepName"></b></p>
+  <section class="app-banner" aria-label="Where to buy Plus">
+    <p><strong>Buying on the website is coming soon.</strong> For now, Plus is bought in the TalkLive Android app through Google Play, and it unlocks on the website when you sign in with the same account.</p>
+    <a id="appBannerBtn" class="cta gold" href="https://play.google.com/store/apps/details?id=app.talklive" rel="noopener">Get Plus now in the Android app</a>
   </section>
 
   <section class="plans">
@@ -152,7 +154,8 @@
         <li><span class="i" aria-hidden="true"></span><span><b>Streak freezes</b> and streak restore</span></li>
         <li><span class="i" aria-hidden="true"></span><span><b>Ocean &amp; Sunset</b> themes</span></li>
       </ul>
-      <a id="plusBtn" class="cta gold" href="/signup" data-plan="plus">Get Plus</a>
+      <button type="button" id="plusBtn" class="cta soon" disabled aria-disabled="true">Coming soon on the web</button>
+      <a class="app-link" href="https://play.google.com/store/apps/details?id=app.talklive" rel="noopener" data-app-link>Get Plus now in the Android app</a>
     </div>
 
     <div class="card plan">
@@ -163,7 +166,8 @@
         <div class="pass is-picked" data-pass="pass_7d" role="button" tabindex="0"><div class="days">7<small>days</small></div><div class="what"><b>One week <span class="chip">POPULAR</span></b>A full week of Plus</div><div class="cost" data-cost="pass_7d">$4.99</div></div>
         <div class="pass" data-pass="pass_15d" role="button" tabindex="0"><div class="days">15<small>days</small></div><div class="what"><b>Two weeks <span class="chip">BEST VALUE</span></b>Most days for the price</div><div class="cost" data-cost="pass_15d">$6.99</div></div>
       </div>
-      <a id="passBtn" class="cta violet" href="/signup" data-plan="pass">Get a pass</a>
+      <button type="button" id="passBtn" class="cta soon" disabled aria-disabled="true">Coming soon on the web</button>
+      <a class="app-link" href="https://play.google.com/store/apps/details?id=app.talklive" rel="noopener" data-app-link>Get a pass in the Android app</a>
       <p class="small-note">Pay once. Nothing renews.</p>
     </div>
   </section>
@@ -260,55 +264,20 @@
   fetch('/pricing.json').then(function (r) { return r.json(); }).then(function (p) {
     if (!p || !p.monthly) return;
     plus.monthly = { big: p.monthly.label, per: 'Renews monthly. Cancel any time.' };
-    if (p.yearly && p.yearly.web !== false) {
+    if (p.yearly) {
       plus.yearly = { big: p.yearly.perMonthLabel, per: 'Billed yearly at ' + p.yearly.label + '. Cancel any time.' };
       if (p.yearly.savePercent > 0) document.getElementById('saveChip').textContent = 'Save ' + p.yearly.savePercent + '%';
-    } else {
-      // Not sold yearly here: only the monthly plan is offered.
-      termBtns.yearly.hidden = true;
-      document.querySelector('.term').hidden = true;
-      term = 'monthly';
     }
     showTerm(term);
     (p.passes || []).forEach(function (it) {
       var cost = document.querySelector('[data-cost="' + it.id + '"]');
       if (cost) cost.textContent = it.label;
-      var card = document.querySelector('[data-pass="' + it.id + '"]');
-      // Too small for a card payment here; the Android app sells it.
-      if (card && !it.web) { card.hidden = true; if (picked === it.id) pick('pass_7d'); }
     });
   }).catch(function () {});
-  // The website does not sell Plus. Guests are asked to sign up or log in first
-  // (the intent is remembered so the flow continues), then everyone is sent to
-  // the Android app, where Plus is bought and follows the account to the web.
-  var loggedIn = !!localStorage.getItem('talklive_nickname');
-  var appStep = document.getElementById('appStep');
-  function showAppStep() {
-    var name = localStorage.getItem('talklive_nickname') || '';
-    document.getElementById('appStepName').textContent = name;
-    var rows = [['Plus, monthly', plus.monthly.big + ' / month'], ['Plus, yearly', plus.yearly.big + ' / month, ' + plus.yearly.per.replace(/^Billed yearly at /, 'billed ').replace(/\. Cancel any time\.$/, '')]];
-    if (term === 'monthly' && termBtns.yearly.hidden) rows.pop();
-    var ul = document.getElementById('appStepPrices');
-    ul.textContent = '';
-    rows.forEach(function (r) { var li = document.createElement('div'); li.innerHTML = '<span></span><b></b>'; li.firstChild.textContent = r[0]; li.lastChild.textContent = r[1]; ul.appendChild(li); });
-    appStep.hidden = false;
-    appStep.scrollIntoView({ block: 'center' });
-    appStep.focus({ preventScroll: true });
-  }
-  function buy(e) {
-    e.preventDefault();
-    track('premium_checkout_click');
-    if (!loggedIn) {
-      try { sessionStorage.setItem('tl_plus_intent', '1'); } catch (_) {}
-      location.href = '/signup';
-      return;
-    }
-    showAppStep();
-  }
-  plusBtn.addEventListener('click', buy);
-  passBtn.addEventListener('click', buy);
-  document.getElementById('appStepBtn').addEventListener('click', function () { track('premium_app_download_click'); });
-  if (loggedIn && /[?&]step=app/.test(location.search)) setTimeout(showAppStep, 400);
+  // The website does not sell Plus yet; the buttons are disabled and the Play links count as the click.
+  [].forEach.call(document.querySelectorAll('[data-app-link], #appBannerBtn'), function (a) {
+    a.addEventListener('click', function () { track('premium_app_download_click'); });
+  });
 
   function markActive(expiresAt) {
     activeNote.hidden = false;

@@ -228,7 +228,7 @@
   "billingEmailHint": "یک ایمیل به حسابت وصل کن تا وقتی پاس‌ها آمدند رسیدها به آن برسد.",
   "billingCardsKicker": "روش‌های پرداخت ذخیره‌شده",
   "billingCardsValue": "توسط TalkLive ذخیره نمی‌شود",
-  "billingCardsHint": "پرداخت‌ها از طریق Stripe Checkout انجام می‌شود. اطلاعات کارت هرگز روی سرورهای TalkLive ذخیره نمی‌شود.",
+  "billingCardsHint": "Plus در برنامه اندروید TalkLive از طریق Google Play خریداری می‌شود. اطلاعات کارت هرگز روی سرورهای TalkLive ذخیره نمی‌شود.",
   "billingBoostKicker": "پاس فعلی",
   "billingBoostValue": "پاس فعالی نیست",
   "billingBoostHint": "همه امکانات رایگان است. هیچ هزینه‌ای از تو کسر نشده.",
