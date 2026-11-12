@@ -60,9 +60,10 @@ function perMonth(yearly, currency) {
 
 // Everything a page needs to show prices for one country.
 function forCountry(country) {
-  const [currency, monthly, d1, d7, d15] = row(country);
+  const [currency, monthly, d1, d7, d15, , yearlyFromTable] = row(country);
   const item = (id, amount, days) => ({ id, days, amount, label: format(amount, currency) });
-  const yearly = yearlyPrice(monthly);
+  // The table holds Google Play's own yearly price; the formula is only a fallback.
+  const yearly = yearlyFromTable != null ? yearlyFromTable : yearlyPrice(monthly);
   return {
     country: String(country || '').toUpperCase() || 'XX',
     currency,
