@@ -62,8 +62,14 @@ class CallService : LifecycleService() {
     // kept the search going with nothing on screen, and a stranger could be
     // connected minutes later to a phone in a pocket.
     override fun onTaskRemoved(rootIntent: Intent?) {
-        calls.end()
-        stopSelf()
+        // Some phones report this when the app only went to the background
+        // (Home, Back): the call then dropped. Act only when no task of the
+        // app is left, which is what swiping it away from Recents leaves.
+        val gone = runCatching { getSystemService(android.app.ActivityManager::class.java).appTasks.isEmpty() }.getOrDefault(false)
+        if (gone) {
+            calls.end()
+            stopSelf()
+        }
         super.onTaskRemoved(rootIntent)
     }
 

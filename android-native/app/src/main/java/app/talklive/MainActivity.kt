@@ -30,7 +30,6 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var engage: app.talklive.engage.EngageRepository
     @Inject lateinit var social: app.talklive.social.SocialRepository
-    @Inject lateinit var calls: app.talklive.call.CallManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -62,13 +61,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-
-    // A text chat runs without the call service, so closing the app has to end
-    // its search here (a rotation is not a close).
-    override fun onDestroy() {
-        if (isFinishing && !isChangingConfigurations && calls.state.value.phase !is app.talklive.call.CallPhase.Idle) calls.end()
-        super.onDestroy()
     }
 
     override fun onNewIntent(intent: android.content.Intent) {
