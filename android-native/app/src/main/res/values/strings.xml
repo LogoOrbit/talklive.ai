@@ -544,6 +544,7 @@
     <string name="pass_popular">Popular</string>
     <string name="pass_best">Best value</string>
     <string name="pass_buy">Get %1$d days for %2$s</string>
+    <string name="pass_buy_one">Get 1 day for %1$s</string>
     <string name="pass_once">One-time payment. No subscription.</string>
     <plurals name="pass_days">
         <item quantity="one">day</item>

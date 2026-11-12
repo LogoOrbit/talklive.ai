@@ -15,14 +15,14 @@ import java.util.Locale
 object LocalPrice {
     private class P(val currency: String, val monthly: Double, val d1: Double, val d7: Double, val d15: Double, val yearly: Double)
 
-    // Generated from server/pricing-table.json - edit there, then copy across. The last
+    // Generated from server/pricing-table.json - edit there, then copy the row here by hand. The last
     // number is the yearly price, server/pricing.js yearlyPrice() (12 months for the price of 7).
     private val TABLE = mapOf(
         "AE" to P("AED", 35.0, 7.0, 18.0, 25.0, 250.0),
         "AF" to P("AFN", 149.0, 25.0, 69.0, 99.0, 1049.0),
         "AT" to P("EUR", 9.99, 1.99, 4.99, 6.99, 69.99),
         "AU" to P("AUD", 14.99, 2.99, 7.49, 10.49, 104.99),
-        "BD" to P("BDT", 249.0, 39.0, 99.0, 169.0, 1749.0),
+        "BD" to P("BDT", 299.0, 49.0, 119.0, 179.0, 2099.0),
         "BE" to P("EUR", 9.99, 1.99, 4.99, 6.99, 69.99),
         "BR" to P("BRL", 19.9, 3.9, 9.9, 14.9, 139.9),
         "CA" to P("CAD", 12.99, 2.49, 6.49, 8.99, 90.99),
@@ -49,7 +49,7 @@ object LocalPrice {
         "ID" to P("IDR", 35000.0, 5000.0, 15000.0, 25000.0, 245000.0),
         "IE" to P("EUR", 9.99, 1.99, 4.99, 6.99, 69.99),
         "IL" to P("ILS", 35.0, 7.0, 18.0, 25.0, 250.0),
-        "IN" to P("INR", 199.0, 29.0, 79.0, 129.0, 1399.0),
+        "IN" to P("INR", 199.0, 39.0, 99.0, 139.0, 1399.0),
         "IQ" to P("IQD", 3500.0, 500.0, 1500.0, 2500.0, 24500.0),
         "IT" to P("EUR", 9.99, 1.99, 4.99, 6.99, 69.99),
         "JP" to P("JPY", 1480.0, 300.0, 750.0, 1050.0, 10400.0),
@@ -71,7 +71,7 @@ object LocalPrice {
         "NZ" to P("NZD", 15.99, 2.99, 7.99, 10.99, 111.99),
         "PE" to P("PEN", 17.9, 3.5, 8.9, 12.9, 125.9),
         "PH" to P("PHP", 129.0, 19.0, 59.0, 89.0, 909.0),
-        "PK" to P("PKR", 599.0, 79.0, 249.0, 399.0, 4199.0),
+        "PK" to P("PKR", 599.0, 100.0, 249.0, 399.0, 4199.0),
         "PL" to P("PLN", 19.99, 3.99, 9.99, 14.99, 139.99),
         "PT" to P("EUR", 9.99, 1.99, 4.99, 6.99, 69.99),
         "QA" to P("QAR", 35.0, 7.0, 18.0, 25.0, 250.0),

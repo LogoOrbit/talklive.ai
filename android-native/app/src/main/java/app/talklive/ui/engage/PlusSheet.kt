@@ -389,7 +389,7 @@ fun PlusContent(
                 !signedIn -> GoldButton(stringResource(R.string.sign_in_or_create), busy = false, onClick = onSignIn)
                 canBuy && pickedPass != null -> {
                     val pass = pickedPass!!
-                    GoldButton(stringResource(R.string.pass_buy, pass.days, pass.price), busy = busy, onClick = { onBuyPass(pass) })
+                    GoldButton(if (pass.days == 1) stringResource(R.string.pass_buy_one, pass.price) else stringResource(R.string.pass_buy, pass.days, pass.price), busy = busy, onClick = { onBuyPass(pass) })
                     Text(stringResource(R.string.pass_once), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = Color.White, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 10.dp))
                     PerDayLine(pass.priceMicros, pass.currency, pass.days)
                 }
@@ -578,7 +578,8 @@ private fun PerkPreview(page: Int) {
 /** "That is $0.33 a day", from the real price in micro-units of [currency] spread over [days]. */
 @Composable
 private fun PerDayLine(priceMicros: Long, currency: String, days: Int) {
-    if (priceMicros <= 0 || currency.isBlank() || days <= 0) return
+    // A 1-day pass "is X a day" just repeats its price.
+    if (priceMicros <= 0 || currency.isBlank() || days <= 1) return
     Text(
         stringResource(R.string.plus_per_day, app.talklive.billing.LocalPrice.perDay(priceMicros / 1_000_000.0, days, currency)),
         style = MaterialTheme.typography.bodyMedium, color = Gold1, textAlign = TextAlign.Center,
