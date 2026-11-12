@@ -23,7 +23,7 @@ A random audio chat app - pairs strangers for live, audio-only conversations. Bu
   (silent, still counted as unread); messages show as "sending" until the server
   confirms them and are resent automatically after a reconnect
 - Referral links that pay both sides once the invited person actually talks
-- Stripe subscriptions for TalkLive Plus
+- TalkLive Plus (subscription and 1/7/15-day passes), sold in the Android app through Google Play
 
 The growth and monetisation model - how the category makes money, what is built,
 and what to do next - is in **[GROWTH.md](GROWTH.md)**.
@@ -170,7 +170,6 @@ A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.app/owne
 | `TURN_SHARED_SECRET` | coturn `use-auth-secret` value. The server mints a short-lived HMAC credential per request - preferred over static credentials |
 | `TURN_USERNAME` / `TURN_CREDENTIAL` | Static TURN credentials, used only when `TURN_SHARED_SECRET` is unset |
 | `TURN_FORCE_RELAY` | `1` forces browsers to use relay candidates only, so neither peer learns the other's IP. **Ignored unless a TURN relay is actually configured** - forcing relay with no relay leaves the browser with zero candidates and every call connects with no audio. Run `npm run check:turn` before setting it |
-| `STRIPE_SECRET_KEY`, `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_YEARLY`, `STRIPE_WEBHOOK_SECRET` | Stripe Checkout for TalkLive Plus. All optional: with none set, `/pricing` keeps its "coming soon" card and no checkout exists. See [GROWTH.md](GROWTH.md) |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_CONTACT` | Web push keypair. Optional; without it the browser is never asked for notification permission. **Never rotate** - it silently invalidates every existing subscription |
 | `GIPHY_API_KEY` | Giphy API key, enabling the GIF picker in text chat. Optional: with it unset, `/api/gifs/config` reports the feature off and both clients never render the GIF button at all, so nothing dead is shown. Get one at [developers.giphy.com](https://developers.giphy.com/) &rarr; Create an App. Requests are proxied through `/api/gifs` so the key never reaches a browser, results are cached 30 minutes per query, and `rating=g` (Giphy's most restrictive) is always sent. **Was Tenor** until Google shut that API down to external developers on 2026-06-30. |
 | `GSC_CREDENTIALS` | Google service-account JSON key (raw or base64) for reading search keywords from Search Console into the dashboard's Traffic tab. Optional |
@@ -183,7 +182,7 @@ A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.app/owne
 
 ### Premium (TalkLive Plus)
 
-Free tier limits (enforced server-side): max 2 preferred + 2 avoided countries, and the gender filter locked. Friends are unlimited for everyone. Premium unlocks all filters and removes ads. The `/pricing` upgrade button starts a Stripe Checkout (see "Grants come from" below) when the Stripe env vars are set, and shows "coming soon" otherwise.
+Free tier limits (enforced server-side): max 2 preferred + 2 avoided countries, and the gender filter locked. Friends are unlimited for everyone. Premium unlocks all filters and removes ads. `/pricing` shows local prices; buying on the website is "coming soon" and links to the Android app (see "Grants come from" below).
 
 Matching is instant for everyone. The free tier used to be held ~5s before the
 next search after a skip; that was removed because the client also emits `skip`
@@ -194,7 +193,7 @@ Premium is keyed to the browser's persistent `clientId` and is persisted in the 
 
 Grants come from three places:
 
-- **Stripe** (`server/billing.js`), when the Stripe env vars are set. The webhook grants and extends premium to Stripe's own `current_period_end`; a cancelled subscription lapses on its own with no cron, because grants now carry an `expiresAt`. Webhooks may arrive out of order or twice; `billing.nextPremium` makes that safe (an active expiry is never shortened, stale events and revokes for another subscription are skipped, and manual or referral grants are never revoked by Stripe).
+- **Google Play** (`server/play-billing.js`), the only place Plus is sold: the Android app sends the purchase token and Google's answer decides. Plus records granted by the earlier Stripe checkout are left as they were and run to their expiry; there is no Stripe code any more.
 - **Referrals**, 1 hour of Plus to the inviter for every 3 invited people who make an account and have a real conversation.
 - **Manual**, for testing and support: `PREMIUM_CLIENT_IDS`, or `store.setPremium(clientId)`. A manual grant has no `expiresAt`, so it is permanent - and `extendPremium` deliberately refuses to turn one into an expiring grant.
 

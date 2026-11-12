@@ -228,7 +228,7 @@
   "billingEmailHint": "Vincule um e-mail à sua conta e os recibos terão para onde ir quando houver passes.",
   "billingCardsKicker": "FORMAS DE PAGAMENTO SALVAS",
   "billingCardsValue": "Não armazenadas pelo TalkLive",
-  "billingCardsHint": "Os pagamentos serão feitos pelo Stripe Checkout. Os dados do cartão nunca ficam nos servidores do TalkLive.",
+  "billingCardsHint": "O Plus é comprado no app TalkLive para Android pelo Google Play. Os dados do cartão nunca ficam nos servidores do TalkLive.",
   "billingBoostKicker": "PASSE ATUAL",
   "billingBoostValue": "Nenhum passe ativo",
   "billingBoostHint": "Todos os recursos são grátis. Nada foi cobrado de você.",

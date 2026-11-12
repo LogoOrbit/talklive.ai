@@ -228,7 +228,7 @@
   "billingEmailHint": "アカウントにメールを登録すると、パス開始時に領収書が届きます。",
   "billingCardsKicker": "保存済みの支払い方法",
   "billingCardsValue": "TalkLiveには保存されません",
-  "billingCardsHint": "支払いはStripe Checkoutで処理されます。カード情報がTalkLiveのサーバーに保存されることはありません。",
+  "billingCardsHint": "PlusはTalkLiveのAndroidアプリでGoogle Play経由で購入します。カード情報がTalkLiveのサーバーに保存されることはありません。",
   "billingBoostKicker": "現在のパス",
   "billingBoostValue": "有効なパスはありません",
   "billingBoostHint": "すべての機能が無料です。料金は一切発生していません。",

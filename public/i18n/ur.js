@@ -228,7 +228,7 @@
   "billingEmailHint": "اپنے اکاؤنٹ سے ای میل جوڑیں تاکہ پاسز آنے پر رسیدیں وہاں پہنچیں۔",
   "billingCardsKicker": "محفوظ ادائیگی کے طریقے",
   "billingCardsValue": "TalkLive محفوظ نہیں کرتا",
-  "billingCardsHint": "ادائیگیاں Stripe Checkout کے ذریعے ہوں گی۔ کارڈ کی تفصیلات کبھی TalkLive سرورز پر محفوظ نہیں ہوتیں۔",
+  "billingCardsHint": "Plus ٹاک لائیو اینڈرائیڈ ایپ میں Google Play کے ذریعے خریدا جاتا ہے۔ کارڈ کی تفصیلات کبھی TalkLive سرورز پر محفوظ نہیں ہوتیں۔",
   "billingBoostKicker": "موجودہ پاس",
   "billingBoostValue": "کوئی فعال پاس نہیں",
   "billingBoostHint": "ہر فیچر مفت ہے۔ آپ سے کچھ وصول نہیں کیا گیا۔",

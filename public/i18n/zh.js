@@ -228,7 +228,7 @@
   "billingEmailHint": "为账户绑定邮箱，通行证上线后收据就有地方接收。",
   "billingCardsKicker": "已保存的付款方式",
   "billingCardsValue": "TalkLive 不存储",
-  "billingCardsHint": "付款将通过 Stripe Checkout 处理。银行卡信息绝不会存储在 TalkLive 服务器上。",
+  "billingCardsHint": "Plus 在 TalkLive 安卓应用中通过 Google Play 购买。银行卡信息绝不会存储在 TalkLive 服务器上。",
   "billingBoostKicker": "当前通行证",
   "billingBoostValue": "没有有效的通行证",
   "billingBoostHint": "所有功能都免费。你没有被收取任何费用。",

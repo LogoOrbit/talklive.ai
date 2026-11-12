@@ -228,7 +228,7 @@
   "billingEmailHint": "Привяжите почту к аккаунту, чтобы чеки приходили, когда появятся пропуска.",
   "billingCardsKicker": "СОХРАНЁННЫЕ СПОСОБЫ ОПЛАТЫ",
   "billingCardsValue": "TalkLive их не хранит",
-  "billingCardsHint": "Оплата будет проходить через Stripe Checkout. Данные карт никогда не хранятся на серверах TalkLive.",
+  "billingCardsHint": "Plus покупается в приложении TalkLive для Android через Google Play. Данные карт никогда не хранятся на серверах TalkLive.",
   "billingBoostKicker": "ТЕКУЩИЙ ПРОПУСК",
   "billingBoostValue": "Нет активного пропуска",
   "billingBoostHint": "Все функции бесплатны. С вас ничего не списывалось.",

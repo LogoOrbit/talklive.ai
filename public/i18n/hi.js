@@ -228,7 +228,7 @@
   "billingEmailHint": "अपने खाते से ईमेल जोड़ें ताकि पास आने पर रसीदें वहाँ पहुँचें।",
   "billingCardsKicker": "सेव किए गए भुगतान तरीके",
   "billingCardsValue": "TalkLive स्टोर नहीं करता",
-  "billingCardsHint": "भुगतान Stripe Checkout से होंगे। कार्ड की जानकारी कभी TalkLive सर्वर पर स्टोर नहीं होती।",
+  "billingCardsHint": "Plus TalkLive Android ऐप में Google Play के ज़रिए खरीदा जाता है। कार्ड की जानकारी कभी TalkLive सर्वर पर सहेजी नहीं जाती।",
   "billingBoostKicker": "मौजूदा पास",
   "billingBoostValue": "कोई सक्रिय पास नहीं",
   "billingBoostHint": "हर सुविधा मुफ़्त है। आपसे कोई शुल्क नहीं लिया गया।",

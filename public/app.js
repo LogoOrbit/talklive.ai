@@ -2673,12 +2673,11 @@ function renderPasses() {
   }
 }
 
-// Plus is bought in the Android app. Guests sign up first; goHomeAfterAuth then continues to /pricing?step=app.
+// The website cannot sell Plus yet (Android app only); the pricing page shows prices
+// and the Play link, so every buy button just goes there.
 function plusGo() {
-  if (accountNickname) { location.href = '/pricing?step=app'; return; }
-  try { sessionStorage.setItem('tl_plus_intent', '1'); } catch (_) { /* private mode */ }
   [shopModal, document.getElementById('premiumUpsellModal')].forEach((m) => m && closeModal(m));
-  openAuthPage('signup');
+  location.href = '/pricing';
 }
 
 let shopPriced = false;
@@ -3348,13 +3347,9 @@ function closeAuthPage(fromHistory) {
 // leave people on whatever screen they started from, half-updated.
 function goHomeAfterAuth(message, delay) {
   try { if (message) sessionStorage.setItem('talklive_flash', message); } catch (_) { /* private mode */ }
-  let dest = '/';
-  try {
-    if (sessionStorage.getItem('tl_plus_intent')) { sessionStorage.removeItem('tl_plus_intent'); dest = '/pricing?step=app'; }
-  } catch (_) { /* private mode */ }
   setTimeout(() => {
     suppressUnloadWarning = true;
-    location.replace(dest);
+    location.replace('/');
   }, delay || 0);
 }
 
@@ -3389,9 +3384,6 @@ function selectAccountTab(which) {
   signupTab.classList.toggle('hidden', authTab !== 'signup');
   forgotTab.classList.toggle('hidden', authTab !== 'forgot');
   accountStatus.classList.add('hidden');
-  try {
-    if (authTab === 'signup' && sessionStorage.getItem('tl_plus_intent')) { accountStatus.textContent = t('plusNeedAccount'); accountStatus.classList.remove('hidden'); }
-  } catch (_) { /* private mode */ }
   const [titleKey, subKey] = AUTH_COPY[authTab];
   authTitle.dataset.i18n = titleKey;
   authTitle.textContent = t(titleKey);

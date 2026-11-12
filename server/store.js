@@ -132,8 +132,7 @@ function defaults() {
     reputation: {},
     // Online match-quality model weights (server/match-model.js).
     matchModel: null,
-    // Stripe Checkout session id -> ms the pass was granted, so a redelivered or
-    // concurrent webhook never extends Plus twice.
+    // Left over from the removed Stripe checkout; kept so old saves load unchanged.
     billingPasses: {},
     reports: [], // { id, ts, reporter, reported, reason, detail, handled }
     // { id, ts, username, country, text, clientId, account, reply }; reply is
@@ -2213,24 +2212,6 @@ function findActiveBan(clientId, ip) {
     && ((clientId && b.clientId === clientId) || (ip && b.ip && b.ip === ip))) || null;
 }
 
-// --- Stripe one-time passes ---
-const MAX_BILLING_PASSES = 5000;
-
-// True the first time a Checkout session id is claimed, false after. It runs
-// with no await before the grant, so two deliveries at once cannot both win.
-function claimBillingPass(sessionId) {
-  const passes = data.billingPasses || (data.billingPasses = {});
-  if (Object.prototype.hasOwnProperty.call(passes, sessionId)) return false;
-  passes[sessionId] = Date.now();
-  const ids = Object.keys(passes);
-  if (ids.length > MAX_BILLING_PASSES) {
-    ids.sort((a, b) => passes[a] - passes[b]);
-    for (const id of ids.slice(0, ids.length - MAX_BILLING_PASSES)) delete passes[id];
-  }
-  save();
-  return true;
-}
-
 // --- Under-18 sign-up blocks ---
 // A refused sign-up on a date of birth under 18 shuts that device and network
 // out of matching for a day, so the same child cannot simply retype a year.
@@ -4131,7 +4112,6 @@ module.exports = {
   addError,
   activeBans,
   findActiveBan,
-  claimBillingPass,
   addAgeBlock,
   ageBlocked,
   addBan,

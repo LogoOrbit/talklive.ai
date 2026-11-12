@@ -228,7 +228,7 @@
   "billingEmailHint": "Hesabına bir e-posta bağla, paslar çıktığında makbuzlar oraya gelsin.",
   "billingCardsKicker": "KAYITLI ÖDEME YÖNTEMLERİ",
   "billingCardsValue": "TalkLive tarafından saklanmaz",
-  "billingCardsHint": "Ödemeler Stripe Checkout üzerinden yapılacak. Kart bilgileri asla TalkLive sunucularında saklanmaz.",
+  "billingCardsHint": "Plus, TalkLive Android uygulamasından Google Play üzerinden satın alınır. Kart bilgileri asla TalkLive sunucularında saklanmaz.",
   "billingBoostKicker": "MEVCUT PAS",
   "billingBoostValue": "Aktif pas yok",
   "billingBoostHint": "Tüm özellikler ücretsiz. Senden hiçbir ücret alınmadı.",

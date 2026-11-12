@@ -228,7 +228,7 @@
   "billingEmailHint": "Tautkan email ke akunmu agar tanda terima punya tujuan saat pass tersedia.",
   "billingCardsKicker": "METODE PEMBAYARAN TERSIMPAN",
   "billingCardsValue": "Tidak disimpan oleh TalkLive",
-  "billingCardsHint": "Pembayaran akan diproses lewat Stripe Checkout. Data kartu tidak pernah disimpan di server TalkLive.",
+  "billingCardsHint": "Plus dibeli di aplikasi Android TalkLive lewat Google Play. Data kartu tidak pernah disimpan di server TalkLive.",
   "billingBoostKicker": "PASS SAAT INI",
   "billingBoostValue": "Tidak ada pass aktif",
   "billingBoostHint": "Semua fitur gratis. Kamu belum dikenai biaya apa pun.",

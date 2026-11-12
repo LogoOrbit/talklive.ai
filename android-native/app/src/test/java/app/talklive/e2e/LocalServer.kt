@@ -36,7 +36,7 @@ class LocalServer : AutoCloseable {
                 // Never send real email, push or payments from tests: drop every
                 // credential the machine running them happens to have.
                 environment().keys.filter { k ->
-                    listOf("RESEND", "SMTP", "MAIL", "SENDGRID", "POSTMARK", "FCM", "STRIPE", "VAPID", "TWILIO", "ANTHROPIC", "OPENAI", "CLOUDFLARE", "METERED")
+                    listOf("RESEND", "SMTP", "MAIL", "SENDGRID", "POSTMARK", "FCM", "VAPID", "TWILIO", "ANTHROPIC", "OPENAI", "CLOUDFLARE", "METERED")
                         .any { k.uppercase().contains(it) }
                 }.forEach { environment().remove(it) }
             }
