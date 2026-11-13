@@ -1,0 +1,134 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<script type="importmap">{"imports":{"three":"/node_modules/three/build/three.module.js","three/addons/":"/node_modules/three/examples/jsm/"}}</script>
+<script src="/web/animals.js"></script>
+<style>
+@font-face{font-family:Jakarta;src:url(/res/font/pjs_400.ttf);font-weight:400}
+@font-face{font-family:Jakarta;src:url(/res/font/pjs_500.ttf);font-weight:500}
+@font-face{font-family:Jakarta;src:url(/res/font/pjs_600.ttf);font-weight:600}
+@font-face{font-family:Jakarta;src:url(/res/font/pjs_700.ttf);font-weight:700}
+@font-face{font-family:Jakarta;src:url(/res/font/pjs_800.ttf);font-weight:800}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1080px;height:1920px;overflow:hidden}
+body{position:relative;font-family:Jakarta,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+.layer{position:absolute;inset:0}
+canvas.layer{width:1080px;height:1920px}
+#bg{z-index:0}#fx{z-index:1}#mid{z-index:2;overflow:hidden}#fxm{z-index:3}#refl{z-index:3}#gl{position:absolute;left:0;top:0;z-index:4}#fx2{z-index:5}
+.txt{position:absolute;z-index:6}
+.txt h1{font-weight:800;letter-spacing:-0.038em;line-height:1.0}
+.txt h1 em{font-style:normal;background:var(--accent);-webkit-background-clip:text;background-clip:text;color:transparent;padding-right:.04em;margin-right:-.04em}
+.txt p{font-weight:500;letter-spacing:-0.004em;line-height:1.38;margin-top:30px}
+.logo{position:absolute;z-index:6;display:flex;align-items:center;gap:16px}
+.logo img{display:block}
+.logo span{font-weight:800;letter-spacing:-0.03em;line-height:1}
+.logo span b{font-weight:800;color:var(--logoLive)}
+#vig{z-index:7;pointer-events:none}
+#grain{z-index:8;mix-blend-mode:overlay;pointer-events:none}
+/* Spirit-animal wall */
+.wall{position:absolute;display:grid;transform-style:preserve-3d}
+.tile{border-radius:22%;display:flex;align-items:center;justify-content:center}
+.tile svg{width:66%;height:66%;display:block}
+</style></head>
+<body>
+<div class="layer" id="bg"></div>
+<canvas class="layer" id="fx" width="2160" height="3840"></canvas>
+<div class="layer" id="mid"></div>
+<canvas class="layer" id="fxm" width="2160" height="3840"></canvas>
+<canvas class="layer" id="refl" width="2160" height="3840" style="display:none"></canvas>
+<canvas id="gl"></canvas>
+<canvas class="layer" id="fx2" width="2160" height="3840"></canvas>
+<div class="layer" id="vig"></div>
+<canvas class="layer" id="grain" width="1080" height="1920"></canvas>
+<script type="module">
+import { renderPhones } from './phone3d.js';
+import { SLIDES, THEMES } from './slides.js';
+import { drawFx } from './fx.js';
+
+const q = new URLSearchParams(location.search);
+const id = q.get('id'), themeName = q.get('theme') || 'dark';
+const T = THEMES[themeName];
+const S = SLIDES[id](T, themeName);
+document.body.style.background = S.base || T.base;
+document.body.style.setProperty('--accent', S.accent || T.accent);
+document.body.style.setProperty('--logoLive', T.logoLive);
+document.getElementById('bg').style.background = S.bg;
+
+const fx = document.getElementById('fx').getContext('2d'); fx.scale(2, 2);
+for (const e of S.fx || []) await drawFx(fx, e, T);
+const fxm = document.getElementById('fxm').getContext('2d'); fxm.scale(2, 2);
+for (const e of S.fxMid || []) await drawFx(fxm, e, T);
+const fx2 = document.getElementById('fx2').getContext('2d'); fx2.scale(2, 2);
+for (const e of S.fxFront || []) await drawFx(fx2, e, T);
+
+// A wall of the app's own spirit animals, in perspective behind the phone.
+if (S.wall) {
+  const W = S.wall, A = window.TalkLiveAnimals;
+  const mid = document.getElementById('mid');
+  const wall = document.createElement('div'); wall.className = 'wall';
+  Object.assign(wall.style, {
+    left: W.x + 'px', top: W.y + 'px', gridTemplateColumns: `repeat(${W.cols}, ${W.tile}px)`, gap: W.gap + 'px',
+    transform: W.transform, transformOrigin: W.origin || '50% 50%',
+  });
+  const ids = A.ids;
+  for (let i = 0; i < W.cols * W.rows; i++) {
+    const a = A.list[(i * 7 + Math.floor(i / W.cols) * 3) % ids.length];
+    const t = document.createElement('div'); t.className = 'tile';
+    t.style.width = t.style.height = W.tile + 'px';
+    t.style.background = W.tileBg(a.color);
+    t.style.boxShadow = W.tileShadow || 'none';
+    t.innerHTML = `<svg viewBox="0 0 64 64">${a.art()}</svg>`;
+    wall.appendChild(t);
+  }
+  mid.appendChild(wall);
+  mid.style.perspective = (W.perspective || 1600) + 'px';
+  mid.style.perspectiveOrigin = W.pOrigin || '50% 40%';
+  if (W.mask) { mid.style.webkitMaskImage = W.mask; mid.style.maskImage = W.mask; }
+  if (W.filter) wall.style.filter = W.filter;
+  mid.style.opacity = W.opacity ?? 1;
+}
+
+// Phones.
+const gl = document.getElementById('gl');
+gl.style.filter = S.shadow ?? T.shadow;
+await renderPhones(gl, { width: 1080, height: 1920, scale: 2, fov: S.fov || 18, lights: S.lights || T.lights, exposure: S.exposure, phones: S.phones.map((p) => ({ frame: T.frame, sheen: T.sheen, ...p })) });
+
+// Optional floor reflection.
+if (S.reflection) {
+  const r = document.getElementById('refl'); r.style.display = 'block';
+  const c = r.getContext('2d'); const y = S.reflection.y * 2;
+  c.save(); c.translate(0, 2 * y); c.scale(1, -1); c.drawImage(gl, 0, 0); c.restore();
+  c.globalCompositeOperation = 'destination-in';
+  const g = c.createLinearGradient(0, y, 0, y + S.reflection.depth * 2);
+  g.addColorStop(0, `rgba(0,0,0,${S.reflection.opacity})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+  c.fillStyle = g; c.fillRect(0, y, 2160, 3840 - y); c.clearRect(0, 0, 2160, y);
+  r.style.filter = `blur(${S.reflection.blur || 1.5}px)`;
+}
+
+// Type.
+if (S.logo) {
+  const L = document.createElement('div'); L.className = 'logo';
+  Object.assign(L.style, { left: S.logo.x + 'px', top: S.logo.y + 'px' });
+  L.innerHTML = `<img src="/brand/TalkLive%20Mark%20Transparent.png" style="height:${S.logo.h}px"><span style="font-size:${S.logo.size}px;color:${T.ink}">Talk<b>Live</b></span>`;
+  document.body.appendChild(L);
+}
+const tx = S.text, t = document.createElement('div'); t.className = 'txt';
+Object.assign(t.style, { left: tx.x + 'px', width: tx.w + 'px', textAlign: tx.align || 'left' });
+if (tx.bottom != null) t.style.bottom = tx.bottom + 'px'; else t.style.top = tx.y + 'px';
+const center = tx.align === 'center' ? 'margin-left:auto;margin-right:auto;' : tx.align === 'right' ? 'margin-left:auto;' : '';
+t.innerHTML = `<h1 style="font-size:${tx.size}px;color:${T.ink}">${tx.h}</h1>` + (tx.sub ? `<p style="font-size:${tx.subSize || 38}px;color:${T.muted};${center}max-width:${tx.subW || tx.w}px">${tx.sub}</p>` : '');
+document.body.appendChild(t);
+
+// Vignette and film grain.
+document.getElementById('vig').style.background = S.vignette ?? T.vignette;
+const gc = document.getElementById('grain').getContext('2d');
+const im = gc.createImageData(1080, 1920);
+let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+for (let i = 0; i < im.data.length; i += 4) { const v = 128 + (rnd() + rnd() + rnd() - 1.5) * 90; im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = 255; }
+gc.putImageData(im, 0, 0);
+document.getElementById('grain').style.opacity = S.grain ?? T.grain;
+
+await document.fonts.ready;
+await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+window.__ready = true;
+</script>
+</body></html>
