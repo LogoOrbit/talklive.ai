@@ -2021,7 +2021,8 @@ body.panel-open .game-overlay {
   font-size: 14px;
   line-height: 1.78;
   letter-spacing: 0.005em;
-  color: rgba(242, 244, 255, 0.88);
+  color: var(--text);
+  opacity: 0.88;
 }
 
 .policy-body p {
@@ -2080,7 +2081,7 @@ body.panel-open .game-overlay {
 }
 
 .policy-body strong {
-  color: #fff;
+  color: var(--text);
   font-weight: 600;
 }
 
