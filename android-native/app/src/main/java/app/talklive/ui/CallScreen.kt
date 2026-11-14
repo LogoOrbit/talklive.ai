@@ -133,6 +133,8 @@ fun CallScreen(
     onProblem: (String) -> Unit = {},
     /** "Keep my filters": stop a free search's countries and language from widening. */
     onKeepFilters: () -> Unit = {},
+    /** The selected filters, shown while searching (display only). */
+    filterSummary: String? = null,
 ) {
     var reporting by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
@@ -252,6 +254,14 @@ fun CallScreen(
                         val filterLine = filterWaitText(p)
                         if (filterLine != null) { Spacer(Modifier.height(8.dp)); Subtitle(filterLine) }
                         else p.etaSeconds?.takeIf { it > 0 }?.let { Spacer(Modifier.height(8.dp)); Subtitle(stringResource(R.string.searching_eta, it)) }
+                        if (filterSummary != null && !p.widened) {
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                stringResource(R.string.filters_summary, filterSummary),
+                                style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            )
+                        }
                         if (p.wideningIn != null || p.widened) {
                             androidx.compose.material3.TextButton(onClick = onKeepFilters) { Text(stringResource(R.string.keep_filters)) }
                         }

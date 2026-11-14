@@ -112,6 +112,75 @@ const SCAN = (opts = {}) => {
       }
       await ctx.close();
     }
+    // Phone: Shop and Settings behave, not only look right.
+    for (const theme of ['dark', 'light']) {
+      const ctx = await b.newContext({ ...SIZES.mob, colorScheme: theme });
+      await ctx.addInitScript((t) => { try { localStorage.setItem('talklive_theme', t); localStorage.setItem('tl_ff', '-progressiveDisclosure'); } catch (_) {} }, theme);
+      const pg = await ctx.newPage();
+      const errs = []; pg.on('pageerror', (e) => errs.push(e.message));
+      const openFromMore = async (id) => {
+        await pg.goto(base + '/', { waitUntil: 'load' }); await pg.waitForTimeout(900);
+        await pg.locator('#navMoreBtn').click({ timeout: 3000 }); await pg.waitForTimeout(350);
+        await pg.locator(`#navDrawer [data-opens="${id}"]`).click({ timeout: 3000 }); await pg.waitForTimeout(900);
+      };
+      const tag = `mob/${theme}`;
+      // Shop
+      await openFromMore('navShopBtn');
+      if (!(await pg.locator('#shopModal').isVisible())) problems.push(`${tag}/shop: did not open`);
+      else {
+        // Local prices arrive (no placeholder left) and the buy button names one.
+        await pg.waitForFunction(() => !document.querySelector('#passTiers .pass-price-loading'), null, { timeout: 4000 }).catch(() => problems.push(`${tag}/shop: prices never loaded`));
+        const buy = (await pg.locator('#passBuyBtn').textContent().catch(() => '')) || '';
+        if (!/\d/.test(buy)) problems.push(`${tag}/shop: buy button has no price: "${buy}"`);
+        // Picking a pass updates the selection and the button.
+        await pg.locator('#passTiers .pass-row').first().click();
+        if ((await pg.locator('#passTiers .pass-row.is-selected').count()) !== 1 || !/1/.test(await pg.locator('#passBuyBtn').textContent())) problems.push(`${tag}/shop: picking a pass did not update`);
+        // Every control is a real touch target (24px+), links readable at 4.5:1.
+        const small = await pg.evaluate(() => [...document.querySelectorAll('#shopModal a, #shopModal button')].filter((e) => e.offsetParent)
+          .map((e) => { const r = e.getBoundingClientRect(); return { t: (e.innerText || e.getAttribute('aria-label') || '').trim().slice(0, 30), h: Math.round(r.height), w: Math.round(r.width) }; })
+          .filter((x) => x.h < 24 || x.w < 24));
+        small.forEach((x) => problems.push(`${tag}/shop: touch target ${x.w}x${x.h} "${x.t}"`));
+        await pg.locator('#shopModal .shop-fine').scrollIntoViewIfNeeded();
+        for (const o of await pg.evaluate(SCAN, { root: '#shopModal', min: 4.5 })) if (/^A$/.test(o.cls) || /Terms|Privacy|Safety|month/.test(o.text)) problems.push(`${tag}/shop: link ${o.ratio}:1 "${o.text}" ${o.fg} on ${o.bg}`);
+        const box = await pg.locator('#shopModal .shop-fine').boundingBox();
+        if (!box || box.y + box.height > SIZES.mob.viewport.height) problems.push(`${tag}/shop: footer links not reachable by scrolling`);
+        await pg.locator('#closeShopBtn').click();
+        await pg.waitForTimeout(400);
+        if (await pg.locator('#shopModal').isVisible()) problems.push(`${tag}/shop: close button did not close it`);
+      }
+      // Settings
+      await openFromMore('appSettingsBtn');
+      if (!(await pg.locator('#settingsPanel').isVisible())) problems.push(`${tag}/settings: did not open`);
+      else {
+        const rows = await pg.evaluate(() => [...document.querySelectorAll('#settingsPanel .tl-set-toggle')].filter((e) => e.offsetParent).map((e) => Math.round(e.getBoundingClientRect().height)));
+        if (!rows.length) problems.push(`${tag}/settings: no toggles`);
+        rows.filter((h) => h < 44).forEach((h) => problems.push(`${tag}/settings: toggle row only ${h}px tall`));
+        // Tapping the row (not the tiny switch) flips the setting and saves it.
+        const before = await pg.locator('#qsSound').isChecked();
+        await pg.locator('#settingsPanel label[for="qsSound"] .tl-set-text').click();
+        await pg.waitForTimeout(200);
+        const after = await pg.locator('#qsSound').isChecked();
+        const saved = await pg.evaluate(() => localStorage.getItem('talklive_sound'));
+        if (after === before || saved !== (after ? 'on' : 'off')) problems.push(`${tag}/settings: tapping the sound row did not toggle/save (${before}->${after}, saved ${saved})`);
+        // The theme switch works from here.
+        const other = theme === 'dark' ? 'light' : 'dark';
+        await pg.locator(`#qsTheme [data-value="${other}"]`).click();
+        await pg.waitForTimeout(250);
+        if ((await pg.evaluate(() => document.documentElement.dataset.theme)) !== other) problems.push(`${tag}/settings: theme switch did not apply ${other}`);
+        await pg.locator(`#qsTheme [data-value="${theme}"]`).click();
+        // The last row is reachable and the panel closes.
+        await pg.locator('#settingsPanel .side-panel-body').evaluate((e) => { e.scrollTop = e.scrollHeight; });
+        await pg.waitForTimeout(200);
+        const last = await pg.evaluate(() => { const els = [...document.querySelectorAll('#settingsPanel .side-panel-body button')].filter((e) => e.offsetParent); const r = els[els.length - 1].getBoundingClientRect(); return r.bottom <= innerHeight; });
+        if (!last) problems.push(`${tag}/settings: last button not reachable by scrolling`);
+        await pg.locator('#settingsPanelClose').click();
+        await pg.waitForTimeout(400);
+        if (await pg.locator('#settingsPanel').evaluate((e) => e.classList.contains('open'))) problems.push(`${tag}/settings: close did not close it`);
+      }
+      if (errs.length) problems.push(`${tag}: page errors ${errs.join(' | ')}`);
+      if (process.env.UI_SHOTS) await pg.screenshot({ path: path.join(process.env.UI_SHOTS, `mob-${theme}-after.png`) });
+      await ctx.close();
+    }
     // Components that used hard-coded colours (style.css sweep): rendered in
     // every theme and held to 4.5:1, the WCAG AA minimum for small text.
     for (const theme of ['dark', 'light', 'ocean']) {

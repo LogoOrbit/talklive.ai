@@ -1941,34 +1941,45 @@ function activeFilterCount(f) {
 // translation (symbols, flags, language and interest names), shown on Home and
 // while searching. Never read by matchmaking. Gender only counts for Plus,
 // as it does on the server.
-function filterSummaryParts(f) {
+function filterSummaryParts(f, spoken) {
   const parts = [];
-  if (isPremiumUser && f.prefGender === 'female') parts.push('\u2640');
-  else if (isPremiumUser && f.prefGender === 'male') parts.push('\u2642');
+  // Words, not ♀/♂: a screen reader read those as "female sign".
+  if (isPremiumUser && (f.prefGender === 'female' || f.prefGender === 'male')) parts.push(t(f.prefGender));
+  // Flags on screen; country names for a screen reader.
+  const places = (list) => (spoken
+    ? list.map((c) => getCountryName(c) || c).join(', ')
+    : list.slice(0, 3).map(countryFlagEmoji).join('') + (list.length > 3 ? '+' + (list.length - 3) : ''));
   const inc = f.includeCountries || [];
-  if (inc.length) parts.push(inc.slice(0, 3).map(countryFlagEmoji).join('') + (inc.length > 3 ? '+' + (inc.length - 3) : ''));
+  if (inc.length) parts.push(places(inc));
   if (f.prefLang && I18N_LANGS[f.prefLang]) parts.push(I18N_LANGS[f.prefLang].name);
   const ints = f.interests || [];
-  if (ints.length) parts.push(ints[0] + (ints.length > 1 ? ' +' + (ints.length - 1) : ''));
+  if (ints.length) parts.push(spoken ? ints.join(', ') : ints[0] + (ints.length > 1 ? ' +' + (ints.length - 1) : ''));
   const exc = f.excludeCountries || [];
-  if (exc.length) parts.push('\u2715 ' + exc.slice(0, 3).map(countryFlagEmoji).join('') + (exc.length > 3 ? '+' : ''));
+  if (exc.length) parts.push((spoken ? t('filtersNot') + ' ' : '\u2715 ') + places(exc));
   return parts;
 }
 function renderFilterSummary() {
   const home = document.getElementById('homeFilterSummary');
   const search = document.getElementById('searchFilterSummary');
-  let text;
+  let text, spoken;
   // Called from setState, which can run before the filter and premium state
   // below exist (let bindings are in their dead zone until then).
-  try { text = filterSummaryParts(appliedFilters).join(' \u00b7 '); } catch (_) { return; }
+  try {
+    text = filterSummaryParts(appliedFilters).join(' \u00b7 ');
+    spoken = filterSummaryParts(appliedFilters, true).join('; ');
+  } catch (_) { return; }
   const searching = !!orb && orb.classList.contains('waiting');
+  const line = text ? t('filters') + ': ' + text : '';
+  const label = spoken ? t('filters') + ': ' + spoken : '';
   if (home) {
-    home.textContent = text ? '\u2699 ' + text : '';
+    home.textContent = line;
     home.classList.toggle('hidden', !text);
+    if (label) home.setAttribute('aria-label', label + '. ' + t('filtersEditHint'));
   }
   if (search) {
-    search.textContent = text ? t('filters') + ': ' + text : '';
+    search.textContent = line;
     search.classList.toggle('hidden', !text || !searching);
+    if (label) search.setAttribute('aria-label', label);
   }
 }
 function updateFiltersBadge() {

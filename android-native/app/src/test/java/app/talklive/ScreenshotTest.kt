@@ -86,6 +86,28 @@ class ScreenshotTest {
             P("Priya", "IN", "India", "cat", emptyList(), true), P("Jonas", "DE", "Germany", "wolf", emptyList(), false),
         ))
     }
+    // Selected filters on Home and while searching (display only).
+    private val plusFilters = app.talklive.engage.Filters(includeCountries = listOf("ES", "MX"), prefGender = "female", prefLang = "es", interests = listOf("music", "travel"))
+    @Test fun homeFilters() = shot("07d_home_filters", dark = true) {
+        HomeScreen(true, 3412, "fox", "Sam", true, {}, {}, {}, filtersActive = plusFilters.activeCount, filterSummary = app.talklive.ui.components.filterSummary(plusFilters, true))
+    }
+    @Test fun homeFiltersLight() = shot("07e_home_filters_light", dark = false) {
+        HomeScreen(true, 3412, "fox", "Sam", false, {}, {}, {}, filtersActive = plusFilters.activeCount, filterSummary = app.talklive.ui.components.filterSummary(plusFilters, true))
+    }
+    @Test fun searchingFilters() = shot("08b_searching_filters", dark = true) {
+        CallScreen(
+            CallState(phase = CallPhase.Searching(gender = "female", pool = app.talklive.net.FilterPool(2, 0))), true, "fox", { 0f },
+            onNext = {}, onEnd = {}, onMute = {}, onSpeaker = {}, onReport = {}, premium = true,
+            filterSummary = app.talklive.ui.components.filterSummary(plusFilters, true),
+        )
+    }
+    @Test fun searchingFiltersLight() = shot("08c_searching_filters_light", dark = false) {
+        CallScreen(
+            CallState(phase = CallPhase.Searching(wideningIn = 6)), true, "fox", { 0f },
+            onNext = {}, onEnd = {}, onMute = {}, onSpeaker = {}, onReport = {},
+            filterSummary = app.talklive.ui.components.filterSummary(plusFilters.copy(prefGender = "any"), false),
+        )
+    }
     @Test fun animals() = shot("10_animals") { app.talklive.ui.animals.AnimalSetupScreen("owl") {} }
     @Test fun chatsEmpty() = shot("11_chats") { app.talklive.ui.main.EmptyTab(app.talklive.ui.main.MainTab.Chats, onStart = {}) }
     @Test fun reconnecting() = shot("12_reconnecting") {

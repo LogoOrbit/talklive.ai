@@ -6078,6 +6078,17 @@ html.perf-lite .side-panel { box-shadow: none; }
   color: var(--muted);
   text-align: center;
 }
+/* Shop links: the default link colour (blue, visited purple) and a 15px-tall
+   hit area. Theme colour at 4.5:1+, and padding for a 24px+ touch target. */
+.pass-foot a,
+.shop-fine a {
+  display: inline-block;
+  padding: 6px 4px;
+  color: var(--accent-2);
+  text-underline-offset: 2px;
+}
+[data-theme="light"] .pass-foot a,
+[data-theme="light"] .shop-fine a { color: var(--accent); }
 
 .pass-perks {
   display: grid;

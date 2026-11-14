@@ -734,4 +734,6 @@
     <string name="filters_widened">Nobody from your chosen countries is free · connecting you with anyone instead</string>
     <string name="pass_monthly_cheaper">Monthly Plus (%1$s) costs less</string>
     <string name="filters_gender_note">Gender is what each person picks for themselves, not verified. Your choice is kept until you are matched.</string>
+    <string name="filters_summary">Filters: %1$s</string>
+    <string name="filters_not">not %1$s</string>
 </resources>

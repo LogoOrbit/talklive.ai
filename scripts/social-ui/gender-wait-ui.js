@@ -24,6 +24,12 @@ const H = require('./harness');
     await H.wait(2500);
     const text = (sel) => page.$eval(sel, (el) => el.textContent.trim()).catch(() => '');
 
+    // Home says what the next search is limited to, in words.
+    const homeSummary = await text('#homeFilterSummary');
+    const homeLabel = await page.$eval('#homeFilterSummary', (el) => el.getAttribute('aria-label') || '').catch(() => '');
+    H.ok('Home shows the gender filter in words', /Filters:\s*Female/.test(homeSummary), homeSummary);
+    H.ok('the Home summary has a spoken label', /Female/.test(homeLabel) && /change/i.test(homeLabel), homeLabel);
+
     // A man is already searching; he must never be matched with this search.
     const man = H.bot(base, 'ben');
     await H.wait(400);
@@ -39,6 +45,7 @@ const H = require('./harness');
     let status = '';
     for (let i = 0; i < 30 && !/woman/i.test(status); i++) { await H.wait(300); status = await text('#statusText'); }
     H.ok('the page says it is looking for a woman', /looking for a woman/i.test(status), status);
+    H.ok('the filters stay visible while searching', /Filters:\s*Female/.test(await text('#searchFilterSummary')) && await page.isVisible('#searchFilterSummary'), await text('#searchFilterSummary'));
     H.ok('the page says nobody matching is online yet', /nobody matching your filters/i.test(await text('#subText')), await text('#subText'));
 
     await H.wait(12000);

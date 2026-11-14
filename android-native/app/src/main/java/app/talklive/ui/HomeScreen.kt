@@ -79,6 +79,8 @@ fun HomeScreen(
     onMode: (app.talklive.call.CallMode) -> Unit = {},
     engage: app.talklive.engage.Engage? = null,
     filtersActive: Int = 0,
+    /** What the next search is limited to (display only); tap opens Filters. */
+    filterSummary: String? = null,
     onStreak: () -> Unit = {},
     onFilters: () -> Unit = {},
     premium: Boolean = true,
@@ -187,6 +189,19 @@ fun HomeScreen(
                         if (filtersActive > 0) androidx.compose.material3.Badge(containerColor = MaterialTheme.colorScheme.primary) { Text(filtersActive.toString()) }
                     }) { Icon(androidx.compose.material.icons.Icons.Rounded.Tune, androidx.compose.ui.res.stringResource(R.string.filters), tint = MaterialTheme.colorScheme.primary) }
                 }
+            }
+        }
+        if (filterSummary != null) {
+            Surface(
+                onClick = onFilters, shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.padding(top = 10.dp).align(Alignment.CenterHorizontally),
+            ) {
+                Text(
+                    stringResource(R.string.filters_summary, filterSummary),
+                    style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                )
             }
         }
         // Auto-connect is set here, before a call, so the call screen stays clean.

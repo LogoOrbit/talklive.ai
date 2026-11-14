@@ -123,6 +123,8 @@ fun TextChatScreen(
     onSendGif: ((app.talklive.social.Gif) -> Unit)? = null,
     /** "Keep my filters" while a free search is about to widen. */
     onKeepFilters: () -> Unit = {},
+    /** The selected filters, shown while searching (display only). */
+    filterSummary: String? = null,
 ) {
     val partner = (state.phase as? CallPhase.Connected)?.partner
     var draft by remember { mutableStateOf("") }
@@ -195,7 +197,7 @@ fun TextChatScreen(
         }
 
         if (partner == null) {
-            Searching(Modifier.weight(1f), myAnimal, state.phase as? CallPhase.Searching, onKeepFilters)
+            Searching(Modifier.weight(1f), myAnimal, state.phase as? CallPhase.Searching, onKeepFilters, filterSummary)
         } else {
             val byId = remember(messages) { messages.associateBy { it.id } }
             val newestFirst = messages.asReversed()
@@ -347,7 +349,7 @@ fun TextChatScreen(
 }
 
 @Composable
-private fun Searching(modifier: Modifier, myAnimal: String?, search: CallPhase.Searching?, onKeepFilters: () -> Unit = {}) {
+private fun Searching(modifier: Modifier, myAnimal: String?, search: CallPhase.Searching?, onKeepFilters: () -> Unit = {}, filterSummary: String? = null) {
     val t = rememberInfiniteTransition(label = "radar")
     val rings = (0 until 3).map { i ->
         t.animateFloat(0f, 1f, infiniteRepeatable(tween(2400, easing = LinearEasing), RepeatMode.Restart, StartOffset(i * 800)), label = "r$i")
@@ -375,6 +377,13 @@ private fun Searching(modifier: Modifier, myAnimal: String?, search: CallPhase.S
             Text(
                 it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.padding(horizontal = 24.dp),
+            )
+        }
+        if (filterSummary != null && search?.widened != true) {
+            Text(
+                stringResource(R.string.filters_summary, filterSummary),
+                style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.padding(top = 6.dp, start = 24.dp, end = 24.dp),
             )
         }
         if (search != null && (search.wideningIn != null || search.widened)) {
