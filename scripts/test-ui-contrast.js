@@ -104,6 +104,11 @@ const SCAN = () => {
       if (!(await pg.locator('#ageConsentModal').isVisible())) problems.push(`${sn}/${theme}/consent: dialog did not open`);
       else {
         for (const o of await pg.evaluate(SCAN)) problems.push(`${sn}/${theme}/consent: ${o.ratio}:1 "${o.text}" .${o.cls}`);
+        if (!(await pg.locator('.consent-short-list').isVisible())) problems.push(`${sn}/${theme}/consent: short summary missing`);
+        await pg.screenshot({ path: path.join(os.tmpdir(), `tl-ui-consent-${sn}-${theme}.png`) });
+        await pg.locator('.consent-full-terms > summary').click(); await pg.waitForTimeout(1200); // full Terms stay one tap away
+        if (!(await pg.locator('.consent-full-terms .policy-remote h3, .consent-full-terms .policy-remote p').first().isVisible())) problems.push(`${sn}/${theme}/consent: full Terms not shown when opened`);
+        for (const o of await pg.evaluate(SCAN)) problems.push(`${sn}/${theme}/consent-open: ${o.ratio}:1 "${o.text}" .${o.cls}`);
         const box = await pg.locator('#ageConsentModal .modal-box').boundingBox();
         if (box.y < 0 || box.y + box.height > so.viewport.height) problems.push(`${sn}/${theme}/consent: dialog does not fit the screen`);
         if (!(await pg.locator('#ageAgreeBtn').isVisible())) problems.push(`${sn}/${theme}/consent: agree button not visible`);

@@ -3007,10 +3007,22 @@ body.panel-open .game-overlay {
   max-height: 46vh;
   /* Scroll cue only (no content change): the last lines fade out so a cut-off
      line reads as "more below" rather than as a rendering fault. */
+}
+.consent-terms-body:has(.consent-full-terms[open]) {
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
   mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
 }
 
+.consent-short-title { margin: 14px 0 6px; font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.consent-terms-body:not(:has(.consent-full-terms[open])) { max-height: none; overflow: visible; }
+.policy-body .consent-short-list { margin: 0 0 4px; padding-left: 20px; list-style: disc; display: block; font-size: 15px; line-height: 1.5; color: var(--text); }
+.policy-body .consent-short-list li { display: list-item; margin: 0 0 6px; font-size: 15px; line-height: 1.5; }
+.consent-full-terms > summary {
+  display: flex; align-items: center; min-height: 44px; cursor: pointer;
+  color: var(--accent-2); font-weight: 700; font-size: 14px;
+}
+.consent-full-terms > summary:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+.consent-full-terms[open] > summary { margin-bottom: 8px; }
 .consent-modal-footer {
   border-top: 1px solid rgba(255,255,255,0.06);
   padding: 16px 22px 22px;

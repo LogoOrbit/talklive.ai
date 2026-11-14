@@ -54,7 +54,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=153fc85b70" crossorigin />
-<link rel="stylesheet" href="style.css?v=5fea061fb5" />
+<link rel="stylesheet" href="style.css?v=f7d2ade121" />
 <link rel="stylesheet" href="chat-extras.css?v=4b7b6398b3" />
 <link rel="stylesheet" href="games.css?v=27142968d1" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
@@ -1741,9 +1741,21 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                  app.js), so the text agreed to here is always the one published
                  there, and a first visit does not download ~30KB of legal copy
                  it may never display. -->
+            <!-- The short version, then the unchanged full Terms one tap away.
+                 Nothing was removed: the same published text loads inside the
+                 disclosure below. -->
+            <p class="consent-short-title" data-i18n="consentShortTitle">The short version</p>
+            <ul class="consent-short-list">
+              <li data-i18n="consentShort1">Be kind and respectful to everyone you talk to.</li>
+              <li data-i18n="consentShort2">No harassment, hate speech or sexual content.</li>
+              <li data-i18n="consentShort3">You can skip or report anyone at any time.</li>
+            </ul>
+            <details class="consent-full-terms">
+              <summary data-i18n="consentReadFull">Read the full Terms &amp; Conditions</summary>
             <div class="policy-remote" data-policy-src="/terms">
               <p class="policy-loading"><span data-i18n="termsLoading">Loading the Terms &amp; Conditions…</span> <a href="/terms" target="_blank" rel="noopener" data-i18n="termsOpenPage">Open them on their own page</a></p>
             </div>
+            </details>
 
           </div>
           <div class="modal-footer consent-modal-footer">
@@ -2592,7 +2604,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        browser finish parsing and paint the page first. -->
   <script defer src="/vendor/socket.io.min.js?v=7bcff1b4f1"></script>
   <script defer src="countries.js?v=30bcd7f146"></script>
-  <script defer src="i18n.js?v=5fc89489eb"></script>
+  <script defer src="i18n.js?v=921a34a7ab"></script>
   <script defer src="chat-time.js?v=9d4e50bcf7"></script>
   <script defer src="animals.js?v=e934300459"></script>
   <script defer src="characters.js?v=7df196acd3"></script>
