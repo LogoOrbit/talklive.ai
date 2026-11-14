@@ -73,7 +73,12 @@ function forCountry(country) {
       perMonthLabel: format(perMonth(yearly, currency), currency),
       savePercent: Math.round(100 - (yearly * 100) / (monthly * 12)),
     },
-    passes: [item('pass_1d', d1, 1), item('pass_7d', d7, 7), item('pass_15d', d15, 15)],
+    // Play prices one-time passes separately from the subscription, and in
+    // some markets a pass costs as much as a month of Plus or more (see
+    // scripts/audit-pricing.js). Each pass says so, so no page calls it the
+    // "best value" when renewing monthly costs less.
+    passes: [item('pass_1d', d1, 1), item('pass_7d', d7, 7), item('pass_15d', d15, 15)]
+      .map((p) => Object.assign(p, { monthlyCheaper: p.amount >= monthly })),
   };
 }
 

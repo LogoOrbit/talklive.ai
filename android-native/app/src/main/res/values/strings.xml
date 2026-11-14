@@ -732,4 +732,5 @@
     <string name="filter_pool_searching">Someone matching your filters is searching too · connecting…</string>
     <string name="filters_widening_in">No match yet · your countries and language widen to everyone in a few seconds</string>
     <string name="filters_widened">Nobody from your chosen countries is free · connecting you with anyone instead</string>
+    <string name="pass_monthly_cheaper">Monthly Plus (%1$s) costs less</string>
 </resources>
