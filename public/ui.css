@@ -527,6 +527,8 @@
   color: var(--text);
   text-decoration: none;
 }
+/* A Plus member is not sold Plus (app.js updatePremiumUi sets .tl-plus). */
+html.tl-plus .tl-nav-promo { display: none; }
 .tl-nav-promo-icon {
   display: grid;
   place-items: center;

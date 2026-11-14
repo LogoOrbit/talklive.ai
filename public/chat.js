@@ -3583,6 +3583,7 @@
     if (!searching || partnerHere) return;
     var head = gender === 'female' ? t('statusLookingForWoman') : gender === 'male' ? t('statusLookingForMan') : '';
     var sub = !pool ? '' : pool.searching > 0 ? t('subPoolSearching')
+      : pool.online === 1 ? t('subPoolBusyOne')
       : pool.online > 0 ? t('subPoolBusy', { n: pool.online }) : t('subPoolNone');
     if (!head && !sub) return;
     stopSearchLines();

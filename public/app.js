@@ -10501,6 +10501,7 @@ socket.on('waiting', ({ estimatedSeconds, predicted, fallbackInSeconds, keepingF
 function showFilterPool(pool) {
   if (!pool) return;
   if (pool.searching > 0) setSubText('subPoolSearching');
+  else if (pool.online === 1) setSubText('subPoolBusyOne');
   else if (pool.online > 0) setSubText('subPoolBusy', { n: pool.online });
   else setSubText('subPoolNone');
 }
@@ -11588,6 +11589,7 @@ function updatePremiumUi() {
   // "👑 Premium" locks/hints show only on the free tier.
   document.querySelectorAll('.premium-lock').forEach((el) => el.classList.toggle('hidden', isPremiumUser));
   document.documentElement.classList.toggle('tl-free', !isPremiumUser);
+  document.documentElement.classList.toggle('tl-plus', isPremiumUser);
   if (filtersReady) syncFilterReadout();
 }
 updatePremiumUi();
