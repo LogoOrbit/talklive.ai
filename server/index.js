@@ -4363,6 +4363,7 @@ function sendOnlineCountTo(socket) {
 function noteSearchAbandoned(socketId) {
   const p = profiles.get(socketId);
   if (!p || !p.searchSince || !waitingQueue.includes(socketId)) return;
+  if (p.prefGender && p.prefGender !== 'any') store.recordFeature('gender_search_abandoned');
   store.recordQueueAbandon(Math.max(0, Math.round((Date.now() - p.searchSince) / 1000)));
   p.searchSince = 0;
 }
@@ -5307,6 +5308,7 @@ function pairSockets(socketId, partnerId, opts = {}) {
   // Quarantined pairs are counted on their own, so the dashboard's matches are people.
   store.recordFeature(quarantined(seekerProfile) ? 'bot_match' : (mode === 'chat' ? 'chat_match' : 'match'));
   const samePersonality = sharedPersonality(seekerProfile, partnerProfile);
+  for (const p of [seekerProfile, partnerProfile]) if (p.prefGender && p.prefGender !== 'any') store.recordFeature('gender_match');
   // The partner side is the WebRTC initiator (see signalSilent).
   partnerProfile.sig = { initiator: true, offer: false, answer: false, offerIn: 0 };
   seekerProfile.sig = { initiator: false, offer: false, answer: false, offerIn: 0 };
@@ -6790,6 +6792,9 @@ io.on('connection', (socket) => {
     keepFiltersCarry.delete(profile.clientId);
     profile.randomFallbackActive = false;
     profile.keepFilters = (profile.premium && hasSoftFilters(profile)) || (!!carried && Date.now() - carried < KEEP_FILTERS_CARRY_MS);
+    // How the gender filter fares: searches, matches (pairSockets) and waits
+    // given up (noteSearchAbandoned), for the owner dashboard's feature counts.
+    if (profile.prefGender && profile.prefGender !== 'any') store.recordFeature('gender_search');
     tryMatch(socket.id);
   });
 
