@@ -49,6 +49,13 @@
   --accent: #2a6fe8;
   --accent-2: #00d4ff;
   --danger: #ff5470;
+  /* Text and marks on a coloured fill (buttons, badges, pills): white in every
+     theme. Fills that carry white text are dark enough for 4.5:1. */
+  --on-color: #fff;
+  --ok-fill: #15803d;
+  --danger-fill: #dc2626;
+  /* Green used as text or an icon on the page surface. */
+  --ok-text: #2ed47a;
   --green: #2ed47a;
   --text: #f2f4ff;
   --muted: #8a90a8;
@@ -67,6 +74,7 @@
   --text: #1a2033;
   --muted: #5a617a;
   --line: rgba(26, 32, 51, 0.14);
+  --ok-text: #15803d;
 }
 
 [data-theme="ocean"] {
@@ -593,7 +601,7 @@ body.panel-open .game-overlay {
   font-size: 22px;
   font-weight: 800;
   letter-spacing: 0.5px;
-  color: #fff;
+  color: var(--on-color);
   font-variant-numeric: tabular-nums;
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
   pointer-events: none;
@@ -663,7 +671,7 @@ body.panel-open .game-overlay {
 .report-reason.selected {
   background: var(--danger);
   border-color: var(--danger);
-  color: #fff;
+  color: var(--on-color);
 }
 .report-custom {
   width: 100%;
@@ -757,7 +765,7 @@ body.panel-open .game-overlay {
   font-size: clamp(15px, 4.6vw, 22px);
   font-weight: 700;
   line-height: 1.15;
-  color: #fff;
+  color: var(--on-color);
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
 }
 .video-banner__subtitle {
@@ -1173,7 +1181,7 @@ body.panel-open .game-overlay {
   padding: 8px 14px;
   border-radius: 999px;
   background: var(--accent, #2a6fe8);
-  color: #fff;
+  color: var(--on-color);
   font-weight: 700;
   text-decoration: none;
 }
@@ -1485,7 +1493,7 @@ body.panel-open .game-overlay {
   inset: 14px;
   border-radius: 50%;
   border: 4px solid rgba(255, 255, 255, 0.25);
-  border-top-color: #fff;
+  border-top-color: var(--on-color);
   animation: tapSpin 0.85s linear infinite;
 }
 @keyframes tapSpin {
@@ -2021,7 +2029,8 @@ body.panel-open .game-overlay {
   font-size: 14px;
   line-height: 1.78;
   letter-spacing: 0.005em;
-  color: rgba(242, 244, 255, 0.88);
+  color: var(--text);
+  opacity: 0.88;
 }
 
 .policy-body p {
@@ -2080,7 +2089,7 @@ body.panel-open .game-overlay {
 }
 
 .policy-body strong {
-  color: #fff;
+  color: var(--text);
   font-weight: 600;
 }
 
@@ -2311,7 +2320,7 @@ body.panel-open .game-overlay {
   content: "";
   width: 10px;
   height: 6px;
-  border: 2px solid #fff;
+  border: 2px solid var(--on-color);
   border-top: 0;
   border-right: 0;
   border-radius: 1px;
@@ -2690,7 +2699,7 @@ body.panel-open .game-overlay {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--on-color);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
   transform: translateX(12px);
   transition: transform 0.2s ease;
@@ -2758,8 +2767,8 @@ body.panel-open .game-overlay {
   height: 20px;
   padding: 0 5px;
   border-radius: 999px;
-  background: #ff2d55;
-  color: #fff;
+  background: var(--danger-fill);
+  color: var(--on-color);
   font-size: 12px;
   font-weight: 800;
   line-height: 20px;
@@ -2840,7 +2849,7 @@ body.panel-open .game-overlay {
 .account-tab.selected {
   background: var(--accent);
   border-color: transparent;
-  color: #fff;
+  color: var(--on-color);
   box-shadow: 0 4px 14px rgba(42,111,232, 0.32);
 }
 
@@ -3004,6 +3013,40 @@ body.panel-open .game-overlay {
 /* Scrollable full Terms & Conditions body inside the consent gate */
 .consent-terms-body {
   max-height: 46vh;
+  /* Scroll cue only (no content change): the last lines fade out so a cut-off
+     line reads as "more below" rather than as a rendering fault. */
+}
+.consent-terms-body.is-full {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+}
+/* The short version shows whole (rules and the link to the full Terms) with
+   no scrolling; the 46vh scroll box is for the long text only. */
+.consent-terms-body:not(.is-full) { max-height: none; flex: 0 1 auto; min-height: 0; }
+#ageConsentModal .modal-box { max-height: calc(100dvh - 24px); }
+#ageConsentModal .consent-modal-footer { flex: 0 0 auto; }
+
+.consent-terms-body:not(.is-full) .consent-modal-text { margin-bottom: 10px; }
+/* The short version of the rules, and the full Terms folded under them. */
+.consent-summary { list-style: none; margin: 0 0 4px; padding: 0; display: grid; gap: 8px; }
+.consent-summary li { padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; }
+.consent-summary strong { display: block; font-size: 14px; color: var(--text); }
+.consent-summary span { display: block; font-size: 13px; line-height: 1.4; color: var(--muted); }
+.consent-full { margin-top: 4px; }
+.consent-full > summary {
+  min-height: 44px; display: flex; align-items: center; gap: 6px;
+  cursor: pointer; font-size: 14px; font-weight: 600; color: var(--accent-2);
+}
+[data-theme="light"] .consent-full > summary { color: var(--accent); }
+.consent-full[open] > summary { margin-bottom: 6px; }
+@media (max-height: 700px) {
+  #ageConsentModal .consent-modal-footer { padding: 10px 22px 14px; gap: 8px; }
+  /* Very short phones: each rule on running lines, no boxes, so the rules,
+     the link and the button all fit on one screen. */
+  .consent-summary { gap: 6px; }
+  .consent-summary li { padding: 0; border: 0; line-height: 1.35; }
+  .consent-summary strong { display: inline; margin-inline-end: 6px; font-size: 13px; }
+  .consent-summary span { display: inline; font-size: 12.5px; }
 }
 
 .consent-modal-footer {
@@ -3447,8 +3490,8 @@ body.panel-open .game-overlay {
 
 .btn-chip {
   border: none;
-  background: #3a4258;
-  color: #fff;
+  background: color-mix(in srgb, var(--text) 14%, var(--bg-2));
+  color: var(--text);
   font-size: 12px;
   font-weight: 700;
   padding: 6px 12px;
@@ -3471,10 +3514,10 @@ body.panel-open .game-overlay {
 .btn-chip:active { transform: scale(0.96); }
 
 .btn-chip-accept {
-  background: #16a34a;
-  color: #fff;
+  background: var(--ok-fill);
+  color: var(--on-color);
 }
-.btn-chip-accept:hover { background: #1db456; }
+.btn-chip-accept:hover { background: #166534; }
 
 /* Notifications list - sits above the friends list in the same dropdown */
 .notif-list {
@@ -3563,8 +3606,8 @@ body.panel-open .game-overlay {
   gap: 8px;
   padding: 6px 6px 6px 12px;
   border-radius: 999px;
-  background: #131930;
-  color: #fff;
+  background: var(--bg-2);
+  color: var(--text);
   border: 1px solid rgba(46, 212, 122, 0.45);
   box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 18px rgba(46, 212, 122, 0.25);
   animation: callBackSlideIn 0.28s ease-out;
@@ -3582,7 +3625,7 @@ body.panel-open .game-overlay {
   width: 15px;
   height: 15px;
   vertical-align: -3px;
-  color: #2ed47a;
+  color: var(--ok-text);
   margin-right: 5px;
   animation: callBackRing 1s ease-in-out infinite;
 }
@@ -3596,7 +3639,7 @@ body.panel-open .game-overlay {
 }
 /* Answer = green, Decline = red. */
 .callback-accept { background: #2ed47a; color: #06210f; }
-.callback-decline { background: #ff3b52; color: #fff; }
+.callback-decline { background: var(--danger-fill); color: var(--on-color); }
 @keyframes callBackSlideIn {
   0% { transform: translate(-50%, -120%); opacity: 0; }
   100% { transform: translate(-50%, 0); opacity: 1; }
@@ -4050,7 +4093,7 @@ body.panel-open .game-overlay {
   height: 34px;
   border-radius: 50%;
   border: 4px solid rgba(255,255,255,0.35);
-  border-top-color: #ffffff;
+  border-top-color: var(--on-color);
   z-index: 1;
   opacity: 0;
   pointer-events: none;
@@ -4319,7 +4362,7 @@ body.panel-open .game-overlay {
   background: rgba(30, 34, 48, 0.92);
   -webkit-backdrop-filter: blur(14px) saturate(160%);
   backdrop-filter: blur(14px) saturate(160%);
-  color: #fff;
+  color: var(--on-color);
   font-size: 13px;
   font-weight: 500;
   line-height: 1.35;
@@ -4511,7 +4554,7 @@ body.panel-open .game-overlay {
   width: 16px;
   height: 16px;
   border: 2px solid rgba(255,255,255,0.35);
-  border-top-color: #fff;
+  border-top-color: var(--on-color);
   border-radius: 50%;
   animation: callbackSpin 0.7s linear infinite;
 }
@@ -5220,7 +5263,7 @@ a.premium-lock:hover { background: rgba(42,111,232, 0.22); }
 .setup-demo-frame video { display: block; width: 100%; height: 100%; object-fit: cover; }
 .setup-demo-sound {
   position: absolute; right: 10px; bottom: 10px; border: 0; border-radius: 999px; padding: 7px 12px;
-  font: inherit; font-size: 0.78rem; font-weight: 700; color: #fff; background: rgba(10,14,30,0.72); cursor: pointer;
+  font: inherit; font-size: 0.78rem; font-weight: 700; color: var(--on-color); background: rgba(10,14,30,0.72); cursor: pointer;
 }
 .setup-growth {
   display: grid;
@@ -5279,17 +5322,18 @@ a.premium-lock:hover { background: rgba(42,111,232, 0.22); }
   transform: translate(-50%, 20px);
   z-index: 1200;
   width: min(420px, calc(100vw - 32px));
-  background: rgba(20, 26, 42, 0.97);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  /* Theme surface (was a fixed navy card, a dark island in light theme). */
+  background: var(--bg-2);
+  border: 1px solid var(--line);
   border-radius: 18px;
   padding: 18px 20px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
   opacity: 0;
   transition: opacity 0.25s ease, transform 0.25s ease;
 }
 .share-prompt.show { opacity: 1; transform: translate(-50%, 0); }
-.share-prompt h3, .share-prompt .ui-h3 { margin: 0 0 6px; font-size: 16px; color: #fff; }
-.share-prompt p { margin: 0 0 14px; font-size: 13.5px; line-height: 1.45; color: #aab3c8; }
+.share-prompt h3, .share-prompt .ui-h3 { margin: 0 0 6px; font-size: 16px; color: var(--text); }
+.share-prompt p { margin: 0 0 14px; font-size: 13.5px; line-height: 1.45; color: var(--muted); }
 .share-prompt-actions { display: flex; gap: 10px; }
 .share-prompt-yes,
 .share-prompt-no {
@@ -5300,15 +5344,15 @@ a.premium-lock:hover { background: rgba(42,111,232, 0.22); }
   font-weight: 700;
   cursor: pointer;
 }
-.share-prompt-yes { background: linear-gradient(var(--accent),var(--accent)); color: #fff; flex: 1; }
-.share-prompt-no { background: rgba(255, 255, 255, 0.08); color: #aab3c8; }
+.share-prompt-yes { background: linear-gradient(var(--accent),var(--accent)); color: var(--on-color); flex: 1; }
+.share-prompt-no { background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--text); }
 /* Referral progress under the share copy. Empty until someone has actually
    joined through the link, so it never shows a discouraging "0 joined". */
 .share-prompt-reward:empty { display: none; }
 .share-prompt-reward {
   margin: -8px 0 14px !important;
   font-size: 12.5px !important;
-  color: #22d3ee !important;
+  color: var(--accent-2) !important;
   font-weight: 600;
 }
 
@@ -5322,17 +5366,18 @@ a.premium-lock:hover { background: rgba(42,111,232, 0.22); }
   transform: translate(-50%, 20px);
   z-index: 1250;
   width: min(420px, calc(100vw - 32px));
-  background: rgba(20, 26, 42, 0.97);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  /* Theme surface (was a fixed navy card, a dark island in light theme). */
+  background: var(--bg-2);
+  border: 1px solid var(--line);
   border-radius: 18px;
   padding: 18px 20px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
   opacity: 0;
   transition: opacity 0.25s ease, transform 0.25s ease;
 }
 .pwa-prompt.show { opacity: 1; transform: translate(-50%, 0); }
-.pwa-prompt h3, .pwa-prompt .ui-h3 { margin: 0 0 6px; font-size: 16px; color: #fff; }
-.pwa-prompt p { margin: 0 0 14px; font-size: 13.5px; line-height: 1.45; color: #aab3c8; }
+.pwa-prompt h3, .pwa-prompt .ui-h3 { margin: 0 0 6px; font-size: 16px; color: var(--text); }
+.pwa-prompt p { margin: 0 0 14px; font-size: 13.5px; line-height: 1.45; color: var(--muted); }
 .pwa-prompt-actions { display: flex; gap: 10px; }
 .pwa-prompt-yes,
 .pwa-prompt-no {
@@ -5343,8 +5388,8 @@ a.premium-lock:hover { background: rgba(42,111,232, 0.22); }
   font-weight: 700;
   cursor: pointer;
 }
-.pwa-prompt-yes { background: linear-gradient(var(--accent),var(--accent)); color: #fff; flex: 1; }
-.pwa-prompt-no { background: rgba(255, 255, 255, 0.08); color: #aab3c8; }
+.pwa-prompt-yes { background: linear-gradient(var(--accent),var(--accent)); color: var(--on-color); flex: 1; }
+.pwa-prompt-no { background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--text); }
 
 /* =============================================================
    Smoothness on low-spec devices.
@@ -5966,10 +6011,14 @@ html.perf-lite .side-panel { box-shadow: none; }
 .pass-row-title {
   font-size: 14.5px;
   font-weight: 700;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 8px;
 }
 
 .pass-badge {
-  margin-left: 8px;
+  white-space: nowrap;
   padding: 2px 8px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--c) 16%, transparent);
@@ -5981,11 +6030,15 @@ html.perf-lite .side-panel { box-shadow: none; }
 
 .pass-d1 { --c: #9aa4c0; }
 .pass-d7 { --c: #f0b24a; }
-.pass-d14 { --c: #2a6fe8; }
+.pass-d15 { --c: #2a6fe8; }
 .pass-d30 { --c: #4fd1a1; }
+/* Light surfaces need darker hues to keep the badge text readable (>= 4.5:1). */
+[data-theme="light"] .pass-d1 { --c: #5a617a; }
+[data-theme="light"] .pass-d7 { --c: #8a5a00; }
+[data-theme="light"] .pass-d30 { --c: #0b7a5a; }
 
 /* One quiet cue: the recommended pass breathes. */
-.pass-d14 .pass-badge { animation: pass-pulse 2.4s ease-in-out infinite; }
+.pass-d15 .pass-badge { animation: pass-pulse 2.4s ease-in-out infinite; }
 
 @keyframes pass-pulse {
   0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 40%, transparent); }
@@ -5993,7 +6046,7 @@ html.perf-lite .side-panel { box-shadow: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pass-d14 .pass-badge { animation: none; }
+  .pass-d15 .pass-badge { animation: none; }
 }
 
 .pass-row-sub {
@@ -6040,7 +6093,7 @@ html.perf-lite .side-panel { box-shadow: none; }
   border: 0;
   border-radius: 14px;
   background: #2a6fe8;
-  color: #fff;
+  color: var(--on-color);
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
@@ -6055,6 +6108,17 @@ html.perf-lite .side-panel { box-shadow: none; }
   color: var(--muted);
   text-align: center;
 }
+/* Shop links: the default link colour (blue, visited purple) and a 15px-tall
+   hit area. Theme colour at 4.5:1+, and padding for a 24px+ touch target. */
+.pass-foot a,
+.shop-fine a {
+  display: inline-block;
+  padding: 6px 4px;
+  color: var(--accent-2);
+  text-underline-offset: 2px;
+}
+[data-theme="light"] .pass-foot a,
+[data-theme="light"] .shop-fine a { color: var(--accent); }
 
 .pass-perks {
   display: grid;
@@ -6586,7 +6650,7 @@ html.perf-lite .side-panel { box-shadow: none; }
   border: 0;
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.28);
-  color: #fff;
+  color: var(--on-color);
   cursor: pointer;
   transition: background 0.15s ease;
 }
@@ -7198,13 +7262,13 @@ html.perf-lite .side-panel { box-shadow: none; }
 
 /* Live "Calling… / Ringing…" bar for calls started from Friends or History:
    slim, across the top, above every panel - where an incoming call shows too. */
-.calling-pill { position: fixed; left: 50%; top: calc(10px + env(safe-area-inset-top)); z-index: 3000; display: flex; align-items: center; gap: 8px; width: max-content; max-width: min(360px, calc(100vw - 20px)); padding: 5px 5px 5px 12px; border-radius: 999px; background: #16a34a; color: #fff; font-size: 14px; font-weight: 700; box-shadow: 0 8px 24px rgba(0,0,0,.35); transform: translate(-50%, -140%); opacity: 0; transition: transform .25s ease, opacity .25s ease; pointer-events: none; }
+.calling-pill { position: fixed; left: 50%; top: calc(10px + env(safe-area-inset-top)); z-index: 3000; display: flex; align-items: center; gap: 8px; width: max-content; max-width: min(360px, calc(100vw - 20px)); padding: 5px 5px 5px 12px; border-radius: 999px; background: var(--ok-fill); color: var(--on-color); font-size: 14px; font-weight: 700; box-shadow: 0 8px 24px rgba(0,0,0,.35); transform: translate(-50%, -140%); opacity: 0; transition: transform .25s ease, opacity .25s ease; pointer-events: none; }
 .calling-pill.show { transform: translate(-50%, 0); opacity: 1; pointer-events: auto; }
 .calling-pill-text { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.calling-pill-ring { width: 8px; height: 8px; border-radius: 50%; background: #fff; flex: 0 0 auto; animation: callingPulse 1.1s ease-out infinite; }
+.calling-pill-ring { width: 8px; height: 8px; border-radius: 50%; background: var(--on-color); flex: 0 0 auto; animation: callingPulse 1.1s ease-out infinite; }
 .calling-pill.is-ringing .calling-pill-ring { animation-duration: .7s; }
 @keyframes callingPulse { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,.7); } 100% { box-shadow: 0 0 0 8px rgba(255,255,255,0); } }
-.calling-pill-cancel { flex: 0 0 auto; border: 0; border-radius: 999px; padding: 6px 12px; background: rgba(0,0,0,.25); color: #fff; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.calling-pill-cancel { flex: 0 0 auto; border: 0; border-radius: 999px; padding: 6px 12px; background: rgba(0,0,0,.25); color: var(--on-color); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { .calling-pill-ring { animation: none; } }
 
 /* My profile: a bottom sheet of its own (app.js openMyProfile). */
@@ -7258,14 +7322,14 @@ html.perf-lite .side-panel { box-shadow: none; }
 .my-profile .my-profile-card { padding: 8px 16px 20px; margin-bottom: 14px; border-radius: 24px; background: color-mix(in srgb, var(--text) 5%, transparent); gap: 2px; }
 .mp-face { position: relative; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 50%; margin-top: 12px; }
 .mp-face .my-profile-face { display: grid; width: 96px; height: 96px; overflow: hidden; }
-.mp-pencil { position: absolute; right: -2px; bottom: 2px; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: #fff; box-shadow: 0 0 0 3px var(--bg-2); }
+.mp-pencil { position: absolute; right: -2px; bottom: 2px; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: var(--on-color); box-shadow: 0 0 0 3px var(--bg-2); }
 .mp-pencil svg { width: 15px; height: 15px; }
 .my-profile .my-profile-name { margin: 10px 0 0; font-size: 22px; line-height: 1.25; text-wrap: balance; }
 .mp-id { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 4px 10px; border: 0; border-radius: 999px; background: none; color: var(--muted); font: inherit; font-size: 14.5px; cursor: pointer; }
 .mp-id:hover { color: var(--text); background: color-mix(in srgb, var(--text) 7%, transparent); }
 .mp-id svg { width: 15px; height: 15px; }
 .mp-plus { display: flex; align-items: center; gap: 14px; width: 100%; padding: 16px 18px; margin-bottom: 18px; border: 0; border-radius: 20px; text-align: start; cursor: pointer; color: var(--text); font: inherit; background: color-mix(in srgb, #f5c451 14%, var(--bg-2)); }
-.mp-plus.on { background: linear-gradient(100deg, #b8860b, #e6b23e 60%, #f2c45a); color: #fff; }
+.mp-plus.on { background: linear-gradient(100deg, #b8860b, #e6b23e 60%, #f2c45a); color: var(--on-color); }
 .mp-plus-gem { font-size: 30px; line-height: 1; }
 .mp-plus.on small { color: rgba(255, 255, 255, .92); }
 .mp-legend { margin: 0 6px 8px; font-size: 14px; font-weight: 700; color: var(--muted); }
@@ -7276,7 +7340,7 @@ html.perf-lite .side-panel { box-shadow: none; }
 .mp-row-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .mp-row-text strong { font-size: 16px; font-weight: 600; }
 .mp-row-text small { font-size: 13.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mp-ico { flex: 0 0 auto; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; color: #fff; }
+.mp-ico { flex: 0 0 auto; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; color: var(--on-color); }
 .mp-ico svg { width: 21px; height: 21px; }
 .mp-ico.hue-blue { background: #3b82f6; } .mp-ico.hue-orange { background: #f97316; } .mp-ico.hue-pink { background: #ec4899; }
 .mp-ico.hue-green { background: #22c55e; } .mp-ico.hue-grey { background: #64748b; } .mp-ico.hue-red { background: #ef4444; } .mp-ico.hue-violet { background: var(--accent); }
@@ -7338,7 +7402,7 @@ html.perf-lite .side-panel { box-shadow: none; }
   display: inline-flex; align-items: center; justify-content: center;
 }
 .chat-form .chat-send::after {
-  content: ""; width: 20px; height: 20px; background: #fff; margin-left: 2px;
+  content: ""; width: 20px; height: 20px; background: var(--on-color); margin-left: 2px;
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3.4 20.4 21 12 3.4 3.6 3.3 10l12.6 2-12.6 2z'/%3E%3C/svg%3E") center / contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3.4 20.4 21 12 3.4 3.6 3.3 10l12.6 2-12.6 2z'/%3E%3C/svg%3E") center / contain no-repeat;
 }

@@ -527,6 +527,8 @@
   color: var(--text);
   text-decoration: none;
 }
+/* A Plus member is not sold Plus (app.js updatePremiumUi sets .tl-plus). */
+html.tl-plus .tl-nav-promo { display: none; }
 .tl-nav-promo-icon {
   display: grid;
   place-items: center;
@@ -2018,6 +2020,7 @@ summary.tl-filter-legend::-webkit-details-marker { display: none; }
   transform: rotate(-45deg);
 }
 
+a.tl-notify-btn { text-decoration: none; box-sizing: border-box; }
 .tl-notify-btn {
   display: flex;
   align-items: center;
@@ -3521,3 +3524,28 @@ button.tl-engage-news { width: 100%; color: var(--text); font: inherit; font-siz
 .avatar-option.tl-plus-face:not(.selected) { box-shadow: inset 0 0 0 1.5px rgba(245, 196, 81, 0.7); }
 .animal-option.tl-plus-face::after,
 .avatar-option.tl-plus-face::after { content: attr(data-lock); position: absolute; top: 4px; right: 6px; font-size: 12px; }
+
+/* Selected filters, shown on Home and while searching (display only). */
+.tl-filter-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  min-height: 36px;
+  margin: 12px auto 0;
+  padding: 0 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: var(--tl-r-pill);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+button.tl-filter-summary { cursor: pointer; }
+button.tl-filter-summary:hover { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+button.tl-filter-summary:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+.tl-filter-summary.hidden { display: none; }

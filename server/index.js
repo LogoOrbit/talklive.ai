@@ -49,7 +49,7 @@ const { minifiedScripts } = require('./minified');
 const ageAssurance = require('./age-assurance');
 const mail = require('./mailer');
 const { renderEmail } = require('./email-layout');
-const { botLabel, isPrefetch, isBotUserAgent } = require('./bots');
+const { botLabel, isPrefetch, isBotUserAgent, isAutomationUserAgent } = require('./bots');
 const Engage = require('./engage');
 const { createAdmin, applyOwnerReset } = require('./admin');
 const { createSupport } = require('./support');
@@ -417,6 +417,52 @@ function isPremium(clientId) {
   return envPremiumClients.has(clientId) || store.isPremiumClient(clientId);
 }
 
+// Match filters as the client asked for them: validated, deduplicated and
+// bounded, but not yet capped by the free tier. Kept on the profile as `want`
+// so the effective filters can be re-derived whenever Plus starts or ends.
+const PLUS_COUNTRY_CAP = 50;
+const COUNTRY_CODE_RE = /^[A-Z]{2}$/;
+function requestedFilters(data = {}) {
+  const countries = (list) => {
+    if (!Array.isArray(list)) return [];
+    const out = [];
+    for (const c of list.slice(0, PLUS_COUNTRY_CAP * 2)) {
+      if (typeof c !== 'string') continue;
+      const code = c.trim().toUpperCase();
+      if (COUNTRY_CODE_RE.test(code) && !out.includes(code)) out.push(code);
+      if (out.length >= PLUS_COUNTRY_CAP) break;
+    }
+    return out;
+  };
+  return {
+    gender: data.prefGender === 'male' || data.prefGender === 'female' ? data.prefGender : 'any',
+    voiceChecked: data.prefVoiceChecked === true,
+    include: countries(data.includeCountries),
+    exclude: countries(data.excludeCountries),
+    interests: cleanInterests(data.interests),
+  };
+}
+
+// The filters matching actually uses, from what was asked for and what this
+// person is entitled to right now. Free: no gender preference, two countries
+// per list, two interests. Plus: everything asked for. Called at register, at
+// every search and whenever a grant changes, so a purchase applies to the very
+// next search and an expired pass stops filtering at the next one.
+function applyEntitlements(profile) {
+  if (!profile) return;
+  const premium = isPremium(profile.clientId);
+  const want = profile.want || requestedFilters({});
+  const cap = premium ? PLUS_COUNTRY_CAP : FREE_LIMITS.countries;
+  profile.premium = premium;
+  profile.prefGender = premium ? want.gender : 'any';
+  // "Voice-checked only": with a gender preference, match only people whose
+  // on-device voice check agreed with the gender they picked themselves.
+  profile.prefVoiceChecked = premium && flags.isOn('voiceCheck') && want.voiceChecked && profile.prefGender !== 'any';
+  profile.includeCountries = want.include.slice(0, cap);
+  profile.excludeCountries = want.exclude.slice(0, cap);
+  profile.interests = want.interests.slice(0, premium ? 10 : FREE_LIMITS.interests);
+}
+
 // Lets the pricing page (a separate static page) confirm activation. It answers
 // for any clientId, so it is rate limited to stop anyone sweeping through ids;
 // the pricing page itself asks at most 11 times.
@@ -645,7 +691,11 @@ app.post('/billing/play/verify', httpRateLimit('play-verify', 30, 60000), expres
   if (sub && sub.accountId && sub.accountId !== playBilling.accountIdFor(clientId)) {
     return res.status(403).json({ error: 'This purchase was made by another TalkLive profile.' });
   }
-  if (!owner) store.data.playPurchases[key] = String(clientId);
+  if (!owner) {
+    store.data.playPurchases[key] = String(clientId);
+    // Written now: a renewal or refund notification finds its owner by it.
+    store.save();
+  }
   const step = await applyPlayPurchase(String(clientId), purchaseToken, sub, typeof productId === 'string' ? productId : '');
   if (step.op === 'skip' && step.reason !== 'ignored') console.log(`[play] ${clientId}: ${step.reason}`);
   res.json({ premium: isPremium(clientId), expiresAt: store.premiumExpiry(clientId), state: sub ? sub.state : null });
@@ -672,6 +722,9 @@ async function verifyPlayPass(req, res, clientId, productId, purchaseToken) {
   }
   if (p && p.pending) return res.json({ premium: isPremium(clientId), pending: true });
   if (!p || !p.purchased) return res.status(400).json({ error: 'This purchase is not complete.' });
+  if (granted[key] && granted[key].voidedAt) {
+    return res.status(400).json({ error: 'This purchase was refunded.' });
+  }
   if (!granted[key]) {
     const premium = store.data.premium;
     const existing = Object.prototype.hasOwnProperty.call(premium, clientId) ? premium[clientId] : null;
@@ -693,20 +746,53 @@ async function verifyPlayPass(req, res, clientId, productId, purchaseToken) {
 }
 
 // Real-time Developer Notifications, pushed by Pub/Sub. Each is re-checked
-// with Google; only the token is taken from the message.
-app.post('/billing/play/rtdn', express.json({ limit: '64kb' }), async (req, res) => {
+// with Google; only the token is taken from the message, so a forged message
+// can at most make the server ask Google again.
+//
+// Who may call it: with PLAY_RTDN_AUDIENCE set, only Pub/Sub's own signed
+// request (an OIDC token from Google for that audience, and from the service
+// account in PLAY_RTDN_EMAIL when set) - nothing secret travels in the URL.
+// Otherwise the shared PLAY_RTDN_SECRET in ?secret=, as before.
+async function rtdnAuthorised(req) {
+  const audience = process.env.PLAY_RTDN_AUDIENCE;
+  if (audience) {
+    const m = /^Bearer\s+(.+)$/i.exec(String(req.headers.authorization || ''));
+    if (!m) return false;
+    try {
+      const ticket = await rtdnVerifier.verifyIdToken({ idToken: m[1], audience });
+      const claims = ticket.getPayload() || {};
+      const wantEmail = process.env.PLAY_RTDN_EMAIL;
+      if (wantEmail && (claims.email !== wantEmail || claims.email_verified !== true)) return false;
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
   const secret = process.env.PLAY_RTDN_SECRET;
-  if (!secret || !play.configured()) return res.status(503).end();
+  if (!secret) return false;
   const given = String(req.query.secret || '');
-  if (given.length !== secret.length || !crypto.timingSafeEqual(Buffer.from(given), Buffer.from(secret))) return res.status(403).end();
+  return given.length === secret.length && crypto.timingSafeEqual(Buffer.from(given), Buffer.from(secret));
+}
+const rtdnVerifier = new OAuth2Client();
+
+app.post('/billing/play/rtdn', httpRateLimit('play-rtdn', 600, 60000), express.json({ limit: '64kb' }), async (req, res) => {
+  if (!play.configured() || (!process.env.PLAY_RTDN_SECRET && !process.env.PLAY_RTDN_AUDIENCE)) return res.status(503).end();
+  if (!(await rtdnAuthorised(req))) return res.status(403).end();
   const n = playBilling.parseRtdn(req.body);
   // Acknowledge anything we cannot use, or Pub/Sub retries it for a week.
   if (!n || !n.purchaseToken || (n.packageName && n.packageName !== play.packageName)) return res.status(204).end();
-  const clientId = store.data.playPurchases[playTokenKey(n.purchaseToken)];
-  if (!clientId) return res.status(204).end(); // the app verifies it on its next start
   try {
+    // A refunded or charged-back pass: take back its days. Passes have no
+    // owner until the app has verified them, so only granted ones matter.
+    if (n.kind === 'voided' && n.productType === 2) {
+      await voidPlayPass(n.purchaseToken);
+      return res.status(204).end();
+    }
+    // A subscription event, or a refunded subscription: ask Google.
+    const clientId = store.data.playPurchases[playTokenKey(n.purchaseToken)];
+    if (!clientId) return res.status(204).end(); // the app verifies it on its next start
     const sub = await play.lookup(n.purchaseToken);
-    await applyPlayPurchase(clientId, n.purchaseToken, sub, n.productId);
+    await applyPlayPurchase(clientId, n.purchaseToken, sub, n.productId || '');
     res.status(204).end();
   } catch (err) {
     console.error('[play] RTDN re-check failed:', err.message);
@@ -714,6 +800,24 @@ app.post('/billing/play/rtdn', express.json({ limit: '64kb' }), async (req, res)
     res.status(500).end();
   }
 });
+
+async function voidPlayPass(purchaseToken) {
+  const key = playTokenKey(purchaseToken);
+  const granted = store.data.playPassGrants || (store.data.playPassGrants = {});
+  const g = granted[key];
+  if (!g || g.voidedAt) return;
+  const days = playBilling.PASS_DAYS[g.productId] || 0;
+  const premium = store.data.premium;
+  const existing = Object.prototype.hasOwnProperty.call(premium, g.clientId) ? premium[g.clientId] : null;
+  const step = playBilling.voidPassPremium(existing, days);
+  if (step.op === 'set') store.setPremium(g.clientId, step.info);
+  else if (step.op === 'revoke') store.revokePremium(g.clientId, step.info);
+  g.voidedAt = Date.now();
+  store.recordFeature('pass_voided');
+  store.persistNow();
+  await Promise.race([store.whenPersisted(), new Promise((r) => setTimeout(r, 8000))]);
+  emitPremiumStatus(g.clientId);
+}
 
 // --- Owner: give Plus by hand ------------------------------------------------
 // Answers only connections from inside the machine (flyctl ssh, see
@@ -2068,6 +2172,10 @@ function pairOnCooldown(clientIdA, clientIdB, soft) {
 const voiceInvites = new Map(); // token -> { clients: [clientIdA, clientIdB], joined: Map<clientId, socketId>, timer }
 const VOICE_INVITE_TTL_MS = 2 * 60 * 1000; // plenty for two page loads; then it's dead
 
+// "Keep my filters" outlives a dropped socket for this long (see find-partner).
+const KEEP_FILTERS_CARRY_MS = 2 * 60 * 1000;
+const keepFiltersCarry = new Map(); // clientId -> when the kept search dropped
+
 // How long after a skip "Undo skip" can still bring that person back.
 const UNDO_SKIP_MS = 15000;
 
@@ -2096,6 +2204,16 @@ function identityHasState(clientId) {
   if (friends.has(clientId) || chatHistory.has(clientId) || notifications.has(clientId)
     || friendRequests.has(clientId) || sentRequests.has(clientId) || blocks.has(clientId)
     || mutedChats.has(clientId) || isPremium(clientId)) return true;
+  // So is anything else kept under the id: a Plus record even after it ended
+  // (it can be restored from Play), the referral reward and progress, who
+  // liked them, and contact details saved under "Save contact info I share" -
+  // the last two are personal data a stranger must not be able to read by
+  // presenting someone else's clientId.
+  const d = store.data;
+  if ((d.premium && d.premium[clientId]) || (d.plusLook && d.plusLook[clientId])
+    || (d.referrals && d.referrals.owners && d.referrals.owners[clientId])
+    || (d.likes && d.likes[clientId] && d.likes[clientId].length)
+    || (d.contactCapture && d.contactCapture[clientId])) return true;
   // A streak or passport is something to lose, too.
   const engaged = store.engageGet(clientId);
   if (engaged && ((engaged.passport && engaged.passport.length) || (engaged.streak && engaged.streak.best))) return true;
@@ -4313,6 +4431,7 @@ function sendOnlineCountTo(socket) {
 function noteSearchAbandoned(socketId) {
   const p = profiles.get(socketId);
   if (!p || !p.searchSince || !waitingQueue.includes(socketId)) return;
+  if (p.prefGender && p.prefGender !== 'any') store.recordFeature('gender_search_abandoned');
   store.recordQueueAbandon(Math.max(0, Math.round((Date.now() - p.searchSince) / 1000)));
   p.searchSince = 0;
 }
@@ -4450,7 +4569,8 @@ function settleReferral(clientId) {
   }
   emitToClient(owner, settled.rewards ? 'referral-reward' : 'referral-status', {
     ...store.referralStats(owner),
-    hours: settled.rewards,
+    hours: settled.rewards, // legacy name: the number of rewards (30 days of the Plus look each)
+    rewards: settled.rewards,
   });
 }
 
@@ -4477,8 +4597,9 @@ function recordEngageCall(profile, country, seconds) {
 function emitPremiumStatus(clientId) {
   for (const [sid, profile] of profiles) {
     if (profile.clientId !== clientId) continue;
-    // Queue priority follows the grant straight away, not at the next register.
-    profile.premium = isPremium(clientId);
+    // Queue priority and the Plus filters follow the grant straight away, not
+    // at the next register.
+    applyEntitlements(profile);
     const sock = io.sockets.sockets.get(sid);
     if (!sock) continue;
     sock.emit('premium-status', {
@@ -4573,9 +4694,31 @@ function saveQuarantine(key, rec) {
   store.data.quarantine[key] = rec;
   store.save();
 }
-function noteMatchEnd(socketId, profile, ms) {
+// --- Silent sides --------------------------------------------------------------
+// A real voice client answers 'matched' with WebRTC at once: the initiator sends
+// an offer within a few seconds (it may first wait up to 6s for relay
+// credentials), and the other side answers an offer within milliseconds. The
+// scripts that flooded the voice queue never do either - they sit in the pair
+// and leave. A side that stayed silent long enough to have spoken counts as a
+// dropped match for the quarantine below, however long the match lasted, so a
+// script that learns to wait out QUICK_END_MS is still caught.
+const TEST_ENV = process.env.NODE_ENV !== 'production';
+const SILENT_OFFER_MS = (TEST_ENV && Number(process.env.SILENT_OFFER_MS)) || 10000;
+const SILENT_ANSWER_MS = (TEST_ENV && Number(process.env.SILENT_ANSWER_MS)) || 4000;
+function signalSilent(p, now) {
+  const sig = p && p.sig;
+  if (!sig || !p.matchedAt || (p.mode || 'talk') !== 'talk') return false;
+  if (sig.initiator) return !sig.offer && now - p.matchedAt >= SILENT_OFFER_MS;
+  return !!sig.offerIn && !sig.answer && now - sig.offerIn >= SILENT_ANSWER_MS;
+}
+function noteSilentSide(socketId, profile) {
+  store.recordFeature('silent_side');
+  noteMatchEnd(socketId, profile, 0, { silent: true });
+}
+
+function noteMatchEnd(socketId, profile, ms, { silent = false } = {}) {
   if (!profile || !profile.clientId) return;
-  if (ms < QUICK_END_MS && !quarantined(profile, socketId)) store.recordFeature('quick_skip');
+  if (!silent && ms < QUICK_END_MS && !quarantined(profile, socketId)) store.recordFeature('quick_skip');
   if (establishedAccount(socketId) || isPremium(profile.clientId)) return;
   const now = Date.now();
   const sock = io.sockets.sockets.get(socketId);
@@ -4602,9 +4745,15 @@ function noteMatchEnd(socketId, profile, ms) {
     for (const [k, v] of quarantine) if (v.until < now) { quarantine.delete(k); delete store.data.quarantine[k]; }
   }
 }
+// Production always; tests opt in, since a test socket has no User-Agent.
+const AUTOMATION_UA_QUARANTINE = process.env.NODE_ENV === 'production' || process.env.QUARANTINE_AUTOMATION_UA === '1';
 function quarantined(profile, socketId) {
   if (!profile) return false;
   if (foreignClientId(profile.clientId)) return true;
+  // A script by its User-Agent (none at all, or an HTTP library). Never a
+  // Plus member or an established account: those have shown they are people.
+  const sockForUa = socketId && io.sockets.sockets.get(socketId);
+  if (sockForUa && sockForUa.data.automation && !isPremium(profile.clientId) && !establishedAccount(socketId)) return true;
   const now = Date.now();
   const byClient = quarantine.get('c:' + profile.clientId);
   if (byClient && byClient.until > now) return true;
@@ -4656,8 +4805,18 @@ function disconnectPartner(socketId, opts = {}) {
   if (!partnerId) return null;
   {
     const me = profiles.get(socketId);
-    if (me && me.matchedAt && Date.now() - me.matchedAt < EARLY_END_MS) noteEarlyEnd(me.clientId);
-    if (me && me.matchedAt) noteMatchEnd(socketId, me, Date.now() - me.matchedAt);
+    const them = profiles.get(partnerId);
+    const now = Date.now();
+    const meSilent = signalSilent(me, now);
+    if (me && me.matchedAt && now - me.matchedAt < EARLY_END_MS) noteEarlyEnd(me.clientId);
+    // A silent side is a dropped match whoever ended it (counted once).
+    if (me && me.matchedAt) {
+      if (meSilent) noteSilentSide(socketId, me);
+      else noteMatchEnd(socketId, me, now - me.matchedAt);
+    }
+    if (them && signalSilent(them, now)) noteSilentSide(partnerId, them);
+    if (me) me.sig = null;
+    if (them) them.sig = null;
   }
   partners.delete(socketId);
   partners.delete(partnerId);
@@ -4857,10 +5016,18 @@ function prefsMet(a, b) {
 }
 
 // Any soft filter set, i.e. whether the random fallback would change anything.
+// The gender preference is not one: it is a hard gate (see mutuallyCompatible).
 function hasSoftFilters(p) {
-  return (p.prefGender && p.prefGender !== 'any')
-    || (p.includeCountries && p.includeCountries.length > 0)
+  return (p.includeCountries && p.includeCountries.length > 0)
     || !!p.prefLang;
+}
+
+// Which filters the random fallback is about to give way, for the notice.
+function relaxedFilters(p) {
+  const out = [];
+  if (p.includeCountries && p.includeCountries.length) out.push('countries');
+  if (p.prefLang) out.push('language');
+  return out;
 }
 
 // The only values a client's voice check may report; anything else is dropped.
@@ -4903,6 +5070,13 @@ function mutuallyCompatible(seeker, candidate) {
   // Avoided countries are a hard gate on both sides, fallback or not.
   if (countryAvoided(seeker, candidate.country)) return false;
   if (countryAvoided(candidate, seeker.country)) return false;
+
+  // So is a gender preference (Plus). It used to be dropped with the other
+  // filters after RANDOM_FALLBACK_MS, so someone who paid to talk to women was
+  // put through to a man after ten seconds of waiting - with no notice at all
+  // in the Android app or on /chat. A preference is now only ever changed by
+  // the person who set it; a small pool shows as a longer, honest wait.
+  if (!genderPrefMet(seeker, candidate) || !genderPrefMet(candidate, seeker)) return false;
 
   // Just parted voluntarily - give them someone new first. Soft, so the random
   // fallback can still reunite them rather than leave anyone waiting on a
@@ -4965,22 +5139,60 @@ function pruneQueue() {
 // interface or browser language is a cheap, honest signal of a language both
 // people can talk in, so it breaks ties. It is worth less than one shared
 // interest and is never a filter, so nobody waits longer because of it.
+// Java and older Android report three languages under their withdrawn ISO
+// codes (Locale.getLanguage(): Indonesian "in", Hebrew "iw", Yiddish "ji"),
+// while browsers use "id", "he", "yi". Without this an Indonesian on the app
+// never met a website user filtering for Indonesian speakers.
+const LEGACY_LANG = { in: 'id', iw: 'he', ji: 'yi' };
+function normLang(code) {
+  const c = String(code || '').toLowerCase();
+  if (!/^[a-z]{2}$/.test(c)) return null;
+  return LEGACY_LANG[c] || c;
+}
 function matchLang(chosen, acceptLanguage) {
-  const pick = String(chosen || '').toLowerCase();
-  if (/^[a-z]{2}$/.test(pick)) return pick;
-  const parsed = audience.parseLang(acceptLanguage);
-  return /^[a-z]{2}$/.test(parsed) ? parsed : null;
+  return normLang(chosen) || normLang(audience.parseLang(acceptLanguage));
 }
 
-// Premium "instant rematch": a Premium member waiting in the queue is the first
-// pick for whoever searches next, ahead of any interest or language score.
-// It only reorders compatible candidates - filters, blocks and modes still
-// decide who can be matched at all, so nobody else waits longer than a turn.
-const PREMIUM_QUEUE_BONUS = 1000;
+// How a compatible candidate is ranked. Every term only reorders people who
+// already passed every filter; none of them can exclude anyone.
+//
+// - A shared language is worth the most: without one there is no conversation.
+// - Each shared interest (up to 4) is worth less than a language.
+// - Plus "priority matching": a Plus waiter is picked ahead of an equally good
+//   free one, and Plus waiters pick first in each sweep. It used to be worth
+//   1000 points, which put a Plus member who shared nothing with the seeker
+//   ahead of a free one who spoke their language - fast for the Plus member,
+//   a worse conversation for both.
+// - Time waited: a little for every second in the queue, so someone with no
+//   interests or a less common language is not passed over again and again by
+//   better-scoring newcomers.
+const LANG_WEIGHT = 3;
+const INTEREST_WEIGHT = 2;
+const PREMIUM_QUEUE_BONUS = 2;
+const WAIT_BONUS_PER_S = 0.05;
+const WAIT_BONUS_MAX = 2;
 
-function matchScore(a, b) {
-  return sharedInterestCount(a, b) * 2 + (a.lang && a.lang === b.lang ? 1 : 0)
-    + (b.premium ? PREMIUM_QUEUE_BONUS : 0);
+function matchScore(a, b, now = Date.now()) {
+  const waited = b.queuedAt ? Math.max(0, now - b.queuedAt) / 1000 : 0;
+  return Math.min(sharedInterestCount(a, b), 4) * INTEREST_WEIGHT
+    + (a.lang && a.lang === b.lang ? LANG_WEIGHT : 0)
+    + (b.premium ? PREMIUM_QUEUE_BONUS : 0)
+    + Math.min(WAIT_BONUS_MAX, waited * WAIT_BONUS_PER_S);
+}
+
+// A newcomer's first conversations decide whether they come back. Until they
+// have had NEWCOMER_GOOD_CALLS calls of 30s or more, they are steered towards
+// people with a good record (trust score) who do not habitually skip within
+// seconds, and away from those who do. Bounded like the other terms.
+const NEWCOMER_GOOD_CALLS = 3;
+function isNewcomer(clientId) {
+  const rec = store.engageGet(clientId);
+  return !rec || !(rec.goodCalls >= NEWCOMER_GOOD_CALLS);
+}
+function newcomerPreference(candidateId, now) {
+  const trust = reputation.score(candidateId, now); // 0..1, new people start at 0.8
+  const quick = reputation.quickRate(candidateId, now); // 0..1
+  return Math.max(-2, Math.min(1, (trust - 0.8) * 5 - quick * 3));
 }
 
 function findBestMatch(socketId) {
@@ -5011,6 +5223,11 @@ function findBestMatch(socketId) {
     if ((seeker.mode || 'talk') !== (candidate.mode || 'talk')) continue;
     // A mutual heart cannot fix a media path that does not exist either.
     if (pairOnCooldown(seeker.clientId, candidate.clientId, false)) continue;
+    // Nor does it override a gender preference or an avoided country: those
+    // are hard gates everywhere else, and a heart from an earlier call (made
+    // before the filter was set) is no reason to break one.
+    if (!genderPrefMet(seeker, candidate) || !genderPrefMet(candidate, seeker)) continue;
+    if (countryAvoided(seeker, candidate.country) || countryAvoided(candidate, seeker.country)) continue;
     const key = pairKey(seeker.clientId, candidate.clientId);
     const heartSet = hearts.get(key);
     if (heartSet && heartSet.has(seeker.clientId) && heartSet.has(candidate.clientId)) {
@@ -5025,6 +5242,7 @@ function findBestMatch(socketId) {
   const rankPool = !seekerQuarantined && waitingQueue.length >= matchModel.MIN_POOL_FOR_RANKING;
   const useModel = rankPool && MATCH_MODEL && matchModel.ready();
   const seekerMode = seeker.mode || 'talk';
+  const seekerNew = TRUST_TIERS && !seekerQuarantined && isNewcomer(seeker.clientId);
 
   for (let i = 0; i < waitingQueue.length; i++) {
     const candidateId = waitingQueue[i];
@@ -5043,7 +5261,8 @@ function findBestMatch(socketId) {
       adj = matchModel.rankAdjust(seekerTier, ct, md);
     }
 
-    const score = matchScore(seeker, candidate) + adj;
+    if (seekerNew) adj += newcomerPreference(candidate.clientId, now);
+    const score = matchScore(seeker, candidate, now) + adj;
     if (score > bestScore) {
       bestScore = score;
       bestIdx = i;
@@ -5056,6 +5275,8 @@ function findBestMatch(socketId) {
 // soft filters set, not already relaxed, and not opted out with "keep waiting".
 function waitingPayload(socketId) {
   const p = profiles.get(socketId);
+  const pool = filterPool(socketId);
+  if (p) p.poolKey = pool ? pool.online + ':' + pool.searching : '';
   const counting = p && !p.randomFallbackActive && !p.keepFilters && hasSoftFilters(p);
   return {
     estimatedSeconds: estimatedWaitSeconds(),
@@ -5063,7 +5284,61 @@ function waitingPayload(socketId) {
     fallbackInSeconds: counting && p.queuedAt
       ? Math.max(0, Math.ceil((RANDOM_FALLBACK_MS - (Date.now() - p.queuedAt)) / 1000)) : null,
     keepingFilters: !!(p && p.keepFilters && hasSoftFilters(p)),
+    // The gender this search is held to (Plus), so every client can say so.
+    gender: p && p.prefGender && p.prefGender !== 'any' ? p.prefGender : null,
+    pool,
   };
+}
+
+// How many people the seeker's filters allow, so a narrow filter reads as an
+// honest wait ("2 women online, both in calls") instead of an endless spinner.
+// `online`: people connected right now whom the filters allow and whose own
+// filters allow the seeker. `searching`: those of them looking for someone in
+// the same pool this moment. null when nothing narrows the search.
+function narrowsSearch(p) {
+  if (!p) return false;
+  // The gender preference holds through the fallback; the soft filters do not.
+  return (p.prefGender && p.prefGender !== 'any') || (!p.randomFallbackActive && hasSoftFilters(p));
+}
+function filterPool(socketId) {
+  const seeker = profiles.get(socketId);
+  if (!narrowsSearch(seeker)) return null;
+  const seekerQuarantined = quarantined(seeker, socketId);
+  const mode = seeker.mode || 'talk';
+  const online = new Set();
+  const searching = new Set();
+  const queued = new Set(waitingQueue);
+  for (const [sid, p] of profiles) {
+    if (sid === socketId || p.clientId === seeker.clientId || online.has(p.clientId)) continue;
+    // Same pool as matching: quarantined clients (scripts) count only for
+    // each other.
+    if (!io.sockets.sockets.get(sid)) continue;
+    if (quarantined(p, sid) !== seekerQuarantined) continue;
+    if (isBlockedPair(seeker.clientId, p.clientId)) continue;
+    if (!prefsMet(seeker, p) || !genderPrefMet(p, seeker)) continue;
+    if (countryAvoided(seeker, p.country) || countryAvoided(p, seeker.country)) continue;
+    online.add(p.clientId);
+    if ((p.mode || 'talk') === mode && queued.has(sid) && !partners.has(sid)) searching.add(p.clientId);
+  }
+  return { online: online.size, searching: searching.size };
+}
+
+// Re-sent while a filtered search waits, only when the numbers change, and
+// recounted at most every FILTER_POOL_EVERY_MS per waiter (a count walks every
+// connected profile).
+const FILTER_POOL_EVERY_MS = 6000;
+function sendFilterPool(socketId) {
+  const p = profiles.get(socketId);
+  const sock = io.sockets.sockets.get(socketId);
+  if (!p || !sock) return;
+  const now = Date.now();
+  if (p.poolAt && now - p.poolAt < FILTER_POOL_EVERY_MS) return;
+  p.poolAt = now;
+  const pool = filterPool(socketId);
+  const key = pool ? pool.online + ':' + pool.searching : '';
+  if (key === p.poolKey) return;
+  p.poolKey = key;
+  sock.emit('filter-pool', pool);
 }
 
 function estimatedWaitSeconds() {
@@ -5108,6 +5383,10 @@ function pairSockets(socketId, partnerId, opts = {}) {
   // Quarantined pairs are counted on their own, so the dashboard's matches are people.
   store.recordFeature(quarantined(seekerProfile) ? 'bot_match' : (mode === 'chat' ? 'chat_match' : 'match'));
   const samePersonality = sharedPersonality(seekerProfile, partnerProfile);
+  for (const p of [seekerProfile, partnerProfile]) if (p.prefGender && p.prefGender !== 'any') store.recordFeature('gender_match');
+  // The partner side is the WebRTC initiator (see signalSilent).
+  partnerProfile.sig = { initiator: true, offer: false, answer: false, offerIn: 0 };
+  seekerProfile.sig = { initiator: false, offer: false, answer: false, offerIn: 0 };
   partnerSocket.emit('matched', { initiator: true, partner: publicProfile(seekerProfile), rematched, mode, samePersonality, sameFilms: sharedFilms(partnerProfile, seekerProfile), undo: opts.undo ? 'them' : undefined });
   seekerSocket.emit('matched', { initiator: false, partner: publicProfile(partnerProfile), rematched, mode, samePersonality, sameFilms: sharedFilms(seekerProfile, partnerProfile), undo: opts.undo ? 'me' : undefined });
 
@@ -5153,7 +5432,7 @@ function tryMatch(socketId) {
         if (!p || p.keepFilters || !waitingQueue.includes(socketId)) return;
         p.randomFallbackActive = true;
         const sock = io.sockets.sockets.get(socketId);
-        if (sock) sock.emit('random-fallback');
+        if (sock && hasSoftFilters(p)) sock.emit('random-fallback', { relaxed: relaxedFilters(p) });
         tryMatch(socketId);
       }, RANDOM_FALLBACK_MS);
       waitFallbackTimers.set(socketId, timer);
@@ -5184,9 +5463,10 @@ function sweepQueue() {
       clearWaitFallbackTimer(socketId);
       p.randomFallbackActive = true;
       const sock = io.sockets.sockets.get(socketId);
-      if (sock) sock.emit('random-fallback');
+      if (sock && hasSoftFilters(p)) sock.emit('random-fallback', { relaxed: relaxedFilters(p) });
     }
     if (findBestMatch(socketId) !== -1) tryMatch(socketId);
+    else if (waitingQueue.includes(socketId) && narrowsSearch(p)) sendFilterPool(socketId);
   }
 }
 setInterval(sweepQueue, QUEUE_SWEEP_MS).unref?.();
@@ -5202,6 +5482,10 @@ function predictedMatch(socketId) {
     if (isBlockedPair(seeker.clientId, p.clientId)) continue;
     if (pairOnCooldown(seeker.clientId, p.clientId, false)) continue;
     if ((seeker.mode || 'talk') !== (p.mode || 'talk')) continue;
+    // "Connecting to someone in Japan" must be someone the filters allow: it
+    // used to name any online country, including ones the seeker filtered out.
+    if (!seeker.randomFallbackActive && !prefsMet(seeker, p)) continue;
+    if (!genderPrefMet(seeker, p) || countryAvoided(seeker, p.country)) continue;
     candidates.push(p);
   }
   if (candidates.length === 0) return null;
@@ -5455,6 +5739,8 @@ io.on('connection', (socket) => {
   const geo = lookupGeo(ip);
   // Kept out of the online count and the Online Now rail.
   socket.data.bot = isBotUserAgent(socket.handshake.headers['user-agent']);
+  // Matched only with other scripts (see quarantined()).
+  socket.data.automation = AUTOMATION_UA_QUARANTINE && isAutomationUserAgent(socket.handshake.headers['user-agent']);
 
   // One malformed packet must never take the whole server down. Handlers
   // destructure their payload (`({ token } = {}) =>`), and a default only
@@ -6289,10 +6575,10 @@ io.on('connection', (socket) => {
     }
     if (geo.country === 'XX') Object.assign(geo, placeFromHints(data.timezone, socket.handshake.headers['accept-language']));
     const premium = isPremium(clientId);
-    // Free-tier caps enforced server-side: gender preference and country lists
-    // beyond the free limit are premium-only.
-    const countryCap = premium ? 50 : FREE_LIMITS.countries;
-    const sanitizeCountryList = (list) => (Array.isArray(list) ? list.filter((c) => typeof c === 'string').slice(0, countryCap) : []);
+    // Free-tier caps (gender preference, country lists beyond the free limit,
+    // extra interests) are enforced by applyEntitlements() from what the
+    // client asked for, so a grant or an expiry mid-session takes effect at
+    // the next search without a re-register.
     const prev = profiles.get(socket.id);
     // A signed-in socket always shows the account's saved display name.
     const authedAccount = socketAuth.get(socket.id) ? accounts.get(socketAuth.get(socket.id)) : null;
@@ -6337,20 +6623,16 @@ io.on('connection', (socket) => {
       // aggregate audience analytics.
       ageGroup: (authedAccount && authedAccount.ageGroup && audience.normAge(data.ageGroup) === 'unspecified') ? authedAccount.ageGroup : audience.normAge(data.ageGroup),
       device: audience.parseUA(socket.handshake.headers['user-agent']).device,
-      prefGender: premium && (data.prefGender === 'male' || data.prefGender === 'female') ? data.prefGender : 'any',
-      // "Voice-checked only": with a gender preference, match only people whose
-      // on-device voice check agreed with the gender they picked themselves.
-      prefVoiceChecked: premium && flags.isOn('voiceCheck') && data.prefVoiceChecked === true,
+      // What the client asked for, validated but before the free/Plus caps;
+      // applyEntitlements() below derives the filters matching uses from it.
+      want: requestedFilters(data),
       // Opt-in result of voice-gender.js, which runs on the person's own
       // device. Kept in memory for this socket only, never stored, never sent
       // to anyone else, and only ever used to confirm the self-declared gender.
       voiceGender: flags.isOn('voiceCheck') && data.voiceCheck === true ? sanitizeVoiceGender(data.voiceGender) : null,
       voiceCheck: flags.isOn('voiceCheck') && data.voiceCheck === true,
-      includeCountries: sanitizeCountryList(data.includeCountries),
-      excludeCountries: sanitizeCountryList(data.excludeCountries),
       randomFallbackActive: false,
       mode: 'talk',
-      interests: cleanInterests(data.interests).slice(0, premium ? 10 : FREE_LIMITS.interests),
       // `m1`-`f5` are the gendered busts; `a:<animal>` is a spirit-animal
       // avatar, validated against the same list the picker is built from so a
       // client cannot store an animal that does not exist.
@@ -6370,12 +6652,24 @@ io.on('connection', (socket) => {
       // to break ties in matching - see matchScore().
       lang: matchLang(data.lang, socket.handshake.headers['accept-language']),
       // "Speaks" filter: match only people whose language is this one.
-      prefLang: typeof data.prefLang === 'string' && /^[a-z]{2}$/.test(data.prefLang) ? data.prefLang : null,
+      prefLang: typeof data.prefLang === 'string' ? normLang(data.prefLang) : null,
       // Premium members jump the matching queue (see PREMIUM_QUEUE_BONUS).
       premium,
       // "Keep waiting" survives a re-register mid-search (saving filters).
       keepFilters: !!(prev && prev.keepFilters),
     });
+    // A re-register on a live socket (saving filters or settings mid-search or
+    // mid-call) replaces the profile. The search and call state belongs to the
+    // socket, not to the settings, so it carries over: without this a /chat
+    // searcher who saved a filter came back in the voice pool while still
+    // queued, and a call's start time was lost, so its length never counted.
+    if (prev && prev.clientId === clientId) {
+      const next = profiles.get(socket.id);
+      for (const k of ['mode', 'queuedAt', 'searchSince', 'matchedAt', 'lastSkipped', 'pendingRating', 'randomFallbackActive', 'sig', 'mx', 'mPos']) {
+        if (prev[k] !== undefined) next[k] = prev[k];
+      }
+    }
+    applyEntitlements(profiles.get(socket.id));
     clientSockets.set(clientId, socket.id);
     socket.emit('contact-consent', { on: store.hasContactConsent(clientId) });
     {
@@ -6560,9 +6854,22 @@ io.on('connection', (socket) => {
       }
     }
     store.recordFeature(quarantined(profile, socket.id) ? 'bot_search' : (profile.mode === 'chat' ? 'chat_search' : 'search'));
+    // Plus may have started or ended since this socket registered.
+    applyEntitlements(profile);
     // A fresh, explicit search starts with the full set of filters again.
+    // Plus filters are kept until a match or a cancel: they are what was paid
+    // for. A free searcher's countries and language give way after
+    // RANDOM_FALLBACK_MS (announced, with "Keep my filters"), unless they chose
+    // to keep them on a socket that just dropped - the app re-sends the search
+    // after a reconnect or a trip to the background, and that is the same
+    // search, not a new one.
+    const carried = keepFiltersCarry.get(profile.clientId);
+    keepFiltersCarry.delete(profile.clientId);
     profile.randomFallbackActive = false;
-    profile.keepFilters = false;
+    profile.keepFilters = (profile.premium && hasSoftFilters(profile)) || (!!carried && Date.now() - carried < KEEP_FILTERS_CARRY_MS);
+    // How the gender filter fares: searches, matches (pairSockets) and waits
+    // given up (noteSearchAbandoned), for the owner dashboard's feature counts.
+    if (profile.prefGender && profile.prefGender !== 'any') store.recordFeature('gender_search');
     tryMatch(socket.id);
   });
 
@@ -6573,7 +6880,11 @@ io.on('connection', (socket) => {
     profile.keepFilters = true;
     profile.randomFallbackActive = false;
     clearWaitFallbackTimer(socket.id);
-    if (waitingQueue.includes(socket.id)) socket.emit('waiting', waitingPayload(socket.id));
+    if (waitingQueue.includes(socket.id)) {
+      socket.emit('waiting', waitingPayload(socket.id));
+      // Undoing a fallback that already happened: look again with the filters.
+      if (findBestMatch(socket.id) !== -1) tryMatch(socket.id);
+    }
   });
 
   // People online per country, for the filter panel's suggestion chips.
@@ -6631,7 +6942,10 @@ io.on('connection', (socket) => {
     const other = otherId ? profiles.get(otherId) : null;
     if (!other || !waitingQueue.includes(otherId) || partners.has(otherId)
       || (other.mode || 'talk') !== (me.mode || 'talk')
-      || isBlockedPair(me.clientId, other.clientId)) {
+      || isBlockedPair(me.clientId, other.clientId)
+      // Either side may have changed a filter since the skip.
+      || !genderPrefMet(me, other) || !genderPrefMet(other, me)
+      || countryAvoided(me, other.country) || countryAvoided(other, me.country)) {
       return reply({ ok: false, reason: 'busy' });
     }
     me.lastSkipped = null;
@@ -7047,6 +7361,13 @@ io.on('connection', (socket) => {
         || typeof data.candidate.candidate !== 'string'
         || data.candidate.candidate.length > 8192) return;
     } else return;
+    {
+      // Who has spoken WebRTC in this pairing (see signalSilent).
+      const me = profiles.get(socket.id);
+      const them = profiles.get(partnerId);
+      if (me && me.sig && data.type === 'offer') { me.sig.offer = true; if (them && them.sig && !them.sig.offerIn) them.sig.offerIn = Date.now(); }
+      if (me && me.sig && data.type === 'answer') me.sig.answer = true;
+    }
     // Forward only the fields WebRTC needs, never whatever else the sender
     // attached to the object.
     let out;
@@ -8475,6 +8796,15 @@ io.on('connection', (socket) => {
     // The socket went away rather than the user pressing anything, so tell
     // whoever they were talking to exactly that.
     disconnectPartner(socket.id, { dropped: true });
+    {
+      // Dropped mid-search with filters kept: the reconnected socket's search
+      // keeps them too (see find-partner).
+      const p = profiles.get(socket.id);
+      if (p && p.keepFilters && waitingQueue.includes(socket.id)) {
+        keepFiltersCarry.set(p.clientId, Date.now());
+        if (keepFiltersCarry.size > 5000) keepFiltersCarry.delete(keepFiltersCarry.keys().next().value);
+      }
+    }
     noteSearchAbandoned(socket.id);
     clearFromQueue(socket.id);
     clearWaitFallbackTimer(socket.id);

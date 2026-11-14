@@ -677,7 +677,7 @@
   "railNoCalls": "अभी कोई कॉल नहीं। इस सत्र की कॉल यहाँ दिखेंगी।",
   "railNoFriends": "अभी कोई दोस्त नहीं। किसी ऐसे को जोड़ें जिससे बात करना अच्छा लगा।",
   "railInviteTitle": "और लोगों को लाएँ",
-  "railInviteBody": "3 दोस्तों को बुलाएँ। जब वे आपके लिंक से साइन अप करेंगे, आपको 1 घंटे का TalkLive Plus मिलेगा।",
+  "railInviteBody": "3 दोस्तों को बुलाएँ। जब वे आपके लिंक से साइन अप करके असली बातचीत करेंगे, आपको 30 दिनों के लिए सुनहरी रिंग और एक लेजेंडरी अवतार मिलेगा।",
   "railInviteCta": "दोस्त को बुलाएँ",
   "heroSub": "असली लोग। सच्ची बातचीत। साइन-अप की ज़रूरत नहीं।",
   "animalMore": "और",
@@ -885,6 +885,18 @@
   "signupCodeLabel": "6 अंकों का कोड",
   "signupVerifyBtn": "पुष्टि करें और खाता बनाएँ",
   "signupChangeEmail": "ईमेल बदलें",
-  "authEmailRequired": "अपना ईमेल डालें। पुष्टि के लिए हम कोड भेजेंगे।"
+  "authEmailRequired": "अपना ईमेल डालें। पुष्टि के लिए हम कोड भेजेंगे।",
+  "statusLookingForWoman": "एक महिला की तलाश…",
+  "statusLookingForMan": "एक पुरुष की तलाश…",
+  "subPoolNone": "अभी आपके फ़िल्टर से मेल खाता कोई ऑनलाइन नहीं · खोज जारी है",
+  "subPoolBusy": "आपके फ़िल्टर से मेल खाते {n} लोग ऑनलाइन, सभी व्यस्त · किसी के खाली होने का इंतज़ार",
+  "subPoolBusyOne": "आपके फ़िल्टर से मेल खाता 1 व्यक्ति ऑनलाइन, व्यस्त · खाली होने का इंतज़ार",
+  "subPoolSearching": "आपके फ़िल्टर से मेल खाता कोई और भी खोज रहा है · जोड़ रहे हैं…",
+  "passMonthlyCheaper": "मासिक Plus ({price}) यहाँ सस्ता है",
+  "filtersNotList": "{list} छोड़कर",
+  "filtersEditHint": "बदलने के लिए टैप करें।",
+  "termsReadFull": "पूरे नियम और शर्तें पढ़ें",
+  "getAndroidApp": "Android ऐप पाएँ",
+  "getAppFoot": "Plus और पास ऐप में, Google Play के ज़रिए खरीदे जाते हैं।",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("hi");

@@ -540,4 +540,18 @@
         <item quantity="one">روز</item>
         <item quantity="other">روز</item>
     </plurals>
+    <string name="looking_for_woman">در جستجوی یک زن…</string>
+    <string name="looking_for_man">در جستجوی یک مرد…</string>
+    <string name="filter_pool_none">الان کسی مطابق فیلترهای شما آنلاین نیست · همچنان می‌گردیم</string>
+    <string name="filter_pool_searching">کسی مطابق فیلترهای شما هم در حال جستجوست · در حال اتصال…</string>
+    <string name="filters_widening_in">هنوز کسی پیدا نشده · تا چند ثانیه دیگر کشورها و زبان برای همه باز می‌شود</string>
+    <string name="filters_widened">کسی از کشورهای انتخابی شما آزاد نیست · با هر کسی وصل می‌شوید</string>
+    <string name="pass_monthly_cheaper">Plus ماهانه (%1$s) ارزان‌تر است</string>
+    <string name="filters_gender_note">جنسیت را هر کس خودش انتخاب می‌کند و تأیید نمی‌شود. انتخاب شما تا وصل شدن حفظ می‌شود.</string>
+    <string name="filters_summary">فیلترها: %1$s</string>
+    <string name="filters_not">به‌جز %1$s</string>
+    <plurals name="filter_pool_busy">
+        <item quantity="one">۱ نفر مطابق فیلترهای شما آنلاین است، مشغول · منتظر آزاد شدنش</item>
+        <item quantity="other">%1$d نفر مطابق فیلترهای شما آنلاین‌اند، همه مشغول · منتظر آزاد شدن یکی</item>
+    </plurals>
 </resources>

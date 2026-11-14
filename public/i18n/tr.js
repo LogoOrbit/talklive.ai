@@ -677,7 +677,7 @@
   "railNoCalls": "Henüz arama yok. Bu oturumdaki aramaların burada görünür.",
   "railNoFriends": "Henüz arkadaşın yok. Konuşmaktan keyif aldığın birini ekle.",
   "railInviteTitle": "Daha çok insan getir",
-  "railInviteBody": "3 arkadaşını davet et. Bağlantınla kaydolduklarında 1 saat TalkLive Plus kazanırsın.",
+  "railInviteBody": "3 arkadaşını davet et. Bağlantınla kaydolup gerçek bir sohbet ettiklerinde 30 gün boyunca altın halka ve efsanevi bir avatar kazanırsın.",
   "railInviteCta": "Arkadaş davet et",
   "heroSub": "Gerçek insanlar. İçten sohbetler. Kayıt gerekmez.",
   "animalMore": "Daha fazla",
@@ -885,6 +885,18 @@
   "signupCodeLabel": "6 haneli kod",
   "signupVerifyBtn": "Doğrula ve hesap oluştur",
   "signupChangeEmail": "E-postayı değiştir",
-  "authEmailRequired": "E-postanı gir. Sen olduğunu doğrulamak için bir kod göndeririz."
+  "authEmailRequired": "E-postanı gir. Sen olduğunu doğrulamak için bir kod göndeririz.",
+  "statusLookingForWoman": "Bir kadın aranıyor…",
+  "statusLookingForMan": "Bir erkek aranıyor…",
+  "subPoolNone": "Şu an filtrelerine uyan kimse çevrimiçi değil · aramaya devam",
+  "subPoolBusy": "Filtrelerine uyan {n} kişi çevrimiçi, hepsi meşgul · birinin boşalması bekleniyor",
+  "subPoolBusyOne": "Filtrelerine uyan 1 kişi çevrimiçi, meşgul · boşalması bekleniyor",
+  "subPoolSearching": "Filtrelerine uyan biri de arıyor · bağlanıyor…",
+  "passMonthlyCheaper": "Aylık Plus ({price}) burada daha ucuz",
+  "filtersNotList": "{list} hariç",
+  "filtersEditHint": "Değiştirmek için dokun.",
+  "termsReadFull": "Şartlar ve Koşulların tamamını oku",
+  "getAndroidApp": "Android uygulamasını indir",
+  "getAppFoot": "Plus ve geçişler uygulamada, Google Play üzerinden satın alınır.",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("tr");

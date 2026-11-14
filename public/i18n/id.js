@@ -677,7 +677,7 @@
   "railNoCalls": "Belum ada panggilan. Panggilan sesi ini akan muncul di sini.",
   "railNoFriends": "Belum ada teman. Tambahkan orang yang seru diajak ngobrol.",
   "railInviteTitle": "Ajak lebih banyak orang",
-  "railInviteBody": "Undang 3 teman. Saat mereka daftar lewat tautanmu, kamu dapat 1 jam TalkLive Plus.",
+  "railInviteBody": "Undang 3 teman. Saat mereka daftar lewat tautanmu dan benar-benar mengobrol, kamu dapat cincin emas dan satu avatar legendaris selama 30 hari.",
   "railInviteCta": "Ajak teman",
   "heroSub": "Orang sungguhan. Obrolan tulus. Tanpa daftar.",
   "animalMore": "Lainnya",
@@ -885,6 +885,18 @@
   "signupCodeLabel": "Kode 6 digit",
   "signupVerifyBtn": "Verifikasi & buat akun",
   "signupChangeEmail": "Ganti email",
-  "authEmailRequired": "Masukkan emailmu. Kami kirim kode untuk memastikan ini kamu."
+  "authEmailRequired": "Masukkan emailmu. Kami kirim kode untuk memastikan ini kamu.",
+  "statusLookingForWoman": "Mencari perempuan…",
+  "statusLookingForMan": "Mencari laki-laki…",
+  "subPoolNone": "Belum ada yang online sesuai filtermu · masih mencari",
+  "subPoolBusy": "{n} online sesuai filtermu, semua sibuk · menunggu ada yang luang",
+  "subPoolBusyOne": "1 orang online sesuai filtermu, sibuk · menunggu dia luang",
+  "subPoolSearching": "Seseorang yang sesuai filtermu juga sedang mencari · menghubungkan…",
+  "passMonthlyCheaper": "Plus bulanan ({price}) lebih murah di sini",
+  "filtersNotList": "kecuali {list}",
+  "filtersEditHint": "Ketuk untuk mengubah.",
+  "termsReadFull": "Baca Syarat & Ketentuan lengkap",
+  "getAndroidApp": "Dapatkan aplikasi Android",
+  "getAppFoot": "Plus dan pass dibeli di aplikasi, lewat Google Play.",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("id");

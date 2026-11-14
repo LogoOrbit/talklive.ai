@@ -186,4 +186,15 @@ function botLabel(ua) {
   return isBotUserAgent(s) ? 'Other bot' : null;
 }
 
-module.exports = { isBotUserAgent, isPrefetch, isNonHumanRequest, botLabel };
+// A socket that can only be a script: no User-Agent (or a stub), or an
+// automation tool or HTTP library by name. Narrower than isBotUserAgent on
+// purpose: it leaves out okhttp/java, which an older build of the Android app
+// may still send, and named crawlers, which never open a socket. Used to keep
+// such sockets out of the pool real people are matched from.
+const AUTOMATION_RE = /curl\/|wget|python-|aiohttp|httpx|go-http-client|axios\/|node-fetch|undici|got \(|guzzlehttp|libwww-perl|php\/|ruby\/|scrapy|puppeteer|playwright|headlesschrome|phantomjs|selenium|cypress/;
+function isAutomationUserAgent(ua) {
+  const s = String(ua || '').toLowerCase().trim();
+  return s.length < 12 || AUTOMATION_RE.test(s);
+}
+
+module.exports = { isBotUserAgent, isAutomationUserAgent, isPrefetch, isNonHumanRequest, botLabel };

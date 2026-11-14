@@ -540,4 +540,18 @@
         <item quantity="one">giorno</item>
         <item quantity="other">giorni</item>
     </plurals>
+    <string name="looking_for_woman">Cerco una donna…</string>
+    <string name="looking_for_man">Cerco un uomo…</string>
+    <string name="filter_pool_none">Nessuno online corrisponde ai tuoi filtri · continuiamo a cercare</string>
+    <string name="filter_pool_searching">Anche qualcuno che corrisponde ai tuoi filtri sta cercando · connessione…</string>
+    <string name="filters_widening_in">Ancora nessun match · paesi e lingua si apriranno a tutti tra pochi secondi</string>
+    <string name="filters_widened">Nessuno dei tuoi paesi è libero · ti colleghiamo con chiunque</string>
+    <string name="pass_monthly_cheaper">Plus mensile (%1$s) costa meno</string>
+    <string name="filters_gender_note">Il genere lo sceglie ogni persona e non è verificato. La tua scelta resta finché non ti colleghi.</string>
+    <string name="filters_summary">Filtri: %1$s</string>
+    <string name="filters_not">tranne %1$s</string>
+    <plurals name="filter_pool_busy">
+        <item quantity="one">1 persona online corrisponde ai tuoi filtri, occupata · in attesa che si liberi</item>
+        <item quantity="other">%1$d online corrispondono ai tuoi filtri, tutti occupati · in attesa che qualcuno si liberi</item>
+    </plurals>
 </resources>

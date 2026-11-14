@@ -540,4 +540,18 @@
         <item quantity="one">dia</item>
         <item quantity="other">dias</item>
     </plurals>
+    <string name="looking_for_woman">Procurando uma mulher…</string>
+    <string name="looking_for_man">Procurando um homem…</string>
+    <string name="filter_pool_none">Ninguém que combine com seus filtros está online agora · continuamos procurando</string>
+    <string name="filter_pool_searching">Alguém que combina com seus filtros também está procurando · conectando…</string>
+    <string name="filters_widening_in">Ainda sem match · seus países e idioma vão abrir para todos em alguns segundos</string>
+    <string name="filters_widened">Ninguém dos seus países está livre · conectando você com qualquer pessoa</string>
+    <string name="pass_monthly_cheaper">Plus mensal (%1$s) sai mais barato</string>
+    <string name="filters_gender_note">Cada pessoa escolhe o próprio gênero, sem verificação. Sua escolha fica até você ser conectado.</string>
+    <string name="filters_summary">Filtros: %1$s</string>
+    <string name="filters_not">exceto %1$s</string>
+    <plurals name="filter_pool_busy">
+        <item quantity="one">1 pessoa online combina com seus filtros, ocupada · esperando ficar livre</item>
+        <item quantity="other">%1$d online combinam com seus filtros, todos ocupados · esperando alguém ficar livre</item>
+    </plurals>
 </resources>

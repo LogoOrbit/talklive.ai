@@ -1937,7 +1937,53 @@ function activeFilterCount(f) {
     + ((f.excludeCountries || []).length ? 1 : 0)
     + ((f.interests || []).length ? 1 : 0);
 }
+// Display only. What the next search is limited to, in words that need no
+// translation (symbols, flags, language and interest names), shown on Home and
+// while searching. Never read by matchmaking. Gender only counts for Plus,
+// as it does on the server.
+function filterSummaryParts(f, spoken) {
+  const parts = [];
+  // Words, not ♀/♂: a screen reader read those as "female sign".
+  if (isPremiumUser && (f.prefGender === 'female' || f.prefGender === 'male')) parts.push(t(f.prefGender));
+  // Flags on screen; country names for a screen reader.
+  const places = (list) => (spoken
+    ? list.map((c) => getCountryName(c) || c).join(', ')
+    : list.slice(0, 3).map(countryFlagEmoji).join('') + (list.length > 3 ? '+' + (list.length - 3) : ''));
+  const inc = f.includeCountries || [];
+  if (inc.length) parts.push(places(inc));
+  if (f.prefLang && I18N_LANGS[f.prefLang]) parts.push(I18N_LANGS[f.prefLang].name);
+  const ints = f.interests || [];
+  if (ints.length) parts.push(spoken ? ints.join(', ') : ints[0] + (ints.length > 1 ? ' +' + (ints.length - 1) : ''));
+  const exc = f.excludeCountries || [];
+  if (exc.length) parts.push(spoken ? t('filtersNotList', { list: places(exc) }) : '\u2715 ' + places(exc));
+  return parts;
+}
+function renderFilterSummary() {
+  const home = document.getElementById('homeFilterSummary');
+  const search = document.getElementById('searchFilterSummary');
+  let text, spoken;
+  // Called from setState, which can run before the filter and premium state
+  // below exist (let bindings are in their dead zone until then).
+  try {
+    text = filterSummaryParts(appliedFilters).join(' \u00b7 ');
+    spoken = filterSummaryParts(appliedFilters, true).join('; ');
+  } catch (_) { return; }
+  const searching = !!orb && orb.classList.contains('waiting');
+  const line = text ? t('filters') + ': ' + text : '';
+  const label = spoken ? t('filters') + ': ' + spoken : '';
+  if (home) {
+    home.textContent = line;
+    home.classList.toggle('hidden', !text);
+    if (label) home.setAttribute('aria-label', label + '. ' + t('filtersEditHint'));
+  }
+  if (search) {
+    search.textContent = line;
+    search.classList.toggle('hidden', !text || !searching);
+    if (label) search.setAttribute('aria-label', label);
+  }
+}
 function updateFiltersBadge() {
+  renderFilterSummary();
   const el = document.getElementById('filtersBadge');
   if (!el) return;
   const n = activeFilterCount(appliedFilters);
@@ -2391,6 +2437,8 @@ let lastFocusedBeforeModal = null;
 function loadPolicyText(modal) {
   modal.querySelectorAll('.policy-remote[data-policy-src]').forEach((slot) => {
     if (slot.dataset.policyState) return;
+    // Folded away (the consent dialog's full Terms): fetched when opened.
+    if (slot.closest('details:not([open])')) return;
     slot.dataset.policyState = 'loading';
     fetch(slot.dataset.policySrc, { credentials: 'same-origin' })
       .then((r) => (r.ok ? r.text() : Promise.reject(new Error(String(r.status)))))
@@ -2634,10 +2682,14 @@ function renderSettingsProfileRow() {
 // Passes: every Plus feature for 1, 7 or 15 days, one-time payment. They are
 // bought in the Android app through Google Play (the same prices as /pricing);
 // the button here opens the pricing page that explains it.
+// Prices start empty and come from /pricing.json (the visitor's country): a
+// hard-coded dollar price used to show to everyone until that arrived, and for
+// good if it failed. `cheaper` holds the monthly price when a pass costs at
+// least a month of Plus there (server/pricing.js monthlyCheaper).
 const SHOP_PASSES = [
-  { id: 'd1', days: 1, price: '$1.99', tagKey: 'passTagEntry' },
-  { id: 'd7', days: 7, price: '$4.99', tagKey: 'passTagPopular' },
-  { id: 'd15', days: 15, price: '$6.99', tagKey: 'passTagMax' },
+  { id: 'd1', days: 1, price: '', tagKey: 'passTagEntry', cheaper: '' },
+  { id: 'd7', days: 7, price: '', tagKey: 'passTagPopular', cheaper: '' },
+  { id: 'd15', days: 15, price: '', tagKey: 'passTagMax', cheaper: '' },
 ];
 let selectedPassId = 'd7';
 
@@ -2656,10 +2708,10 @@ function renderPasses() {
     tier.innerHTML = `
       <span class="pass-radio" aria-hidden="true"></span>
       <span class="pass-row-main">
-        <span class="pass-row-title">${escapeHtml(t('passName', { days: p.days }))}<em class="pass-badge">${escapeHtml(t(p.tagKey))}</em></span>
-        <span class="pass-row-sub">${escapeHtml(t('passAllPlus'))}</span>
+        <span class="pass-row-title">${escapeHtml(t('passName', { days: p.days }))}${p.cheaper ? '' : `<em class="pass-badge">${escapeHtml(t(p.tagKey))}</em>`}</span>
+        <span class="pass-row-sub">${escapeHtml(p.cheaper ? t('passMonthlyCheaper', { price: p.cheaper }) : t('passAllPlus'))}</span>
       </span>
-      <span class="pass-row-price"><strong>${escapeHtml(p.price)}</strong></span>
+      <span class="pass-row-price"><strong>${p.price ? escapeHtml(p.price) : '<span class="pass-price-loading" aria-hidden="true">···</span>'}</strong></span>
     `;
     tier.addEventListener('click', () => {
       selectedPassId = p.id;
@@ -2669,7 +2721,7 @@ function renderPasses() {
   });
   if (buy) {
     const p = SHOP_PASSES.find((x) => x.id === selectedPassId);
-    buy.textContent = t('passBuy', { days: p.days, price: p.price });
+    buy.textContent = p.price ? t('passBuy', { days: p.days, price: p.price }) : t('passName', { days: p.days });
   }
 }
 
@@ -2688,9 +2740,13 @@ function openShop() {
   if (shopPriced) return;
   shopPriced = true;
   fetch('/pricing.json').then((r) => r.json()).then((p) => {
-    (p.passes || []).forEach((it, i) => { if (SHOP_PASSES[i]) SHOP_PASSES[i].price = it.label; });
+    (p.passes || []).forEach((it, i) => {
+      if (!SHOP_PASSES[i]) return;
+      SHOP_PASSES[i].price = it.label;
+      SHOP_PASSES[i].cheaper = it.monthlyCheaper && p.monthly ? p.monthly.label : '';
+    });
     renderPasses();
-  }).catch(() => {});
+  }).catch(() => { shopPriced = false; });
 }
 
 if (settingsShopRow) settingsShopRow.addEventListener('click', openShop);
@@ -7019,6 +7075,7 @@ socket.on('register-result', ({ ok, reason } = {}) => {
 // --- State helpers ---
 function setState(state) {
   orb.className = `orb ${state}`;
+  if (typeof renderFilterSummary === 'function') renderFilterSummary();
 }
 
 // green = connected, orange = searching/reconnecting, red = disconnected/skipped.
@@ -8746,8 +8803,31 @@ function dismissAgeConsent() {
 }
 
 closeAgeConsentBtn.addEventListener('click', dismissAgeConsent);
+// "Read the full Terms": load them on first open; the scroll-fade cue only
+// applies while the long text is showing.
+{
+  const full = document.getElementById('consentFullTerms');
+  if (full) full.addEventListener('toggle', () => {
+    const body = full.closest('.consent-terms-body');
+    if (body) body.classList.toggle('is-full', full.open);
+    if (full.open) loadPolicyText(ageConsentModal);
+  });
+}
 ageConsentModal.addEventListener('click', (e) => {
   if (e.target === ageConsentModal) dismissAgeConsent();
+});
+// The dialog is aria-modal, so keyboard focus stays in it: Tab from the last
+// control (I agree) used to walk out to the page behind. Behaviour only; the
+// dialog's content is unchanged.
+ageConsentModal.addEventListener('keydown', (e) => {
+  if (e.key !== 'Tab' || ageConsentModal.classList.contains('hidden')) return;
+  const items = [...ageConsentModal.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+    .filter((el) => el.offsetParent !== null);
+  if (!items.length) return;
+  const first = items[0];
+  const last = items[items.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
 });
 
 // Accepting a voice-call invite from /chat: same consent + mic setup as a
@@ -9913,6 +9993,11 @@ function setNotifyStatus(text, kind) {
   notifyStatus.classList.toggle('is-ok', kind === 'ok');
 }
 
+// Links to the Android app on Google Play (where Plus is sold).
+document.querySelectorAll('[data-app-link]').forEach((a) => {
+  a.addEventListener('click', () => trackGrowthEvent('premium_app_download_click'));
+});
+
 document.querySelectorAll('[data-notify]').forEach((btn) => {
   if (notifySignedUp(btn.dataset.notify)) markNotified(btn, 'notifyEmailDone');
   btn.addEventListener('click', () => {
@@ -10472,7 +10557,7 @@ if (keepFiltersBtn) {
   });
 }
 
-socket.on('waiting', ({ estimatedSeconds, predicted, fallbackInSeconds, keepingFilters } = {}) => {
+socket.on('waiting', ({ estimatedSeconds, predicted, fallbackInSeconds, keepingFilters, gender, pool } = {}) => {
   markSearchAcked();
   setState('waiting');
   if (Date.now() < endedNoticeUntil) return;
@@ -10484,21 +10569,42 @@ socket.on('waiting', ({ estimatedSeconds, predicted, fallbackInSeconds, keepingF
   } else {
     setStatusText('statusSearching');
   }
+  // A gender preference (Plus) is never dropped while waiting, so say who
+  // this search is waiting for rather than a country that may not apply.
+  if (gender === 'female' || gender === 'male') setStatusText(gender === 'female' ? 'statusLookingForWoman' : 'statusLookingForMan');
   hideKeepFilters();
   if (typeof fallbackInSeconds === 'number' && fallbackInSeconds > 0) startWideningCountdown(fallbackInSeconds);
+  else if (pool) showFilterPool(pool);
   else if (keepingFilters) setSubText('subKeepingFilters');
   else if (estimatedSeconds) setSubText('subUsuallyMatches', { s: estimatedSeconds });
   else setSubText('subHangTight');
+});
+
+// How many people the filters allow right now, so a narrow filter reads as an
+// honest wait instead of an endless spinner. The server re-sends it while the
+// search waits, whenever the numbers change.
+function showFilterPool(pool) {
+  if (!pool) return;
+  if (pool.searching > 0) setSubText('subPoolSearching');
+  else if (pool.online === 1) setSubText('subPoolBusyOne');
+  else if (pool.online > 0) setSubText('subPoolBusy', { n: pool.online });
+  else setSubText('subPoolNone');
+}
+socket.on('filter-pool', (pool) => {
+  if (!pool || wideningTimer || Date.now() < endedNoticeUntil) return;
+  // Only while the orb still shows a search (a match may have landed first).
+  if (!orb.classList.contains('waiting')) return;
+  showFilterPool(pool);
 });
 
 // After ~10s of waiting the server drops every filter and auto-matches with
 // any random stranger instead of leaving the user stuck.
 // It used to blame "your chosen countries" whatever was set - including when
 // nothing was, or when it was the gender filter doing the narrowing.
-socket.on('random-fallback', () => {
+socket.on('random-fallback', ({ relaxed } = {}) => {
   const f = appliedFilters;
-  const filtered = (f.prefGender && f.prefGender !== 'any' && isPremiumUser)
-    || (f.includeCountries || []).length || (f.excludeCountries || []).length;
+  // Only countries and language ever give way; a gender preference does not.
+  const filtered = (Array.isArray(relaxed) && relaxed.length > 0) || (f.includeCountries || []).length;
   stopWideningCountdown();
   setStatusText('statusConnectingRandom');
   setSubText(filtered ? 'subFiltersFallback' : 'subHangTight');
@@ -11520,9 +11626,11 @@ filtersReady = true;
 syncFilterReadout();
 updateFiltersBadge();
 renderFilterPresets();
+{ const hs = document.getElementById('homeFilterSummary'); if (hs) hs.addEventListener('click', () => { const b = document.getElementById('filtersBtn'); if (b) b.click(); }); }
 
 socket.on('premium-status', ({ premium, limits, expiresAt } = {}) => {
   isPremiumUser = !!premium;
+  renderFilterSummary();
   premiumUntil = premium ? expiresAt || null : null;
   if (limits) {
     freeLimits = {
@@ -11568,6 +11676,7 @@ function updatePremiumUi() {
   // "👑 Premium" locks/hints show only on the free tier.
   document.querySelectorAll('.premium-lock').forEach((el) => el.classList.toggle('hidden', isPremiumUser));
   document.documentElement.classList.toggle('tl-free', !isPremiumUser);
+  document.documentElement.classList.toggle('tl-plus', isPremiumUser);
   if (filtersReady) syncFilterReadout();
 }
 updatePremiumUi();

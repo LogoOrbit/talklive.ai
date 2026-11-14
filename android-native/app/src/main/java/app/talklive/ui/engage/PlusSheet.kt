@@ -349,10 +349,20 @@ fun PlusContent(
                                 stringResource(R.string.pass_sub), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.72f),
                                 modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
                             )
+                            // Play prices passes apart from the subscription, and in some
+                            // markets a pass costs as much as a month of Plus or more. Such a
+                            // pass is not "popular" or "best value": it says monthly costs less.
+                            val monthly = state.plans.firstOrNull { PlayBilling.periodDays(it.period) in 28..31 }
                             Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                                 state.passes.forEachIndexed { i, pass ->
-                                    PassCard(pass, badge = when (i) { 1 -> stringResource(R.string.pass_popular); 2 -> stringResource(R.string.pass_best); else -> null },
-                                        selected = pass == pickedPass) { pickedPass = pass }
+                                    val cheaper = monthly != null && monthly.priceMicros > 0 && pass.priceMicros >= monthly.priceMicros
+                                        && monthly.currency == pass.currency
+                                    PassCard(
+                                        pass,
+                                        badge = if (cheaper) null else when (i) { 1 -> stringResource(R.string.pass_popular); 2 -> stringResource(R.string.pass_best); else -> null },
+                                        selected = pass == pickedPass,
+                                        monthlyCheaperThan = if (cheaper) monthly?.price else null,
+                                    ) { pickedPass = pass }
                                 }
                             }
                         }
@@ -748,7 +758,12 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
 
 /** A one-time pass: days in big type, its price, and a small badge. */
 @Composable
-private fun PassCard(pass: app.talklive.billing.PlusPass, badge: String?, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+private fun PassCard(
+    pass: app.talklive.billing.PlusPass, badge: String?, selected: Boolean, modifier: Modifier = Modifier,
+    /** The monthly plan's price when it costs no more than this pass. */
+    monthlyCheaperThan: String? = null,
+    onClick: () -> Unit,
+) {
     // Laid out like the monthly plan (a radio, a name, a price), so it reads
     // as something to pick and buy, not a picture.
     val border by animateColorAsState(if (selected) Gold2 else Color.White.copy(alpha = 0.16f), label = "pass")
@@ -781,6 +796,10 @@ private fun PassCard(pass: app.talklive.billing.PlusPass, badge: String?, select
                     Text(
                         if (perDay != null) stringResource(R.string.pass_per_day, perDay) else stringResource(R.string.pass_once),
                         style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.72f),
+                    )
+                    if (monthlyCheaperThan != null) Text(
+                        stringResource(R.string.pass_monthly_cheaper, monthlyCheaperThan),
+                        style = MaterialTheme.typography.labelMedium, color = Gold1,
                     )
                 }
                 Text(pass.price, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = if (selected) Gold1 else Color.White)

@@ -32,6 +32,8 @@ are also rendered in `ScreenshotTest`.
 | Show online status, friends can call me | Profile → Privacy | ✅ e2e |
 | Streak, weekly stats, passport | Home 🔥 chip | ✅ e2e (streak) |
 | Match filters: interests, countries, gender (Plus) | Home filter button | ✅ e2e (interests) |
+| Filtered wait: "Looking for a woman…", people online the filters allow, countries widening (free) | Searching screen (voice and text) | server rules in `scripts/test-gender-filter.js`; UI not covered by a JVM test |
+| Pass that costs a month or more says "Monthly Plus costs less" | Plus sheet (from Play's live prices) | — |
 | Favourite films and shows (Apple search) | Profile | ✅ e2e (save + shown to partner) |
 | Who liked you (names with Plus) | Profile | ✅ e2e |
 | Invite friends (referral) | Profile, talklive.app/?ref= links | ✅ e2e |
@@ -52,7 +54,7 @@ are also rendered in `ScreenshotTest`.
 | Sound effects (same tones as the website) | Automatic; Profile → Sounds | — |
 | Movie-character avatars | Avatar picker | generated from `public/characters.js` |
 | Team replies to feedback | Dialog when one arrives | — |
-| "Keep my filters" when nobody matches | Snackbar | — |
+| "Keep my filters" when nobody matches | Not shown: the server keeps Plus filters by default and never drops a gender preference; free country filters widen after 10 s with a notice | — |
 | Remove someone from "met today" | Long-press their card | ✅ e2e |
 | Links open the app, shortcuts | talklive.app links, long-press icon | — |
 | Online now (tap to look in their country) | Home | screenshot |

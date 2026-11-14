@@ -677,7 +677,7 @@
   "railNoCalls": "まだ通話はありません。このセッションの通話がここに表示されます。",
   "railNoFriends": "まだ友だちがいません。話して楽しかった人を追加しよう。",
   "railInviteTitle": "もっと人を呼ぼう",
-  "railInviteBody": "友達を3人招待しよう。あなたのリンクから登録すると、TalkLive Plusが1時間もらえます。",
+  "railInviteBody": "友達を3人招待しよう。あなたのリンクから登録して実際に会話すると、ゴールドリングとレジェンダリーアバターが30日間もらえます。",
   "railInviteCta": "友だちを招待",
   "heroSub": "リアルな人と、本当の会話を。登録不要。",
   "animalMore": "もっと見る",
@@ -885,6 +885,18 @@
   "signupCodeLabel": "6桁のコード",
   "signupVerifyBtn": "確認してアカウント作成",
   "signupChangeEmail": "メールを変更",
-  "authEmailRequired": "メールアドレスを入力してください。本人確認のコードを送ります。"
+  "authEmailRequired": "メールアドレスを入力してください。本人確認のコードを送ります。",
+  "statusLookingForWoman": "女性を探しています…",
+  "statusLookingForMan": "男性を探しています…",
+  "subPoolNone": "今、条件に合う人はオンラインにいません · 探し続けています",
+  "subPoolBusy": "条件に合う{n}人がオンライン、全員通話中 · 空くのを待っています",
+  "subPoolBusyOne": "条件に合う1人がオンライン、通話中 · 空くのを待っています",
+  "subPoolSearching": "条件に合う人も探しています · 接続中…",
+  "passMonthlyCheaper": "ここでは月額Plus（{price}）の方がお得です",
+  "filtersNotList": "{list} を除く",
+  "filtersEditHint": "タップして変更",
+  "termsReadFull": "利用規約の全文を読む",
+  "getAndroidApp": "Androidアプリを入手",
+  "getAppFoot": "Plusとパスはアプリ内でGoogle Playから購入できます。",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ja");

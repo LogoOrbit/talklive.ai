@@ -3576,8 +3576,37 @@
     focusComposer(input);
   });
 
-  socket.on('waiting', function () { searchAcked = true; });
-  socket.on('random-fallback', function () { /* server widened the net; nothing to do */ });
+  // A filtered search says who it is waiting for and how many people the
+  // filters allow right now, instead of rotating "Almost there" lines over a
+  // wait that may be long. A gender preference is never dropped by the server.
+  function showFilterWait(gender, pool) {
+    if (!searching || partnerHere) return;
+    var head = gender === 'female' ? t('statusLookingForWoman') : gender === 'male' ? t('statusLookingForMan') : '';
+    var sub = !pool ? '' : pool.searching > 0 ? t('subPoolSearching')
+      : pool.online === 1 ? t('subPoolBusyOne')
+      : pool.online > 0 ? t('subPoolBusy', { n: pool.online }) : t('subPoolNone');
+    if (!head && !sub) return;
+    stopSearchLines();
+    searchLine.textContent = head && sub ? head + ' ' + sub : head || sub;
+  }
+  var waitGender = null; // the gender this search is held to, per the server
+  socket.on('waiting', function (data) {
+    searchAcked = true;
+    waitGender = data && data.gender ? data.gender : null;
+    if (data && (data.gender || data.pool)) showFilterWait(data.gender, data.pool);
+  });
+  socket.on('filter-pool', function (pool) {
+    if (pool) showFilterWait(waitGender, pool);
+  });
+  // Countries or language gave way after a long wait. Say so: matching someone
+  // outside them without a word read as the filters not working.
+  socket.on('random-fallback', function (data) {
+    if (!searching || partnerHere) return;
+    if (data && Array.isArray(data.relaxed) && data.relaxed.length) {
+      stopSearchLines();
+      searchLine.textContent = t('subFiltersFallback');
+    }
+  });
 
   socket.on('chat-message', function (data) {
     if (!data) return;

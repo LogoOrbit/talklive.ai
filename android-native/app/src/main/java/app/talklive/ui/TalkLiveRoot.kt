@@ -541,6 +541,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                         onMode = vm::setMode,
                         engage = engage,
                         filtersActive = filters.activeCount,
+                        filterSummary = app.talklive.ui.components.filterSummary(filters, premium.active),
                         onStreak = { showStreak = true },
                         // Everyone can filter by interests and 2 countries (as on the website);
                         // gender and more countries open Plus from inside the sheet.
@@ -618,6 +619,8 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                     onEnd = { if (state.phase is CallPhase.Connected) confirmLeave = true else vm.end() },
                     onGames = { showGames = true },
                     onSwitchToVoice = { withMic { vm.inviteVoice() } },
+                    onKeepFilters = engageVm::keepFilters,
+                    filterSummary = app.talklive.ui.components.filterSummary(filters, premium.active),
                 ) else CallScreen(
                     state = state,
                     connected = connected,
@@ -650,6 +653,8 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                     noiseSuppression = vm.noiseSuppression.collectAsStateWithLifecycle().value,
                     onNoiseSuppression = vm::setNoiseSuppression,
                     onProblem = { engageVm.sendFeedback("[call] $it", problem = true) },
+                    onKeepFilters = engageVm::keepFilters,
+                    filterSummary = app.talklive.ui.components.filterSummary(filters, premium.active),
                 )
                 val connectedPartner = (state.phase as? CallPhase.Connected)?.partner
                 app.talklive.ui.components.PlusEntrance(connectedPartner?.clientId, connectedPartner?.premium == true)

@@ -677,7 +677,7 @@
   "railNoCalls": "아직 통화가 없어요. 이번 세션의 통화가 여기에 표시돼요.",
   "railNoFriends": "아직 친구가 없어요. 대화가 즐거웠던 사람을 추가해 보세요.",
   "railInviteTitle": "더 많은 사람을 불러 주세요",
-  "railInviteBody": "친구 3명을 초대하세요. 내 링크로 가입하면 TalkLive Plus 1시간을 드려요.",
+  "railInviteBody": "친구 3명을 초대하세요. 내 링크로 가입하고 실제로 대화하면 30일 동안 골드 링과 전설 아바타를 드려요.",
   "railInviteCta": "친구 초대",
   "heroSub": "진짜 사람들. 진솔한 대화. 가입 필요 없음.",
   "animalMore": "더보기",
@@ -885,6 +885,18 @@
   "signupCodeLabel": "6자리 코드",
   "signupVerifyBtn": "인증하고 계정 만들기",
   "signupChangeEmail": "이메일 변경",
-  "authEmailRequired": "이메일을 입력하세요. 본인 확인 코드를 보내드려요."
+  "authEmailRequired": "이메일을 입력하세요. 본인 확인 코드를 보내드려요.",
+  "statusLookingForWoman": "여성을 찾는 중…",
+  "statusLookingForMan": "남성을 찾는 중…",
+  "subPoolNone": "지금 필터에 맞는 사람이 온라인에 없어요 · 계속 찾는 중",
+  "subPoolBusy": "필터에 맞는 {n}명이 온라인, 모두 대화 중 · 누군가 비기를 기다리는 중",
+  "subPoolBusyOne": "필터에 맞는 1명이 온라인, 대화 중 · 비기를 기다리는 중",
+  "subPoolSearching": "필터에 맞는 사람도 찾는 중이에요 · 연결 중…",
+  "passMonthlyCheaper": "여기서는 월간 Plus({price})가 더 저렴해요",
+  "filtersNotList": "{list} 제외",
+  "filtersEditHint": "탭해서 변경",
+  "termsReadFull": "이용약관 전문 읽기",
+  "getAndroidApp": "Android 앱 받기",
+  "getAppFoot": "Plus와 패스는 앱에서 Google Play로 구매해요.",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ko");

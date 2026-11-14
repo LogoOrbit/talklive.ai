@@ -677,7 +677,7 @@
   "railNoCalls": "还没有通话。本次会话的通话会显示在这里。",
   "railNoFriends": "还没有好友。把聊得开心的人加为好友吧。",
   "railInviteTitle": "邀请更多人",
-  "railInviteBody": "邀请 3 位好友。他们通过你的链接注册后，你将获得 1 小时 TalkLive Plus。",
+  "railInviteBody": "邀请 3 位好友。他们通过你的链接注册并真正聊过天后，你将获得 30 天的金色光环和一个传奇头像。",
   "railInviteCta": "邀请朋友",
   "heroSub": "真实的人，真诚的对话，无需注册。",
   "animalMore": "更多",
@@ -885,6 +885,18 @@
   "signupCodeLabel": "6 位验证码",
   "signupVerifyBtn": "验证并创建账号",
   "signupChangeEmail": "更改邮箱",
-  "authEmailRequired": "请输入邮箱。我们会发送验证码确认是你本人。"
+  "authEmailRequired": "请输入邮箱。我们会发送验证码确认是你本人。",
+  "statusLookingForWoman": "正在寻找女性…",
+  "statusLookingForMan": "正在寻找男性…",
+  "subPoolNone": "目前没有符合筛选条件的人在线 · 仍在寻找",
+  "subPoolBusy": "{n} 位符合条件的人在线，都在通话中 · 等待有人空闲",
+  "subPoolBusyOne": "1 位符合条件的人在线，正在通话 · 等待其空闲",
+  "subPoolSearching": "也有符合条件的人在寻找 · 正在连接…",
+  "passMonthlyCheaper": "这里按月订阅 Plus（{price}）更便宜",
+  "filtersNotList": "排除 {list}",
+  "filtersEditHint": "点按可修改。",
+  "termsReadFull": "阅读完整的条款与条件",
+  "getAndroidApp": "获取 Android 应用",
+  "getAppFoot": "Plus 和通行证可在应用内通过 Google Play 购买。",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("zh");

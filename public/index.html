@@ -28,7 +28,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   root.classList.add('i18n-pending');
   setTimeout(function () { root.classList.remove('i18n-pending'); }, 1500);
   var s = document.createElement('script');
-  s.src = '/i18n/' + lang + '.js?v=20261106passes';
+  s.src = '/i18n/' + lang + '.js?v=20261114consent';
   s.async = true;
   s.setAttribute('data-i18n-lang', lang);
   s.onerror = function () { root.classList.remove('i18n-pending'); };
@@ -54,13 +54,13 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=153fc85b70" crossorigin />
-<link rel="stylesheet" href="style.css?v=ec6a52371e" />
+<link rel="stylesheet" href="style.css?v=8e4123800d" />
 <link rel="stylesheet" href="chat-extras.css?v=4b7b6398b3" />
 <link rel="stylesheet" href="games.css?v=27142968d1" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=2136ece6af" />
+<link rel="stylesheet" href="ui.css?v=4cdbf8ca65" />
 <link rel="stylesheet" href="auth.css?v=aae37ee102" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
@@ -1058,10 +1058,10 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
         <!-- Desktop only: the rail has room under the nav that a phone does
              not, and this is the one thing worth putting in it. -->
-        <!-- Premium is announced, not on sale. So the card sells nothing: it
-             says what is coming, lists what it will do, and its button is the
-             one thing that works today - a reminder for when it does. The
-             price link is still there for anyone who wants the detail. -->
+        <!-- Plus is sold in the Android app (Google Play), not on the website.
+             So the card's button goes to the app; the price link is there for
+             anyone who wants the detail. It used to say "Notify me", as if
+             Plus were not on sale anywhere. Hidden for Plus members. -->
         <div class="tl-nav-promo">
           <span class="tl-nav-promo-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.5 8.5 7 11l5-5.5 5 5.5 3.5-2.5-1.6 9.2a1 1 0 0 1-1 .8H6.1a1 1 0 0 1-1-.8z"/></svg>
@@ -1071,10 +1071,10 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           <ul class="tl-soon-list">
             <li data-i18n="premiumPerkGender">Gender &amp; country filters</li>
           </ul>
-          <button type="button" class="tl-notify-btn tl-nav-promo-cta" data-notify="premium">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 16V11a6 6 0 1 0-12 0v5l-1.6 2.4h15.2z"/><path d="M10 20.2a2.2 2.2 0 0 0 4 0"/></svg>
-            <span data-i18n="notifyMe">Notify me</span>
-          </button>
+          <a class="tl-notify-btn tl-nav-promo-cta" href="https://play.google.com/store/apps/details?id=app.talklive&amp;referrer=utm_source%3Dtalklive_web%26utm_medium%3Dsidebar" target="_blank" rel="noopener" data-app-link="sidebar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7.5 11 4.5 4.5 4.5-4.5"/><path d="M5 20h14"/></svg>
+            <span data-i18n="getAndroidApp">Get the Android app</span>
+          </a>
           <a class="tl-nav-promo-link" href="/pricing?utm_source=app" data-i18n="navPremiumCta">See Premium plans</a>
         </div>
       </nav>
@@ -1148,6 +1148,8 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               </span>
             </a>
           </div>
+          <!-- Display only: what the next search will be limited to. Tap opens Filters. -->
+          <button type="button" id="homeFilterSummary" class="tl-filter-summary hidden" data-i18n-aria="filtersAria" aria-label="Match filters"></button>
           <!-- Directly under the buttons that cause it. At the bottom of the
                setup panel it rendered ~400px below a phone screen, so a blocked
                mic looked like Tap to Talk silently doing nothing. -->
@@ -1499,11 +1501,11 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               </ul>
             </section>
             <div class="tl-soon-cta">
-              <button type="button" class="tl-notify-btn" data-notify="shop">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 16V11a6 6 0 1 0-12 0v5l-1.6 2.4h15.2z"/><path d="M10 20.2a2.2 2.2 0 0 0 4 0"/></svg>
-                <span data-i18n="notifyMe">Notify me</span>
-              </button>
-              <p class="tl-soon-foot" data-i18n="notifyShopFoot">Be the first to know when it goes live.</p>
+              <a class="tl-notify-btn" href="https://play.google.com/store/apps/details?id=app.talklive&amp;referrer=utm_source%3Dtalklive_web%26utm_medium%3Dshop" target="_blank" rel="noopener" data-app-link="shop">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7.5 11 4.5 4.5 4.5-4.5"/><path d="M5 20h14"/></svg>
+                <span data-i18n="getAndroidApp">Get the Android app</span>
+              </a>
+              <p class="tl-soon-foot" data-i18n="getAppFoot">Plus and passes are bought in the app, through Google Play.</p>
             </div>
             <p class="shop-fine">
               <a href="/terms" data-i18n="termsOfService">Terms of Service</a> ·
@@ -1731,17 +1733,26 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                  dead afterwards. A gate can still be a gate with a back door. -->
             <button type="button" id="closeAgeConsentBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
           </div>
-          <div class="modal-body policy-body consent-terms-body">
+          <div class="modal-body policy-body consent-terms-body" tabindex="0" role="region" aria-labelledby="ageConsentTitle">
             <p class="consent-modal-text"><svg class="age-badge-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><text x="12" y="15.5" text-anchor="middle" font-size="8" font-weight="700" fill="currentColor" stroke="none">18+</text></svg> <span data-i18n="mustBe18">You must be 18 years or older to use TalkLive.</span></p>
 
-            <!-- The full Terms are not shipped in this page: they are fetched from
-                 /terms the first time this dialog opens (loadPolicyText in
-                 app.js), so the text agreed to here is always the one published
-                 there, and a first visit does not download ~30KB of legal copy
-                 it may never display. -->
-            <div class="policy-remote" data-policy-src="/terms">
-              <p class="policy-loading"><span data-i18n="termsLoading">Loading the Terms &amp; Conditions…</span> <a href="/terms" target="_blank" rel="noopener" data-i18n="termsOpenPage">Open them on their own page</a></p>
-            </div>
+            <!-- The short version first: the three rules that matter in a call.
+                 The full Terms are one tap below, unchanged, and are fetched
+                 from /terms when opened (loadPolicyText in app.js), so the text
+                 agreed to is always the one published there. They used to fill
+                 this box: about 80 phone screens between Tap to Talk and a
+                 first call. -->
+            <ul class="consent-summary">
+              <li><strong data-i18n="ruleRespectTitle">Be respectful</strong><span data-i18n="ruleRespectBody">Treat people with kindness and courtesy.</span></li>
+              <li><strong data-i18n="ruleBoundariesTitle">Respect boundaries</strong><span data-i18n="ruleBoundariesBody">No harassment, pressure, or unwanted sexual content.</span></li>
+              <li><strong data-i18n="ruleMoveOnTitle">Move on politely</strong><span data-i18n="ruleMoveOnBody">If it is not a fit, end the chat respectfully.</span></li>
+            </ul>
+            <details class="consent-full" id="consentFullTerms">
+              <summary data-i18n="termsReadFull">Read the full Terms &amp; Conditions</summary>
+              <div class="policy-remote" data-policy-src="/terms">
+                <p class="policy-loading"><span data-i18n="termsLoading">Loading the Terms &amp; Conditions…</span> <a href="/terms" target="_blank" rel="noopener" data-i18n="termsOpenPage">Open them on their own page</a></p>
+              </div>
+            </details>
 
           </div>
           <div class="modal-footer consent-modal-footer">
@@ -1886,6 +1897,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         <p id="statusText" class="status-text" aria-live="polite">Tap the green button to talk to a random person</p>
         <p id="subText" class="sub-text">Voice only · No sign up needed</p>
         <!-- While searching with filters: stop the random fallback (or undo it). -->
+        <p id="searchFilterSummary" class="tl-filter-summary tl-filter-summary-static hidden" aria-live="polite"></p>
         <button type="button" id="keepFiltersBtn" class="tl-keep-filters hidden" data-i18n="keepMyFilters">Keep my filters</button>
 
         <!-- Connection state, in the middle of the column with the lines it
@@ -2589,7 +2601,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        browser finish parsing and paint the page first. -->
   <script defer src="/vendor/socket.io.min.js?v=7bcff1b4f1"></script>
   <script defer src="countries.js?v=30bcd7f146"></script>
-  <script defer src="i18n.js?v=5fc89489eb"></script>
+  <script defer src="i18n.js?v=fb300f5c09"></script>
   <script defer src="chat-time.js?v=9d4e50bcf7"></script>
   <script defer src="animals.js?v=e934300459"></script>
   <script defer src="characters.js?v=7df196acd3"></script>
@@ -2600,7 +2612,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="voice-notes.js?v=8e48c58788"></script>
   <script defer src="games.js?v=192e9d4f2d"></script>
   <script defer src="nickname-rules.js?v=077c943b4d"></script>
-  <script defer src="app.js?v=545ee3b74f"></script>
+  <script defer src="app.js?v=4b0d41080f"></script>
 
 <!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

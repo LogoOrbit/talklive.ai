@@ -35,5 +35,15 @@ ok('yearly ends like the monthly: .99 stays .99, 9 stays 9', pricing.yearlyPrice
 ok('Japan yearly is Play\'s 11200', pricing.forCountry('JP').yearly.amount === 11200);
 ok('save percent is sane everywhere', Object.keys(table.countries).every((c) => { const v = pricing.forCountry(c).yearly.savePercent; return v >= 30 && v <= 50; }));
 
+// Passes that cost as much as a month say so (no "best value" over a cheaper plan).
+ok('a pass costing at least a month is flagged monthlyCheaper', india.passes.find((p) => p.id === 'pass_7d').monthlyCheaper === true, india.passes);
+ok('US passes are not flagged', us.passes.every((p) => p.monthlyCheaper === false), us.passes);
+// The proposed Play pass prices fix every inverted ladder.
+const audit = require('./audit-pricing');
+const stillBad = audit.audit().filter((r) => r.problems.length
+  && audit.ladderProblems(r.monthly, r.proposed.pass_1d, r.proposed.pass_7d, r.proposed.pass_15d).length);
+ok('every proposed pass ladder sits under the monthly plan', stillBad.length === 0, stillBad.map((r) => r.cc));
+ok('the US proposal is the US ladder (1.99 / 4.99 / 6.99)', JSON.stringify(audit.propose(table.countries.US)) === JSON.stringify({ pass_1d: 1.99, pass_7d: 4.99, pass_15d: 6.99 }), audit.propose(table.countries.US));
+
 console.log(failed ? `\n${failed} failed` : '\nall passed');
 process.exit(failed ? 1 : 0);

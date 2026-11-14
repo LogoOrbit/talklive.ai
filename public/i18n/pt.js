@@ -677,7 +677,7 @@
   "railNoCalls": "Nenhuma chamada ainda. As chamadas desta sessão aparecem aqui.",
   "railNoFriends": "Ainda sem amigos. Adicione alguém com quem você gostou de conversar.",
   "railInviteTitle": "Traga mais gente",
-  "railInviteBody": "Convide 3 amigos. Quando eles se cadastrarem pelo seu link, você ganha 1 hora de TalkLive Plus.",
+  "railInviteBody": "Convide 3 amigos. Quando eles se cadastrarem pelo seu link e tiverem uma conversa de verdade, você ganha o anel dourado e um avatar lendário por 30 dias.",
   "railInviteCta": "Convidar um amigo",
   "heroSub": "Pessoas reais. Conversas de verdade. Sem cadastro.",
   "animalMore": "Mais",
@@ -885,6 +885,18 @@
   "signupCodeLabel": "Código de 6 dígitos",
   "signupVerifyBtn": "Verificar e criar conta",
   "signupChangeEmail": "Alterar e-mail",
-  "authEmailRequired": "Digite seu e-mail. Enviamos um código para confirmar que é você."
+  "authEmailRequired": "Digite seu e-mail. Enviamos um código para confirmar que é você.",
+  "statusLookingForWoman": "Procurando uma mulher…",
+  "statusLookingForMan": "Procurando um homem…",
+  "subPoolNone": "Ninguém que combine com seus filtros está online agora · continuamos procurando",
+  "subPoolBusy": "{n} online combinam com seus filtros, todos ocupados · esperando alguém ficar livre",
+  "subPoolBusyOne": "1 pessoa online combina com seus filtros, ocupada · esperando ficar livre",
+  "subPoolSearching": "Alguém que combina com seus filtros também está procurando · conectando…",
+  "passMonthlyCheaper": "Plus mensal ({price}) sai mais barato aqui",
+  "filtersNotList": "exceto {list}",
+  "filtersEditHint": "Toque para mudar.",
+  "termsReadFull": "Ler os Termos e Condições completos",
+  "getAndroidApp": "Baixar o app para Android",
+  "getAppFoot": "Plus e os passes são comprados no app, pelo Google Play.",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("pt");

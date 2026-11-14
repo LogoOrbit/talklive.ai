@@ -413,7 +413,9 @@ fun FiltersSheet(current: Filters, premium: Boolean, onApply: (Filters) -> Unit,
 
                 // 3. Who you meet
                 FilterCard(
-                    "💜", stringResource(R.string.match_with), if (premium) null else stringResource(R.string.filters_gender_hint),
+                    // Plus: say what the filter matches on (a self-declared gender) and that it
+                    // holds until a match, as the website does.
+                    "💜", stringResource(R.string.match_with), if (premium) stringResource(R.string.filters_gender_note) else stringResource(R.string.filters_gender_hint),
                     onClear = if (f.prefGender != "any") ({ f = f.copy(prefGender = "any") }) else null,
                 ) {
                     GenderPicker(f.prefGender, premium) { g -> if (premium || g == "any") f = f.copy(prefGender = g) else onPlus(PlusWhy(PlusReason.GenderFilter)) }

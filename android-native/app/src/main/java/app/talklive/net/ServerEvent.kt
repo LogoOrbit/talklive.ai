@@ -35,11 +35,33 @@ data class Partner(
     }
 }
 
+/** People online whom a filtered search's filters allow, and how many of them are searching. */
+data class FilterPool(val online: Int, val searching: Int) {
+    companion object {
+        fun from(o: JSONObject?): FilterPool? = o?.let { FilterPool(it.optInt("online"), it.optInt("searching")) }
+    }
+}
+
 /** Events from the TalkLive Socket.IO server that the call flow reacts to. */
 sealed interface ServerEvent {
     data object Registered : ServerEvent
     data object NeedsRegister : ServerEvent
-    data class Waiting(val estimatedSeconds: Int?) : ServerEvent
+    /**
+     * The search is queued. [gender] is the gender a Plus preference holds it to
+     * (never dropped while waiting), [pool] how many people the filters allow
+     * right now, [wideningIn] seconds until a free search's countries and
+     * language give way (null when they will not).
+     */
+    data class Waiting(
+        val estimatedSeconds: Int?,
+        val gender: String? = null,
+        val pool: FilterPool? = null,
+        val wideningIn: Int? = null,
+    ) : ServerEvent
+    /** Updated counts for a filtered search that is still waiting. */
+    data class FilterPoolUpdate(val pool: FilterPool) : ServerEvent
+    /** A free search's countries / language gave way after a long wait. */
+    data object FiltersRelaxed : ServerEvent
     data class Matched(val initiator: Boolean, val partner: Partner, val callback: Boolean = false, val mode: String = "talk") : ServerEvent
     /** A text message from the stranger in a text chat. */
     data class StrangerMessage(val id: String, val text: String, val gifUrl: String?, val replyTo: String?, val ts: Long) : ServerEvent

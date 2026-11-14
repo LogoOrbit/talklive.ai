@@ -134,6 +134,17 @@ Without this, a purchase cannot turn Plus on.
 5. Play Console > Monetize with Play > **Monetization setup** > Real-time
    developer notifications: topic `projects/<your-project>/topics/play-rtdn`
    > Send test notification > Save.
+6. Optional, recommended (no secret in the URL): in the push subscription,
+   turn on **Enable authentication** with a service account of your own, and
+   set the audience to `https://talklive.app/billing/play/rtdn`. Then set the
+   Fly secrets `PLAY_RTDN_AUDIENCE=https://talklive.app/billing/play/rtdn` and
+   `PLAY_RTDN_EMAIL=<that service account's email>`. With `PLAY_RTDN_AUDIENCE`
+   set, the server accepts only Google-signed requests and ignores `?secret=`,
+   so set it only after the subscription sends the token. Free.
+
+Refunds: a refunded or charged-back pass now takes back its days (other passes
+stay), and a refunded subscription is re-checked with Google. Both arrive as
+voided-purchase notifications through the same endpoint.
 
 Test: on the internal-test install, buy Plus with your license-tester account
 (free), and check the app shows Plus within a few seconds.
