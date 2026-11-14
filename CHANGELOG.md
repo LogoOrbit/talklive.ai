@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-11-14 (2) — Billing refunds, identity, language codes, UI colours and mobile checks (not released)
+
+- **Play**: refunded/charged-back passes take back their days; voided
+  subscriptions are re-checked; a refunded token cannot be verified again;
+  RTDN can require Pub/Sub's Google-signed token (`PLAY_RTDN_AUDIENCE`); the
+  token-owner map is saved when written. `test-play-e2e` against a fake API.
+- **Identity**: likes, an ended Plus record, referral rewards and captured
+  contact details now protect a clientId like friends do.
+- **Language filter**: Android's legacy codes (`in`, `iw`) normalised to the
+  website's (`id`, `he`).
+- **Shop (web)**: no US prices before local ones load; "Monthly Plus costs less
+  here" on a pass that costs a month.
+- **UI**: colour sweep (theme surfaces, AA contrast on green/red fills),
+  filter summary in words on web and on Android Home/searching, Shop link
+  touch targets, consent dialog keyboard fixes. `test-ui-contrast` extended.
+
 ## 2026-11-14 — Filters that hold, honest prices, fewer bots (web + Android, not released)
 
 **Gender and country filters**

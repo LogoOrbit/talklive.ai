@@ -37,3 +37,12 @@ Tokens already live in `style.css :root` and `[data-theme]`: `--bg-1/2`, `--acce
 - The consent flow is legally sensitive; get sign-off before shortening it.
 - #5 depends on filter and matchmaking state that Opus owns. Read-only use only.
 - i18n: new strings need adding to all 16 `public/i18n/*` files.
+
+## Status update — 2026-11-14 (later)
+
+| # | Status |
+|---|---|
+| 2 | Not changed (needs approval): the consent wording and length. Keyboard fixes only: focus stays inside the dialog, the terms box is focusable so it can be scrolled with the keyboard. On a 320px phone the terms are ~80 screens of text. |
+| 3 | Done. All hard-coded light colours in `style.css` checked in dark, light and ocean. Five dark-island components use theme tokens; white on green/red fills raised to 4.5:1 (`--ok-fill`, `--danger-fill`); every other white is `var(--on-color)`. Two decorative radial highlights remain on purpose. `test-ui-contrast` renders these components at 4.5:1. |
+| 5 | Done on web (words, not symbols; spoken label) and Android (Home + searching). |
+| 6 | Mobile Shop and Settings tested by behaviour (open, prices, pick, touch targets, toggle saves, theme, scroll, close). Fixed: Shop links were 15px tall and used default link colours; Shop showed US prices until local ones loaded. |

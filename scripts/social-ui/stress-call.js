@@ -13,7 +13,9 @@ const { ok, wait, ID } = H;
     const badge = document.getElementById('friendsMsgBadge');
     return {
       badge: badge.classList.contains('hidden') ? 0 : Number(badge.textContent),
-      friends: [...document.querySelectorAll('#friendsList .friend-item')].map(txt),
+      // Without engage.js's later decoration (presence line, alert bell): whether
+      // it has run yet is timing, and the checks below are about name and unread.
+      friends: [...document.querySelectorAll('#friendsList .friend-item')].map((e) => { const c = e.cloneNode(true); c.querySelectorAll('.tl-pres-line, .tl-bell').forEach((x) => x.remove()); return txt(c); }),
       notifs: [...document.querySelectorAll('#notifList .notif-item')].map(txt),
       history: [...document.querySelectorAll('#historyList > *')].map(txt),
       reqTab: document.getElementById('requestsTabCount').classList.contains('hidden') ? 0 : Number(document.getElementById('requestsTabCount').textContent),
