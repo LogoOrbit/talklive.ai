@@ -8,6 +8,7 @@
     "test:critical": "node scripts/run-tests.js --critical",
     "lint": "eslint .",
     "test:auth": "node scripts/test-auth-sessions.js",
+    "test:ui": "node scripts/test-ui-contrast.js",
     "start": "node server/index.js",
     "dev": "node server/index.js",
     "build:usernames": "node scripts/build-username-words.js",

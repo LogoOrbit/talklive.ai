@@ -54,13 +54,13 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=153fc85b70" crossorigin />
-<link rel="stylesheet" href="style.css?v=b6ba2b2560" />
+<link rel="stylesheet" href="style.css?v=5fea061fb5" />
 <link rel="stylesheet" href="chat-extras.css?v=4b7b6398b3" />
 <link rel="stylesheet" href="games.css?v=27142968d1" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=2136ece6af" />
+<link rel="stylesheet" href="ui.css?v=e3010e9cfd" />
 <link rel="stylesheet" href="auth.css?v=aae37ee102" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
@@ -1148,6 +1148,8 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               </span>
             </a>
           </div>
+          <!-- Display only: what the next search will be limited to. Tap opens Filters. -->
+          <button type="button" id="homeFilterSummary" class="tl-filter-summary hidden" data-i18n-aria="filtersAria" aria-label="Match filters"></button>
           <!-- Directly under the buttons that cause it. At the bottom of the
                setup panel it rendered ~400px below a phone screen, so a blocked
                mic looked like Tap to Talk silently doing nothing. -->
@@ -1886,6 +1888,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         <p id="statusText" class="status-text" aria-live="polite">Tap the green button to talk to a random person</p>
         <p id="subText" class="sub-text">Voice only · No sign up needed</p>
         <!-- While searching with filters: stop the random fallback (or undo it). -->
+        <p id="searchFilterSummary" class="tl-filter-summary tl-filter-summary-static hidden" aria-live="polite"></p>
         <button type="button" id="keepFiltersBtn" class="tl-keep-filters hidden" data-i18n="keepMyFilters">Keep my filters</button>
 
         <!-- Connection state, in the middle of the column with the lines it
@@ -2600,7 +2603,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="voice-notes.js?v=8e48c58788"></script>
   <script defer src="games.js?v=192e9d4f2d"></script>
   <script defer src="nickname-rules.js?v=077c943b4d"></script>
-  <script defer src="app.js?v=545ee3b74f"></script>
+  <script defer src="app.js?v=d99c42397c"></script>
 
 <!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

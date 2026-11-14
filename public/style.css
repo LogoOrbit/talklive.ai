@@ -3005,6 +3005,10 @@ body.panel-open .game-overlay {
 /* Scrollable full Terms & Conditions body inside the consent gate */
 .consent-terms-body {
   max-height: 46vh;
+  /* Scroll cue only (no content change): the last lines fade out so a cut-off
+     line reads as "more below" rather than as a rendering fault. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
 }
 
 .consent-modal-footer {
@@ -5967,10 +5971,14 @@ html.perf-lite .side-panel { box-shadow: none; }
 .pass-row-title {
   font-size: 14.5px;
   font-weight: 700;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 8px;
 }
 
 .pass-badge {
-  margin-left: 8px;
+  white-space: nowrap;
   padding: 2px 8px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--c) 16%, transparent);
@@ -5982,11 +5990,15 @@ html.perf-lite .side-panel { box-shadow: none; }
 
 .pass-d1 { --c: #9aa4c0; }
 .pass-d7 { --c: #f0b24a; }
-.pass-d14 { --c: #2a6fe8; }
+.pass-d15 { --c: #2a6fe8; }
 .pass-d30 { --c: #4fd1a1; }
+/* Light surfaces need darker hues to keep the badge text readable (>= 4.5:1). */
+[data-theme="light"] .pass-d1 { --c: #5a617a; }
+[data-theme="light"] .pass-d7 { --c: #8a5a00; }
+[data-theme="light"] .pass-d30 { --c: #0b7a5a; }
 
 /* One quiet cue: the recommended pass breathes. */
-.pass-d14 .pass-badge { animation: pass-pulse 2.4s ease-in-out infinite; }
+.pass-d15 .pass-badge { animation: pass-pulse 2.4s ease-in-out infinite; }
 
 @keyframes pass-pulse {
   0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 40%, transparent); }
@@ -5994,7 +6006,7 @@ html.perf-lite .side-panel { box-shadow: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pass-d14 .pass-badge { animation: none; }
+  .pass-d15 .pass-badge { animation: none; }
 }
 
 .pass-row-sub {
