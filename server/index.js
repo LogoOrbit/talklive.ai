@@ -691,7 +691,11 @@ app.post('/billing/play/verify', httpRateLimit('play-verify', 30, 60000), expres
   if (sub && sub.accountId && sub.accountId !== playBilling.accountIdFor(clientId)) {
     return res.status(403).json({ error: 'This purchase was made by another TalkLive profile.' });
   }
-  if (!owner) store.data.playPurchases[key] = String(clientId);
+  if (!owner) {
+    store.data.playPurchases[key] = String(clientId);
+    // Written now: a renewal or refund notification finds its owner by it.
+    store.save();
+  }
   const step = await applyPlayPurchase(String(clientId), purchaseToken, sub, typeof productId === 'string' ? productId : '');
   if (step.op === 'skip' && step.reason !== 'ignored') console.log(`[play] ${clientId}: ${step.reason}`);
   res.json({ premium: isPremium(clientId), expiresAt: store.premiumExpiry(clientId), state: sub ? sub.state : null });
@@ -718,6 +722,9 @@ async function verifyPlayPass(req, res, clientId, productId, purchaseToken) {
   }
   if (p && p.pending) return res.json({ premium: isPremium(clientId), pending: true });
   if (!p || !p.purchased) return res.status(400).json({ error: 'This purchase is not complete.' });
+  if (granted[key] && granted[key].voidedAt) {
+    return res.status(400).json({ error: 'This purchase was refunded.' });
+  }
   if (!granted[key]) {
     const premium = store.data.premium;
     const existing = Object.prototype.hasOwnProperty.call(premium, clientId) ? premium[clientId] : null;
@@ -739,20 +746,53 @@ async function verifyPlayPass(req, res, clientId, productId, purchaseToken) {
 }
 
 // Real-time Developer Notifications, pushed by Pub/Sub. Each is re-checked
-// with Google; only the token is taken from the message.
-app.post('/billing/play/rtdn', express.json({ limit: '64kb' }), async (req, res) => {
+// with Google; only the token is taken from the message, so a forged message
+// can at most make the server ask Google again.
+//
+// Who may call it: with PLAY_RTDN_AUDIENCE set, only Pub/Sub's own signed
+// request (an OIDC token from Google for that audience, and from the service
+// account in PLAY_RTDN_EMAIL when set) - nothing secret travels in the URL.
+// Otherwise the shared PLAY_RTDN_SECRET in ?secret=, as before.
+async function rtdnAuthorised(req) {
+  const audience = process.env.PLAY_RTDN_AUDIENCE;
+  if (audience) {
+    const m = /^Bearer\s+(.+)$/i.exec(String(req.headers.authorization || ''));
+    if (!m) return false;
+    try {
+      const ticket = await rtdnVerifier.verifyIdToken({ idToken: m[1], audience });
+      const claims = ticket.getPayload() || {};
+      const wantEmail = process.env.PLAY_RTDN_EMAIL;
+      if (wantEmail && (claims.email !== wantEmail || claims.email_verified !== true)) return false;
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
   const secret = process.env.PLAY_RTDN_SECRET;
-  if (!secret || !play.configured()) return res.status(503).end();
+  if (!secret) return false;
   const given = String(req.query.secret || '');
-  if (given.length !== secret.length || !crypto.timingSafeEqual(Buffer.from(given), Buffer.from(secret))) return res.status(403).end();
+  return given.length === secret.length && crypto.timingSafeEqual(Buffer.from(given), Buffer.from(secret));
+}
+const rtdnVerifier = new OAuth2Client();
+
+app.post('/billing/play/rtdn', httpRateLimit('play-rtdn', 600, 60000), express.json({ limit: '64kb' }), async (req, res) => {
+  if (!play.configured() || (!process.env.PLAY_RTDN_SECRET && !process.env.PLAY_RTDN_AUDIENCE)) return res.status(503).end();
+  if (!(await rtdnAuthorised(req))) return res.status(403).end();
   const n = playBilling.parseRtdn(req.body);
   // Acknowledge anything we cannot use, or Pub/Sub retries it for a week.
   if (!n || !n.purchaseToken || (n.packageName && n.packageName !== play.packageName)) return res.status(204).end();
-  const clientId = store.data.playPurchases[playTokenKey(n.purchaseToken)];
-  if (!clientId) return res.status(204).end(); // the app verifies it on its next start
   try {
+    // A refunded or charged-back pass: take back its days. Passes have no
+    // owner until the app has verified them, so only granted ones matter.
+    if (n.kind === 'voided' && n.productType === 2) {
+      await voidPlayPass(n.purchaseToken);
+      return res.status(204).end();
+    }
+    // A subscription event, or a refunded subscription: ask Google.
+    const clientId = store.data.playPurchases[playTokenKey(n.purchaseToken)];
+    if (!clientId) return res.status(204).end(); // the app verifies it on its next start
     const sub = await play.lookup(n.purchaseToken);
-    await applyPlayPurchase(clientId, n.purchaseToken, sub, n.productId);
+    await applyPlayPurchase(clientId, n.purchaseToken, sub, n.productId || '');
     res.status(204).end();
   } catch (err) {
     console.error('[play] RTDN re-check failed:', err.message);
@@ -760,6 +800,24 @@ app.post('/billing/play/rtdn', express.json({ limit: '64kb' }), async (req, res)
     res.status(500).end();
   }
 });
+
+async function voidPlayPass(purchaseToken) {
+  const key = playTokenKey(purchaseToken);
+  const granted = store.data.playPassGrants || (store.data.playPassGrants = {});
+  const g = granted[key];
+  if (!g || g.voidedAt) return;
+  const days = playBilling.PASS_DAYS[g.productId] || 0;
+  const premium = store.data.premium;
+  const existing = Object.prototype.hasOwnProperty.call(premium, g.clientId) ? premium[g.clientId] : null;
+  const step = playBilling.voidPassPremium(existing, days);
+  if (step.op === 'set') store.setPremium(g.clientId, step.info);
+  else if (step.op === 'revoke') store.revokePremium(g.clientId, step.info);
+  g.voidedAt = Date.now();
+  store.recordFeature('pass_voided');
+  store.persistNow();
+  await Promise.race([store.whenPersisted(), new Promise((r) => setTimeout(r, 8000))]);
+  emitPremiumStatus(g.clientId);
+}
 
 // --- Owner: give Plus by hand ------------------------------------------------
 // Answers only connections from inside the machine (flyctl ssh, see
@@ -2146,6 +2204,16 @@ function identityHasState(clientId) {
   if (friends.has(clientId) || chatHistory.has(clientId) || notifications.has(clientId)
     || friendRequests.has(clientId) || sentRequests.has(clientId) || blocks.has(clientId)
     || mutedChats.has(clientId) || isPremium(clientId)) return true;
+  // So is anything else kept under the id: a Plus record even after it ended
+  // (it can be restored from Play), the referral reward and progress, who
+  // liked them, and contact details saved under "Save contact info I share" -
+  // the last two are personal data a stranger must not be able to read by
+  // presenting someone else's clientId.
+  const d = store.data;
+  if ((d.premium && d.premium[clientId]) || (d.plusLook && d.plusLook[clientId])
+    || (d.referrals && d.referrals.owners && d.referrals.owners[clientId])
+    || (d.likes && d.likes[clientId] && d.likes[clientId].length)
+    || (d.contactCapture && d.contactCapture[clientId])) return true;
   // A streak or passport is something to lose, too.
   const engaged = store.engageGet(clientId);
   if (engaged && ((engaged.passport && engaged.passport.length) || (engaged.streak && engaged.streak.best))) return true;
@@ -5071,11 +5139,18 @@ function pruneQueue() {
 // interface or browser language is a cheap, honest signal of a language both
 // people can talk in, so it breaks ties. It is worth less than one shared
 // interest and is never a filter, so nobody waits longer because of it.
+// Java and older Android report three languages under their withdrawn ISO
+// codes (Locale.getLanguage(): Indonesian "in", Hebrew "iw", Yiddish "ji"),
+// while browsers use "id", "he", "yi". Without this an Indonesian on the app
+// never met a website user filtering for Indonesian speakers.
+const LEGACY_LANG = { in: 'id', iw: 'he', ji: 'yi' };
+function normLang(code) {
+  const c = String(code || '').toLowerCase();
+  if (!/^[a-z]{2}$/.test(c)) return null;
+  return LEGACY_LANG[c] || c;
+}
 function matchLang(chosen, acceptLanguage) {
-  const pick = String(chosen || '').toLowerCase();
-  if (/^[a-z]{2}$/.test(pick)) return pick;
-  const parsed = audience.parseLang(acceptLanguage);
-  return /^[a-z]{2}$/.test(parsed) ? parsed : null;
+  return normLang(chosen) || normLang(audience.parseLang(acceptLanguage));
 }
 
 // How a compatible candidate is ranked. Every term only reorders people who
@@ -6577,7 +6652,7 @@ io.on('connection', (socket) => {
       // to break ties in matching - see matchScore().
       lang: matchLang(data.lang, socket.handshake.headers['accept-language']),
       // "Speaks" filter: match only people whose language is this one.
-      prefLang: typeof data.prefLang === 'string' && /^[a-z]{2}$/.test(data.prefLang) ? data.prefLang : null,
+      prefLang: typeof data.prefLang === 'string' ? normLang(data.prefLang) : null,
       // Premium members jump the matching queue (see PREMIUM_QUEUE_BONUS).
       premium,
       // "Keep waiting" survives a re-register mid-search (saving filters).

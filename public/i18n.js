@@ -760,6 +760,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "statusLookingForMan": "Looking for a man…",
     "subPoolNone": "Nobody matching your filters is online right now · still looking",
     "subPoolBusy": "{n} online matching your filters, all busy · waiting for one to be free",
+    "passMonthlyCheaper": "Monthly Plus ({price}) costs less here",
     "subPoolBusyOne": "1 online matching your filters, busy · waiting for them to be free",
     "subPoolSearching": "Someone matching your filters is searching too · connecting…",
     "presetSaved": "Saved. Tap it anytime to switch.",

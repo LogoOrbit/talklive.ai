@@ -2669,10 +2669,14 @@ function renderSettingsProfileRow() {
 // Passes: every Plus feature for 1, 7 or 15 days, one-time payment. They are
 // bought in the Android app through Google Play (the same prices as /pricing);
 // the button here opens the pricing page that explains it.
+// Prices start empty and come from /pricing.json (the visitor's country): a
+// hard-coded dollar price used to show to everyone until that arrived, and for
+// good if it failed. `cheaper` holds the monthly price when a pass costs at
+// least a month of Plus there (server/pricing.js monthlyCheaper).
 const SHOP_PASSES = [
-  { id: 'd1', days: 1, price: '$1.99', tagKey: 'passTagEntry' },
-  { id: 'd7', days: 7, price: '$4.99', tagKey: 'passTagPopular' },
-  { id: 'd15', days: 15, price: '$6.99', tagKey: 'passTagMax' },
+  { id: 'd1', days: 1, price: '', tagKey: 'passTagEntry', cheaper: '' },
+  { id: 'd7', days: 7, price: '', tagKey: 'passTagPopular', cheaper: '' },
+  { id: 'd15', days: 15, price: '', tagKey: 'passTagMax', cheaper: '' },
 ];
 let selectedPassId = 'd7';
 
@@ -2691,10 +2695,10 @@ function renderPasses() {
     tier.innerHTML = `
       <span class="pass-radio" aria-hidden="true"></span>
       <span class="pass-row-main">
-        <span class="pass-row-title">${escapeHtml(t('passName', { days: p.days }))}<em class="pass-badge">${escapeHtml(t(p.tagKey))}</em></span>
-        <span class="pass-row-sub">${escapeHtml(t('passAllPlus'))}</span>
+        <span class="pass-row-title">${escapeHtml(t('passName', { days: p.days }))}${p.cheaper ? '' : `<em class="pass-badge">${escapeHtml(t(p.tagKey))}</em>`}</span>
+        <span class="pass-row-sub">${escapeHtml(p.cheaper ? t('passMonthlyCheaper', { price: p.cheaper }) : t('passAllPlus'))}</span>
       </span>
-      <span class="pass-row-price"><strong>${escapeHtml(p.price)}</strong></span>
+      <span class="pass-row-price"><strong>${p.price ? escapeHtml(p.price) : '<span class="pass-price-loading" aria-hidden="true">···</span>'}</strong></span>
     `;
     tier.addEventListener('click', () => {
       selectedPassId = p.id;
@@ -2704,7 +2708,7 @@ function renderPasses() {
   });
   if (buy) {
     const p = SHOP_PASSES.find((x) => x.id === selectedPassId);
-    buy.textContent = t('passBuy', { days: p.days, price: p.price });
+    buy.textContent = p.price ? t('passBuy', { days: p.days, price: p.price }) : t('passName', { days: p.days });
   }
 }
 
@@ -2723,9 +2727,13 @@ function openShop() {
   if (shopPriced) return;
   shopPriced = true;
   fetch('/pricing.json').then((r) => r.json()).then((p) => {
-    (p.passes || []).forEach((it, i) => { if (SHOP_PASSES[i]) SHOP_PASSES[i].price = it.label; });
+    (p.passes || []).forEach((it, i) => {
+      if (!SHOP_PASSES[i]) return;
+      SHOP_PASSES[i].price = it.label;
+      SHOP_PASSES[i].cheaper = it.monthlyCheaper && p.monthly ? p.monthly.label : '';
+    });
     renderPasses();
-  }).catch(() => {});
+  }).catch(() => { shopPriced = false; });
 }
 
 if (settingsShopRow) settingsShopRow.addEventListener('click', openShop);

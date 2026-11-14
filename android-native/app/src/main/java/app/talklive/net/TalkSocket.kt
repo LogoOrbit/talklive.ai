@@ -404,7 +404,9 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
             identity.identityToken?.let { put("identityToken", it) }
             identity.animal?.let { put("animal", it) }
             put("timezone", TimeZone.getDefault().id)
-            put("lang", Locale.getDefault().language)
+            // toLanguageTag gives the current codes ("id", "he"); getLanguage() gives
+            // Java's withdrawn ones ("in", "iw"), which no website user matches.
+            put("lang", Locale.getDefault().toLanguageTag().substringBefore('-').lowercase(Locale.ROOT))
             put("surface", "call")
             privacy?.let { put("hideStatus", it.hideStatus.value); put("acceptCalls", it.acceptCalls.value) }
             if (takeover) put("takeover", true)

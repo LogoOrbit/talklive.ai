@@ -97,6 +97,18 @@ const iso = (ms) => new Date(ms).toISOString();
   n = p.parseRtdn(push({ packageName: 'app.talklive', testNotification: { version: '1.0' } }));
   ok('test notification has no token', n && !n.purchaseToken && n.test);
   ok('garbage is null', p.parseRtdn({ message: { data: '!!!' } }) === null && p.parseRtdn(null) === null);
+  n = p.parseRtdn(push({ packageName: 'app.talklive', voidedPurchaseNotification: { purchaseToken: 'purchase-token-0123456789', productType: 2, refundType: 1, orderId: 'GPA.1' } }));
+  ok('voided purchase parsed', n && n.kind === 'voided' && n.productType === 2 && n.purchaseToken === 'purchase-token-0123456789', n);
+  ok('subscription notification is kind subscription', p.parseRtdn(push({ subscriptionNotification: { notificationType: 3, purchaseToken: 'purchase-token-0123456789' } })).kind === 'subscription');
+  {
+    const now2 = Date.now();
+    let v = p.voidPassPremium({ expiresAt: now2 + 10 * DAY }, 7, now2);
+    ok('voiding a pass takes its days back', v.op === 'set' && v.info.expiresAt === now2 + 3 * DAY, v);
+    v = p.voidPassPremium({ expiresAt: now2 + 3 * DAY }, 7, now2);
+    ok('voiding more days than are left ends Plus now', v.op === 'revoke', v);
+    ok('a permanent grant is not touched', p.voidPassPremium({ expiresAt: null }, 7, now2).op === 'skip');
+    ok('nothing active, nothing to void', p.voidPassPremium(null, 7, now2).op === 'skip' && p.voidPassPremium({ revokedAt: 1, expiresAt: now2 + DAY }, 1, now2).op === 'skip');
+  }
 
   // --- One-time passes ---------------------------------------------------------------
   ok('pass products', p.PASS_DAYS.pass_1d === 1 && p.PASS_DAYS.pass_7d === 7 && p.PASS_DAYS.pass_15d === 15);

@@ -157,11 +157,17 @@ function summariseProduct(p) {
  * Google Play Developer API client. `fetchImpl` and `getAccessToken` can be
  * replaced in tests.
  */
+// Tests only (never in production): point the API at a local fake and use a
+// fixed access token, so purchases and notifications can be driven end to end.
+const TEST_API = process.env.NODE_ENV !== 'production' ? process.env.PLAY_API_BASE || '' : '';
+const TEST_TOKEN = process.env.NODE_ENV !== 'production' ? process.env.PLAY_TEST_ACCESS_TOKEN || '' : '';
+
 function createPlayBilling({
   serviceAccountB64 = process.env.PLAY_SERVICE_ACCOUNT,
   packageName = process.env.PLAY_PACKAGE_NAME || 'app.talklive',
   fetchImpl = (...a) => fetch(...a),
-  getAccessToken = null,
+  getAccessToken = TEST_TOKEN ? async () => TEST_TOKEN : null,
+  apiBase = TEST_API || API,
 } = {}) {
   let tokenFn = getAccessToken;
   if (!tokenFn && serviceAccountB64) {
@@ -177,7 +183,7 @@ function createPlayBilling({
 
   async function call(method, path, body) {
     const token = await tokenFn();
-    const res = await fetchImpl(`${API}/${encodeURIComponent(packageName)}/${path}`, {
+    const res = await fetchImpl(`${apiBase}/${encodeURIComponent(packageName)}/${path}`, {
       method,
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: body ? JSON.stringify(body) : undefined,
@@ -216,17 +222,41 @@ function createPlayBilling({
 }
 
 /** Parses a Pub/Sub push body carrying a Real-time Developer Notification. */
+// A Play Real-time Developer Notification, as Pub/Sub pushes it. Three kinds
+// matter:
+//   subscription  a renewal, cancel, refund... -> { kind: 'subscription', ... }
+//   voided        a refund or chargeback of any purchase, passes included ->
+//                 { kind: 'voided', productType: 1 (subscription) | 2 (one-time) }
+//   (anything else, and test notifications, carry no token)
 function parseRtdn(body) {
   try {
     const data = body && body.message && body.message.data;
     if (typeof data !== 'string') return null;
     const n = JSON.parse(Buffer.from(data, 'base64').toString('utf8'));
+    const base = { packageName: n && n.packageName };
     const sub = n && n.subscriptionNotification;
-    if (!sub || !validToken(sub.purchaseToken)) return { packageName: n && n.packageName, test: !!(n && n.testNotification) };
-    return { packageName: n.packageName, purchaseToken: sub.purchaseToken, type: Number(sub.notificationType) || 0, productId: sub.subscriptionId || '' };
+    if (sub && validToken(sub.purchaseToken)) {
+      return { ...base, kind: 'subscription', purchaseToken: sub.purchaseToken, type: Number(sub.notificationType) || 0, productId: sub.subscriptionId || '' };
+    }
+    const v = n && n.voidedPurchaseNotification;
+    if (v && validToken(v.purchaseToken)) {
+      return { ...base, kind: 'voided', purchaseToken: v.purchaseToken, productType: Number(v.productType) || 0, refundType: Number(v.refundType) || 0, orderId: typeof v.orderId === 'string' ? v.orderId.slice(0, 64) : '' };
+    }
+    return { ...base, test: !!(n && n.testNotification) };
   } catch (_) {
     return null;
   }
 }
 
-module.exports = { createPlayBilling, summarise, summariseProduct, nextPassPremium, PASS_DAYS, decide, nextPremium, accountIdFor, validToken, parseRtdn, ENTITLED, ENDED };
+// A refunded or charged-back pass takes back the days it added. A permanent
+// grant is left alone (nothing was added to it), and a grant that no longer
+// has the days left simply ends now.
+function voidPassPremium(existing, days, now = Date.now()) {
+  if (!existing || existing.revokedAt) return { op: 'skip', reason: 'nothing active' };
+  if (!existing.expiresAt) return { op: 'skip', reason: 'permanent grant' };
+  const until = existing.expiresAt - days * DAY_MS;
+  if (until <= now) return { op: 'revoke', info: { lastEvent: 'play:pass-voided' } };
+  return { op: 'set', info: { lastEvent: 'play:pass-voided', expiresAt: until } };
+}
+
+module.exports = { createPlayBilling, summarise, summariseProduct, nextPassPremium, voidPassPremium, PASS_DAYS, decide, nextPremium, accountIdFor, validToken, parseRtdn, ENTITLED, ENDED };

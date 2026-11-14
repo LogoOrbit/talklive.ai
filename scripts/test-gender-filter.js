@@ -220,6 +220,19 @@ async function withServer(fn) {
     ok('a Plus country filter is not dropped by the fallback', (await maybe(plus, 'matched', 13000)) === null);
   });
 
+  // 9. Language: the app's legacy code for Indonesian ("in") meets a website
+  // "Speaks Indonesian" ("id") filter before any fallback.
+  await withServer(async (connect) => {
+    const web = await connect('c_gf_webid', { lang: 'id', prefLang: 'id' });
+    web.emit('find-partner', { mode: 'talk' });
+    await once(web, 'waiting');
+    const app = await connect('c_gf_appin', { lang: 'in' });
+    const m = maybe(web, 'matched', 4000);
+    app.emit('find-partner', { mode: 'talk' });
+    const got = await m;
+    ok('an app user reporting "in" matches a "Speaks id" filter at once', !!got && got.partner.lang === 'id', got && got.partner);
+  });
+
   console.log(failed ? `\n${failed} check(s) failed` : '\nAll checks passed');
   process.exit(failed ? 1 : 0);
 })();
