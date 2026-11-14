@@ -4500,7 +4500,8 @@ function settleReferral(clientId) {
   }
   emitToClient(owner, settled.rewards ? 'referral-reward' : 'referral-status', {
     ...store.referralStats(owner),
-    hours: settled.rewards,
+    hours: settled.rewards, // legacy name: the number of rewards (30 days of the Plus look each)
+    rewards: settled.rewards,
   });
 }
 

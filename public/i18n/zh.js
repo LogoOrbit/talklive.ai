@@ -677,7 +677,7 @@
   "railNoCalls": "还没有通话。本次会话的通话会显示在这里。",
   "railNoFriends": "还没有好友。把聊得开心的人加为好友吧。",
   "railInviteTitle": "邀请更多人",
-  "railInviteBody": "邀请 3 位好友。他们通过你的链接注册后，你将获得 1 小时 TalkLive Plus。",
+  "railInviteBody": "邀请 3 位好友。他们通过你的链接注册并真正聊过天后，你将获得 30 天的金色光环和一个传奇头像。",
   "railInviteCta": "邀请朋友",
   "heroSub": "真实的人，真诚的对话，无需注册。",
   "animalMore": "更多",

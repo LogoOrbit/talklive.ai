@@ -677,7 +677,7 @@
   "railNoCalls": "아직 통화가 없어요. 이번 세션의 통화가 여기에 표시돼요.",
   "railNoFriends": "아직 친구가 없어요. 대화가 즐거웠던 사람을 추가해 보세요.",
   "railInviteTitle": "더 많은 사람을 불러 주세요",
-  "railInviteBody": "친구 3명을 초대하세요. 내 링크로 가입하면 TalkLive Plus 1시간을 드려요.",
+  "railInviteBody": "친구 3명을 초대하세요. 내 링크로 가입하고 실제로 대화하면 30일 동안 골드 링과 전설 아바타를 드려요.",
   "railInviteCta": "친구 초대",
   "heroSub": "진짜 사람들. 진솔한 대화. 가입 필요 없음.",
   "animalMore": "더보기",

@@ -794,7 +794,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "railNoCalls": "No calls yet. Your calls from this session show up here.",
     "railNoFriends": "No friends yet. Add someone you enjoyed talking to.",
     "railInviteTitle": "Bring more people online",
-    "railInviteBody": "Invite 3 friends. When they sign up with your link, you get 1 hour of TalkLive Plus.",
+    "railInviteBody": "Invite 3 friends. When they sign up with your link and have a real conversation, you get the gold ring and a legendary avatar for 30 days.",
     "railInviteCta": "Invite a friend",
     "heroSub": "Real people. Genuine conversations. No sign-up required.",
     "animalMore": "More",
@@ -1069,7 +1069,7 @@ function applyI18n() {
 // Non-English dictionaries load on demand from /i18n/<lang>.js. Until the file
 // arrives t() falls back to English, then the UI re-translates once it lands.
 // Keep in step with the preload snippet in the <head> of index.html/chat.html.
-const I18N_VERSION = '20261106passes';
+const I18N_VERSION = '20261114invite';
 const i18nLoading = {};
 window.__i18nLangLoaded = function (lang) {
   delete i18nLoading[lang];

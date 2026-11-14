@@ -677,7 +677,7 @@
   "railNoCalls": "Belum ada panggilan. Panggilan sesi ini akan muncul di sini.",
   "railNoFriends": "Belum ada teman. Tambahkan orang yang seru diajak ngobrol.",
   "railInviteTitle": "Ajak lebih banyak orang",
-  "railInviteBody": "Undang 3 teman. Saat mereka daftar lewat tautanmu, kamu dapat 1 jam TalkLive Plus.",
+  "railInviteBody": "Undang 3 teman. Saat mereka daftar lewat tautanmu dan benar-benar mengobrol, kamu dapat cincin emas dan satu avatar legendaris selama 30 hari.",
   "railInviteCta": "Ajak teman",
   "heroSub": "Orang sungguhan. Obrolan tulus. Tanpa daftar.",
   "animalMore": "Lainnya",

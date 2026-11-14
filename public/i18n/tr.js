@@ -677,7 +677,7 @@
   "railNoCalls": "Henüz arama yok. Bu oturumdaki aramaların burada görünür.",
   "railNoFriends": "Henüz arkadaşın yok. Konuşmaktan keyif aldığın birini ekle.",
   "railInviteTitle": "Daha çok insan getir",
-  "railInviteBody": "3 arkadaşını davet et. Bağlantınla kaydolduklarında 1 saat TalkLive Plus kazanırsın.",
+  "railInviteBody": "3 arkadaşını davet et. Bağlantınla kaydolup gerçek bir sohbet ettiklerinde 30 gün boyunca altın halka ve efsanevi bir avatar kazanırsın.",
   "railInviteCta": "Arkadaş davet et",
   "heroSub": "Gerçek insanlar. İçten sohbetler. Kayıt gerekmez.",
   "animalMore": "Daha fazla",

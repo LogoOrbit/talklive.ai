@@ -677,7 +677,7 @@
   "railNoCalls": "Nenhuma chamada ainda. As chamadas desta sessão aparecem aqui.",
   "railNoFriends": "Ainda sem amigos. Adicione alguém com quem você gostou de conversar.",
   "railInviteTitle": "Traga mais gente",
-  "railInviteBody": "Convide 3 amigos. Quando eles se cadastrarem pelo seu link, você ganha 1 hora de TalkLive Plus.",
+  "railInviteBody": "Convide 3 amigos. Quando eles se cadastrarem pelo seu link e tiverem uma conversa de verdade, você ganha o anel dourado e um avatar lendário por 30 dias.",
   "railInviteCta": "Convidar um amigo",
   "heroSub": "Pessoas reais. Conversas de verdade. Sem cadastro.",
   "animalMore": "Mais",

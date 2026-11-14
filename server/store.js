@@ -3212,7 +3212,8 @@ async function deleteVoiceNotes(ids) {
 
 // --- Referrals ---------------------------------------------------------------
 //
-// Invite 3 friends, get 1 hour of Plus. Only the inviter is rewarded, and an
+// Invite 3 friends, get the Plus look (gold ring and one legendary avatar) for
+// 30 days (server/index.js settleReferral). Only the inviter is rewarded, and an
 // invite counts only once it passes every step below, in order:
 //
 //   1. claim    a browser with no account opens the link (claimReferral)

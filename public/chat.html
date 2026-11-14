@@ -27,7 +27,7 @@
   root.classList.add('i18n-pending');
   setTimeout(function () { root.classList.remove('i18n-pending'); }, 1500);
   var s = document.createElement('script');
-  s.src = '/i18n/' + lang + '.js?v=20261106passes';
+  s.src = '/i18n/' + lang + '.js?v=20261114invite';
   s.async = true;
   s.setAttribute('data-i18n-lang', lang);
   s.onerror = function () { root.classList.remove('i18n-pending'); };
@@ -815,7 +815,7 @@
 
   <script defer src="/vendor/socket.io.min.js?v=7bcff1b4f1"></script>
   <script defer src="/countries.js?v=30bcd7f146"></script>
-  <script defer src="/i18n.js?v=5fc89489eb"></script>
+  <script defer src="/i18n.js?v=346bd47819"></script>
   <script defer src="/chat-time.js?v=9d4e50bcf7"></script>
   <script defer src="/animals.js?v=e934300459"></script>
   <script defer src="/characters.js?v=7df196acd3"></script>
@@ -825,7 +825,7 @@
   <script defer src="/games.js?v=192e9d4f2d"></script>
   <script defer src="/icebreakers.js?v=42657c1791"></script>
   <script defer src="/talkguard.js?v=2b180e6471"></script>
-  <script defer src="/chat.js?v=a6b899f742"></script>
+  <script defer src="/chat.js?v=40df2b568d"></script>
 
 <!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the
