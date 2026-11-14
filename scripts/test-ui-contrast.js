@@ -15,7 +15,9 @@ const PANELS = [
 ];
 const SIZES = { desk: { viewport: { width: 1366, height: 800 } }, mob: { viewport: { width: 360, height: 640 }, hasTouch: true, isMobile: true } };
 
-const SCAN = () => {
+const SCAN = (opts = {}) => {
+  const root = (opts && opts.root && document.querySelector(opts.root)) || document.body;
+  const min = (opts && opts.min) || 3;
   const parse = (c) => { const m = c.match(/rgba?\(([^)]+)\)/); if (!m) return null; const p = m[1].split(/[ ,/]+/).filter(Boolean).map(Number); return { r: p[0], g: p[1], b: p[2], a: p[3] === undefined ? 1 : p[3] }; };
   const lum = ({ r, g, b }) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
   const over = (top, bot) => ({ r: top.r * top.a + bot.r * (1 - top.a), g: top.g * top.a + bot.g * (1 - top.a), b: top.b * top.a + bot.b * (1 - top.a), a: 1 });
@@ -33,7 +35,7 @@ const SCAN = () => {
     return base;
   };
   const out = [];
-  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const seen = new Set();
   for (let n; (n = w.nextNode());) {
     if (!n.nodeValue.trim()) continue;
@@ -48,7 +50,7 @@ const SCAN = () => {
     let op = 1; for (let e = el; e; e = e.parentElement) op *= +getComputedStyle(e).opacity;
     const f = over({ ...fg, a: fg.a * op }, bg);
     const L1 = lum(f), L2 = lum(bg), ratio = (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05);
-    if (ratio < 3) out.push({ ratio: +ratio.toFixed(2), text: n.nodeValue.trim().slice(0, 40), cls: (el.className && el.className.baseVal === undefined ? el.className : el.tagName).toString().slice(0, 60), fg: cs.color, bg: `rgb(${bg.r|0},${bg.g|0},${bg.b|0})` });
+    if (ratio < min) out.push({ ratio: +ratio.toFixed(2), text: n.nodeValue.trim().slice(0, 40), cls: (el.className && el.className.baseVal === undefined ? el.className : el.tagName).toString().slice(0, 60), fg: cs.color, bg: `rgb(${bg.r|0},${bg.g|0},${bg.b|0})` });
   }
   return out;
 };
@@ -108,6 +110,31 @@ const SCAN = () => {
         if (box.y < 0 || box.y + box.height > so.viewport.height) problems.push(`${sn}/${theme}/consent: dialog does not fit the screen`);
         if (!(await pg.locator('#ageAgreeBtn').isVisible())) problems.push(`${sn}/${theme}/consent: agree button not visible`);
       }
+      await ctx.close();
+    }
+    // Components that used hard-coded colours (style.css sweep): rendered in
+    // every theme and held to 4.5:1, the WCAG AA minimum for small text.
+    for (const theme of ['dark', 'light', 'ocean']) {
+      const ctx = await b.newContext({ ...SIZES.mob, colorScheme: theme === 'light' ? 'light' : 'dark' });
+      await ctx.addInitScript((t) => { try { localStorage.setItem('talklive_theme', t); localStorage.setItem('tl_ff', '-progressiveDisclosure'); } catch (_) {} }, theme);
+      const pg = await ctx.newPage();
+      await pg.goto(base + '/', { waitUntil: 'load' }); await pg.waitForTimeout(900);
+      const appliedTheme = await pg.evaluate(() => document.documentElement.dataset.theme || 'dark');
+      if (theme !== 'dark' && appliedTheme !== theme) problems.push(`components: theme ${theme} did not apply (${appliedTheme})`);
+      await pg.evaluate(() => {
+        const box = document.createElement('div');
+        box.id = 'tlComponentGallery';
+        box.innerHTML = `
+          <div class="share-prompt show" style="position:fixed;top:10px;bottom:auto"><h3>Enjoyed that chat?</h3><p>Invite a friend.</p><div class="share-prompt-actions"><button class="share-prompt-no">Not now</button></div></div>
+          <div class="pwa-prompt show" style="position:fixed;top:170px;bottom:auto"><h3>Add TalkLive</h3><p>Open it with one tap.</p><div class="pwa-prompt-actions"><button class="pwa-prompt-no">Not now</button></div></div>
+          <div class="callback-banner" style="top:330px"><span class="callback-banner-text">Ann is calling you</span><span class="callback-banner-actions"><button class="callback-accept">Answer</button><button class="callback-decline">Decline</button></span></div>
+          <div class="calling-pill show" style="top:390px"><span class="calling-pill-text">Calling Ben</span><button class="calling-pill-cancel">Cancel</button></div>
+          <div style="position:fixed;top:450px;left:10px;display:flex;gap:8px;background:var(--bg-2);padding:8px"><button class="btn-chip btn-chip-accept">Confirm</button><button class="btn-chip">Dismiss</button><span class="chat-badge" style="position:static">3</span><button class="pass-buy" style="width:auto">Buy</button></div>`;
+        document.body.appendChild(box);
+      });
+      await pg.waitForTimeout(300);
+      for (const o of await pg.evaluate(SCAN, { root: '#tlComponentGallery', min: 4.5 })) problems.push(`components/${theme}: ${o.ratio}:1 "${o.text}" .${o.cls} ${o.fg} on ${o.bg}`);
+      if (process.env.UI_SHOTS) await pg.screenshot({ path: path.join(process.env.UI_SHOTS, `components-${theme}.png`) });
       await ctx.close();
     }
     // Selected filters are visible on Home and while searching (display only).
