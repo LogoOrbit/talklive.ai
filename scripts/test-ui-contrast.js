@@ -109,6 +109,12 @@ const SCAN = (opts = {}) => {
         const box = await pg.locator('#ageConsentModal .modal-box').boundingBox();
         if (box.y < 0 || box.y + box.height > so.viewport.height) problems.push(`${sn}/${theme}/consent: dialog does not fit the screen`);
         if (!(await pg.locator('#ageAgreeBtn').isVisible())) problems.push(`${sn}/${theme}/consent: agree button not visible`);
+        // Keyboard: the terms can be focused (and so scrolled), and Tab stays
+        // inside the dialog.
+        if ((await pg.locator('#ageConsentModal .consent-terms-body').getAttribute('tabindex')) !== '0') problems.push(`${sn}/${theme}/consent: terms not keyboard-scrollable`);
+        let left = false;
+        for (let i = 0; i < 14 && !left; i++) { await pg.keyboard.press('Tab'); left = await pg.evaluate(() => !document.activeElement.closest('#ageConsentModal')); }
+        if (left) problems.push(`${sn}/${theme}/consent: Tab leaves the dialog`);
       }
       await ctx.close();
     }

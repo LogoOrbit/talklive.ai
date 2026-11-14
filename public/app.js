@@ -8804,6 +8804,19 @@ closeAgeConsentBtn.addEventListener('click', dismissAgeConsent);
 ageConsentModal.addEventListener('click', (e) => {
   if (e.target === ageConsentModal) dismissAgeConsent();
 });
+// The dialog is aria-modal, so keyboard focus stays in it: Tab from the last
+// control (I agree) used to walk out to the page behind. Behaviour only; the
+// dialog's content is unchanged.
+ageConsentModal.addEventListener('keydown', (e) => {
+  if (e.key !== 'Tab' || ageConsentModal.classList.contains('hidden')) return;
+  const items = [...ageConsentModal.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+    .filter((el) => el.offsetParent !== null);
+  if (!items.length) return;
+  const first = items[0];
+  const last = items[items.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+});
 
 // Accepting a voice-call invite from /chat: same consent + mic setup as a
 // normal call, but instead of joining the random-match queue we hand the

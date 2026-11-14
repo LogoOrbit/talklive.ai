@@ -1733,7 +1733,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                  dead afterwards. A gate can still be a gate with a back door. -->
             <button type="button" id="closeAgeConsentBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
           </div>
-          <div class="modal-body policy-body consent-terms-body">
+          <div class="modal-body policy-body consent-terms-body" tabindex="0" role="region" aria-labelledby="ageConsentTitle">
             <p class="consent-modal-text"><svg class="age-badge-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><text x="12" y="15.5" text-anchor="middle" font-size="8" font-weight="700" fill="currentColor" stroke="none">18+</text></svg> <span data-i18n="mustBe18">You must be 18 years or older to use TalkLive.</span></p>
 
             <!-- The full Terms are not shipped in this page: they are fetched from
@@ -2603,7 +2603,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="voice-notes.js?v=8e48c58788"></script>
   <script defer src="games.js?v=192e9d4f2d"></script>
   <script defer src="nickname-rules.js?v=077c943b4d"></script>
-  <script defer src="app.js?v=10dee869b5"></script>
+  <script defer src="app.js?v=bf19de3e48"></script>
 
 <!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the
