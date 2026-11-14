@@ -5076,15 +5076,46 @@ function matchLang(chosen, acceptLanguage) {
   return /^[a-z]{2}$/.test(parsed) ? parsed : null;
 }
 
-// Premium "instant rematch": a Premium member waiting in the queue is the first
-// pick for whoever searches next, ahead of any interest or language score.
-// It only reorders compatible candidates - filters, blocks and modes still
-// decide who can be matched at all, so nobody else waits longer than a turn.
-const PREMIUM_QUEUE_BONUS = 1000;
+// How a compatible candidate is ranked. Every term only reorders people who
+// already passed every filter; none of them can exclude anyone.
+//
+// - A shared language is worth the most: without one there is no conversation.
+// - Each shared interest (up to 4) is worth less than a language.
+// - Plus "priority matching": a Plus waiter is picked ahead of an equally good
+//   free one, and Plus waiters pick first in each sweep. It used to be worth
+//   1000 points, which put a Plus member who shared nothing with the seeker
+//   ahead of a free one who spoke their language - fast for the Plus member,
+//   a worse conversation for both.
+// - Time waited: a little for every second in the queue, so someone with no
+//   interests or a less common language is not passed over again and again by
+//   better-scoring newcomers.
+const LANG_WEIGHT = 3;
+const INTEREST_WEIGHT = 2;
+const PREMIUM_QUEUE_BONUS = 2;
+const WAIT_BONUS_PER_S = 0.05;
+const WAIT_BONUS_MAX = 2;
 
-function matchScore(a, b) {
-  return sharedInterestCount(a, b) * 2 + (a.lang && a.lang === b.lang ? 1 : 0)
-    + (b.premium ? PREMIUM_QUEUE_BONUS : 0);
+function matchScore(a, b, now = Date.now()) {
+  const waited = b.queuedAt ? Math.max(0, now - b.queuedAt) / 1000 : 0;
+  return Math.min(sharedInterestCount(a, b), 4) * INTEREST_WEIGHT
+    + (a.lang && a.lang === b.lang ? LANG_WEIGHT : 0)
+    + (b.premium ? PREMIUM_QUEUE_BONUS : 0)
+    + Math.min(WAIT_BONUS_MAX, waited * WAIT_BONUS_PER_S);
+}
+
+// A newcomer's first conversations decide whether they come back. Until they
+// have had NEWCOMER_GOOD_CALLS calls of 30s or more, they are steered towards
+// people with a good record (trust score) who do not habitually skip within
+// seconds, and away from those who do. Bounded like the other terms.
+const NEWCOMER_GOOD_CALLS = 3;
+function isNewcomer(clientId) {
+  const rec = store.engageGet(clientId);
+  return !rec || !(rec.goodCalls >= NEWCOMER_GOOD_CALLS);
+}
+function newcomerPreference(candidateId, now) {
+  const trust = reputation.score(candidateId, now); // 0..1, new people start at 0.8
+  const quick = reputation.quickRate(candidateId, now); // 0..1
+  return Math.max(-2, Math.min(1, (trust - 0.8) * 5 - quick * 3));
 }
 
 function findBestMatch(socketId) {
@@ -5134,6 +5165,7 @@ function findBestMatch(socketId) {
   const rankPool = !seekerQuarantined && waitingQueue.length >= matchModel.MIN_POOL_FOR_RANKING;
   const useModel = rankPool && MATCH_MODEL && matchModel.ready();
   const seekerMode = seeker.mode || 'talk';
+  const seekerNew = TRUST_TIERS && !seekerQuarantined && isNewcomer(seeker.clientId);
 
   for (let i = 0; i < waitingQueue.length; i++) {
     const candidateId = waitingQueue[i];
@@ -5152,7 +5184,8 @@ function findBestMatch(socketId) {
       adj = matchModel.rankAdjust(seekerTier, ct, md);
     }
 
-    const score = matchScore(seeker, candidate) + adj;
+    if (seekerNew) adj += newcomerPreference(candidate.clientId, now);
+    const score = matchScore(seeker, candidate, now) + adj;
     if (score > bestScore) {
       bestScore = score;
       bestIdx = i;
