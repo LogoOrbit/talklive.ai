@@ -83,6 +83,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.talklive.R
@@ -241,8 +242,14 @@ fun CallScreen(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 when (p) {
                     is CallPhase.Searching -> {
-                        SearchingTitle()
-                        p.etaSeconds?.takeIf { it > 0 }?.let { Spacer(Modifier.height(8.dp)); Subtitle(stringResource(R.string.searching_eta, it)) }
+                        when (p.gender) {
+                            "female" -> Title(stringResource(R.string.looking_for_woman))
+                            "male" -> Title(stringResource(R.string.looking_for_man))
+                            else -> SearchingTitle()
+                        }
+                        val filterLine = filterWaitText(p)
+                        if (filterLine != null) { Spacer(Modifier.height(8.dp)); Subtitle(filterLine) }
+                        else p.etaSeconds?.takeIf { it > 0 }?.let { Spacer(Modifier.height(8.dp)); Subtitle(stringResource(R.string.searching_eta, it)) }
                         if (premium) { Spacer(Modifier.height(10.dp)); PlusPriority() }
                     }
                     is CallPhase.Connecting -> {
@@ -596,6 +603,21 @@ private fun SearchingTitle() {
 @Composable
 private fun Title(text: String) =
     Text(text, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+
+/**
+ * What a filtered search is waiting for, said plainly: how many people the
+ * filters allow right now, when a free search's countries will give way, or
+ * that they just did. Null for an unfiltered search.
+ */
+@Composable
+internal fun filterWaitText(p: CallPhase.Searching): String? = when {
+    p.widened -> stringResource(R.string.filters_widened)
+    p.wideningIn != null -> stringResource(R.string.filters_widening_in)
+    p.pool == null -> null
+    p.pool.searching > 0 -> stringResource(R.string.filter_pool_searching)
+    p.pool.online > 0 -> pluralStringResource(R.plurals.filter_pool_busy, p.pool.online, p.pool.online)
+    else -> stringResource(R.string.filter_pool_none)
+}
 
 @Composable
 private fun Subtitle(text: String) =

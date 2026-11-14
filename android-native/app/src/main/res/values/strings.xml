@@ -721,4 +721,15 @@
     <string name="cmp_themes_n">App themes</string>
     <string name="home_plus_card">Enjoying TalkLive? Plus is %1$s a day.</string>
     <string name="home_plus_card_close">Close</string>
+    <!-- A filtered search: who it waits for and how many people the filters allow. -->
+    <string name="looking_for_woman">Looking for a woman…</string>
+    <string name="looking_for_man">Looking for a man…</string>
+    <string name="filter_pool_none">Nobody matching your filters is online right now · still looking</string>
+    <plurals name="filter_pool_busy">
+        <item quantity="one">%1$d online matching your filters, busy · waiting for them to be free</item>
+        <item quantity="other">%1$d online matching your filters, all busy · waiting for one to be free</item>
+    </plurals>
+    <string name="filter_pool_searching">Someone matching your filters is searching too · connecting…</string>
+    <string name="filters_widening_in">No match yet · your countries and language widen to everyone in a few seconds</string>
+    <string name="filters_widened">Nobody from your chosen countries is free · connecting you with anyone instead</string>
 </resources>

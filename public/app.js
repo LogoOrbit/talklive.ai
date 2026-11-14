@@ -10472,7 +10472,7 @@ if (keepFiltersBtn) {
   });
 }
 
-socket.on('waiting', ({ estimatedSeconds, predicted, fallbackInSeconds, keepingFilters } = {}) => {
+socket.on('waiting', ({ estimatedSeconds, predicted, fallbackInSeconds, keepingFilters, gender, pool } = {}) => {
   markSearchAcked();
   setState('waiting');
   if (Date.now() < endedNoticeUntil) return;
@@ -10484,21 +10484,41 @@ socket.on('waiting', ({ estimatedSeconds, predicted, fallbackInSeconds, keepingF
   } else {
     setStatusText('statusSearching');
   }
+  // A gender preference (Plus) is never dropped while waiting, so say who
+  // this search is waiting for rather than a country that may not apply.
+  if (gender === 'female' || gender === 'male') setStatusText(gender === 'female' ? 'statusLookingForWoman' : 'statusLookingForMan');
   hideKeepFilters();
   if (typeof fallbackInSeconds === 'number' && fallbackInSeconds > 0) startWideningCountdown(fallbackInSeconds);
+  else if (pool) showFilterPool(pool);
   else if (keepingFilters) setSubText('subKeepingFilters');
   else if (estimatedSeconds) setSubText('subUsuallyMatches', { s: estimatedSeconds });
   else setSubText('subHangTight');
+});
+
+// How many people the filters allow right now, so a narrow filter reads as an
+// honest wait instead of an endless spinner. The server re-sends it while the
+// search waits, whenever the numbers change.
+function showFilterPool(pool) {
+  if (!pool) return;
+  if (pool.searching > 0) setSubText('subPoolSearching');
+  else if (pool.online > 0) setSubText('subPoolBusy', { n: pool.online });
+  else setSubText('subPoolNone');
+}
+socket.on('filter-pool', (pool) => {
+  if (!pool || wideningTimer || Date.now() < endedNoticeUntil) return;
+  // Only while the orb still shows a search (a match may have landed first).
+  if (!orb.classList.contains('waiting')) return;
+  showFilterPool(pool);
 });
 
 // After ~10s of waiting the server drops every filter and auto-matches with
 // any random stranger instead of leaving the user stuck.
 // It used to blame "your chosen countries" whatever was set - including when
 // nothing was, or when it was the gender filter doing the narrowing.
-socket.on('random-fallback', () => {
+socket.on('random-fallback', ({ relaxed } = {}) => {
   const f = appliedFilters;
-  const filtered = (f.prefGender && f.prefGender !== 'any' && isPremiumUser)
-    || (f.includeCountries || []).length || (f.excludeCountries || []).length;
+  // Only countries and language ever give way; a gender preference does not.
+  const filtered = (Array.isArray(relaxed) && relaxed.length > 0) || (f.includeCountries || []).length;
   stopWideningCountdown();
   setStatusText('statusConnectingRandom');
   setSubText(filtered ? 'subFiltersFallback' : 'subHangTight');

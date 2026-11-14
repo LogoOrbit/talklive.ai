@@ -193,7 +193,7 @@ fun TextChatScreen(
         }
 
         if (partner == null) {
-            Searching(Modifier.weight(1f), myAnimal, (state.phase as? CallPhase.Searching)?.etaSeconds)
+            Searching(Modifier.weight(1f), myAnimal, state.phase as? CallPhase.Searching)
         } else {
             val byId = remember(messages) { messages.associateBy { it.id } }
             val newestFirst = messages.asReversed()
@@ -345,7 +345,7 @@ fun TextChatScreen(
 }
 
 @Composable
-private fun Searching(modifier: Modifier, myAnimal: String?, eta: Int?) {
+private fun Searching(modifier: Modifier, myAnimal: String?, search: CallPhase.Searching?) {
     val t = rememberInfiniteTransition(label = "radar")
     val rings = (0 until 3).map { i ->
         t.animateFloat(0f, 1f, infiniteRepeatable(tween(2400, easing = LinearEasing), RepeatMode.Restart, StartOffset(i * 800)), label = "r$i")
@@ -361,9 +361,19 @@ private fun Searching(modifier: Modifier, myAnimal: String?, eta: Int?) {
             contentAlignment = Alignment.Center,
         ) { AnimalAvatar(myAnimal, null, 104.dp) }
         Spacer(Modifier.height(20.dp))
-        Text(stringResource(R.string.searching_chat), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
-        eta?.takeIf { it > 0 }?.let {
-            Text(stringResource(R.string.searching_eta, it), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        val title = when (search?.gender) {
+            "female" -> R.string.looking_for_woman
+            "male" -> R.string.looking_for_man
+            else -> R.string.searching_chat
+        }
+        Text(stringResource(title), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
+        val filterLine = search?.let { filterWaitText(it) }
+        val sub = filterLine ?: search?.etaSeconds?.takeIf { it > 0 }?.let { stringResource(R.string.searching_eta, it) }
+        sub?.let {
+            Text(
+                it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.padding(horizontal = 24.dp),
+            )
         }
     }
 }

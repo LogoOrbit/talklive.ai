@@ -182,7 +182,17 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
         socket.on("waiting") { args ->
             val o = args.firstObject()
             val eta = o?.takeUnless { it.isNull("estimatedSeconds") }?.optInt("estimatedSeconds")
-            _events.tryEmit(ServerEvent.Waiting(eta))
+            val gender = o?.optString("gender")?.takeIf { it == "female" || it == "male" }
+            val widening = o?.takeUnless { it.isNull("fallbackInSeconds") }?.optInt("fallbackInSeconds")?.takeIf { it > 0 }
+            _events.tryEmit(ServerEvent.Waiting(eta, gender, FilterPool.from(o?.optJSONObject("pool")), widening))
+        }
+        socket.on("filter-pool") { args ->
+            FilterPool.from(args.firstObject())?.let { _events.tryEmit(ServerEvent.FilterPoolUpdate(it)) }
+        }
+        socket.on("random-fallback") { args ->
+            // Only a fallback that relaxed something is worth telling the user about.
+            val relaxed = args.firstObject()?.optJSONArray("relaxed")
+            if (relaxed != null && relaxed.length() > 0) _events.tryEmit(ServerEvent.FiltersRelaxed)
         }
         socket.on("matched") { args ->
             val o = args.firstObject() ?: return@on

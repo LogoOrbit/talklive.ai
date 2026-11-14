@@ -25,7 +25,7 @@
     "test:reset": "node scripts/test-password-reset.js",
     "test:chat": "node scripts/test-chat-extras.js && node scripts/test-chat-away.js",
     "test:matchmaking": "node scripts/test-matchmaking.js",
-    "test:filters": "node scripts/test-filters.js",
+    "test:filters": "node scripts/test-filters.js && node scripts/test-gender-filter.js",
     "test:perks": "node scripts/test-premium-perks.js",
     "test:engage": "node scripts/test-engage.js",
     "test:malformed": "node scripts/test-malformed-packets.js",

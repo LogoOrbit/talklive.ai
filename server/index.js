@@ -417,6 +417,52 @@ function isPremium(clientId) {
   return envPremiumClients.has(clientId) || store.isPremiumClient(clientId);
 }
 
+// Match filters as the client asked for them: validated, deduplicated and
+// bounded, but not yet capped by the free tier. Kept on the profile as `want`
+// so the effective filters can be re-derived whenever Plus starts or ends.
+const PLUS_COUNTRY_CAP = 50;
+const COUNTRY_CODE_RE = /^[A-Z]{2}$/;
+function requestedFilters(data = {}) {
+  const countries = (list) => {
+    if (!Array.isArray(list)) return [];
+    const out = [];
+    for (const c of list.slice(0, PLUS_COUNTRY_CAP * 2)) {
+      if (typeof c !== 'string') continue;
+      const code = c.trim().toUpperCase();
+      if (COUNTRY_CODE_RE.test(code) && !out.includes(code)) out.push(code);
+      if (out.length >= PLUS_COUNTRY_CAP) break;
+    }
+    return out;
+  };
+  return {
+    gender: data.prefGender === 'male' || data.prefGender === 'female' ? data.prefGender : 'any',
+    voiceChecked: data.prefVoiceChecked === true,
+    include: countries(data.includeCountries),
+    exclude: countries(data.excludeCountries),
+    interests: cleanInterests(data.interests),
+  };
+}
+
+// The filters matching actually uses, from what was asked for and what this
+// person is entitled to right now. Free: no gender preference, two countries
+// per list, two interests. Plus: everything asked for. Called at register, at
+// every search and whenever a grant changes, so a purchase applies to the very
+// next search and an expired pass stops filtering at the next one.
+function applyEntitlements(profile) {
+  if (!profile) return;
+  const premium = isPremium(profile.clientId);
+  const want = profile.want || requestedFilters({});
+  const cap = premium ? PLUS_COUNTRY_CAP : FREE_LIMITS.countries;
+  profile.premium = premium;
+  profile.prefGender = premium ? want.gender : 'any';
+  // "Voice-checked only": with a gender preference, match only people whose
+  // on-device voice check agreed with the gender they picked themselves.
+  profile.prefVoiceChecked = premium && flags.isOn('voiceCheck') && want.voiceChecked && profile.prefGender !== 'any';
+  profile.includeCountries = want.include.slice(0, cap);
+  profile.excludeCountries = want.exclude.slice(0, cap);
+  profile.interests = want.interests.slice(0, premium ? 10 : FREE_LIMITS.interests);
+}
+
 // Lets the pricing page (a separate static page) confirm activation. It answers
 // for any clientId, so it is rate limited to stop anyone sweeping through ids;
 // the pricing page itself asks at most 11 times.
@@ -2067,6 +2113,10 @@ function pairOnCooldown(clientIdA, clientIdB, soft) {
 // 'voice-invite-join' pairs the two token holders there in talk mode.
 const voiceInvites = new Map(); // token -> { clients: [clientIdA, clientIdB], joined: Map<clientId, socketId>, timer }
 const VOICE_INVITE_TTL_MS = 2 * 60 * 1000; // plenty for two page loads; then it's dead
+
+// "Keep my filters" outlives a dropped socket for this long (see find-partner).
+const KEEP_FILTERS_CARRY_MS = 2 * 60 * 1000;
+const keepFiltersCarry = new Map(); // clientId -> when the kept search dropped
 
 // How long after a skip "Undo skip" can still bring that person back.
 const UNDO_SKIP_MS = 15000;
@@ -4477,8 +4527,9 @@ function recordEngageCall(profile, country, seconds) {
 function emitPremiumStatus(clientId) {
   for (const [sid, profile] of profiles) {
     if (profile.clientId !== clientId) continue;
-    // Queue priority follows the grant straight away, not at the next register.
-    profile.premium = isPremium(clientId);
+    // Queue priority and the Plus filters follow the grant straight away, not
+    // at the next register.
+    applyEntitlements(profile);
     const sock = io.sockets.sockets.get(sid);
     if (!sock) continue;
     sock.emit('premium-status', {
@@ -4857,10 +4908,18 @@ function prefsMet(a, b) {
 }
 
 // Any soft filter set, i.e. whether the random fallback would change anything.
+// The gender preference is not one: it is a hard gate (see mutuallyCompatible).
 function hasSoftFilters(p) {
-  return (p.prefGender && p.prefGender !== 'any')
-    || (p.includeCountries && p.includeCountries.length > 0)
+  return (p.includeCountries && p.includeCountries.length > 0)
     || !!p.prefLang;
+}
+
+// Which filters the random fallback is about to give way, for the notice.
+function relaxedFilters(p) {
+  const out = [];
+  if (p.includeCountries && p.includeCountries.length) out.push('countries');
+  if (p.prefLang) out.push('language');
+  return out;
 }
 
 // The only values a client's voice check may report; anything else is dropped.
@@ -4903,6 +4962,13 @@ function mutuallyCompatible(seeker, candidate) {
   // Avoided countries are a hard gate on both sides, fallback or not.
   if (countryAvoided(seeker, candidate.country)) return false;
   if (countryAvoided(candidate, seeker.country)) return false;
+
+  // So is a gender preference (Plus). It used to be dropped with the other
+  // filters after RANDOM_FALLBACK_MS, so someone who paid to talk to women was
+  // put through to a man after ten seconds of waiting - with no notice at all
+  // in the Android app or on /chat. A preference is now only ever changed by
+  // the person who set it; a small pool shows as a longer, honest wait.
+  if (!genderPrefMet(seeker, candidate) || !genderPrefMet(candidate, seeker)) return false;
 
   // Just parted voluntarily - give them someone new first. Soft, so the random
   // fallback can still reunite them rather than leave anyone waiting on a
@@ -5011,6 +5077,11 @@ function findBestMatch(socketId) {
     if ((seeker.mode || 'talk') !== (candidate.mode || 'talk')) continue;
     // A mutual heart cannot fix a media path that does not exist either.
     if (pairOnCooldown(seeker.clientId, candidate.clientId, false)) continue;
+    // Nor does it override a gender preference or an avoided country: those
+    // are hard gates everywhere else, and a heart from an earlier call (made
+    // before the filter was set) is no reason to break one.
+    if (!genderPrefMet(seeker, candidate) || !genderPrefMet(candidate, seeker)) continue;
+    if (countryAvoided(seeker, candidate.country) || countryAvoided(candidate, seeker.country)) continue;
     const key = pairKey(seeker.clientId, candidate.clientId);
     const heartSet = hearts.get(key);
     if (heartSet && heartSet.has(seeker.clientId) && heartSet.has(candidate.clientId)) {
@@ -5056,6 +5127,8 @@ function findBestMatch(socketId) {
 // soft filters set, not already relaxed, and not opted out with "keep waiting".
 function waitingPayload(socketId) {
   const p = profiles.get(socketId);
+  const pool = filterPool(socketId);
+  if (p) p.poolKey = pool ? pool.online + ':' + pool.searching : '';
   const counting = p && !p.randomFallbackActive && !p.keepFilters && hasSoftFilters(p);
   return {
     estimatedSeconds: estimatedWaitSeconds(),
@@ -5063,7 +5136,54 @@ function waitingPayload(socketId) {
     fallbackInSeconds: counting && p.queuedAt
       ? Math.max(0, Math.ceil((RANDOM_FALLBACK_MS - (Date.now() - p.queuedAt)) / 1000)) : null,
     keepingFilters: !!(p && p.keepFilters && hasSoftFilters(p)),
+    // The gender this search is held to (Plus), so every client can say so.
+    gender: p && p.prefGender && p.prefGender !== 'any' ? p.prefGender : null,
+    pool,
   };
+}
+
+// How many people the seeker's filters allow, so a narrow filter reads as an
+// honest wait ("2 women online, both in calls") instead of an endless spinner.
+// `online`: people connected right now whom the filters allow and whose own
+// filters allow the seeker. `searching`: those of them looking for someone in
+// the same pool this moment. null when nothing narrows the search.
+function narrowsSearch(p) {
+  if (!p) return false;
+  // The gender preference holds through the fallback; the soft filters do not.
+  return (p.prefGender && p.prefGender !== 'any') || (!p.randomFallbackActive && hasSoftFilters(p));
+}
+function filterPool(socketId) {
+  const seeker = profiles.get(socketId);
+  if (!narrowsSearch(seeker)) return null;
+  const seekerQuarantined = quarantined(seeker, socketId);
+  const mode = seeker.mode || 'talk';
+  const online = new Set();
+  const searching = new Set();
+  for (const [sid, p] of profiles) {
+    if (sid === socketId || p.clientId === seeker.clientId || online.has(p.clientId)) continue;
+    // Same pool as matching: quarantined clients (scripts) count only for
+    // each other.
+    if (!io.sockets.sockets.get(sid)) continue;
+    if (quarantined(p, sid) !== seekerQuarantined) continue;
+    if (isBlockedPair(seeker.clientId, p.clientId)) continue;
+    if (!prefsMet(seeker, p) || !genderPrefMet(p, seeker)) continue;
+    if (countryAvoided(seeker, p.country) || countryAvoided(p, seeker.country)) continue;
+    online.add(p.clientId);
+    if ((p.mode || 'talk') === mode && waitingQueue.includes(sid) && !partners.has(sid)) searching.add(p.clientId);
+  }
+  return { online: online.size, searching: searching.size };
+}
+
+// Re-sent while a filtered search waits, only when the numbers change.
+function sendFilterPool(socketId) {
+  const p = profiles.get(socketId);
+  const sock = io.sockets.sockets.get(socketId);
+  if (!p || !sock) return;
+  const pool = filterPool(socketId);
+  const key = pool ? pool.online + ':' + pool.searching : '';
+  if (key === p.poolKey) return;
+  p.poolKey = key;
+  sock.emit('filter-pool', pool);
 }
 
 function estimatedWaitSeconds() {
@@ -5153,7 +5273,7 @@ function tryMatch(socketId) {
         if (!p || p.keepFilters || !waitingQueue.includes(socketId)) return;
         p.randomFallbackActive = true;
         const sock = io.sockets.sockets.get(socketId);
-        if (sock) sock.emit('random-fallback');
+        if (sock && hasSoftFilters(p)) sock.emit('random-fallback', { relaxed: relaxedFilters(p) });
         tryMatch(socketId);
       }, RANDOM_FALLBACK_MS);
       waitFallbackTimers.set(socketId, timer);
@@ -5184,9 +5304,10 @@ function sweepQueue() {
       clearWaitFallbackTimer(socketId);
       p.randomFallbackActive = true;
       const sock = io.sockets.sockets.get(socketId);
-      if (sock) sock.emit('random-fallback');
+      if (sock && hasSoftFilters(p)) sock.emit('random-fallback', { relaxed: relaxedFilters(p) });
     }
     if (findBestMatch(socketId) !== -1) tryMatch(socketId);
+    else if (waitingQueue.includes(socketId) && narrowsSearch(p)) sendFilterPool(socketId);
   }
 }
 setInterval(sweepQueue, QUEUE_SWEEP_MS).unref?.();
@@ -5202,6 +5323,10 @@ function predictedMatch(socketId) {
     if (isBlockedPair(seeker.clientId, p.clientId)) continue;
     if (pairOnCooldown(seeker.clientId, p.clientId, false)) continue;
     if ((seeker.mode || 'talk') !== (p.mode || 'talk')) continue;
+    // "Connecting to someone in Japan" must be someone the filters allow: it
+    // used to name any online country, including ones the seeker filtered out.
+    if (!seeker.randomFallbackActive && !prefsMet(seeker, p)) continue;
+    if (!genderPrefMet(seeker, p) || countryAvoided(seeker, p.country)) continue;
     candidates.push(p);
   }
   if (candidates.length === 0) return null;
@@ -6289,10 +6414,10 @@ io.on('connection', (socket) => {
     }
     if (geo.country === 'XX') Object.assign(geo, placeFromHints(data.timezone, socket.handshake.headers['accept-language']));
     const premium = isPremium(clientId);
-    // Free-tier caps enforced server-side: gender preference and country lists
-    // beyond the free limit are premium-only.
-    const countryCap = premium ? 50 : FREE_LIMITS.countries;
-    const sanitizeCountryList = (list) => (Array.isArray(list) ? list.filter((c) => typeof c === 'string').slice(0, countryCap) : []);
+    // Free-tier caps (gender preference, country lists beyond the free limit,
+    // extra interests) are enforced by applyEntitlements() from what the
+    // client asked for, so a grant or an expiry mid-session takes effect at
+    // the next search without a re-register.
     const prev = profiles.get(socket.id);
     // A signed-in socket always shows the account's saved display name.
     const authedAccount = socketAuth.get(socket.id) ? accounts.get(socketAuth.get(socket.id)) : null;
@@ -6337,20 +6462,16 @@ io.on('connection', (socket) => {
       // aggregate audience analytics.
       ageGroup: (authedAccount && authedAccount.ageGroup && audience.normAge(data.ageGroup) === 'unspecified') ? authedAccount.ageGroup : audience.normAge(data.ageGroup),
       device: audience.parseUA(socket.handshake.headers['user-agent']).device,
-      prefGender: premium && (data.prefGender === 'male' || data.prefGender === 'female') ? data.prefGender : 'any',
-      // "Voice-checked only": with a gender preference, match only people whose
-      // on-device voice check agreed with the gender they picked themselves.
-      prefVoiceChecked: premium && flags.isOn('voiceCheck') && data.prefVoiceChecked === true,
+      // What the client asked for, validated but before the free/Plus caps;
+      // applyEntitlements() below derives the filters matching uses from it.
+      want: requestedFilters(data),
       // Opt-in result of voice-gender.js, which runs on the person's own
       // device. Kept in memory for this socket only, never stored, never sent
       // to anyone else, and only ever used to confirm the self-declared gender.
       voiceGender: flags.isOn('voiceCheck') && data.voiceCheck === true ? sanitizeVoiceGender(data.voiceGender) : null,
       voiceCheck: flags.isOn('voiceCheck') && data.voiceCheck === true,
-      includeCountries: sanitizeCountryList(data.includeCountries),
-      excludeCountries: sanitizeCountryList(data.excludeCountries),
       randomFallbackActive: false,
       mode: 'talk',
-      interests: cleanInterests(data.interests).slice(0, premium ? 10 : FREE_LIMITS.interests),
       // `m1`-`f5` are the gendered busts; `a:<animal>` is a spirit-animal
       // avatar, validated against the same list the picker is built from so a
       // client cannot store an animal that does not exist.
@@ -6376,6 +6497,18 @@ io.on('connection', (socket) => {
       // "Keep waiting" survives a re-register mid-search (saving filters).
       keepFilters: !!(prev && prev.keepFilters),
     });
+    // A re-register on a live socket (saving filters or settings mid-search or
+    // mid-call) replaces the profile. The search and call state belongs to the
+    // socket, not to the settings, so it carries over: without this a /chat
+    // searcher who saved a filter came back in the voice pool while still
+    // queued, and a call's start time was lost, so its length never counted.
+    if (prev && prev.clientId === clientId) {
+      const next = profiles.get(socket.id);
+      for (const k of ['mode', 'queuedAt', 'searchSince', 'matchedAt', 'lastSkipped', 'pendingRating', 'randomFallbackActive']) {
+        if (prev[k] !== undefined) next[k] = prev[k];
+      }
+    }
+    applyEntitlements(profiles.get(socket.id));
     clientSockets.set(clientId, socket.id);
     socket.emit('contact-consent', { on: store.hasContactConsent(clientId) });
     {
@@ -6560,9 +6693,19 @@ io.on('connection', (socket) => {
       }
     }
     store.recordFeature(quarantined(profile, socket.id) ? 'bot_search' : (profile.mode === 'chat' ? 'chat_search' : 'search'));
+    // Plus may have started or ended since this socket registered.
+    applyEntitlements(profile);
     // A fresh, explicit search starts with the full set of filters again.
+    // Plus filters are kept until a match or a cancel: they are what was paid
+    // for. A free searcher's countries and language give way after
+    // RANDOM_FALLBACK_MS (announced, with "Keep my filters"), unless they chose
+    // to keep them on a socket that just dropped - the app re-sends the search
+    // after a reconnect or a trip to the background, and that is the same
+    // search, not a new one.
+    const carried = keepFiltersCarry.get(profile.clientId);
+    keepFiltersCarry.delete(profile.clientId);
     profile.randomFallbackActive = false;
-    profile.keepFilters = false;
+    profile.keepFilters = (profile.premium && hasSoftFilters(profile)) || (!!carried && Date.now() - carried < KEEP_FILTERS_CARRY_MS);
     tryMatch(socket.id);
   });
 
@@ -6573,7 +6716,11 @@ io.on('connection', (socket) => {
     profile.keepFilters = true;
     profile.randomFallbackActive = false;
     clearWaitFallbackTimer(socket.id);
-    if (waitingQueue.includes(socket.id)) socket.emit('waiting', waitingPayload(socket.id));
+    if (waitingQueue.includes(socket.id)) {
+      socket.emit('waiting', waitingPayload(socket.id));
+      // Undoing a fallback that already happened: look again with the filters.
+      if (findBestMatch(socket.id) !== -1) tryMatch(socket.id);
+    }
   });
 
   // People online per country, for the filter panel's suggestion chips.
@@ -6631,7 +6778,10 @@ io.on('connection', (socket) => {
     const other = otherId ? profiles.get(otherId) : null;
     if (!other || !waitingQueue.includes(otherId) || partners.has(otherId)
       || (other.mode || 'talk') !== (me.mode || 'talk')
-      || isBlockedPair(me.clientId, other.clientId)) {
+      || isBlockedPair(me.clientId, other.clientId)
+      // Either side may have changed a filter since the skip.
+      || !genderPrefMet(me, other) || !genderPrefMet(other, me)
+      || countryAvoided(me, other.country) || countryAvoided(other, me.country)) {
       return reply({ ok: false, reason: 'busy' });
     }
     me.lastSkipped = null;
@@ -8475,6 +8625,15 @@ io.on('connection', (socket) => {
     // The socket went away rather than the user pressing anything, so tell
     // whoever they were talking to exactly that.
     disconnectPartner(socket.id, { dropped: true });
+    {
+      // Dropped mid-search with filters kept: the reconnected socket's search
+      // keeps them too (see find-partner).
+      const p = profiles.get(socket.id);
+      if (p && p.keepFilters && waitingQueue.includes(socket.id)) {
+        keepFiltersCarry.set(p.clientId, Date.now());
+        if (keepFiltersCarry.size > 5000) keepFiltersCarry.delete(keepFiltersCarry.keys().next().value);
+      }
+    }
     noteSearchAbandoned(socket.id);
     clearFromQueue(socket.id);
     clearWaitFallbackTimer(socket.id);

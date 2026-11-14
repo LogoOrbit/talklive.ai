@@ -34,7 +34,16 @@ import javax.inject.Singleton
 
 sealed interface CallPhase {
     data object Idle : CallPhase
-    data class Searching(val etaSeconds: Int? = null) : CallPhase
+    data class Searching(
+        val etaSeconds: Int? = null,
+        /** "female" / "male" when a Plus gender preference holds this search. */
+        val gender: String? = null,
+        val pool: app.talklive.net.FilterPool? = null,
+        /** Seconds until a free search's countries and language give way. */
+        val wideningIn: Int? = null,
+        /** They gave way: the next match may be from anywhere. */
+        val widened: Boolean = false,
+    ) : CallPhase
     data class Connecting(val partner: Partner) : CallPhase
     data class Connected(val partner: Partner, val sinceMs: Long) : CallPhase
 }
@@ -376,7 +385,11 @@ class CallManager @Inject constructor(
     private suspend fun onEvent(e: ServerEvent) {
         val phase = _state.value.phase
         when (e) {
-            is ServerEvent.Waiting -> if (phase is CallPhase.Searching) setPhase(CallPhase.Searching(e.estimatedSeconds))
+            is ServerEvent.Waiting -> if (phase is CallPhase.Searching) {
+                setPhase(CallPhase.Searching(e.estimatedSeconds, e.gender, e.pool, e.wideningIn))
+            }
+            is ServerEvent.FilterPoolUpdate -> if (phase is CallPhase.Searching) setPhase(phase.copy(pool = e.pool))
+            ServerEvent.FiltersRelaxed -> if (phase is CallPhase.Searching) setPhase(phase.copy(widened = true, wideningIn = null))
             ServerEvent.NeedsRegister -> if (phase is CallPhase.Searching) {
                 delay(800)
                 socket.emit("find-partner", searchOpts())
