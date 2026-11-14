@@ -8,6 +8,24 @@ documented in **[SEO.md](SEO.md)**. This is about the two things SEO cannot fix
 on its own: **turning visitors into repeat users**, and **turning users into
 revenue**.
 
+## Current state (14 November 2026) - read this first
+
+Much of this document was written in October 2026 and describes a product
+that has since changed. Where it disagrees with the code, the code and the
+list below are right.
+
+| Topic | This document says | What is true now |
+|---|---|---|
+| Payments | Stripe Checkout (`server/billing.js`) | Stripe is removed. Plus and passes are sold only in the Android app through Google Play (`server/play-billing.js`); the website shows local prices and links to the app. Old Stripe grants run to their expiry. |
+| Price | $4.99/month recommended | $9.99/month, $69.99/year in the US; per-country prices in `server/pricing-table.json`, which mirrors Play. Passes: 1, 7, 15 days. |
+| Pass prices | - | In 36 markets Play's passes cost as much as a month of Plus or more. Both clients now say "Monthly Plus costs less" on such a pass; `scripts/audit-pricing.js` proposes fixed prices (`android-native/PLAY_PASS_PRICES_PROPOSED.csv`) for Play Console. |
+| Referral reward | 7 days of Plus for both sides | The inviter only: the Plus look (gold ring + one legendary avatar) for 30 days per 3 invited people who make an account and have a real conversation from a different network. No Plus is granted. |
+| Free tier | 2 countries, 5 friends, gender locked | 2 preferred + 2 avoided countries, 2 interests, unlimited friends, no gender preference. |
+| Gender filter | Dropped with every filter after ~10 s | A hard gate: never dropped while waiting. Plus keeps country and language filters too; free searches widen after 10 s, announced. See README "How filters behave while waiting". |
+| Plus queue priority | "Instant rematch" (1000 points) | Picked first among equally good candidates; a shared language now outranks it. |
+| Database | P0: reconnect it | Done: Postgres (Supabase) with the Fly volume as the live copy; Postgres is written every 2 h as the off-machine backup. |
+| Scaling | P4: Redis adapter before a second machine | Still one machine by decision (cost). Matchmaking state is in process memory; a second machine would split the pool. |
+
 ---
 
 ## 1. The honest diagnosis
@@ -133,7 +151,7 @@ many times the same effort spent on a page that ranks in a $0.10-RPM market.
 All of it is env-gated: with no keys configured the site behaves exactly as it
 did before, so nothing here can break production on deploy.
 
-### Payments - `server/billing.js`
+### Payments - `server/billing.js` (removed November 2026; see Current state)
 
 Stripe Checkout with a signed webhook, no `stripe` npm dependency (two REST
 calls and an HMAC).
@@ -173,7 +191,7 @@ measured server-side. Opening your own link in fifty incognito windows earns
 nothing. Self-referral is rejected outright, first claim wins, and a referral
 pays exactly once.
 
-Both sides get 7 days of Plus. Rewarding only the inviter makes the link feel
+(Superseded - see Current state.) Both sides get 7 days of Plus. Rewarding only the inviter makes the link feel
 like spam to the person receiving it.
 
 `npm run test:referral` drives the whole loop through real sockets, including
@@ -222,7 +240,7 @@ unanswerable. New funnel counters: `premium_checkout_start`,
 
 ## 4. What to do next, in priority order
 
-### P0 - Reconnect the database. Nothing else matters until this is done.
+### P0 - Reconnect the database (done)
 
 `DATABASE_URL` is unset, so the store falls back to a JSON file on a container
 with no mounted volume, and deploys are automatic. **Every subscription,
@@ -230,7 +248,7 @@ referral and push subscription written today is destroyed on the next deploy.**
 Shipping billing on top of an ephemeral store would mean charging people and
 losing the record of it. See Task 2 in [CODEX-HANDOFF.md](CODEX-HANDOFF.md).
 
-### P1 - Turn on billing
+### P1 - Turn on billing (superseded: Google Play only, see Current state)
 
 Create the Stripe product, then set the four secrets in one command (§5). Price
 at **$4.99/month with an annual plan at ~$29.99**. Reasons: it undercuts the

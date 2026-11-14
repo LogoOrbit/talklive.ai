@@ -131,6 +131,8 @@ fun CallScreen(
     noiseSuppression: Boolean = true,
     onNoiseSuppression: (Boolean) -> Unit = {},
     onProblem: (String) -> Unit = {},
+    /** "Keep my filters": stop a free search's countries and language from widening. */
+    onKeepFilters: () -> Unit = {},
 ) {
     var reporting by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
@@ -250,6 +252,9 @@ fun CallScreen(
                         val filterLine = filterWaitText(p)
                         if (filterLine != null) { Spacer(Modifier.height(8.dp)); Subtitle(filterLine) }
                         else p.etaSeconds?.takeIf { it > 0 }?.let { Spacer(Modifier.height(8.dp)); Subtitle(stringResource(R.string.searching_eta, it)) }
+                        if (p.wideningIn != null || p.widened) {
+                            androidx.compose.material3.TextButton(onClick = onKeepFilters) { Text(stringResource(R.string.keep_filters)) }
+                        }
                         if (premium) { Spacer(Modifier.height(10.dp)); PlusPriority() }
                     }
                     is CallPhase.Connecting -> {

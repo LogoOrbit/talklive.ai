@@ -1,5 +1,47 @@
 # Changelog
 
+## 2026-11-14 — Filters that hold, honest prices, fewer bots (web + Android, not released)
+
+**Gender and country filters**
+- A Plus gender preference is never dropped while waiting. It used to give way
+  with every other filter after 10 s, so a "women only" search was put through
+  to a man - silently on Android and `/chat`, which ignored the notice. It is
+  now a hard gate in matching, the mutual-heart rematch, Undo skip and the
+  "Connecting to someone in…" preview.
+- Plus keeps its country and language filters until a match or a cancel. Free
+  country/language filters still widen after 10 s, now announced on every
+  client (Android had no notice and no "Keep my filters" button; both added).
+- A filtered search shows who it waits for and how many people online the
+  filters allow ("Looking for a woman… 2 online matching your filters, all
+  busy"), updated while waiting.
+- Filters are re-derived from the request and the current entitlement at every
+  search, so a purchase or expiry applies without a re-register; "Keep my
+  filters" survives a reconnect; a re-register no longer moves a `/chat`
+  searcher into the voice pool or loses a call's start time.
+
+**Matching**
+- A shared language (3) now outranks Plus priority (2, was 1000). Plus is still
+  picked first among equals. A small wait bonus stops long waiters being passed
+  over. Newcomers' first calls go to people who do not habitually skip.
+
+**Bots**
+- Sockets with no User-Agent, or an HTTP library's, are matched only with
+  other quarantined clients. A voice side that never sends or answers the
+  WebRTC offer counts as a dropped match for the quarantine.
+
+**Pricing and referrals**
+- In 36 markets Play's passes cost a month of Plus or more. The pricing page
+  and Android Plus sheet now say "Monthly Plus costs less" on such a pass
+  instead of "best value". `scripts/audit-pricing.js` writes proposed pass
+  prices for Play Console (`android-native/PLAY_PASS_PRICES_PROPOSED.csv`);
+  no live price was changed.
+- The invite card (17 languages) and pricing page promised 1 hour of Plus for
+  a sign-up; the real reward is the gold ring and a legendary avatar for 30
+  days per 3 friends who sign up and have a real conversation.
+
+**Tests**: `test-gender-filter`, `test-bot-signals`, `test-match-ranking` (new,
+in the critical suite), `test-pricing` extended.
+
 ## 2026-11-11 — Speed, storage and reliability pass (web + Android 3.9.6)
 
 **Website and server**

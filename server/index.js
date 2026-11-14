@@ -5231,6 +5231,7 @@ function filterPool(socketId) {
   const mode = seeker.mode || 'talk';
   const online = new Set();
   const searching = new Set();
+  const queued = new Set(waitingQueue);
   for (const [sid, p] of profiles) {
     if (sid === socketId || p.clientId === seeker.clientId || online.has(p.clientId)) continue;
     // Same pool as matching: quarantined clients (scripts) count only for
@@ -5241,16 +5242,22 @@ function filterPool(socketId) {
     if (!prefsMet(seeker, p) || !genderPrefMet(p, seeker)) continue;
     if (countryAvoided(seeker, p.country) || countryAvoided(p, seeker.country)) continue;
     online.add(p.clientId);
-    if ((p.mode || 'talk') === mode && waitingQueue.includes(sid) && !partners.has(sid)) searching.add(p.clientId);
+    if ((p.mode || 'talk') === mode && queued.has(sid) && !partners.has(sid)) searching.add(p.clientId);
   }
   return { online: online.size, searching: searching.size };
 }
 
-// Re-sent while a filtered search waits, only when the numbers change.
+// Re-sent while a filtered search waits, only when the numbers change, and
+// recounted at most every FILTER_POOL_EVERY_MS per waiter (a count walks every
+// connected profile).
+const FILTER_POOL_EVERY_MS = 6000;
 function sendFilterPool(socketId) {
   const p = profiles.get(socketId);
   const sock = io.sockets.sockets.get(socketId);
   if (!p || !sock) return;
+  const now = Date.now();
+  if (p.poolAt && now - p.poolAt < FILTER_POOL_EVERY_MS) return;
+  p.poolAt = now;
   const pool = filterPool(socketId);
   const key = pool ? pool.online + ':' + pool.searching : '';
   if (key === p.poolKey) return;

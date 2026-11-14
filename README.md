@@ -145,7 +145,7 @@ A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.app/owne
 - **Traffic tab:** where visitors come from and what brought them (`server/traffic.js`). Every arrival from outside the site is attributed to a **source** (Google, Bing, Facebook, ChatGPT, a referring domain, a `utm_source` tag, or Direct), a **channel** (search, AI, social, referral, campaign, installed app, direct), the **landing page**, and the **search term** when the referrer carries one. A reload within 30 minutes is not a second arrival. Per-page view counts for every page are kept too. All of it is aggregate counts per UTC day, never per person. Verify with `npm run test:traffic`.
 
   **Google search keywords.** Google never passes the search query to the site it sends someone to, so the words people typed into Google exist only in Search Console. The Traffic tab reads them through the Search Console API (`server/search-console.js`): clicks, impressions, CTR and position per query, which page each query landed on, and clicks by page, country and device. To connect it: in Google Cloud enable the **Google Search Console API**, create a service account with a JSON key, add that service account's email as a user on the Search Console property, then `fly secrets set GSC_CREDENTIALS="$(base64 -w0 key.json)" GSC_SITE_URL=sc-domain:talklive.app`. Until then the tab shows these steps in place of the keyword table.
-- **Moderation:** every user report is stored with reporter/reported details; one-click bans from 30 minutes up to 5 years (by clientId **and** IP - banned users cannot connect at all until the ban expires or you lift it). Users are auto-banned for 30 minutes after 3 reports.
+- **Moderation:** every user report is stored with reporter/reported details; one-click bans from 30 minutes up to 5 years (by clientId **and** IP - banned users cannot connect at all until the ban expires or you lift it). Reports go through the auto-moderator (`server/automod.js`), which weighs how genuine each report is and only ever warns; bans are the owner's decision from the review queue.
 - **Errors:** client-side JS errors and server crashes are collected in the Errors tab (duplicates collapsed).
 - **Maintenance mode:** one button takes the site offline with a friendly message; the dashboard stays reachable.
 
@@ -182,7 +182,17 @@ A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.app/owne
 
 ### Premium (TalkLive Plus)
 
-Free tier limits (enforced server-side): max 2 preferred + 2 avoided countries, and the gender filter locked. Friends are unlimited for everyone. Premium unlocks all filters and removes ads. `/pricing` shows local prices; buying on the website is "coming soon" and links to the Android app (see "Grants come from" below).
+Free tier limits (enforced server-side): max 2 preferred + 2 avoided countries, 2 interests, and no gender preference. Friends are unlimited for everyone. Plus unlocks all filters and removes ads. `/pricing` shows local prices; buying on the website is "coming soon" and links to the Android app (see "Grants come from" below). The server derives the filters it applies from what the client asked for and the current entitlement at every search (`applyEntitlements`), so a purchase or an expiry takes effect at the next search.
+
+**How filters behave while waiting** (`server/index.js` `mutuallyCompatible`, tested by `scripts/test-gender-filter.js`):
+
+- A **gender preference** (Plus) is a hard gate, like a block or an avoided country: it is never dropped by the random fallback, a mutual heart, Undo skip or anything else. Gender is self-declared and never verified; the UI says so.
+- **Avoided countries** are a hard gate for everyone.
+- **Preferred countries and "Speaks"** are kept for Plus until a match or a cancel. For free searches they give way after 10 s (`RANDOM_FALLBACK_MS`), with a countdown and a "Keep my filters" button beforehand and a `random-fallback` event (carrying what gave way) when it happens.
+- While a filtered search waits, `waiting` carries the gender it is held to and `pool` (people online the filters allow, and how many are searching); `filter-pool` updates it. Web, `/chat` and Android show "Looking for a woman…" and that count.
+- "Keep my filters" survives a dropped socket for 2 minutes, and a re-register keeps the socket's search state, so reconnects and app backgrounding do not reset a search.
+
+**Ranking** among compatible candidates (`matchScore`): shared language 3, each shared interest 2 (up to 4), Plus 2, plus 0.05 per second waited (max 2); the trust tiers and the learned match model add at most ±1 each. Newcomers (fewer than 3 calls of 30 s+) are steered towards people with a good trust score who do not habitually skip. None of these terms excludes anyone.
 
 Matching is instant for everyone. The free tier used to be held ~5s before the
 next search after a skip; that was removed because the client also emits `skip`
@@ -191,10 +201,10 @@ so the delay fell hardest on users whose calls were already failing.
 
 Premium is keyed to the browser's persistent `clientId` and is persisted in the store (Postgres via `DATABASE_URL`, or the JSON file store), so it survives restarts and deploys. Because the key is the browser id rather than an account, **someone can subscribe without ever signing up** - which the "no sign-up" promise requires.
 
-Grants come from three places:
+Grants come from Google Play and manual grants (referrals give something else):
 
 - **Google Play** (`server/play-billing.js`), the only place Plus is sold: the Android app sends the purchase token and Google's answer decides. Plus records granted by the earlier Stripe checkout are left as they were and run to their expiry; there is no Stripe code any more.
-- **Referrals**, 1 hour of Plus to the inviter for every 3 invited people who make an account and have a real conversation.
+- **Referrals** do not grant Plus: the inviter gets the Plus *look* (gold ring and one legendary avatar, `store.extendPlusLook`) for 30 days for every 3 invited people who make an account and have a real conversation from a different network.
 - **Manual**, for testing and support: `PREMIUM_CLIENT_IDS`, or `store.setPremium(clientId)`. A manual grant has no `expiresAt`, so it is permanent - and `extendPremium` deliberately refuses to turn one into an expiring grant.
 
 Email alerts are throttled to one per topic per 10 minutes and are skipped entirely if SMTP is not configured.

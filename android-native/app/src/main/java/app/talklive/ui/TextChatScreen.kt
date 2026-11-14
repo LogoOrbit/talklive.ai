@@ -121,6 +121,8 @@ fun TextChatScreen(
     onGames: (() -> Unit)? = null,
     onSwitchToVoice: (() -> Unit)? = null,
     onSendGif: ((app.talklive.social.Gif) -> Unit)? = null,
+    /** "Keep my filters" while a free search is about to widen. */
+    onKeepFilters: () -> Unit = {},
 ) {
     val partner = (state.phase as? CallPhase.Connected)?.partner
     var draft by remember { mutableStateOf("") }
@@ -193,7 +195,7 @@ fun TextChatScreen(
         }
 
         if (partner == null) {
-            Searching(Modifier.weight(1f), myAnimal, state.phase as? CallPhase.Searching)
+            Searching(Modifier.weight(1f), myAnimal, state.phase as? CallPhase.Searching, onKeepFilters)
         } else {
             val byId = remember(messages) { messages.associateBy { it.id } }
             val newestFirst = messages.asReversed()
@@ -345,7 +347,7 @@ fun TextChatScreen(
 }
 
 @Composable
-private fun Searching(modifier: Modifier, myAnimal: String?, search: CallPhase.Searching?) {
+private fun Searching(modifier: Modifier, myAnimal: String?, search: CallPhase.Searching?, onKeepFilters: () -> Unit = {}) {
     val t = rememberInfiniteTransition(label = "radar")
     val rings = (0 until 3).map { i ->
         t.animateFloat(0f, 1f, infiniteRepeatable(tween(2400, easing = LinearEasing), RepeatMode.Restart, StartOffset(i * 800)), label = "r$i")
@@ -374,6 +376,9 @@ private fun Searching(modifier: Modifier, myAnimal: String?, search: CallPhase.S
                 it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.padding(horizontal = 24.dp),
             )
+        }
+        if (search != null && (search.wideningIn != null || search.widened)) {
+            androidx.compose.material3.TextButton(onClick = onKeepFilters) { Text(stringResource(R.string.keep_filters)) }
         }
     }
 }
