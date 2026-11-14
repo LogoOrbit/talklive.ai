@@ -1937,7 +1937,42 @@ function activeFilterCount(f) {
     + ((f.excludeCountries || []).length ? 1 : 0)
     + ((f.interests || []).length ? 1 : 0);
 }
+// Display only. What the next search is limited to, in words that need no
+// translation (symbols, flags, language and interest names), shown on Home and
+// while searching. Never read by matchmaking. Gender only counts for Plus,
+// as it does on the server.
+function filterSummaryParts(f) {
+  const parts = [];
+  if (isPremiumUser && f.prefGender === 'female') parts.push('\u2640');
+  else if (isPremiumUser && f.prefGender === 'male') parts.push('\u2642');
+  const inc = f.includeCountries || [];
+  if (inc.length) parts.push(inc.slice(0, 3).map(countryFlagEmoji).join('') + (inc.length > 3 ? '+' + (inc.length - 3) : ''));
+  if (f.prefLang && I18N_LANGS[f.prefLang]) parts.push(I18N_LANGS[f.prefLang].name);
+  const ints = f.interests || [];
+  if (ints.length) parts.push(ints[0] + (ints.length > 1 ? ' +' + (ints.length - 1) : ''));
+  const exc = f.excludeCountries || [];
+  if (exc.length) parts.push('\u2715 ' + exc.slice(0, 3).map(countryFlagEmoji).join('') + (exc.length > 3 ? '+' : ''));
+  return parts;
+}
+function renderFilterSummary() {
+  const home = document.getElementById('homeFilterSummary');
+  const search = document.getElementById('searchFilterSummary');
+  let text;
+  // Called from setState, which can run before the filter and premium state
+  // below exist (let bindings are in their dead zone until then).
+  try { text = filterSummaryParts(appliedFilters).join(' \u00b7 '); } catch (_) { return; }
+  const searching = !!orb && orb.classList.contains('waiting');
+  if (home) {
+    home.textContent = text ? '\u2699 ' + text : '';
+    home.classList.toggle('hidden', !text);
+  }
+  if (search) {
+    search.textContent = text ? t('filters') + ': ' + text : '';
+    search.classList.toggle('hidden', !text || !searching);
+  }
+}
 function updateFiltersBadge() {
+  renderFilterSummary();
   const el = document.getElementById('filtersBadge');
   if (!el) return;
   const n = activeFilterCount(appliedFilters);
@@ -7019,6 +7054,7 @@ socket.on('register-result', ({ ok, reason } = {}) => {
 // --- State helpers ---
 function setState(state) {
   orb.className = `orb ${state}`;
+  if (typeof renderFilterSummary === 'function') renderFilterSummary();
 }
 
 // green = connected, orange = searching/reconnecting, red = disconnected/skipped.
@@ -11541,9 +11577,11 @@ filtersReady = true;
 syncFilterReadout();
 updateFiltersBadge();
 renderFilterPresets();
+{ const hs = document.getElementById('homeFilterSummary'); if (hs) hs.addEventListener('click', () => { const b = document.getElementById('filtersBtn'); if (b) b.click(); }); }
 
 socket.on('premium-status', ({ premium, limits, expiresAt } = {}) => {
   isPremiumUser = !!premium;
+  renderFilterSummary();
   premiumUntil = premium ? expiresAt || null : null;
   if (limits) {
     freeLimits = {
