@@ -108,15 +108,24 @@ async function buildPhone(renderer, opts) {
     depth, bevelEnabled: true, bevelThickness: EDGE, bevelSize: EDGE, bevelSegments: 10, curveSegments: 64,
   });
   body.translate(0, 0, -depth / 2);
-  g.add(new THREE.Mesh(body, [glass, metal]));
+  const cutout = !!opts.hole;
+  // hole: render only the device (frame, bezel, camera); the display area stays transparent.
+  const capMat = cutout ? new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false }) : glass;
+  g.add(new THREE.Mesh(body, [capMat, metal]));
 
   // Glass face inset into the frame (covers the bevel crown so the metal reads as a thin band).
-  const faceGeo = new THREE.ShapeGeometry(rrect(W - 0.5, H - 0.5, R - 0.25), 64);
+  const faceShape = rrect(W - 0.5, H - 0.5, R - 0.25);
+  if (cutout) {
+    const inner = rrect(SCREEN_W, SCREEN_H, SCREEN_R);
+    faceShape.holes.push(new THREE.Path(inner.getPoints(64).reverse()));
+  }
+  const faceGeo = new THREE.ShapeGeometry(faceShape, 64);
   const face = new THREE.Mesh(faceGeo, glass);
   face.position.z = T / 2 + 0.01;
   g.add(face);
 
   // Display.
+  if (!cutout) {
   const tex = await new THREE.TextureLoader().loadAsync(opts.screen);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
@@ -141,6 +150,7 @@ async function buildPhone(renderer, opts) {
   const scr = new THREE.Mesh(planarUV(new THREE.ShapeGeometry(rrect(SCREEN_W, SCREEN_H, SCREEN_R), 64), SCREEN_W, SCREEN_H), scrMat);
   scr.position.z = T / 2 + 0.03;
   g.add(scr);
+  }
 
   // Punch-hole camera.
   const camY = SCREEN_H / 2 - (18 / 392) * SCREEN_W;

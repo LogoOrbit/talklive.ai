@@ -1,0 +1,400 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:J;src:url(/res/font/pjs_500.ttf);font-weight:500}
+@font-face{font-family:J;src:url(/res/font/pjs_600.ttf);font-weight:600}
+@font-face{font-family:J;src:url(/res/font/pjs_700.ttf);font-weight:700}
+@font-face{font-family:J;src:url(/res/font/pjs_800.ttf);font-weight:800}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#05060F}
+body{position:relative;font-family:J,'Noto Color Emoji',sans-serif;-webkit-font-smoothing:antialiased}
+.abs{position:absolute}
+#bg{left:0;top:0;width:1080px;height:1920px}
+#phone{left:0;top:0;width:820px;height:1760px;transform-origin:410px 880px;will-change:transform}
+#scr{left:35.57px;top:48.03px;width:748.87px;height:1663.94px;border-radius:80.6px;overflow:hidden;background:#0B0F1A}
+#scr img{display:block;width:100%;height:100%}
+#frame{left:0;top:0;width:820px;height:1760px}
+#pfx{left:35.57px;top:48.03px;width:748.87px;height:1663.94px}
+#shadow{left:0;top:0;width:820px;height:1760px;border-radius:120px}
+.cap{position:absolute;left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:12px;z-index:20}
+.cap span.l{display:inline-block;background:#fff;color:#0B0F1A;font-weight:800;font-size:54px;letter-spacing:-0.02em;line-height:1.12;padding:12px 26px 14px;border-radius:20px;box-shadow:0 10px 30px rgba(0,0,0,.35);white-space:nowrap;transform-origin:50% 60%}
+.cap b{color:#6C5CE7;font-weight:800}
+.card{position:absolute;inset:0;z-index:15}
+.big{color:#F5F6FF;font-weight:800;letter-spacing:-0.035em;line-height:1.02}
+.grad{background:linear-gradient(96deg,#3E86FF 0%,#38BDF8 52%,#2FE0F0 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.muted{color:#B3B5D6;font-weight:600}
+.item{position:absolute;left:96px;font-weight:800;font-size:68px;color:#F5F6FF;letter-spacing:-0.03em;white-space:nowrap;transform-origin:0 50%}
+.strike{position:absolute;left:-12px;top:52%;height:10px;border-radius:5px;background:#FF5470;transform-origin:0 50%;box-shadow:0 0 18px rgba(255,84,112,.6)}
+.chip{display:inline-block;font-weight:700;font-size:40px;color:#F5F6FF;padding:14px 28px;border-radius:999px;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.22);margin:0 8px}
+#flash{left:0;top:0;width:1080px;height:1920px;background:#fff;z-index:30;pointer-events:none}
+#grain{left:0;top:0;width:1080px;height:1920px;z-index:40;mix-blend-mode:overlay;opacity:.06;pointer-events:none}
+#vig{left:0;top:0;width:1080px;height:1920px;z-index:39;pointer-events:none;background:radial-gradient(120% 85% at 50% 45%,rgba(0,0,0,0) 60%,rgba(0,0,6,.55) 100%)}
+</style></head>
+<body>
+<canvas id="bg" class="abs" width="1080" height="1920"></canvas>
+<div id="phone" class="abs">
+  <div id="shadow" class="abs"></div>
+  <div id="scr" class="abs"><img id="shot" alt=""></div>
+  <canvas id="pfx" class="abs" width="749" height="1664"></canvas>
+  <img id="frame" class="abs" src="/phone-frame.png" alt="">
+</div>
+<div id="cap" class="cap"></div>
+<div id="cards"></div>
+<div id="flash" class="abs"></div>
+<div id="vig" class="abs"></div>
+<canvas id="grain" class="abs" width="540" height="960"></canvas>
+<script>
+// ---------- helpers ----------
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, k) => a + (b - a) * k;
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const eOut = (k) => 1 - Math.pow(1 - k, 3);
+const eInOut = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
+const eBack = (k) => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2); };
+const BEAT = 0.5;
+const $ = (id) => document.getElementById(id);
+
+// Phone geometry (element px): screen rect inside the 820 x 1760 device.
+const SX = 35.57, SY = 48.03, SW = 748.87, SH = 1663.94, PCX = 410, PCY = 880;
+// Phone centre so that screen point (u, v) lands on canvas (X, Y) at scale S.
+function focus(u, v, S, X = 540, Y = 1060) {
+  const dx = SX + u * SW - PCX, dy = SY + v * SH - PCY;
+  return { x: X - S * dx, y: Y - S * dy, s: S, r: 0 };
+}
+const BASE = { x: 540, y: 1200, s: 0.84, r: 0 };
+const mix = (a, b, k) => ({ x: lerp(a.x, b.x, k), y: lerp(a.y, b.y, k), s: lerp(a.s, b.s, k), r: lerp(a.r || 0, b.r || 0, k) });
+
+// ---------- screen content over time ----------
+const seq = (name, t, t0, fps, n) => `${name}_${String(clamp(Math.floor((t - t0) * fps), 0, n - 1)).padStart(2, '0')}`;
+const pingpong = (i, a, b) => { const span = b - a; const m = i % (2 * span); return a + (m <= span ? m : 2 * span - m); };
+function screenAt(t) {
+  if (t < 0.42) return 'home';
+  if (t < 1.5) return seq('searching', t, 0.42, 30, 30);
+  if (t < 10) return seq('call', t, 1.5, 30, 45);
+  if (t < 12) return `call_${String(pingpong(Math.floor((t - 10) * 30), 30, 44)).padStart(2, '0')}`;
+  if (t < 14) {
+    const steps = [[12.0, 'text_0'], [12.15, 'text_1'], [12.45, 'text_3'], [12.75, 'text_4'], [13.05, 'text_5'], [13.35, 'text_6'], [13.6, 'text_7'], [13.8, 'text_8']];
+    return steps.filter(([s]) => t >= s).pop()[1];
+  }
+  if (t < 16) {
+    const steps = [[14.0, 'game_0'], [14.3, 'game_1'], [14.6, 'game_2'], [14.9, 'game_3'], [15.2, 'game_4'], [15.5, 'game_5']];
+    return steps.filter(([s]) => t >= s).pop()[1];
+  }
+  if (t < 18) return t < 16.85 ? 'friends_0' : 'friends_1';
+  if (t < 20) return `incoming_${String(Math.floor((t - 18) * 30) % 30).padStart(2, '0')}`;
+  if (t < 22) return 'voice_notes';
+  if (t < 24) {
+    const steps = [[22.0, 'animals_fox'], [22.33, 'animals_owl'], [22.66, 'animals_panda'], [23.0, 'animals_cat'], [23.33, 'animals_lion'], [23.66, 'animals_dolphin']];
+    return steps.filter(([s]) => t >= s).pop()[1];
+  }
+  if (t < 26) return t < 24.5 ? seq('filters', t, 24.0, 30, 15) : 'filters_end';
+  if (t < 28) {
+    if (t < 26.5) return seq('passport', t, 26.0, 30, 15);
+    if (t < 26.75) return 'passport_end';
+    if (t < 26.95) return `passport_up_${String(clamp(Math.floor((t - 26.75) * 30), 0, 5)).padStart(2, '0')}`;
+    return 'passport_full';
+  }
+  return 'home';
+}
+
+// ---------- phone camera ----------
+const TILES = { fox: [0.39, 0.33], owl: [0.39, 0.565], panda: [0.16, 0.45], cat: [0.61, 0.33], lion: [0.16, 0.33], dolphin: [0.83, 0.565] };
+function cam(t) {
+  // Hook A: slow push on Home, the tap, the search.
+  if (t < 1.5) return mix({ x: 540, y: 1255, s: 0.97, r: 0 }, { x: 540, y: 1235, s: 1.03, r: 0 }, eInOut(prog(t, 0, 1.5)));
+  // Hook B: punch into Priya.
+  if (t < 3.0) {
+    const a = { x: 540, y: 1235, s: 1.03, r: 0 }, b = focus(0.5, 0.42, 1.3, 540, 1190), c = focus(0.5, 0.43, 1.38, 540, 1190);
+    return t < 1.68 ? mix(a, b, eOut(prog(t, 1.5, 1.68))) : mix(b, c, prog(t, 1.68, 3.0));
+  }
+  // Problem + punchline: the phone sinks into the background.
+  if (t < 8.0) {
+    const c = focus(0.5, 0.43, 1.38, 540, 1190), d = { x: 540, y: 1900, s: 0.78, r: -4 };
+    return mix(c, d, eInOut(prog(t, 3.0, 3.28)));
+  }
+  if (t < 10.0) return { x: 540, y: 2600, s: 0.8, r: 0 };
+  // Features.
+  if (t < 12) { // fly in, then into the details line
+    const a = { x: 540, y: 2500, s: 0.9, r: 6 }, b = BASE, c = focus(0.5, 0.545, 1.58, 540, 1150);
+    if (t < 10.32) return mix(a, b, eBack(prog(t, 10.0, 10.32)));
+    return mix(b, c, eInOut(prog(t, 10.45, 10.85)));
+  }
+  if (t < 14) return mix(focus(0.5, 0.55, 1.0, 540, 1180), focus(0.5, 0.74, 1.12, 540, 1180), eInOut(prog(t, 12.0, 14.0)));
+  if (t < 16) return mix(focus(0.5, 0.55, 1.0, 540, 1180), focus(0.5, 0.6, 1.1, 540, 1180), eInOut(prog(t, 14.0, 16.0)));
+  if (t < 18) {
+    const a = focus(0.5, 0.24, 1.55, 540, 1100), b = focus(0.5, 0.78, 1.55, 540, 1150);
+    return mix(a, b, eInOut(prog(t, 16.95, 17.35)));
+  }
+  if (t < 20) { // ringing: the phone buzzes in your hand
+    const p = BASE, buzz = (t < 19.8 && (Math.floor((t - 18) / 0.5) % 2 === 0)) ? 1 : 0;
+    const j = buzz * 5 * Math.sin(t * 2 * Math.PI * 22);
+    return { x: p.x + j, y: p.y, s: p.s, r: buzz * 0.5 * Math.sin(t * 2 * Math.PI * 17) };
+  }
+  if (t < 22) return mix(focus(0.5, 0.40, 1.45, 540, 1150), focus(0.5, 0.66, 1.45, 540, 1150), eInOut(prog(t, 20.1, 21.9)));
+  if (t < 24) return mix(focus(0.5, 0.47, 1.04, 540, 1270), focus(0.5, 0.47, 1.1, 540, 1270), prog(t, 22, 24));
+  if (t < 26) {
+    const a = BASE, b = focus(0.5, 0.33, 1.55, 540, 1120);
+    return mix(a, b, eInOut(prog(t, 24.55, 24.95)));
+  }
+  if (t < 28) {
+    const a = BASE, b = focus(0.5, 0.64, 1.3, 540, 1160);
+    return mix(a, b, eInOut(prog(t, 27.0, 27.35)));
+  }
+  if (t < 30) {
+    const a = BASE, b = focus(0.5, 0.6, 1.48, 540, 1150);
+    return mix(a, b, eInOut(prog(t, 28.1, 28.5)));
+  }
+  // CTA: the phone drops to the lower half under the logo.
+  const a = focus(0.5, 0.6, 1.48, 540, 1150), b = { x: 540, y: 1745, s: 0.84, r: 0 };
+  return mix(a, b, eOut(prog(t, 30.0, 30.45)));
+}
+// A small punch on every cut and on each kick after the drop.
+const CUTS = [1.5, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 22.0, 24.0, 26.0, 28.0, 30.0];
+function punch(t) {
+  let p = 0;
+  for (const c of CUTS) if (t >= c && t < c + 0.3) p = Math.max(p, 0.055 * Math.exp(-(t - c) / 0.08));
+  if (t >= 8 && t < 30) { const k = ((t - 8) % BEAT); p += 0.008 * Math.exp(-k / 0.09); }
+  return p;
+}
+
+// ---------- taps (Android "show taps" style), in screen fractions ----------
+const TAPS = [
+  [0.30, 0.5, 0.835],                 // Start talking
+  [16.68, 0.845, 0.225],              // accept Lucas
+  [19.55, 0.665, 0.866],              // accept Sofia's call
+  [22.28, ...TILES.owl], [22.61, ...TILES.panda], [22.95, ...TILES.cat], [23.28, ...TILES.lion], [23.61, ...TILES.dolphin],
+];
+// ---------- captions ----------
+const CAPS = [
+  [0.0, 1.5, ['i pressed <b>ONE</b> button…']],
+  [1.5, 3.0, ['…and now i\'m talking to', 'someone in <b>India</b> 🇮🇳😳']],
+  [10.0, 12.0, ['see their <b>time</b> + <b>language</b> 🌍']],
+  [12.0, 14.0, ['shy? just <b>text</b> 💬']],
+  [14.0, 16.0, ['awkward silence?', 'play a <b>game</b> 🎮']],
+  [16.0, 18.0, ['vibe with someone?', '<b>add</b> them 🤝']],
+  [18.0, 20.0, ['…and they can', '<b>call you back</b> 📞']],
+  [20.0, 22.0, ['voice notes + reactions 🎙️❤️']],
+  [22.0, 24.0, ['no face. no name.', 'just pick an <b>animal</b> 🦊']],
+  [24.0, 26.0, ['match by <b>interests</b>', '+ <b>country</b> 🎯']],
+  [26.0, 28.0, ['collect countries', 'like <b>stamps</b> 🌍']],
+  [28.0, 30.0, ['3am? someone\'s', '<b>always</b> awake 🌙']],
+];
+const CAP_Y = 232;
+
+// ---------- cards ----------
+const cards = $('cards');
+function el(html, style = '') { const d = document.createElement('div'); d.className = 'card'; d.innerHTML = html; d.style.cssText = style; cards.appendChild(d); return d; }
+const PROBLEM = el(`
+  <div class="abs muted" id="ph" style="left:96px;top:520px;font-size:44px">meeting new people be like:</div>
+  <div class="item" id="p0" style="top:640px">friends asleep 😴<div class="strike"></div></div>
+  <div class="item" id="p1" style="top:790px">group chat dead 💀<div class="strike"></div></div>
+  <div class="item" id="p2" style="top:940px">dating apps = judging faces 🙄<div class="strike"></div></div>
+  <div class="item" id="p3" style="top:1090px">video chat = creeps 🤢<div class="strike"></div></div>`);
+const PUNCH = el(`<div class="abs big" style="left:0;right:0;top:700px;text-align:center;font-size:104px">
+  <div id="w0">you just want</div><div id="w1">to <span class="grad">TALK</span></div><div id="w2">to someone.</div></div>`);
+const LOGO = el(`<div class="abs" id="lg" style="left:0;right:0;top:640px;display:flex;flex-direction:column;align-items:center">
+    <img src="/brand/TalkLive%20Mark%20Transparent.png" style="width:230px;height:230px">
+    <div class="big" style="font-size:132px;margin-top:20px">Talk<span style="color:#38BDF8">Live</span></div>
+    <div class="muted" id="tag" style="font-size:46px;margin-top:22px;color:#C9CBE8">talk to someone new. right now.</div>
+    <div id="chips" style="margin-top:46px;display:flex"><span class="chip" id="c0">✅ free</span><span class="chip" id="c1">✅ no sign-up</span><span class="chip" id="c2">✅ no camera</span></div>
+  </div>
+  <canvas id="rings" class="abs" width="1080" height="1920" style="left:0;top:0"></canvas>`);
+const CTA = el(`<div class="abs" style="left:0;right:0;top:320px;display:flex;flex-direction:column;align-items:center">
+    <div style="display:flex;align-items:center;gap:22px" id="ctaLogo"><img src="/brand/TalkLive%20Mark%20Transparent.png" style="width:120px;height:120px"><span class="big" style="font-size:104px">Talk<span style="color:#38BDF8">Live</span></span></div>
+    <div class="muted" id="ctaTag" style="font-size:44px;margin-top:26px;color:#C9CBE8">talk to someone new. right now.</div>
+    <div id="btn" style="margin-top:52px;padding:30px 54px;border-radius:999px;background:linear-gradient(96deg,#1563F5,#29C6F1);color:#fff;font-weight:800;font-size:50px;letter-spacing:-0.02em;box-shadow:0 18px 60px rgba(41,170,241,.45),inset 0 2px 0 rgba(255,255,255,.25);white-space:nowrap">Download FREE on Google Play</div>
+    <div class="muted" id="ctaSmall" style="font-size:32px;margin-top:30px;color:#9FA4C4">no camera · no sign-up · 18+</div>
+  </div>
+  <canvas id="ctaTap" class="abs" width="1080" height="1920" style="left:0;top:0"></canvas>`);
+
+// ---------- background ----------
+const bg = $('bg').getContext('2d');
+function glow(c, x, y, r, rgb, a) {
+  const g = c.createRadialGradient(x, y, 0, x, y, r);
+  for (let i = 0; i <= 12; i++) { const k = i / 12; g.addColorStop(k, `rgba(${rgb},${a * Math.exp(-Math.pow(k * 2.3, 2))})`); }
+  c.fillStyle = g; c.fillRect(x - r, y - r, 2 * r, 2 * r);
+}
+function beatPulse(t) {
+  if (t < 8 || t >= 30) return 0;
+  const k = (t - 8) % BEAT; return Math.exp(-k / 0.16);
+}
+function drawBg(t) {
+  bg.globalCompositeOperation = 'source-over';
+  const g = bg.createLinearGradient(0, 0, 0, 1920); g.addColorStop(0, '#0A1022'); g.addColorStop(0.55, '#070A18'); g.addColorStop(1, '#05060F');
+  bg.fillStyle = g; bg.fillRect(0, 0, 1080, 1920);
+  const bp = beatPulse(t);
+  const energy = t < 3 ? 0.75 : t < 6 ? 0.6 : t < 8 ? 0.6 + 0.6 * prog(t, 6, 8) : 1.0;
+  glow(bg, 160 + 80 * Math.sin(t * 0.35), 300 + 60 * Math.cos(t * 0.27), 1100, '24,64,110', 0.85 * energy);
+  glow(bg, 980 + 60 * Math.cos(t * 0.31), 1500 + 90 * Math.sin(t * 0.23), 1150, '70,52,160', 0.75 * energy);
+  glow(bg, 540, 1150, 760, '21,99,245', (0.22 + 0.18 * bp) * energy);
+  if (t >= 6 && t < 8) glow(bg, 540, 960, 900, '56,189,248', 0.45 * eInOut(prog(t, 6, 7.95)));
+  if (t >= 8 && t < 10) glow(bg, 540, 840, 1000, '56,189,248', 0.7 * Math.exp(-(t - 8) / 0.6) + 0.18);
+  if (t >= 30) glow(bg, 540, 520, 900, '56,189,248', 0.28 + 0.4 * Math.exp(-(t - 30) / 0.5));
+}
+
+// ---------- phone overlays (taps, confetti) ----------
+const pfx = $('pfx').getContext('2d');
+function drawPhoneFx(t) {
+  pfx.clearRect(0, 0, 749, 1664);
+  for (const [t0, u, v] of TAPS) {
+    const k = (t - t0) / 0.42;
+    if (k < -0.15 || k > 1) continue;
+    const x = u * 749, y = v * 1664;
+    if (k < 0.35) { pfx.fillStyle = `rgba(255,255,255,${0.5 * (1 - Math.max(0, k) / 0.35) + 0.05})`; pfx.beginPath(); pfx.arc(x, y, 30, 0, 7); pfx.fill(); }
+    if (k >= 0) { pfx.strokeStyle = `rgba(255,255,255,${0.55 * (1 - k)})`; pfx.lineWidth = 5; pfx.beginPath(); pfx.arc(x, y, 30 + 70 * eOut(k), 0, 7); pfx.stroke(); }
+  }
+  // You win: a burst of brand confetti from the result line.
+  if (t >= 15.5 && t < 16.4) {
+    const age = t - 15.5;
+    let s = 11; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    const cols = ['#6C5CE7', '#38BDF8', '#F4C25B', '#FFFFFF', '#2FE0F0', '#FF7A9A'];
+    for (let i = 0; i < 70; i++) {
+      const ang = -Math.PI / 2 + (r() - 0.5) * 2.6, sp = 700 + r() * 900, w = 8 + r() * 10, h = 14 + r() * 12;
+      const x = 0.5 * 749 + Math.cos(ang) * sp * age, y = 0.37 * 1664 + Math.sin(ang) * sp * age + 1300 * age * age;
+      const a = clamp(1 - age / 0.9);
+      pfx.save(); pfx.translate(x, y); pfx.rotate(r() * 6 + age * (r() * 14 - 7)); pfx.globalAlpha = a;
+      pfx.fillStyle = cols[i % cols.length]; pfx.fillRect(-w / 2, -h / 2, w, h); pfx.restore();
+    }
+  }
+}
+
+// ---------- captions ----------
+const cap = $('cap'); let capKey = '';
+function drawCaps(t) {
+  const c = CAPS.find(([a, b]) => t >= a && t < b);
+  const key = c ? c[0] : '';
+  if (key !== capKey) {
+    cap.innerHTML = c ? c[2].map((l) => `<span class="l">${l}</span>`).join('') : '';
+    capKey = key;
+  }
+  cap.style.top = CAP_Y + 'px';
+  if (!c) return;
+  const [a, b] = c;
+  [...cap.children].forEach((s, i) => {
+    const k = a === 0 ? 1 : prog(t, a + i * 0.07, a + i * 0.07 + 0.22);  // the hook is on screen from frame 1
+    const out = prog(t, b - 0.08, b);
+    s.style.opacity = String(clamp(k * 3) * (1 - out));
+    s.style.transform = `scale(${lerp(0.6, 1, eBack(k))}) rotate(${(i % 2 ? 1 : -1) * 0.6 * (1 - k)}deg)`;
+  });
+}
+
+// ---------- cards ----------
+function drawProblem(t) {
+  const on = t >= 3.0 && t < 6.0;
+  PROBLEM.style.display = on ? 'block' : 'none';
+  if (!on) return;
+  const head = $('ph'); const hk = prog(t, 3.12, 3.3);
+  head.style.opacity = String(hk * (1 - prog(t, 5.7, 5.95))); head.style.transform = `translateY(${(1 - eOut(hk)) * 20}px)`;
+  for (let i = 0; i < 4; i++) {
+    const it = $('p' + i), t0 = 3.25 + i * 0.5;
+    const k = prog(t, t0, t0 + 0.2);
+    const out = prog(t, 5.68 + i * 0.03, 5.92 + i * 0.03);
+    const shake = t > 5.3 && t < 5.7 ? Math.sin(t * 90 + i) * 4 : 0;
+    it.style.opacity = String(clamp(k * 4) * (1 - out));
+    it.style.transform = `translate(${shake + out * -160}px, 0) scale(${lerp(1.35, 1, eBack(k))}) rotate(${(1 - k) * -3}deg)`;
+    const st = it.querySelector('.strike');
+    const sk = prog(t, 5.25 + i * 0.07, 5.37 + i * 0.07);
+    st.style.width = (it.scrollWidth + 24) + 'px';
+    st.style.transform = `scaleX(${eOut(sk)})`;
+  }
+}
+function drawPunch(t) {
+  const on = t >= 6.0 && t < 8.0;
+  PUNCH.style.display = on ? 'block' : 'none';
+  if (!on) return;
+  const shakeAmp = 1 + 9 * Math.pow(prog(t, 7.0, 7.95), 2);
+  ['w0', 'w1', 'w2'].forEach((w, i) => {
+    const e = $(w), t0 = 6.0 + i * 0.5, k = prog(t, t0, t0 + 0.18);
+    e.style.opacity = String(clamp(k * 3));
+    const sx = Math.sin(t * 73 + i * 2) * shakeAmp, sy = Math.cos(t * 61 + i) * shakeAmp;
+    e.style.transform = `translate(${sx}px,${sy}px) scale(${lerp(1.5, 1, eBack(k)) * (1 + 0.04 * prog(t, 7, 8))})`;
+  });
+}
+const rings = $('rings').getContext('2d');
+function drawLogo(t) {
+  const on = t >= 8.0 && t < 10.15;
+  LOGO.style.display = on ? 'block' : 'none';
+  if (!on) return;
+  const k = prog(t, 8.0, 8.38), out = prog(t, 9.9, 10.15);
+  const lg = $('lg');
+  const shake = t < 8.35 ? (1 - prog(t, 8, 8.35)) * 10 : 0;
+  lg.style.transform = `translate(${Math.sin(t * 97) * shake}px,${Math.cos(t * 83) * shake}px) scale(${lerp(1.7, 1, eBack(k)) * (1 - 0.15 * out)})`;
+  lg.style.opacity = String(clamp(k * 4) * (1 - out));
+  const tg = $('tag'), tk = prog(t, 8.45, 8.7);
+  tg.style.opacity = String(tk); tg.style.transform = `translateY(${(1 - eOut(tk)) * 24}px)`;
+  ['c0', 'c1', 'c2'].forEach((c, i) => {
+    const ck = prog(t, 9.0 + i * 0.2, 9.0 + i * 0.2 + 0.2);
+    const e = $(c); e.style.opacity = String(clamp(ck * 3)); e.style.transform = `scale(${lerp(0.4, 1, eBack(ck))})`;
+  });
+  rings.clearRect(0, 0, 1080, 1920);
+  for (let i = 0; i < 3; i++) {
+    const rk = prog(t, 8.0 + i * 0.12, 8.0 + i * 0.12 + 0.9);
+    if (rk <= 0 || rk >= 1) continue;
+    rings.strokeStyle = `rgba(56,189,248,${0.7 * (1 - rk)})`; rings.lineWidth = 6 * (1 - rk) + 1;
+    rings.beginPath(); rings.arc(540, 755, 140 + 900 * eOut(rk), 0, 7); rings.stroke();
+  }
+  rings.globalAlpha = 1;
+}
+const ctaTap = $('ctaTap').getContext('2d');
+function drawCta(t) {
+  const on = t >= 30.0;
+  CTA.style.display = on ? 'block' : 'none';
+  if (!on) return;
+  const set = (id, t0, dy = 30, sc = 1) => { const e = $(id), k = prog(t, t0, t0 + 0.28); e.style.opacity = String(clamp(k * 2.5)); e.style.transform = `translateY(${(1 - eOut(k)) * dy}px) scale(${lerp(sc, 1, eBack(k))})`; return k; };
+  set('ctaLogo', 30.05, 40, 1.3); set('ctaTag', 30.25); set('ctaSmall', 30.7, 20);
+  const bk = prog(t, 30.45, 30.75);
+  const pulse = t > 30.8 ? 1 + 0.035 * Math.exp(-((t - 30.8) % BEAT) / 0.12) : 1;
+  const btn = $('btn'); btn.style.opacity = String(clamp(bk * 3)); btn.style.transform = `scale(${lerp(0.5, 1, eBack(bk)) * pulse})`;
+  ctaTap.clearRect(0, 0, 1080, 1920);
+  for (const t0 of [31.6, 33.1]) {
+    const k = (t - t0) / 0.45; if (k < -0.12 || k > 1) continue;
+    const x = 760, y = btn.getBoundingClientRect().top + 70;
+    if (k < 0.35) { ctaTap.fillStyle = `rgba(255,255,255,${0.55 * (1 - Math.max(0, k) / 0.35) + 0.05})`; ctaTap.beginPath(); ctaTap.arc(x, y, 34, 0, 7); ctaTap.fill(); }
+    if (k >= 0) { ctaTap.strokeStyle = `rgba(255,255,255,${0.6 * (1 - k)})`; ctaTap.lineWidth = 6; ctaTap.beginPath(); ctaTap.arc(x, y, 34 + 80 * eOut(k), 0, 7); ctaTap.stroke(); }
+  }
+}
+
+// ---------- flash ----------
+function flash(t) {
+  let a = 0;
+  if (t >= 7.8 && t < 8.0) a = 0.85 * prog(t, 7.8, 8.0);
+  if (t >= 8.0 && t < 8.35) a = 0.95 * (1 - prog(t, 8.0, 8.35));
+  if (t >= 30.0 && t < 30.2) a = 0.35 * (1 - prog(t, 30.0, 30.2));
+  for (const c of [10.0]) if (t >= c && t < c + 0.12) a = Math.max(a, 0.25 * (1 - prog(t, c, c + 0.12)));
+  $('flash').style.opacity = String(a);
+}
+
+// ---------- grain ----------
+const gr = $('grain').getContext('2d'); const gimg = gr.createImageData(540, 960);
+function drawGrain(f) {
+  let s = 1 + (f * 7919) % 100000; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < gimg.data.length; i += 4) { const v = 128 + (r() + r() - 1) * 120; gimg.data[i] = gimg.data[i + 1] = gimg.data[i + 2] = v; gimg.data[i + 3] = 255; }
+  gr.putImageData(gimg, 0, 0);
+}
+
+// ---------- frame ----------
+const shot = $('shot'); let cur = '';
+const phone = $('phone');
+window.renderAt = async (t, f) => {
+  const name = screenAt(t);
+  if (name !== cur) { shot.src = `/vui/${name}.jpg`; await shot.decode(); cur = name; }
+  drawBg(t);
+  const c = cam(t), p = punch(t);
+  const s = c.s * (1 + p);
+  phone.style.transform = `translate(${c.x - PCX}px, ${c.y - PCY}px) rotate(${c.r}deg) scale(${s})`;
+  // Problem/punchline: phone sunk, dimmed and soft; hidden behind the logo.
+  let op = 1, blur = 0;
+  if (t >= 3.0 && t < 8.0) { const k = eInOut(prog(t, 3.0, 3.28)); op = 1 - 0.75 * k; blur = 10 * k; }
+  if (t >= 8.0 && t < 10.0) op = 0;
+  phone.style.opacity = String(op);
+  phone.style.filter = `${blur ? `blur(${blur}px) ` : ''}drop-shadow(0 40px 60px rgba(0,0,8,.6))`;
+  drawPhoneFx(t);
+  drawCaps(t);
+  drawProblem(t); drawPunch(t); drawLogo(t); drawCta(t);
+  flash(t);
+  drawGrain(f || 0);
+};
+window.__assets = async () => { await document.fonts.ready; await $('frame').decode(); for (const i of document.querySelectorAll('.card img')) await i.decode(); };
+window.__ready = true;
+</script>
+</body></html>

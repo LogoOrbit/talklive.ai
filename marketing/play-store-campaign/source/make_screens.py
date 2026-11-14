@@ -15,11 +15,18 @@ for f in sorted(glob.glob(os.path.join(SRC, '*.png'))):
     out = np.zeros((h + TOP + BOT, w, 3), np.float32)
     out[TOP:TOP + h] = a
     # Top: continue a vertical gradient (linear extrapolation from the first rows), flat if flat.
-    r0, r1 = a[0], a[16]
+    def clean(row):
+        # Keep smooth gradients; replace pixels that belong to text or icons
+        # touching the edge with the row's typical colour (no streaks).
+        med = np.median(row, axis=0)
+        far = np.abs(row - med).sum(axis=1) > 36
+        row = row.copy(); row[far] = med
+        return row
+    r0, r1 = clean(a[0]), clean(a[16])
     slope = (r0 - r1) / 16.0
     for y in range(TOP):
         out[y] = np.clip(r0 + slope * (TOP - y), 0, 255)
-    out[TOP + h:] = a[-1]
+    out[TOP + h:] = clean(a[-1])
     img = Image.fromarray(out.round().astype(np.uint8)).convert('RGBA')
     img.alpha_composite(bars[theme])
     img.convert('RGB').save(os.path.join(DST, name))
