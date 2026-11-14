@@ -895,5 +895,8 @@
   "passMonthlyCheaper": "ここでは月額Plus（{price}）の方がお得です",
   "filtersNotList": "{list} を除く",
   "filtersEditHint": "タップして変更",
+  "termsReadFull": "利用規約の全文を読む",
+  "getAndroidApp": "Androidアプリを入手",
+  "getAppFoot": "Plusとパスはアプリ内でGoogle Playから購入できます。",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ja");

@@ -3015,8 +3015,38 @@ body.panel-open .game-overlay {
   max-height: 46vh;
   /* Scroll cue only (no content change): the last lines fade out so a cut-off
      line reads as "more below" rather than as a rendering fault. */
+}
+.consent-terms-body.is-full {
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
   mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+}
+/* The short version shows whole (rules and the link to the full Terms) with
+   no scrolling; the 46vh scroll box is for the long text only. */
+.consent-terms-body:not(.is-full) { max-height: none; flex: 0 1 auto; min-height: 0; }
+#ageConsentModal .modal-box { max-height: calc(100dvh - 24px); }
+#ageConsentModal .consent-modal-footer { flex: 0 0 auto; }
+
+.consent-terms-body:not(.is-full) .consent-modal-text { margin-bottom: 10px; }
+/* The short version of the rules, and the full Terms folded under them. */
+.consent-summary { list-style: none; margin: 0 0 4px; padding: 0; display: grid; gap: 8px; }
+.consent-summary li { padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; }
+.consent-summary strong { display: block; font-size: 14px; color: var(--text); }
+.consent-summary span { display: block; font-size: 13px; line-height: 1.4; color: var(--muted); }
+.consent-full { margin-top: 4px; }
+.consent-full > summary {
+  min-height: 44px; display: flex; align-items: center; gap: 6px;
+  cursor: pointer; font-size: 14px; font-weight: 600; color: var(--accent-2);
+}
+[data-theme="light"] .consent-full > summary { color: var(--accent); }
+.consent-full[open] > summary { margin-bottom: 6px; }
+@media (max-height: 700px) {
+  #ageConsentModal .consent-modal-footer { padding: 10px 22px 14px; gap: 8px; }
+  /* Very short phones: each rule on running lines, no boxes, so the rules,
+     the link and the button all fit on one screen. */
+  .consent-summary { gap: 6px; }
+  .consent-summary li { padding: 0; border: 0; line-height: 1.35; }
+  .consent-summary strong { display: inline; margin-inline-end: 6px; font-size: 13px; }
+  .consent-summary span { display: inline; font-size: 12.5px; }
 }
 
 .consent-modal-footer {

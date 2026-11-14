@@ -895,5 +895,8 @@
   "passMonthlyCheaper": "Plus الشهري ({price}) أرخص هنا",
   "filtersNotList": "باستثناء {list}",
   "filtersEditHint": "اضغط للتغيير.",
+  "termsReadFull": "اقرأ الشروط والأحكام كاملة",
+  "getAndroidApp": "احصل على تطبيق أندرويد",
+  "getAppFoot": "يتم شراء Plus والتذاكر من التطبيق عبر Google Play.",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ar");

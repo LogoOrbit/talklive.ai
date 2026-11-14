@@ -760,6 +760,9 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "statusLookingForMan": "Looking for a man…",
     "subPoolNone": "Nobody matching your filters is online right now · still looking",
     "subPoolBusy": "{n} online matching your filters, all busy · waiting for one to be free",
+    "getAndroidApp": "Get the Android app",
+    "getAppFoot": "Plus and passes are bought in the app, through Google Play.",
+    "termsReadFull": "Read the full Terms & Conditions",
     "filtersNotList": "not {list}",
     "filtersEditHint": "Tap to change.",
     "passMonthlyCheaper": "Monthly Plus ({price}) costs less here",
@@ -1073,7 +1076,7 @@ function applyI18n() {
 // Non-English dictionaries load on demand from /i18n/<lang>.js. Until the file
 // arrives t() falls back to English, then the UI re-translates once it lands.
 // Keep in step with the preload snippet in the <head> of index.html/chat.html.
-const I18N_VERSION = '20261114filters';
+const I18N_VERSION = '20261114consent';
 const i18nLoading = {};
 window.__i18nLangLoaded = function (lang) {
   delete i18nLoading[lang];

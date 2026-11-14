@@ -895,5 +895,8 @@
   "passMonthlyCheaper": "Plus bulanan ({price}) lebih murah di sini",
   "filtersNotList": "kecuali {list}",
   "filtersEditHint": "Ketuk untuk mengubah.",
+  "termsReadFull": "Baca Syarat & Ketentuan lengkap",
+  "getAndroidApp": "Dapatkan aplikasi Android",
+  "getAppFoot": "Plus dan pass dibeli di aplikasi, lewat Google Play.",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("id");

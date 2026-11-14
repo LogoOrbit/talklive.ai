@@ -2020,6 +2020,7 @@ summary.tl-filter-legend::-webkit-details-marker { display: none; }
   transform: rotate(-45deg);
 }
 
+a.tl-notify-btn { text-decoration: none; box-sizing: border-box; }
 .tl-notify-btn {
   display: flex;
   align-items: center;

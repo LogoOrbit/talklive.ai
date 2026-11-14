@@ -109,6 +109,19 @@ const SCAN = (opts = {}) => {
         const box = await pg.locator('#ageConsentModal .modal-box').boundingBox();
         if (box.y < 0 || box.y + box.height > so.viewport.height) problems.push(`${sn}/${theme}/consent: dialog does not fit the screen`);
         if (!(await pg.locator('#ageAgreeBtn').isVisible())) problems.push(`${sn}/${theme}/consent: agree button not visible`);
+        // The short version: three rules, the agree button in view without
+        // scrolling, and the full Terms one tap away (loaded when opened).
+        if ((await pg.locator('#ageConsentModal .consent-summary li').count()) !== 3) problems.push(`${sn}/${theme}/consent: summary rules missing`);
+        const fits = await pg.evaluate(() => { const b = document.querySelector('#ageConsentModal .consent-terms-body'); return b.scrollHeight <= b.clientHeight + 2; });
+        if (!fits) problems.push(`${sn}/${theme}/consent: the short version needs scrolling`);
+        const link = await pg.locator('#consentFullTerms > summary').boundingBox();
+        if (!link || link.y + link.height > so.viewport.height || link.height < 40) problems.push(`${sn}/${theme}/consent: "Read the full Terms" not in view`);
+        if (await pg.locator('#consentFullTerms .policy-remote h2').count()) problems.push(`${sn}/${theme}/consent: full Terms loaded before being asked for`);
+        await pg.locator('#consentFullTerms > summary').click();
+        await pg.waitForFunction(() => document.querySelectorAll('#consentFullTerms .policy-remote h2').length > 5, null, { timeout: 5000 }).catch(() => problems.push(`${sn}/${theme}/consent: full Terms did not load when opened`));
+        for (const o of await pg.evaluate(SCAN, { root: '#ageConsentModal' })) problems.push(`${sn}/${theme}/consent (full): ${o.ratio}:1 "${o.text}" .${o.cls}`);
+        if (!(await pg.locator('#ageAgreeBtn').isVisible())) problems.push(`${sn}/${theme}/consent: agree button hidden once the Terms are open`);
+        await pg.locator('#consentFullTerms > summary').focus();
         // Keyboard: the terms can be focused (and so scrolled), and Tab stays
         // inside the dialog.
         if ((await pg.locator('#ageConsentModal .consent-terms-body').getAttribute('tabindex')) !== '0') problems.push(`${sn}/${theme}/consent: terms not keyboard-scrollable`);
@@ -150,6 +163,10 @@ const SCAN = (opts = {}) => {
         for (const o of await pg.evaluate(SCAN, { root: '#shopModal', min: 4.5 })) if (/^A$/.test(o.cls) || /Terms|Privacy|Safety|month/.test(o.text)) problems.push(`${tag}/shop: link ${o.ratio}:1 "${o.text}" ${o.fg} on ${o.bg}`);
         const box = await pg.locator('#shopModal .shop-fine').boundingBox();
         if (!box || box.y + box.height > SIZES.mob.viewport.height) problems.push(`${tag}/shop: footer links not reachable by scrolling`);
+        // Plus is sold in the app: the Shop's button goes to Google Play.
+        const appHref = await pg.locator('#shopModal a[data-app-link]').getAttribute('href').catch(() => '');
+        if (!/play\.google\.com\/store\/apps\/details\?id=app\.talklive/.test(appHref || '')) problems.push(`${tag}/shop: no Google Play link (${appHref})`);
+        if (await pg.locator('#shopModal [data-notify]').count()) problems.push(`${tag}/shop: still offers "Notify me"`);
         await pg.locator('#closeShopBtn').click();
         await pg.waitForTimeout(400);
         if (await pg.locator('#shopModal').isVisible()) problems.push(`${tag}/shop: close button did not close it`);

@@ -895,5 +895,8 @@
   "passMonthlyCheaper": "这里按月订阅 Plus（{price}）更便宜",
   "filtersNotList": "排除 {list}",
   "filtersEditHint": "点按可修改。",
+  "termsReadFull": "阅读完整的条款与条件",
+  "getAndroidApp": "获取 Android 应用",
+  "getAppFoot": "Plus 和通行证可在应用内通过 Google Play 购买。",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("zh");

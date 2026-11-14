@@ -895,5 +895,8 @@
   "passMonthlyCheaper": "Plus ماهانه ({price}) اینجا ارزان‌تر است",
   "filtersNotList": "به‌جز {list}",
   "filtersEditHint": "برای تغییر بزنید.",
+  "termsReadFull": "متن کامل شرایط و ضوابط را بخوانید",
+  "getAndroidApp": "دریافت اپ اندروید",
+  "getAppFoot": "Plus و پاس‌ها در اپ و از طریق Google Play خریداری می‌شوند.",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("fa");

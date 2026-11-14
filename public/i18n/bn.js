@@ -895,5 +895,8 @@
   "passMonthlyCheaper": "মাসিক Plus ({price}) এখানে সস্তা",
   "filtersNotList": "{list} বাদে",
   "filtersEditHint": "বদলাতে ট্যাপ করুন।",
+  "termsReadFull": "সম্পূর্ণ শর্তাবলি পড়ুন",
+  "getAndroidApp": "অ্যান্ড্রয়েড অ্যাপ নিন",
+  "getAppFoot": "Plus ও পাস অ্যাপে, Google Play-এর মাধ্যমে কেনা হয়।",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("bn");

@@ -895,5 +895,8 @@
   "passMonthlyCheaper": "Aylık Plus ({price}) burada daha ucuz",
   "filtersNotList": "{list} hariç",
   "filtersEditHint": "Değiştirmek için dokun.",
+  "termsReadFull": "Şartlar ve Koşulların tamamını oku",
+  "getAndroidApp": "Android uygulamasını indir",
+  "getAppFoot": "Plus ve geçişler uygulamada, Google Play üzerinden satın alınır.",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("tr");

@@ -46,3 +46,8 @@ Tokens already live in `style.css :root` and `[data-theme]`: `--bg-1/2`, `--acce
 | 3 | Done. All hard-coded light colours in `style.css` checked in dark, light and ocean. Five dark-island components use theme tokens; white on green/red fills raised to 4.5:1 (`--ok-fill`, `--danger-fill`); every other white is `var(--on-color)`. Two decorative radial highlights remain on purpose. `test-ui-contrast` renders these components at 4.5:1. |
 | 5 | Done on web (words, not symbols; spoken label) and Android (Home + searching). |
 | 6 | Mobile Shop and Settings tested by behaviour (open, prices, pick, touch targets, toggle saves, theme, scroll, close). Fixed: Shop links were 15px tall and used default link colours; Shop showed US prices until local ones loaded. |
+
+## Decisions applied — 2026-11-14 (owner approved)
+
+- **Consent (#2):** the dialog now shows the 18+ line and three rules, with "Read the full Terms & Conditions" one tap below (loaded on demand, text unchanged) and the same agreement line and button. Fits one screen down to 320x568.
+- **Shop / sidebar:** "Notify me" replaced by "Get the Android app" (Google Play), since Plus is on sale there.

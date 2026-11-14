@@ -15,6 +15,10 @@
 - **UI**: colour sweep (theme surfaces, AA contrast on green/red fills),
   filter summary in words on web and on Android Home/searching, Shop link
   touch targets, consent dialog keyboard fixes. `test-ui-contrast` extended.
+- **Consent**: short version (18+ and three rules) with the full Terms one tap
+  below; **Shop**: "Get the Android app" instead of "Notify me".
+- **Translations**: all new text in the 16 other languages, web and Android.
+  Android 3.9.9 (129).
 
 ## 2026-11-14 — Filters that hold, honest prices, fewer bots (web + Android, not released)
 

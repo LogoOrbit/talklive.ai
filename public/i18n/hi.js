@@ -895,5 +895,8 @@
   "passMonthlyCheaper": "मासिक Plus ({price}) यहाँ सस्ता है",
   "filtersNotList": "{list} छोड़कर",
   "filtersEditHint": "बदलने के लिए टैप करें।",
+  "termsReadFull": "पूरे नियम और शर्तें पढ़ें",
+  "getAndroidApp": "Android ऐप पाएँ",
+  "getAppFoot": "Plus और पास ऐप में, Google Play के ज़रिए खरीदे जाते हैं।",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("hi");

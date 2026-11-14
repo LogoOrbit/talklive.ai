@@ -895,5 +895,8 @@
   "passMonthlyCheaper": "Plus на месяц ({price}) здесь выгоднее",
   "filtersNotList": "кроме {list}",
   "filtersEditHint": "Нажмите, чтобы изменить.",
+  "termsReadFull": "Прочитать полные Условия использования",
+  "getAndroidApp": "Скачать приложение для Android",
+  "getAppFoot": "Plus и пропуска покупаются в приложении через Google Play.",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ru");

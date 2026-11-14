@@ -895,5 +895,8 @@
   "passMonthlyCheaper": "ماہانہ Plus ({price}) یہاں سستا ہے",
   "filtersNotList": "سوائے {list}",
   "filtersEditHint": "بدلنے کے لیے ٹیپ کریں۔",
+  "termsReadFull": "مکمل شرائط و ضوابط پڑھیں",
+  "getAndroidApp": "اینڈرائیڈ ایپ حاصل کریں",
+  "getAppFoot": "Plus اور پاس ایپ میں Google Play کے ذریعے خریدے جاتے ہیں۔",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ur");

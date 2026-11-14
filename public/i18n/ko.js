@@ -895,5 +895,8 @@
   "passMonthlyCheaper": "여기서는 월간 Plus({price})가 더 저렴해요",
   "filtersNotList": "{list} 제외",
   "filtersEditHint": "탭해서 변경",
+  "termsReadFull": "이용약관 전문 읽기",
+  "getAndroidApp": "Android 앱 받기",
+  "getAppFoot": "Plus와 패스는 앱에서 Google Play로 구매해요.",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ko");

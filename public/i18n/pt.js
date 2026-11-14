@@ -895,5 +895,8 @@
   "passMonthlyCheaper": "Plus mensal ({price}) sai mais barato aqui",
   "filtersNotList": "exceto {list}",
   "filtersEditHint": "Toque para mudar.",
+  "termsReadFull": "Ler os Termos e Condições completos",
+  "getAndroidApp": "Baixar o app para Android",
+  "getAppFoot": "Plus e os passes são comprados no app, pelo Google Play.",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("pt");

@@ -2437,6 +2437,8 @@ let lastFocusedBeforeModal = null;
 function loadPolicyText(modal) {
   modal.querySelectorAll('.policy-remote[data-policy-src]').forEach((slot) => {
     if (slot.dataset.policyState) return;
+    // Folded away (the consent dialog's full Terms): fetched when opened.
+    if (slot.closest('details:not([open])')) return;
     slot.dataset.policyState = 'loading';
     fetch(slot.dataset.policySrc, { credentials: 'same-origin' })
       .then((r) => (r.ok ? r.text() : Promise.reject(new Error(String(r.status)))))
@@ -8801,6 +8803,16 @@ function dismissAgeConsent() {
 }
 
 closeAgeConsentBtn.addEventListener('click', dismissAgeConsent);
+// "Read the full Terms": load them on first open; the scroll-fade cue only
+// applies while the long text is showing.
+{
+  const full = document.getElementById('consentFullTerms');
+  if (full) full.addEventListener('toggle', () => {
+    const body = full.closest('.consent-terms-body');
+    if (body) body.classList.toggle('is-full', full.open);
+    if (full.open) loadPolicyText(ageConsentModal);
+  });
+}
 ageConsentModal.addEventListener('click', (e) => {
   if (e.target === ageConsentModal) dismissAgeConsent();
 });
@@ -9980,6 +9992,11 @@ function setNotifyStatus(text, kind) {
   notifyStatus.classList.toggle('is-error', kind === 'error');
   notifyStatus.classList.toggle('is-ok', kind === 'ok');
 }
+
+// Links to the Android app on Google Play (where Plus is sold).
+document.querySelectorAll('[data-app-link]').forEach((a) => {
+  a.addEventListener('click', () => trackGrowthEvent('premium_app_download_click'));
+});
 
 document.querySelectorAll('[data-notify]').forEach((btn) => {
   if (notifySignedUp(btn.dataset.notify)) markNotified(btn, 'notifyEmailDone');
