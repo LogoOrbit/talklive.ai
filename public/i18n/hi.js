@@ -885,6 +885,15 @@
   "signupCodeLabel": "6 अंकों का कोड",
   "signupVerifyBtn": "पुष्टि करें और खाता बनाएँ",
   "signupChangeEmail": "ईमेल बदलें",
-  "authEmailRequired": "अपना ईमेल डालें। पुष्टि के लिए हम कोड भेजेंगे।"
+  "authEmailRequired": "अपना ईमेल डालें। पुष्टि के लिए हम कोड भेजेंगे।",
+  "statusLookingForWoman": "एक महिला की तलाश…",
+  "statusLookingForMan": "एक पुरुष की तलाश…",
+  "subPoolNone": "अभी आपके फ़िल्टर से मेल खाता कोई ऑनलाइन नहीं · खोज जारी है",
+  "subPoolBusy": "आपके फ़िल्टर से मेल खाते {n} लोग ऑनलाइन, सभी व्यस्त · किसी के खाली होने का इंतज़ार",
+  "subPoolBusyOne": "आपके फ़िल्टर से मेल खाता 1 व्यक्ति ऑनलाइन, व्यस्त · खाली होने का इंतज़ार",
+  "subPoolSearching": "आपके फ़िल्टर से मेल खाता कोई और भी खोज रहा है · जोड़ रहे हैं…",
+  "passMonthlyCheaper": "मासिक Plus ({price}) यहाँ सस्ता है",
+  "filtersNotList": "{list} छोड़कर",
+  "filtersEditHint": "बदलने के लिए टैप करें।",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("hi");

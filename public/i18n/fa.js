@@ -885,6 +885,15 @@
   "signupCodeLabel": "کد ۶ رقمی",
   "signupVerifyBtn": "تأیید و ساخت حساب",
   "signupChangeEmail": "تغییر ایمیل",
-  "authEmailRequired": "ایمیلت را وارد کن. یک کد می‌فرستیم تا مطمئن شویم خودت هستی."
+  "authEmailRequired": "ایمیلت را وارد کن. یک کد می‌فرستیم تا مطمئن شویم خودت هستی.",
+  "statusLookingForWoman": "در جستجوی یک زن…",
+  "statusLookingForMan": "در جستجوی یک مرد…",
+  "subPoolNone": "الان کسی مطابق فیلترهای شما آنلاین نیست · همچنان می‌گردیم",
+  "subPoolBusy": "{n} نفر مطابق فیلترهای شما آنلاین‌اند، همه مشغول · منتظر آزاد شدن یکی",
+  "subPoolBusyOne": "۱ نفر مطابق فیلترهای شما آنلاین است، مشغول · منتظر آزاد شدنش",
+  "subPoolSearching": "کسی مطابق فیلترهای شما هم در حال جستجوست · در حال اتصال…",
+  "passMonthlyCheaper": "Plus ماهانه ({price}) اینجا ارزان‌تر است",
+  "filtersNotList": "به‌جز {list}",
+  "filtersEditHint": "برای تغییر بزنید.",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("fa");

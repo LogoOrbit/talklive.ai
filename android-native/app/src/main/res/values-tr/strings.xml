@@ -540,4 +540,18 @@
         <item quantity="one">gün</item>
         <item quantity="other">gün</item>
     </plurals>
+    <string name="looking_for_woman">Bir kadın aranıyor…</string>
+    <string name="looking_for_man">Bir erkek aranıyor…</string>
+    <string name="filter_pool_none">Şu an filtrelerine uyan kimse çevrimiçi değil · aramaya devam</string>
+    <string name="filter_pool_searching">Filtrelerine uyan biri de arıyor · bağlanıyor…</string>
+    <string name="filters_widening_in">Henüz eşleşme yok · ülkeler ve dil birkaç saniye içinde herkese açılacak</string>
+    <string name="filters_widened">Seçtiğin ülkelerden kimse müsait değil · seni herhangi biriyle bağlıyoruz</string>
+    <string name="pass_monthly_cheaper">Aylık Plus (%1$s) daha ucuz</string>
+    <string name="filters_gender_note">Cinsiyeti herkes kendisi seçer, doğrulanmaz. Seçimin eşleşene kadar korunur.</string>
+    <string name="filters_summary">Filtreler: %1$s</string>
+    <string name="filters_not">%1$s hariç</string>
+    <plurals name="filter_pool_busy">
+        <item quantity="one">Filtrelerine uyan 1 kişi çevrimiçi, meşgul · boşalması bekleniyor</item>
+        <item quantity="other">Filtrelerine uyan %1$d kişi çevrimiçi, hepsi meşgul · birinin boşalması bekleniyor</item>
+    </plurals>
 </resources>

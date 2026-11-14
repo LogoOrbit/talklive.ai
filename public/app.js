@@ -1955,7 +1955,7 @@ function filterSummaryParts(f, spoken) {
   const ints = f.interests || [];
   if (ints.length) parts.push(spoken ? ints.join(', ') : ints[0] + (ints.length > 1 ? ' +' + (ints.length - 1) : ''));
   const exc = f.excludeCountries || [];
-  if (exc.length) parts.push((spoken ? t('filtersNot') + ' ' : '\u2715 ') + places(exc));
+  if (exc.length) parts.push(spoken ? t('filtersNotList', { list: places(exc) }) : '\u2715 ' + places(exc));
   return parts;
 }
 function renderFilterSummary() {

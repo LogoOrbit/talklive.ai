@@ -885,6 +885,15 @@
   "signupCodeLabel": "6-stelliger Code",
   "signupVerifyBtn": "Bestätigen & Konto erstellen",
   "signupChangeEmail": "E-Mail ändern",
-  "authEmailRequired": "Gib deine E-Mail ein. Wir schicken einen Code, um zu bestätigen, dass du es bist."
+  "authEmailRequired": "Gib deine E-Mail ein. Wir schicken einen Code, um zu bestätigen, dass du es bist.",
+  "statusLookingForWoman": "Suche nach einer Frau…",
+  "statusLookingForMan": "Suche nach einem Mann…",
+  "subPoolNone": "Gerade ist niemand online, der zu deinen Filtern passt · wir suchen weiter",
+  "subPoolBusy": "{n} online passen zu deinen Filtern, alle beschäftigt · warte, bis jemand frei ist",
+  "subPoolBusyOne": "1 Person online passt zu deinen Filtern, beschäftigt · warte, bis sie frei ist",
+  "subPoolSearching": "Jemand, der zu deinen Filtern passt, sucht auch · verbinde…",
+  "passMonthlyCheaper": "Plus monatlich ({price}) ist hier günstiger",
+  "filtersNotList": "nicht {list}",
+  "filtersEditHint": "Zum Ändern tippen.",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("de");

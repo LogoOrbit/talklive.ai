@@ -885,6 +885,15 @@
   "signupCodeLabel": "6-значный код",
   "signupVerifyBtn": "Подтвердить и создать аккаунт",
   "signupChangeEmail": "Изменить email",
-  "authEmailRequired": "Введите email. Мы отправим код, чтобы подтвердить, что это вы."
+  "authEmailRequired": "Введите email. Мы отправим код, чтобы подтвердить, что это вы.",
+  "statusLookingForWoman": "Ищем женщину…",
+  "statusLookingForMan": "Ищем мужчину…",
+  "subPoolNone": "Сейчас нет никого онлайн по вашим фильтрам · продолжаем искать",
+  "subPoolBusy": "Онлайн по вашим фильтрам: {n}, все заняты · ждём, когда кто-то освободится",
+  "subPoolBusyOne": "Онлайн по вашим фильтрам: 1, занят · ждём, когда освободится",
+  "subPoolSearching": "Кто-то по вашим фильтрам тоже ищет · подключаем…",
+  "passMonthlyCheaper": "Plus на месяц ({price}) здесь выгоднее",
+  "filtersNotList": "кроме {list}",
+  "filtersEditHint": "Нажмите, чтобы изменить.",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ru");

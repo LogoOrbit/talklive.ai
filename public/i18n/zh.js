@@ -885,6 +885,15 @@
   "signupCodeLabel": "6 位验证码",
   "signupVerifyBtn": "验证并创建账号",
   "signupChangeEmail": "更改邮箱",
-  "authEmailRequired": "请输入邮箱。我们会发送验证码确认是你本人。"
+  "authEmailRequired": "请输入邮箱。我们会发送验证码确认是你本人。",
+  "statusLookingForWoman": "正在寻找女性…",
+  "statusLookingForMan": "正在寻找男性…",
+  "subPoolNone": "目前没有符合筛选条件的人在线 · 仍在寻找",
+  "subPoolBusy": "{n} 位符合条件的人在线，都在通话中 · 等待有人空闲",
+  "subPoolBusyOne": "1 位符合条件的人在线，正在通话 · 等待其空闲",
+  "subPoolSearching": "也有符合条件的人在寻找 · 正在连接…",
+  "passMonthlyCheaper": "这里按月订阅 Plus（{price}）更便宜",
+  "filtersNotList": "排除 {list}",
+  "filtersEditHint": "点按可修改。",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("zh");

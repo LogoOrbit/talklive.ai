@@ -885,6 +885,15 @@
   "signupCodeLabel": "رمز من 6 أرقام",
   "signupVerifyBtn": "تحقّق وأنشئ الحساب",
   "signupChangeEmail": "تغيير البريد",
-  "authEmailRequired": "أدخل بريدك الإلكتروني. نرسل إليه رمزًا لنتأكد أنه أنت."
+  "authEmailRequired": "أدخل بريدك الإلكتروني. نرسل إليه رمزًا لنتأكد أنه أنت.",
+  "statusLookingForWoman": "جارٍ البحث عن امرأة…",
+  "statusLookingForMan": "جارٍ البحث عن رجل…",
+  "subPoolNone": "لا أحد يطابق فلاترك متصل الآن · ما زلنا نبحث",
+  "subPoolBusy": "{n} متصلون يطابقون فلاترك، كلهم مشغولون · ننتظر أن يتفرغ أحدهم",
+  "subPoolBusyOne": "شخص واحد متصل يطابق فلاترك، مشغول · ننتظر أن يتفرغ",
+  "subPoolSearching": "شخص يطابق فلاترك يبحث أيضًا · جارٍ الاتصال…",
+  "passMonthlyCheaper": "Plus الشهري ({price}) أرخص هنا",
+  "filtersNotList": "باستثناء {list}",
+  "filtersEditHint": "اضغط للتغيير.",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ar");

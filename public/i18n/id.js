@@ -885,6 +885,15 @@
   "signupCodeLabel": "Kode 6 digit",
   "signupVerifyBtn": "Verifikasi & buat akun",
   "signupChangeEmail": "Ganti email",
-  "authEmailRequired": "Masukkan emailmu. Kami kirim kode untuk memastikan ini kamu."
+  "authEmailRequired": "Masukkan emailmu. Kami kirim kode untuk memastikan ini kamu.",
+  "statusLookingForWoman": "Mencari perempuan…",
+  "statusLookingForMan": "Mencari laki-laki…",
+  "subPoolNone": "Belum ada yang online sesuai filtermu · masih mencari",
+  "subPoolBusy": "{n} online sesuai filtermu, semua sibuk · menunggu ada yang luang",
+  "subPoolBusyOne": "1 orang online sesuai filtermu, sibuk · menunggu dia luang",
+  "subPoolSearching": "Seseorang yang sesuai filtermu juga sedang mencari · menghubungkan…",
+  "passMonthlyCheaper": "Plus bulanan ({price}) lebih murah di sini",
+  "filtersNotList": "kecuali {list}",
+  "filtersEditHint": "Ketuk untuk mengubah.",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("id");

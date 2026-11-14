@@ -540,4 +540,18 @@
         <item quantity="one">hari</item>
         <item quantity="other">hari</item>
     </plurals>
+    <string name="looking_for_woman">Mencari perempuan…</string>
+    <string name="looking_for_man">Mencari laki-laki…</string>
+    <string name="filter_pool_none">Belum ada yang online sesuai filtermu · masih mencari</string>
+    <string name="filter_pool_searching">Seseorang yang sesuai filtermu juga sedang mencari · menghubungkan…</string>
+    <string name="filters_widening_in">Belum ada yang cocok · negara dan bahasamu akan dibuka untuk semua dalam beberapa detik</string>
+    <string name="filters_widened">Tidak ada yang luang dari negara pilihanmu · menghubungkanmu dengan siapa saja</string>
+    <string name="pass_monthly_cheaper">Plus bulanan (%1$s) lebih murah</string>
+    <string name="filters_gender_note">Gender dipilih sendiri oleh setiap orang dan tidak diverifikasi. Pilihanmu tetap sampai kamu terhubung.</string>
+    <string name="filters_summary">Filter: %1$s</string>
+    <string name="filters_not">kecuali %1$s</string>
+    <plurals name="filter_pool_busy">
+        <item quantity="one">1 orang online sesuai filtermu, sibuk · menunggu dia luang</item>
+        <item quantity="other">%1$d online sesuai filtermu, semua sibuk · menunggu ada yang luang</item>
+    </plurals>
 </resources>

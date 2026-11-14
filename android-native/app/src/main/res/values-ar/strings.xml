@@ -548,4 +548,18 @@
         <item quantity="few">أيام</item>
         <item quantity="many">أيام</item>
     </plurals>
+    <string name="looking_for_woman">جارٍ البحث عن امرأة…</string>
+    <string name="looking_for_man">جارٍ البحث عن رجل…</string>
+    <string name="filter_pool_none">لا أحد يطابق فلاترك متصل الآن · ما زلنا نبحث</string>
+    <string name="filter_pool_searching">شخص يطابق فلاترك يبحث أيضًا · جارٍ الاتصال…</string>
+    <string name="filters_widening_in">لا تطابق بعد · ستُفتح بلدانك ولغتك للجميع خلال ثوانٍ</string>
+    <string name="filters_widened">لا أحد متاح من بلدانك المختارة · نوصلك بأي شخص</string>
+    <string name="pass_monthly_cheaper">Plus الشهري (%1$s) أرخص</string>
+    <string name="filters_gender_note">يختار كل شخص جنسه بنفسه ولا يتم التحقق منه. يبقى اختيارك حتى يتم توصيلك.</string>
+    <string name="filters_summary">الفلاتر: %1$s</string>
+    <string name="filters_not">باستثناء %1$s</string>
+    <plurals name="filter_pool_busy">
+        <item quantity="one">شخص واحد متصل يطابق فلاترك، مشغول · ننتظر أن يتفرغ</item>
+        <item quantity="other">%1$d متصلون يطابقون فلاترك، كلهم مشغولون · ننتظر أن يتفرغ أحدهم</item>
+    </plurals>
 </resources>

@@ -885,6 +885,15 @@
   "signupCodeLabel": "6 haneli kod",
   "signupVerifyBtn": "Doğrula ve hesap oluştur",
   "signupChangeEmail": "E-postayı değiştir",
-  "authEmailRequired": "E-postanı gir. Sen olduğunu doğrulamak için bir kod göndeririz."
+  "authEmailRequired": "E-postanı gir. Sen olduğunu doğrulamak için bir kod göndeririz.",
+  "statusLookingForWoman": "Bir kadın aranıyor…",
+  "statusLookingForMan": "Bir erkek aranıyor…",
+  "subPoolNone": "Şu an filtrelerine uyan kimse çevrimiçi değil · aramaya devam",
+  "subPoolBusy": "Filtrelerine uyan {n} kişi çevrimiçi, hepsi meşgul · birinin boşalması bekleniyor",
+  "subPoolBusyOne": "Filtrelerine uyan 1 kişi çevrimiçi, meşgul · boşalması bekleniyor",
+  "subPoolSearching": "Filtrelerine uyan biri de arıyor · bağlanıyor…",
+  "passMonthlyCheaper": "Aylık Plus ({price}) burada daha ucuz",
+  "filtersNotList": "{list} hariç",
+  "filtersEditHint": "Değiştirmek için dokun.",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("tr");

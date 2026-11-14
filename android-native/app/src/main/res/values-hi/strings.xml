@@ -540,4 +540,18 @@
         <item quantity="one">दिन</item>
         <item quantity="other">दिन</item>
     </plurals>
+    <string name="looking_for_woman">एक महिला की तलाश…</string>
+    <string name="looking_for_man">एक पुरुष की तलाश…</string>
+    <string name="filter_pool_none">अभी आपके फ़िल्टर से मेल खाता कोई ऑनलाइन नहीं · खोज जारी है</string>
+    <string name="filter_pool_searching">आपके फ़िल्टर से मेल खाता कोई और भी खोज रहा है · जोड़ रहे हैं…</string>
+    <string name="filters_widening_in">अभी कोई मैच नहीं · कुछ सेकंड में आपके देश और भाषा सबके लिए खुल जाएँगे</string>
+    <string name="filters_widened">चुने गए देशों से कोई खाली नहीं · आपको किसी से भी जोड़ रहे हैं</string>
+    <string name="pass_monthly_cheaper">मासिक Plus (%1$s) सस्ता है</string>
+    <string name="filters_gender_note">लिंग हर व्यक्ति खुद चुनता है, इसकी पुष्टि नहीं होती। आपका चुनाव मैच होने तक बना रहता है।</string>
+    <string name="filters_summary">फ़िल्टर: %1$s</string>
+    <string name="filters_not">%1$s छोड़कर</string>
+    <plurals name="filter_pool_busy">
+        <item quantity="one">आपके फ़िल्टर से मेल खाता 1 व्यक्ति ऑनलाइन, व्यस्त · खाली होने का इंतज़ार</item>
+        <item quantity="other">आपके फ़िल्टर से मेल खाते %1$d लोग ऑनलाइन, सभी व्यस्त · किसी के खाली होने का इंतज़ार</item>
+    </plurals>
 </resources>

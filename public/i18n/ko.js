@@ -885,6 +885,15 @@
   "signupCodeLabel": "6자리 코드",
   "signupVerifyBtn": "인증하고 계정 만들기",
   "signupChangeEmail": "이메일 변경",
-  "authEmailRequired": "이메일을 입력하세요. 본인 확인 코드를 보내드려요."
+  "authEmailRequired": "이메일을 입력하세요. 본인 확인 코드를 보내드려요.",
+  "statusLookingForWoman": "여성을 찾는 중…",
+  "statusLookingForMan": "남성을 찾는 중…",
+  "subPoolNone": "지금 필터에 맞는 사람이 온라인에 없어요 · 계속 찾는 중",
+  "subPoolBusy": "필터에 맞는 {n}명이 온라인, 모두 대화 중 · 누군가 비기를 기다리는 중",
+  "subPoolBusyOne": "필터에 맞는 1명이 온라인, 대화 중 · 비기를 기다리는 중",
+  "subPoolSearching": "필터에 맞는 사람도 찾는 중이에요 · 연결 중…",
+  "passMonthlyCheaper": "여기서는 월간 Plus({price})가 더 저렴해요",
+  "filtersNotList": "{list} 제외",
+  "filtersEditHint": "탭해서 변경",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ko");

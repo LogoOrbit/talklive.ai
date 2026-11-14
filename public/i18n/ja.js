@@ -885,6 +885,15 @@
   "signupCodeLabel": "6桁のコード",
   "signupVerifyBtn": "確認してアカウント作成",
   "signupChangeEmail": "メールを変更",
-  "authEmailRequired": "メールアドレスを入力してください。本人確認のコードを送ります。"
+  "authEmailRequired": "メールアドレスを入力してください。本人確認のコードを送ります。",
+  "statusLookingForWoman": "女性を探しています…",
+  "statusLookingForMan": "男性を探しています…",
+  "subPoolNone": "今、条件に合う人はオンラインにいません · 探し続けています",
+  "subPoolBusy": "条件に合う{n}人がオンライン、全員通話中 · 空くのを待っています",
+  "subPoolBusyOne": "条件に合う1人がオンライン、通話中 · 空くのを待っています",
+  "subPoolSearching": "条件に合う人も探しています · 接続中…",
+  "passMonthlyCheaper": "ここでは月額Plus（{price}）の方がお得です",
+  "filtersNotList": "{list} を除く",
+  "filtersEditHint": "タップして変更",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ja");

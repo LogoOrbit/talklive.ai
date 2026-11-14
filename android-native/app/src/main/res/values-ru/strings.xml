@@ -544,4 +544,18 @@
         <item quantity="few">дней</item>
         <item quantity="many">дней</item>
     </plurals>
+    <string name="looking_for_woman">Ищем женщину…</string>
+    <string name="looking_for_man">Ищем мужчину…</string>
+    <string name="filter_pool_none">Сейчас нет никого онлайн по вашим фильтрам · продолжаем искать</string>
+    <string name="filter_pool_searching">Кто-то по вашим фильтрам тоже ищет · подключаем…</string>
+    <string name="filters_widening_in">Пока никого · через несколько секунд страны и язык откроются для всех</string>
+    <string name="filters_widened">Из выбранных стран никто не свободен · соединяем с кем угодно</string>
+    <string name="pass_monthly_cheaper">Plus на месяц (%1$s) выгоднее</string>
+    <string name="filters_gender_note">Пол каждый выбирает сам, он не проверяется. Ваш выбор сохраняется до соединения.</string>
+    <string name="filters_summary">Фильтры: %1$s</string>
+    <string name="filters_not">кроме %1$s</string>
+    <plurals name="filter_pool_busy">
+        <item quantity="one">Онлайн по вашим фильтрам: 1, занят · ждём, когда освободится</item>
+        <item quantity="other">Онлайн по вашим фильтрам: %1$d, все заняты · ждём, когда кто-то освободится</item>
+    </plurals>
 </resources>

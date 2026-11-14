@@ -539,4 +539,18 @@
         <item quantity="one">日</item>
         <item quantity="other">日</item>
     </plurals>
+    <string name="looking_for_woman">女性を探しています…</string>
+    <string name="looking_for_man">男性を探しています…</string>
+    <string name="filter_pool_none">今、条件に合う人はオンラインにいません · 探し続けています</string>
+    <string name="filter_pool_searching">条件に合う人も探しています · 接続中…</string>
+    <string name="filters_widening_in">まだ見つかりません · 数秒後に国と言語の条件が全員に広がります</string>
+    <string name="filters_widened">選んだ国の人は空いていません · 誰とでもつなぎます</string>
+    <string name="pass_monthly_cheaper">月額Plus（%1$s）の方がお得</string>
+    <string name="filters_gender_note">性別は各自が選んだもので、確認はされません。選んだ条件はつながるまで保持されます。</string>
+    <string name="filters_summary">フィルター: %1$s</string>
+    <string name="filters_not">%1$s を除く</string>
+    <plurals name="filter_pool_busy">
+        <item quantity="one">条件に合う1人がオンライン、通話中 · 空くのを待っています</item>
+        <item quantity="other">条件に合う%1$d人がオンライン、全員通話中 · 空くのを待っています</item>
+    </plurals>
 </resources>

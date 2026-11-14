@@ -885,6 +885,15 @@
   "signupCodeLabel": "৬ সংখ্যার কোড",
   "signupVerifyBtn": "যাচাই করে অ্যাকাউন্ট তৈরি করুন",
   "signupChangeEmail": "ইমেল বদলান",
-  "authEmailRequired": "আপনার ইমেল লিখুন। নিশ্চিত করতে আমরা একটি কোড পাঠাব।"
+  "authEmailRequired": "আপনার ইমেল লিখুন। নিশ্চিত করতে আমরা একটি কোড পাঠাব।",
+  "statusLookingForWoman": "একজন নারীকে খোঁজা হচ্ছে…",
+  "statusLookingForMan": "একজন পুরুষকে খোঁজা হচ্ছে…",
+  "subPoolNone": "এখন আপনার ফিল্টারের সাথে মেলে এমন কেউ অনলাইনে নেই · খোঁজা চলছে",
+  "subPoolBusy": "আপনার ফিল্টারের সাথে মেলে {n} জন অনলাইনে, সবাই ব্যস্ত · কেউ ফ্রি হওয়ার অপেক্ষা",
+  "subPoolBusyOne": "আপনার ফিল্টারের সাথে মেলে ১ জন অনলাইনে, ব্যস্ত · ফ্রি হওয়ার অপেক্ষা",
+  "subPoolSearching": "আপনার ফিল্টারের সাথে মেলে এমন কেউও খুঁজছে · সংযোগ হচ্ছে…",
+  "passMonthlyCheaper": "মাসিক Plus ({price}) এখানে সস্তা",
+  "filtersNotList": "{list} বাদে",
+  "filtersEditHint": "বদলাতে ট্যাপ করুন।",
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("bn");

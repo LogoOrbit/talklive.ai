@@ -540,4 +540,18 @@
         <item quantity="one">دن</item>
         <item quantity="other">دن</item>
     </plurals>
+    <string name="looking_for_woman">ایک خاتون کی تلاش…</string>
+    <string name="looking_for_man">ایک مرد کی تلاش…</string>
+    <string name="filter_pool_none">ابھی آپ کے فلٹرز سے ملتا کوئی آن لائن نہیں · تلاش جاری ہے</string>
+    <string name="filter_pool_searching">آپ کے فلٹرز سے ملتا کوئی اور بھی تلاش کر رہا ہے · جوڑا جا رہا ہے…</string>
+    <string name="filters_widening_in">ابھی کوئی میچ نہیں · چند سیکنڈ میں آپ کے ممالک اور زبان سب کے لیے کھل جائیں گے</string>
+    <string name="filters_widened">آپ کے چنے ممالک سے کوئی فارغ نہیں · آپ کو کسی سے بھی جوڑا جا رہا ہے</string>
+    <string name="pass_monthly_cheaper">ماہانہ Plus (%1$s) سستا ہے</string>
+    <string name="filters_gender_note">جنس ہر شخص خود چنتا ہے، اس کی تصدیق نہیں ہوتی۔ آپ کا انتخاب میچ ہونے تک برقرار رہتا ہے۔</string>
+    <string name="filters_summary">فلٹرز: %1$s</string>
+    <string name="filters_not">سوائے %1$s</string>
+    <plurals name="filter_pool_busy">
+        <item quantity="one">آپ کے فلٹرز سے ملتا 1 شخص آن لائن ہے، مصروف · فارغ ہونے کا انتظار</item>
+        <item quantity="other">آپ کے فلٹرز سے ملتے %1$d لوگ آن لائن ہیں، سب مصروف · کسی کے فارغ ہونے کا انتظار</item>
+    </plurals>
 </resources>

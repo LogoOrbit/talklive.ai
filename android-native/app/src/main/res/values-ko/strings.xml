@@ -539,4 +539,18 @@
         <item quantity="one">일</item>
         <item quantity="other">일</item>
     </plurals>
+    <string name="looking_for_woman">여성을 찾는 중…</string>
+    <string name="looking_for_man">남성을 찾는 중…</string>
+    <string name="filter_pool_none">지금 필터에 맞는 사람이 온라인에 없어요 · 계속 찾는 중</string>
+    <string name="filter_pool_searching">필터에 맞는 사람도 찾는 중이에요 · 연결 중…</string>
+    <string name="filters_widening_in">아직 매칭 없음 · 몇 초 후 국가와 언어가 모두에게 열려요</string>
+    <string name="filters_widened">선택한 국가에 대화 가능한 사람이 없어요 · 아무나와 연결해요</string>
+    <string name="pass_monthly_cheaper">월간 Plus(%1$s)가 더 저렴해요</string>
+    <string name="filters_gender_note">성별은 각자 직접 고르며 확인되지 않아요. 선택은 연결될 때까지 유지돼요.</string>
+    <string name="filters_summary">필터: %1$s</string>
+    <string name="filters_not">%1$s 제외</string>
+    <plurals name="filter_pool_busy">
+        <item quantity="one">필터에 맞는 1명이 온라인, 대화 중 · 비기를 기다리는 중</item>
+        <item quantity="other">필터에 맞는 %1$d명이 온라인, 모두 대화 중 · 누군가 비기를 기다리는 중</item>
+    </plurals>
 </resources>
