@@ -49,7 +49,7 @@ const { minifiedScripts } = require('./minified');
 const ageAssurance = require('./age-assurance');
 const mail = require('./mailer');
 const { renderEmail } = require('./email-layout');
-const { botLabel, isPrefetch, isBotUserAgent } = require('./bots');
+const { botLabel, isPrefetch, isBotUserAgent, isAutomationUserAgent } = require('./bots');
 const Engage = require('./engage');
 const { createAdmin, applyOwnerReset } = require('./admin');
 const { createSupport } = require('./support');
@@ -4624,9 +4624,31 @@ function saveQuarantine(key, rec) {
   store.data.quarantine[key] = rec;
   store.save();
 }
-function noteMatchEnd(socketId, profile, ms) {
+// --- Silent sides --------------------------------------------------------------
+// A real voice client answers 'matched' with WebRTC at once: the initiator sends
+// an offer within a few seconds (it may first wait up to 6s for relay
+// credentials), and the other side answers an offer within milliseconds. The
+// scripts that flooded the voice queue never do either - they sit in the pair
+// and leave. A side that stayed silent long enough to have spoken counts as a
+// dropped match for the quarantine below, however long the match lasted, so a
+// script that learns to wait out QUICK_END_MS is still caught.
+const TEST_ENV = process.env.NODE_ENV !== 'production';
+const SILENT_OFFER_MS = (TEST_ENV && Number(process.env.SILENT_OFFER_MS)) || 10000;
+const SILENT_ANSWER_MS = (TEST_ENV && Number(process.env.SILENT_ANSWER_MS)) || 4000;
+function signalSilent(p, now) {
+  const sig = p && p.sig;
+  if (!sig || !p.matchedAt || (p.mode || 'talk') !== 'talk') return false;
+  if (sig.initiator) return !sig.offer && now - p.matchedAt >= SILENT_OFFER_MS;
+  return !!sig.offerIn && !sig.answer && now - sig.offerIn >= SILENT_ANSWER_MS;
+}
+function noteSilentSide(socketId, profile) {
+  store.recordFeature('silent_side');
+  noteMatchEnd(socketId, profile, 0, { silent: true });
+}
+
+function noteMatchEnd(socketId, profile, ms, { silent = false } = {}) {
   if (!profile || !profile.clientId) return;
-  if (ms < QUICK_END_MS && !quarantined(profile, socketId)) store.recordFeature('quick_skip');
+  if (!silent && ms < QUICK_END_MS && !quarantined(profile, socketId)) store.recordFeature('quick_skip');
   if (establishedAccount(socketId) || isPremium(profile.clientId)) return;
   const now = Date.now();
   const sock = io.sockets.sockets.get(socketId);
@@ -4653,9 +4675,15 @@ function noteMatchEnd(socketId, profile, ms) {
     for (const [k, v] of quarantine) if (v.until < now) { quarantine.delete(k); delete store.data.quarantine[k]; }
   }
 }
+// Production always; tests opt in, since a test socket has no User-Agent.
+const AUTOMATION_UA_QUARANTINE = process.env.NODE_ENV === 'production' || process.env.QUARANTINE_AUTOMATION_UA === '1';
 function quarantined(profile, socketId) {
   if (!profile) return false;
   if (foreignClientId(profile.clientId)) return true;
+  // A script by its User-Agent (none at all, or an HTTP library). Never a
+  // Plus member or an established account: those have shown they are people.
+  const sockForUa = socketId && io.sockets.sockets.get(socketId);
+  if (sockForUa && sockForUa.data.automation && !isPremium(profile.clientId) && !establishedAccount(socketId)) return true;
   const now = Date.now();
   const byClient = quarantine.get('c:' + profile.clientId);
   if (byClient && byClient.until > now) return true;
@@ -4707,8 +4735,18 @@ function disconnectPartner(socketId, opts = {}) {
   if (!partnerId) return null;
   {
     const me = profiles.get(socketId);
-    if (me && me.matchedAt && Date.now() - me.matchedAt < EARLY_END_MS) noteEarlyEnd(me.clientId);
-    if (me && me.matchedAt) noteMatchEnd(socketId, me, Date.now() - me.matchedAt);
+    const them = profiles.get(partnerId);
+    const now = Date.now();
+    const meSilent = signalSilent(me, now);
+    if (me && me.matchedAt && now - me.matchedAt < EARLY_END_MS) noteEarlyEnd(me.clientId);
+    // A silent side is a dropped match whoever ended it (counted once).
+    if (me && me.matchedAt) {
+      if (meSilent) noteSilentSide(socketId, me);
+      else noteMatchEnd(socketId, me, now - me.matchedAt);
+    }
+    if (them && signalSilent(them, now)) noteSilentSide(partnerId, them);
+    if (me) me.sig = null;
+    if (them) them.sig = null;
   }
   partners.delete(socketId);
   partners.delete(partnerId);
@@ -5228,6 +5266,9 @@ function pairSockets(socketId, partnerId, opts = {}) {
   // Quarantined pairs are counted on their own, so the dashboard's matches are people.
   store.recordFeature(quarantined(seekerProfile) ? 'bot_match' : (mode === 'chat' ? 'chat_match' : 'match'));
   const samePersonality = sharedPersonality(seekerProfile, partnerProfile);
+  // The partner side is the WebRTC initiator (see signalSilent).
+  partnerProfile.sig = { initiator: true, offer: false, answer: false, offerIn: 0 };
+  seekerProfile.sig = { initiator: false, offer: false, answer: false, offerIn: 0 };
   partnerSocket.emit('matched', { initiator: true, partner: publicProfile(seekerProfile), rematched, mode, samePersonality, sameFilms: sharedFilms(partnerProfile, seekerProfile), undo: opts.undo ? 'them' : undefined });
   seekerSocket.emit('matched', { initiator: false, partner: publicProfile(partnerProfile), rematched, mode, samePersonality, sameFilms: sharedFilms(seekerProfile, partnerProfile), undo: opts.undo ? 'me' : undefined });
 
@@ -5580,6 +5621,8 @@ io.on('connection', (socket) => {
   const geo = lookupGeo(ip);
   // Kept out of the online count and the Online Now rail.
   socket.data.bot = isBotUserAgent(socket.handshake.headers['user-agent']);
+  // Matched only with other scripts (see quarantined()).
+  socket.data.automation = AUTOMATION_UA_QUARANTINE && isAutomationUserAgent(socket.handshake.headers['user-agent']);
 
   // One malformed packet must never take the whole server down. Handlers
   // destructure their payload (`({ token } = {}) =>`), and a default only
@@ -6504,7 +6547,7 @@ io.on('connection', (socket) => {
     // queued, and a call's start time was lost, so its length never counted.
     if (prev && prev.clientId === clientId) {
       const next = profiles.get(socket.id);
-      for (const k of ['mode', 'queuedAt', 'searchSince', 'matchedAt', 'lastSkipped', 'pendingRating', 'randomFallbackActive']) {
+      for (const k of ['mode', 'queuedAt', 'searchSince', 'matchedAt', 'lastSkipped', 'pendingRating', 'randomFallbackActive', 'sig', 'mx', 'mPos']) {
         if (prev[k] !== undefined) next[k] = prev[k];
       }
     }
@@ -7197,6 +7240,13 @@ io.on('connection', (socket) => {
         || typeof data.candidate.candidate !== 'string'
         || data.candidate.candidate.length > 8192) return;
     } else return;
+    {
+      // Who has spoken WebRTC in this pairing (see signalSilent).
+      const me = profiles.get(socket.id);
+      const them = profiles.get(partnerId);
+      if (me && me.sig && data.type === 'offer') { me.sig.offer = true; if (them && them.sig && !them.sig.offerIn) them.sig.offerIn = Date.now(); }
+      if (me && me.sig && data.type === 'answer') me.sig.answer = true;
+    }
     // Forward only the fields WebRTC needs, never whatever else the sender
     // attached to the object.
     let out;
