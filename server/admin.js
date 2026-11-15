@@ -420,7 +420,7 @@ function generateConclusion(runtime, report) {
 }
 
 // --- Module wiring ---
-function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats, automod, talkguard, patterns, support, grantPlus, onVoiceDecision }) {
+function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deviceIdOfClient, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats, automod, talkguard, patterns, support, grantPlus, onVoiceDecision }) {
   if (automod) automod.setAlert(sendAlertEmail);
   try { paymentLog.installPaymentLog(store); } catch (e) { console.log('[owner] payment log not installed:', e.message); }
   const router = express.Router();
@@ -857,12 +857,22 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
   });
 
   router.post('/api/ban', (req, res) => {
-    const { clientId, ip, username, country, city, reason, minutes } = req.body || {};
-    if (!clientId && !ip) return res.status(400).json({ error: 'clientId or ip required.' });
+    const { clientId, ip, username, country, city, reason, minutes, account } = req.body || {};
+    if (!clientId && !ip && !account) return res.status(400).json({ error: 'clientId, account or ip required.' });
     const mins = Math.min(Math.max(Number(minutes) || 30, 30), 5 * 365 * 24 * 60); // 30 min .. 5 years
-    const ban = store.addBan({ clientId, ip, username, country, city, reason, minutes: mins });
-    store.audit('ban', reqIp(req), `Banned ${username || clientId || ip} for ${mins} min - ${reason || 'no reason'}`);
-    kickBanned(clientId, ip, ban);
+    // "Also ban this device" is on unless the owner turns it off: a ban on a
+    // clientId alone is undone by clearing site data. The id comes from the
+    // dashboard row when it knows one, else from the person's live profile.
+    const body = req.body || {};
+    const wantDevice = body.alsoDevice !== false;
+    let deviceId = null;
+    if (wantDevice) {
+      const given = typeof body.deviceId === 'string' && /^[wa]:[A-Za-z0-9_-]{16,128}$/.test(body.deviceId) ? body.deviceId : '';
+      deviceId = given || (clientId && deviceIdOfClient ? deviceIdOfClient(clientId) : null) || null;
+    }
+    const ban = store.addBan({ clientId, ip, username, country, city, reason, minutes: mins, account, deviceId });
+    store.audit('ban', reqIp(req), `Banned ${username || clientId || account || ip} for ${mins} min${ban.deviceId ? ' (device too)' : ''}${ban.account ? ` (account ${ban.account})` : ''} - ${reason || 'no reason'}`);
+    kickBanned(ban.clientId, ip, ban);
     res.json({ ok: true, ban });
   });
 

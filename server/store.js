@@ -20,6 +20,7 @@ const crypto = require('crypto');
 const os = require('os');
 const docJson = require('./doc-json');
 const reputation = require('./reputation');
+const { ipBucket } = require('./client-ip');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const DATA_FILE = path.join(DATA_DIR, 'owner-data.json');
@@ -2210,10 +2211,70 @@ function activeBans() {
   return data.bans.filter((b) => !b.liftedAt && b.expiresAt > now);
 }
 
-function findActiveBan(clientId, ip) {
+// Two addresses are "the same network" for a ban when they are the same IPv4
+// address, or in the same IPv6 /64. A phone or home router is given a whole /64
+// and rotates privacy addresses inside it, so an exact-string compare let a
+// banned person dodge an IPv6 ban by simply waiting a few hours. Old rows hold
+// the plain address they were created with and still match (they are bucketed
+// the same way when compared).
+function sameNetwork(a, b) {
+  if (!a || !b) return false;
+  return a === b || ipBucket(a) === ipBucket(b);
+}
+
+// Which active ban applies to this person, if any. A ban can name any of:
+//   clientId  the browser/app profile
+//   ip        the network (see sameNetwork)
+//   account   a signed-in account: the ban follows the account to a new
+//             browser or phone. Every profile linked to that account counts too
+//   deviceId  the device: a cookie token on the web, a hashed app-scoped id on
+//             Android. It survives a new clientId, which is what a person who
+//             only clears site data gets.
+// `who` carries the extra facts about the person asking: { account, deviceId }.
+// A row that has only a device or account never touches anyone on the same IP.
+function findActiveBan(clientId, ip, who = {}) {
   const now = Date.now();
+  const account = (who && who.account ? String(who.account).toLowerCase() : '')
+    || (clientId ? findUsernameByClientId(clientId) || '' : '');
+  const deviceId = who && who.deviceId ? String(who.deviceId) : '';
   return data.bans.find((b) => !b.liftedAt && b.expiresAt > now
-    && ((clientId && b.clientId === clientId) || (ip && b.ip && b.ip === ip))) || null;
+    && ((clientId && b.clientId === clientId)
+      || (ip && sameNetwork(b.ip, ip))
+      || (account && b.account && b.account === account)
+      || (deviceId && b.deviceId && b.deviceId === deviceId))) || null;
+}
+
+// How a ban matched, for the dashboard and for evasion counting.
+function banMatchKind(ban, clientId, who = {}) {
+  if (!ban) return null;
+  if (clientId && ban.clientId === clientId) return 'client';
+  const account = (who.account ? String(who.account).toLowerCase() : '') || (clientId ? findUsernameByClientId(clientId) || '' : '');
+  if (account && ban.account && ban.account === account) return 'account';
+  if (who.deviceId && ban.deviceId && ban.deviceId === who.deviceId) return 'device';
+  return 'ip';
+}
+
+// Someone matched a ban through a different identity than the one that was
+// banned (a new clientId on a banned device or account). Recorded on the ban
+// so the dashboard shows "tried again as ..." and counted once per new identity
+// per hour. It never extends or renews the ban: that stays the owner's call.
+const MAX_EVASIONS = 20;
+function noteBanEvasion(ban, { clientId, via, ip } = {}) {
+  if (!ban || !clientId || clientId === ban.clientId) return false;
+  if (!Array.isArray(ban.evasions)) ban.evasions = [];
+  const now = Date.now();
+  const row = ban.evasions.find((e) => e.clientId === clientId);
+  if (row) {
+    row.count = (row.count || 1) + 1;
+    if (now - row.ts < 3600000) return false;
+    row.ts = now;
+  } else {
+    ban.evasions.push({ clientId, via: via || 'device', ip: ip || null, ts: now, count: 1 });
+    if (ban.evasions.length > MAX_EVASIONS) ban.evasions.shift();
+  }
+  recordFeature('ban_evasion');
+  save();
+  return true;
 }
 
 // --- Under-18 sign-up blocks ---
@@ -2245,12 +2306,20 @@ function ageBlocked(clientId, ip, byIp = true) {
   return !!((clientId && blocks['c:' + clientId]) || (byIp && ip && blocks['i:' + ip]));
 }
 
-function addBan({ clientId, ip, username, country, city, reason, minutes }) {
+// Banning an account bans the profile linked to it, and banning a profile that
+// belongs to an account records the account, so the ban follows the person to
+// a new browser instead of sticking to one clientId.
+function addBan({ clientId, ip, username, country, city, reason, minutes, account, deviceId }) {
+  let acct = account ? String(account).toLowerCase() : '';
+  if (!clientId && acct) clientId = getAccountClientId(acct);
+  if (!acct && clientId) acct = findUsernameByClientId(clientId) || '';
   if (clientId) attachReputation().note(clientId, 'ban');
   const rec = {
     id: crypto.randomUUID(),
     clientId: clientId || null,
     ip: ip || null,
+    account: acct || null,
+    deviceId: deviceId ? String(deviceId).slice(0, 130) : null,
     username: username || 'Unknown',
     country: country || '',
     city: city || '',
@@ -4146,6 +4215,9 @@ module.exports = {
   addError,
   activeBans,
   findActiveBan,
+  banMatchKind,
+  noteBanEvasion,
+  sameNetwork,
   addAgeBlock,
   ageBlocked,
   addBan,

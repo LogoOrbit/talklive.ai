@@ -179,6 +179,33 @@ app.use((req, res, next) => {
   next();
 });
 
+// Device cookie for ban enforcement (see "Device identity" below). Set once on
+// an HTML page response when the browser has none: a random token, first-party,
+// HttpOnly so page scripts and trackers cannot read it, one year. A person who
+// clears localStorage to get a new clientId keeps it. It is sent to the socket
+// in the handshake and used only to enforce bans and abuse limits. Never set on
+// API calls, the owner dashboard or for crawlers.
+app.use((req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  const p = req.path;
+  const isPage = p === '/' || p.endsWith('.html') || !/\.[A-Za-z0-9]{1,6}$/.test(p);
+  if (!isPage || p.startsWith('/owner') || p.startsWith('/api/') || p.startsWith('/socket.io')) return next();
+  if (isBotUserAgent(req.headers['user-agent'])) return next();
+  if (cleanDeviceId(cookieFromHeader(req.headers.cookie, DEVICE_COOKIE))) return next();
+  const token = crypto.randomBytes(24).toString('hex');
+  res.append('Set-Cookie', `${DEVICE_COOKIE}=${token}; Max-Age=31536000; Path=/; HttpOnly; SameSite=Lax${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`);
+  // A page that sets a cookie must never be stored by a shared cache and handed
+  // to someone else: every visitor would then share one device id. Static HTML
+  // is sent as `public`, so it is downgraded just before the headers go out.
+  const writeHead = res.writeHead;
+  res.writeHead = function patchedWriteHead(...args) {
+    const cc = res.getHeader('Cache-Control');
+    res.setHeader('Cache-Control', typeof cc === 'string' ? cc.replace(/\bpublic\b/, 'private') : 'private, max-age=0, must-revalidate');
+    return writeHead.apply(this, args);
+  };
+  next();
+});
+
 // Brotli/gzip every text response. Fly's edge proxy forwards bodies untouched
 // and Express compresses nothing on its own, so without this the homepage costs
 // a cold visitor ~430 kB of raw transfer (112 kB index.html + 127 kB style.css
@@ -1349,15 +1376,82 @@ function flagUnderageText(profile, text) {
   });
 }
 
+// A ban can name a profile, a network, an account and a device (see
+// store.findActiveBan); everyone online who matches any of them is dropped now.
 function kickBanned(clientId, ip, ban) {
+  const account = ban && ban.account ? ban.account : '';
+  const deviceId = ban && ban.deviceId ? ban.deviceId : '';
   for (const [sid, p] of profiles) {
     const sock = io.sockets.sockets.get(sid);
     if (!sock) continue;
-    if ((clientId && p.clientId === clientId) || (ip && getClientIp(sock) === ip)) {
+    if ((clientId && p.clientId === clientId) || (ip && store.sameNetwork(getClientIp(sock), ip))
+      || (account && socketAuth.get(sid) === account) || (deviceId && p.deviceId === deviceId)) {
       sock.emit('banned', { until: ban.expiresAt, reason: ban.reason });
       sock.disconnect(true);
     }
   }
+}
+
+// --- Device identity (ban evasion) -------------------------------------------
+// A ban on a clientId is dodged by clearing site data, and a ban on an IP by
+// switching network. A device id survives both: on the web a random token the
+// server puts in a first-party cookie on the HTML page response (it outlives
+// localStorage being cleared), on Android a hashed app-scoped id the app sends
+// at register. It is used only to enforce bans and abuse limits, never for
+// analytics or ads, and never shown to other users.
+const DEVICE_COOKIE = 'tl_dev';
+const DEVICE_ID_RE = /^[A-Za-z0-9_-]{16,128}$/;
+function cleanDeviceId(v) { return typeof v === 'string' && DEVICE_ID_RE.test(v) ? v : ''; }
+function cookieFromHeader(header, name) {
+  for (const part of String(header || '').split(';')) {
+    const i = part.indexOf('=');
+    if (i !== -1 && part.slice(0, i).trim() === name) return part.slice(i + 1).trim();
+  }
+  return '';
+}
+// The cookie wins over a value the client types into the register packet: a
+// browser cannot be made to look like a different device by editing the packet,
+// while the app has no cookie jar and has nothing else to offer.
+function deviceIdFrom(socket, fromPacket) {
+  const cookie = cleanDeviceId(cookieFromHeader(socket.handshake.headers.cookie, DEVICE_COOKIE));
+  if (cookie) return 'w:' + cookie;
+  const app = cleanDeviceId(fromPacket);
+  return app ? 'a:' + app : '';
+}
+// clientId -> device id for people who have gone offline since, so the owner can
+// still ban "this device" from a report or the review queue. Bounded.
+const deviceByClient = new Map();
+const DEVICE_BY_CLIENT_MAX = 50000;
+function rememberDevice(clientId, deviceId) {
+  if (!clientId || !deviceId) return;
+  deviceByClient.delete(clientId);
+  deviceByClient.set(clientId, deviceId);
+  if (deviceByClient.size > DEVICE_BY_CLIENT_MAX) deviceByClient.delete(deviceByClient.keys().next().value);
+}
+function deviceIdOfClient(clientId) {
+  for (const p of profiles.values()) if (p.clientId === clientId && p.deviceId) return p.deviceId;
+  return deviceByClient.get(clientId) || null;
+}
+
+// Refuses the socket when any identity it carries is banned. `via` names why a
+// sign-in is checked (the account the person is signing in to); a match that
+// came through a different identity than the banned one is recorded on the ban
+// as an evasion attempt. It never extends the ban.
+function refuseBanned(socket, clientId, account) {
+  const ip = getClientIp(socket);
+  const who = { account: account || socketAuth.get(socket.id) || null, deviceId: socket.data.deviceId || '' };
+  const ban = store.findActiveBan(clientId, ip, who);
+  if (!ban) return false;
+  const kind = store.banMatchKind(ban, clientId, who);
+  const current = (profiles.get(socket.id) || {}).clientId || clientId;
+  if (kind === 'device' || kind === 'account' || (kind === 'client' && account)) {
+    if (store.noteBanEvasion(ban, { clientId: current, via: kind === 'device' ? 'device' : 'account', ip })) {
+      console.log(`[ban] ${current} tried to get around a ban through ${kind}`);
+    }
+  }
+  socket.emit('banned', { until: ban.expiresAt, reason: ban.reason });
+  socket.disconnect(true);
+  return true;
 }
 
 // Owner warnings: shown as a notice the person has to acknowledge. Sent now to
@@ -1485,7 +1579,7 @@ app.get('/talkguard/model.json', (req, res) => {
   res.json(m);
 });
 const admin = createAdmin({
-  io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getUserStats, automod, talkguard, patterns, support,
+  io, getRuntime, getLiveCounts, kickBanned, deviceIdOfClient, deliverWarning, deliverFeedbackReply, getUserStats, automod, talkguard, patterns, support,
   getLiveGames: () => gameTracker.live(), grantPlus: (who, days) => grantPlusTo(who, days, 'dashboard'),
   // An appeal was decided: show the person the outcome if they are online.
   onVoiceDecision: (clientId) => {
@@ -3386,7 +3480,7 @@ function deliverFriendMessage(socket, me, toClientId, parsed, msgId) {
   });
   if (parsed.text) {
     automod.onChatText({
-      from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), username: me.username, country: me.countryName },
+      from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), deviceId: me.deviceId || null, username: me.username, country: me.countryName },
       to: toClientId, pair: pairKey(me.clientId, toClientId), text: parsed.text, kind: 'chat',
     });
     patterns.onMessage({ from: me.clientId, to: toClientId, text: parsed.text, username: me.username });
@@ -5621,12 +5715,10 @@ io.on('connection', (socket) => {
   socket.emit('siteModes', store.publicModes());
 
   // Banned by IP: refuse service entirely until the ban expires or is lifted.
-  const ipBan = store.findActiveBan(null, ip);
-  if (ipBan) {
-    socket.emit('banned', { until: ipBan.expiresAt, reason: ipBan.reason });
-    socket.disconnect(true);
-    return;
-  }
+  // The device cookie counts too, so a banned browser is refused before it
+  // has a clientId to change.
+  socket.data.deviceId = deviceIdFrom(socket, '');
+  if (refuseBanned(socket, null, null)) return;
 
   store.recordConnection();
   store.recordPeakOnline(onlineCount());
@@ -5820,6 +5912,8 @@ io.on('connection', (socket) => {
     }
     loginAttemptSucceeded(ip, usernameLower, reserved);
     if (!io.sockets.sockets.has(socket.id)) return;
+    // A banned account stays banned on a fresh browser or phone.
+    if (refuseBanned(socket, store.getAccountClientId(usernameLower), usernameLower)) return;
     socketAuth.set(socket.id, (username || '').toLowerCase());
     store.recordFeature('login');
     store.upsertAccount((username || '').toLowerCase(), {
@@ -5852,6 +5946,7 @@ io.on('connection', (socket) => {
       socket.emit('resume-session-result', { ok: false });
       return sendFriendId(socket);
     }
+    if (refuseBanned(socket, store.getAccountClientId(usernameLower), usernameLower)) return;
     socketAuth.set(socket.id, usernameLower);
     store.upsertAccount(usernameLower, {
       nickname: account.nickname, country: geo.countryName, city: geo.city, ip, lastSeen: Date.now(),
@@ -5920,6 +6015,7 @@ io.on('connection', (socket) => {
     }
     try {
       const { username, account, profile, created } = await findOrCreateGoogleAccount(credential, { dob, socket });
+      if (refuseBanned(socket, store.getAccountClientId(username.toLowerCase()), username.toLowerCase())) return;
       socketAuth.set(socket.id, username.toLowerCase());
       store.recordFeature('google_signin');
       store.upsertAccount(username.toLowerCase(), {
@@ -6235,6 +6331,7 @@ io.on('connection', (socket) => {
       clearLoginLocks(ip, usernameLower);
       store.recordFeature('password_reset_complete');
       if (!io.sockets.sockets.has(socket.id)) return;
+      if (refuseBanned(socket, store.getAccountClientId(usernameLower), usernameLower)) return;
       socketAuth.set(socket.id, usernameLower);
       store.upsertAccount(usernameLower, {
         nickname: account.nickname, country: geo.countryName, city: geo.city, ip, lastSeen: Date.now(),
@@ -6370,12 +6467,9 @@ io.on('connection', (socket) => {
     identityTokens.set(clientId, issuedIdentityToken);
     identityTokenSeen.set(clientId, Date.now());
     // Banned by persistent clientId: refuse until the ban expires or is lifted.
-    const ban = store.findActiveBan(clientId, ip);
-    if (ban) {
-      socket.emit('banned', { until: ban.expiresAt, reason: ban.reason });
-      socket.disconnect(true);
-      return;
-    }
+    socket.data.deviceId = deviceIdFrom(socket, data.deviceId);
+    if (refuseBanned(socket, clientId, null)) return;
+    rememberDevice(clientId, socket.data.deviceId);
     if (geo.country === 'XX') Object.assign(geo, placeFromHints(data.timezone, socket.handshake.headers['accept-language']));
     const premium = isPremium(clientId);
     // Free-tier caps enforced server-side: gender preference and country lists
@@ -6414,6 +6508,7 @@ io.on('connection', (socket) => {
     patterns.onConnect({ ip: getClientIp(socket), clientId, username: chosenName || '' });
     profiles.set(socket.id, {
       clientId,
+      deviceId: socket.data.deviceId || null,
       // A name saved before the nickname rules is tidied rather than refused.
       username: chosenName || guestNameFor(clientId),
       country: geo.country,
@@ -6608,12 +6703,7 @@ io.on('connection', (socket) => {
       return;
     }
     // Banned users can never connect to anyone until the ban is lifted.
-    const ban = store.findActiveBan(profile.clientId, ip);
-    if (ban) {
-      socket.emit('banned', { until: ban.expiresAt, reason: ban.reason });
-      socket.disconnect(true);
-      return;
-    }
+    if (refuseBanned(socket, profile.clientId, null)) return;
     let mode = (opts && opts.mode === 'chat') ? 'chat' : 'talk';
     // Restricted profile (fix list 3.1, age-band signal): text-only. Only ever
     // set when the ageBandSignal flag is on and a signal reported an under-18
@@ -6886,7 +6976,7 @@ io.on('connection', (socket) => {
       reputation.note(partner.clientId, 'reported', { reporter: seeker.clientId });
       const rec = store.addReport({
         reporter: { clientId: seeker.clientId, username: seeker.username, country: seeker.countryName, city: seeker.city },
-        reported: { clientId: partner.clientId, username: partner.username, country: partner.countryName, city: partner.city, ip: reportedIp },
+        reported: { clientId: partner.clientId, username: partner.username, country: partner.countryName, city: partner.city, ip: reportedIp, deviceId: partner.deviceId || null },
         reason,
         detail,
       });
@@ -6902,7 +6992,7 @@ io.on('connection', (socket) => {
       automod.onReport({
         reportId: rec.id,
         reporter: { clientId: seeker.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), username: seeker.username, country: seeker.countryName },
-        reported: { clientId: partner.clientId, account: socketAuth.get(partnerId) || null, ip: reportedIp, username: partner.username, country: partner.countryName },
+        reported: { clientId: partner.clientId, account: socketAuth.get(partnerId) || null, ip: reportedIp, deviceId: partner.deviceId || null, username: partner.username, country: partner.countryName },
         reason, detail,
         seconds: partner.matchedAt ? Math.round((Date.now() - partner.matchedAt) / 1000) : null,
       });
@@ -6950,6 +7040,7 @@ io.on('connection', (socket) => {
         country: (targetProfile && targetProfile.countryName) || '',
         city: (targetProfile && targetProfile.city) || '',
         ip: targetSocket ? getClientIp(targetSocket) : null,
+        deviceId: (targetProfile && targetProfile.deviceId) || deviceIdOfClient(targetClientId),
       },
       reason: typeof reason === 'string' ? reason.slice(0, 40) : 'profile',
       detail: typeof detail === 'string' ? detail.slice(0, 300) : '',
@@ -6961,7 +7052,7 @@ io.on('connection', (socket) => {
       reporter: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), username: me.username, country: me.countryName },
       reported: {
         clientId: targetClientId, account: targetSocketId ? socketAuth.get(targetSocketId) || null : null,
-        ip: targetSocket ? getClientIp(targetSocket) : null, username: rec.reported.username, country: rec.reported.country,
+        ip: targetSocket ? getClientIp(targetSocket) : null, deviceId: rec.reported.deviceId || null, username: rec.reported.username, country: rec.reported.country,
       },
       reason: rec.reason, detail: rec.detail, seconds: null,
     });
@@ -7286,7 +7377,7 @@ io.on('connection', (socket) => {
       // reason it was sent, never trusted on its own.
       if (them && transcriptStr && type !== 'shouting') {
         automod.onChatText({
-          from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), username: me.username, country: me.countryName },
+          from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), deviceId: me.deviceId || null, username: me.username, country: me.countryName },
           to: them.clientId, pair: pairKey(me.clientId, them.clientId), text: transcriptStr, kind: 'voice',
         });
       }
@@ -7348,7 +7439,7 @@ io.on('connection', (socket) => {
       });
       if (msg.text) {
         automod.onChatText({
-          from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), username: me.username, country: me.countryName },
+          from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), deviceId: me.deviceId || null, username: me.username, country: me.countryName },
           to: them.clientId, pair: pairKey(me.clientId, them.clientId), text: msg.text, kind: 'chat',
         });
         patterns.onMessage({ from: me.clientId, to: them.clientId, text: msg.text, username: me.username });
@@ -8042,7 +8133,7 @@ io.on('connection', (socket) => {
     reply({ ok: true, id: msg.id, ts: msg.ts, voice: msg.voice });
     if (note.transcript) {
       automod.onChatText({
-        from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), username: me.username, country: me.countryName },
+        from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), deviceId: me.deviceId || null, username: me.username, country: me.countryName },
         to: toClientId, pair: pairKey(me.clientId, toClientId), text: note.transcript, kind: 'voice-note',
       });
     }
@@ -8219,7 +8310,7 @@ io.on('connection', (socket) => {
       country: me.countryName, text: '[edited] ' + next, msgId,
     });
     automod.onChatText({
-      from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), username: me.username, country: me.countryName },
+      from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), deviceId: me.deviceId || null, username: me.username, country: me.countryName },
       to: toClientId, pair: key, text: next, kind: 'chat',
     });
     // An unread notification still quoting the old words shows the new ones.

@@ -157,6 +157,8 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
     if (info.username) p.username = String(info.username).slice(0, 40);
     if (info.country) p.country = String(info.country).slice(0, 60);
     if (info.ip) p.ip = info.ip;
+    // Kept so a ban from the review queue can also bind the device.
+    if (info.deviceId) p.deviceId = String(info.deviceId).slice(0, 130);
     p.lastAt = Date.now();
     return p;
   }
@@ -492,7 +494,7 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
     if (!policyDry()) {
       const cid = p.clientIds[p.clientIds.length - 1];
       // Device only, not the IP: mobile carriers put many people on one IP.
-      const ban = store.addBan({ clientId: cid, username: p.username, country: p.country, reason: 'Auto: ' + why, minutes: mins });
+      const ban = store.addBan({ clientId: cid, account: p.account, deviceId: p.deviceId, username: p.username, country: p.country, reason: 'Auto: ' + why, minutes: mins });
       try { kickBanned(cid, null, ban); } catch (_) { /* offline */ }
       store.audit('ban', '', `Auto-banned ${p.username || p.key} for ${days} days - ${why}`);
       alert('automod-ban', `${p.username || 'A user'} was auto-banned for ${days} days`, `${why}.\nLast message: "${String(text).slice(0, 200)}"\n\nUndo from the dashboard -> Safety -> Bans.`);
@@ -609,7 +611,7 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
     if (action === 'ban') {
       const mins = Math.min(Math.max(Number(minutes) || 1440, 30), 5 * 365 * 24 * 60);
       const cid = p.clientIds[p.clientIds.length - 1];
-      const ban = store.addBan({ clientId: cid, ip: p.ip, username: p.username, country: p.country, reason: 'Auto-mod review: ' + ((p.review && p.review.why) || 'repeated reports').slice(0, 120), minutes: mins });
+      const ban = store.addBan({ clientId: cid, account: p.account, deviceId: p.deviceId, ip: p.ip, username: p.username, country: p.country, reason: 'Auto-mod review: ' + ((p.review && p.review.why) || 'repeated reports').slice(0, 120), minutes: mins });
       kickBanned(cid, p.ip, ban);
       for (const rid of reporters) reporter(rid).confirmed += 1;
       if (p.review) p.review.status = 'banned';
