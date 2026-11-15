@@ -37,6 +37,7 @@ const { createAutomod } = require('./automod');
 const { createTalkGuard } = require('./talkguard');
 const { createPatterns } = require('./patterns');
 const { createChatGuard } = require('./chat-guard');
+const textNorm = require('./text-normalize');
 const compress = require('./compress');
 const pricing = require('./pricing');
 const playBilling = require('./play-billing');
@@ -3403,7 +3404,10 @@ function cleanGif(g) {
 function readChatPayload(raw) {
   const obj = typeof raw === 'string' ? { text: raw } : raw;
   if (!obj || typeof obj !== 'object') return null;
-  const text = typeof obj.text === 'string' ? obj.text.trim().slice(0, 1000) : '';
+  // Bidi controls and zero-width characters are removed from every message before
+  // any check or any recipient sees it: they hide a word from a filter, and a
+  // right-to-left override can make one text read as another.
+  const text = typeof obj.text === 'string' ? textNorm.stripInvisible(obj.text).trim().slice(0, 1000) : '';
   const gif = cleanGif(obj.gif);
   if (!text && !gif) return null;
   return { text, gif, id: cleanMsgId(obj.id), replyTo: cleanMsgId(obj.replyTo) };
@@ -5104,7 +5108,7 @@ function cleanInterests(list) {
   const out = [];
   for (const raw of list) {
     if (typeof raw !== 'string') continue;
-    const i = raw.trim().slice(0, 40);
+    const i = textNorm.stripInvisible(raw).replace(/\s+/g, ' ').trim().slice(0, 40);
     const key = i.toLowerCase();
     if (!i || seen.has(key)) continue;
     if (containsLink(i) || UNSAFE_RE.test(i) || /\d{5,}/.test(i.replace(/[\s().+-]/g, ''))) continue;
