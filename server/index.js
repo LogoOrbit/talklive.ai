@@ -675,7 +675,13 @@ app.post('/billing/play/verify', httpRateLimit('play-verify', 30, 60000), expres
   if (sub && sub.accountId && sub.accountId !== playBilling.accountIdFor(clientId)) {
     return res.status(403).json({ error: 'This purchase was made by another TalkLive profile.' });
   }
-  if (!owner) store.data.playPurchases[key] = String(clientId);
+  // Re-read after the awaits above: two profiles presenting the same token at
+  // once both saw no owner, and the later one would otherwise take it over.
+  const ownerNow = store.data.playPurchases[key];
+  if (ownerNow && ownerNow !== String(clientId)) {
+    return res.status(403).json({ error: 'This purchase belongs to another TalkLive profile. Sign in with the account that bought it.' });
+  }
+  if (!ownerNow) store.data.playPurchases[key] = String(clientId);
   const step = await applyPlayPurchase(String(clientId), purchaseToken, sub, typeof productId === 'string' ? productId : '');
   if (step.op === 'skip' && step.reason !== 'ignored') console.log(`[play] ${clientId}: ${step.reason}`);
   res.json({ premium: isPremium(clientId), expiresAt: store.premiumExpiry(clientId), state: sub ? sub.state : null });
@@ -724,7 +730,7 @@ async function verifyPlayPass(req, res, clientId, productId, purchaseToken) {
 
 // Real-time Developer Notifications, pushed by Pub/Sub. Each is re-checked
 // with Google; only the token is taken from the message.
-app.post('/billing/play/rtdn', express.json({ limit: '64kb' }), async (req, res) => {
+app.post('/billing/play/rtdn', httpRateLimit('play-rtdn', 600, 60000), express.json({ limit: '64kb' }), async (req, res) => {
   const secret = process.env.PLAY_RTDN_SECRET;
   if (!secret || !play.configured()) return res.status(503).end();
   const given = String(req.query.secret || '');
@@ -752,6 +758,9 @@ app.post('/billing/play/rtdn', express.json({ limit: '64kb' }), async (req, res)
 app.post('/internal/premium/grant', express.json({ limit: '2kb' }), (req, res) => {
   const ip = String((req.socket && req.socket.remoteAddress) || '');
   if (!/^(127\.0\.0\.1|::1|::ffff:127\.0\.0\.1)$/.test(ip)) return res.status(404).end();
+  // A proxy running on the same machine would also look like loopback; a request
+  // that went through any proxy carries one of these, and flyctl ssh does not.
+  if (req.headers['fly-client-ip'] || req.headers['x-forwarded-for'] || req.headers['cf-connecting-ip'] || req.headers['forwarded']) return res.status(404).end();
   const r = grantPlusTo(req.body && req.body.who, req.body && req.body.days, 'ssh');
   res.status(r.status || 200).json(r);
 });
@@ -793,12 +802,16 @@ app.post('/push/subscribe', httpRateLimit('push', 20, 60000), express.json({ lim
   if (!clientId || !validIdentityToken(String(clientId), String(identityToken || ''))) {
     return res.status(403).json({ error: 'Unrecognised client.' });
   }
-  if (!subscription || typeof subscription.endpoint !== 'string' || !/^https:\/\//.test(subscription.endpoint)) {
+  if (!subscription || !push.allowedEndpoint(subscription.endpoint)) {
     return res.status(400).json({ error: 'Invalid subscription.' });
   }
+  // Only the two key strings web push needs, kept short.
+  const k = subscription.keys && typeof subscription.keys === 'object' ? subscription.keys : {};
+  const keys = {};
+  for (const name of ['p256dh', 'auth']) if (typeof k[name] === 'string' && k[name].length <= 200) keys[name] = k[name];
   store.savePushSubscription(String(clientId), {
     endpoint: subscription.endpoint,
-    keys: subscription.keys || {},
+    keys,
   }, req.headers['user-agent']);
   store.recordFeature('push_subscribed');
   res.status(204).end();
@@ -1190,7 +1203,7 @@ function warnIfNoRelay() {
   );
 }
 
-app.get('/ice-servers', async (req, res) => {
+app.get('/ice-servers', httpRateLimit('ice', 120, 60000), async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const iceServers = buildIceServers();
   // A provider outage must degrade to STUN + any static TURN, never to an error
@@ -6063,6 +6076,9 @@ io.on('connection', (socket) => {
     }
     const nick = Nick.check(nickname);
     if (!nick.ok) return socket.emit('update-nickname-result', { ok: false, error: NICK_ERRORS[nick.error], errorKey: nick.error });
+    // A rename is pushed to every friend's screen; renaming in a loop is a way
+    // to spam them.
+    if (!socialRateOk('rename-self', authedUsername, 10, 3600000)) return socket.emit('update-nickname-result', { ok: false, error: 'You changed your name a lot just now. Please try again later.' });
     const account = accounts.get(authedUsername);
     account.nickname = nick.value;
     persistAccount(authedUsername);
@@ -6956,6 +6972,7 @@ io.on('connection', (socket) => {
     clearWaitFallbackTimer(socket.id);
   });
 
+  const REPORTS_PER_HOUR = 10; // in-call and profile reports share this budget
   socket.on('report', (payload = {}) => {
     const partnerId = partners.get(socket.id);
     const seeker = profiles.get(socket.id);
@@ -6965,7 +6982,11 @@ io.on('connection', (socket) => {
     if (seeker && partner) {
       const reportKey = `${seeker.clientId}|${partner.clientId}`;
       const now = Date.now();
-      if (now - (reportCooldowns.get(reportKey) || 0) < 24 * 60 * 60 * 1000) {
+      // Reports against many different people are what a script (or a grudge)
+      // produces. Past the hourly cap the person is just moved on, exactly as for
+      // a repeat report, so nothing tells a script it has been limited.
+      if (!socialRateOk('report', seeker.clientId, REPORTS_PER_HOUR, 3600000)
+        || now - (reportCooldowns.get(reportKey) || 0) < 24 * 60 * 60 * 1000) {
         disconnectPartner(socket.id);
         return tryMatch(socket.id);
       }
@@ -7021,6 +7042,7 @@ io.on('connection', (socket) => {
     if (!known) return;
     const reportKey = `${me.clientId}|${targetClientId}`;
     const now = Date.now();
+    if (!socialRateOk('report', me.clientId, REPORTS_PER_HOUR, 3600000)) return;
     if (now - (reportCooldowns.get(reportKey) || 0) < 24 * 60 * 60 * 1000) return;
     reportCooldowns.set(reportKey, now);
     // Same outcome as blocking them from this screen: the friendship goes and
@@ -7118,6 +7140,10 @@ io.on('connection', (socket) => {
     const text = typeof payload.text === 'string' ? payload.text.trim().slice(0, 1000) : '';
     if (!text) return;
     const p = profiles.get(socket.id);
+    // Each submission is stored forever and shows on the owner's dashboard: a few
+    // an hour per person, and a looser cap per network so a script that mints
+    // identities cannot fill it either.
+    if (!socialRateOk('feedback', p ? p.clientId : socket.id, 6, 3600000) || !socialRateOk('feedback-ip', ipKey, 30, 3600000)) return;
     const who = p ? `${p.username} (${p.country})` : socket.id;
     // Which surface it was sent from - Settings, or the landing screen's
     // "still under development" notice. Both land in the same dashboard list;
@@ -7159,6 +7185,9 @@ io.on('connection', (socket) => {
   socket.on('client-error', (payload = {}) => {
     const message = typeof payload.message === 'string' ? payload.message.slice(0, 400) : '';
     if (!message) return;
+    // A page stuck in an error loop reports it thousands of times; the Errors tab
+    // needs a sample, not all of them.
+    if (!socialRateOk('client-error', ipKey, 30, 600000)) return;
     // Same filter as public/error-reporter.js. Repeated here because app.js is
     // served immutable for a year: browsers still running a cached copy from
     // before that filter existed would otherwise keep filling the Errors tab
@@ -7491,6 +7520,11 @@ io.on('connection', (socket) => {
 
   socket.on('typing', () => {
     const partnerId = partners.get(socket.id);
+    // The indicator is useful a few times a second at most; the generic bucket
+    // lets 125 a second through for the signalling events it also covers.
+    const nowT = Date.now();
+    if (nowT - (socket.data.lastTypingAt || 0) < 300) return;
+    socket.data.lastTypingAt = nowT;
     if (partnerId) {
       io.to(partnerId).emit('typing');
     }
@@ -7929,8 +7963,14 @@ io.on('connection', (socket) => {
     // client cannot grow it without bound.
     const mine = blocks.get(me.clientId);
     if (mine && mine.size >= MAX_BLOCKS && !mine.has(friendClientId)) return;
-    store.recordFeature('block');
-    reputation.note(friendClientId, 'blocked', { from: me.clientId });
+    const already = !!(mine && mine.has(friendClientId));
+    // Each new block counts against the other person's reputation, so blocking
+    // people in bulk would be a way to smear them.
+    if (!already && !socialRateOk('block', me.clientId, 60, 3600000)) return;
+    if (!already) {
+      store.recordFeature('block');
+      reputation.note(friendClientId, 'blocked', { from: me.clientId });
+    }
     endPairingWith(socket.id, friendClientId);
     blockPair(me.clientId, friendClientId);
     syncClientState(socket, me.clientId);

@@ -104,7 +104,7 @@ async function subscribe(clientId, endpoint) {
     }
     const A = 'c_push_Alpha';
     const B = 'c_push_Bravo';
-    const B_ENDPOINT = 'https://push.example/bravo';
+    const B_ENDPOINT = 'https://fcm.googleapis.com/fcm/send/bravo';
     let a = connect('Alpha');
     let b = connect('Bravo');
     await wait(400);
@@ -123,6 +123,15 @@ async function subscribe(clientId, endpoint) {
     await wait(300);
 
     ok('subscribe accepted', (await subscribe(B, B_ENDPOINT)) === 204);
+    // The server POSTs to whatever endpoint it is given, so only the browser
+    // vendors' push services are accepted (no SSRF to internal or arbitrary hosts).
+    for (const bad of ['https://push.example/x', 'https://169.254.169.254/latest', 'https://localhost/x', 'http://fcm.googleapis.com/x',
+      'https://fcm.googleapis.com.evil.example/x', 'https://user:pw@fcm.googleapis.com/x', 'https://fcm.googleapis.com:8443/x', 'https://evilnotify.windows.com/x']) {
+      ok('push endpoint refused: ' + bad, (await subscribe(B, bad)) === 400);
+    }
+    for (const good of ['https://updates.push.services.mozilla.com/wpush/v2/abc', 'https://wns2-par02p.notify.windows.com/w/?token=x', 'https://web.push.apple.com/abc']) {
+      ok('push endpoint accepted: ' + good, (await subscribe(B, good)) === 204);
+    }
 
     // Bravo rings the bell on Alpha: tell me when they come online.
     b.emit('online-alert', { clientId: A, on: true });

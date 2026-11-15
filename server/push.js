@@ -44,6 +44,26 @@ if (PUBLIC_KEY && PRIVATE_KEY) {
   }
 }
 
+// A web push endpoint is a URL the server will POST to, and the browser tells us
+// which one. Without a check, anyone with an identity could make the server send
+// requests to any https address (an internal service, someone else's site). Real
+// endpoints always belong to the browser vendors' push services, so only those
+// hosts are accepted, on the default port and without credentials in the URL.
+const PUSH_HOSTS = [
+  /^fcm\.googleapis\.com$/,
+  /^android\.googleapis\.com$/,
+  /^(?:[a-z0-9-]+\.)*push\.services\.mozilla\.com$/,
+  /^(?:[a-z0-9-]+\.)*notify\.windows\.com$/,
+  /^(?:[a-z0-9-]+\.)*push\.apple\.com$/,
+];
+function allowedEndpoint(endpoint) {
+  if (typeof endpoint !== 'string' || endpoint.length > 2048) return false;
+  let u;
+  try { u = new URL(endpoint); } catch (_) { return false; }
+  if (u.protocol !== 'https:' || u.username || u.password || (u.port && u.port !== '443')) return false;
+  return PUSH_HOSTS.some((re) => re.test(u.hostname));
+}
+
 // --- Native app push (Firebase Cloud Messaging) -------------------------------
 //
 // The Android/iOS app (mobile/) registers an FCM token instead of a web push
@@ -221,6 +241,8 @@ async function send(clientId, { topic, title, body, url, tag, kind, data }) {
       return;
     }
     if (!ready) return;
+    // Subscriptions saved before the endpoint check are never contacted either.
+    if (!allowedEndpoint(sub.endpoint)) { store.removePushSubscription(clientId, sub.endpoint); return; }
     try {
       await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload, { TTL: 3600 });
       delivered += 1;
@@ -241,4 +263,4 @@ async function send(clientId, { topic, title, body, url, tag, kind, data }) {
 
 module.exports = {
   setFilter, fcmMessage,
-  categoryOf, configured, fcmConfigured, publicKey, send, FCM_PREFIX };
+  categoryOf, configured, fcmConfigured, publicKey, send, FCM_PREFIX, allowedEndpoint };

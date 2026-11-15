@@ -162,7 +162,7 @@ async function person(name, email) {
     doc.reports.unshift({ id: 'rep-1', ts: Date.now(), reason: 'spam', detail: 'wrote from ' + AE.toUpperCase(),
       reporter: { clientId: 'someone-else', username: 'x' }, reported: { clientId: A.clientId, username: 'purgeaaa', email: AE } });
     doc.bans.unshift({ id: 'ban-1', clientId: A.clientId, ip: '9.9.9.9', username: 'purgeaaa', reason: 'abuse ' + AE,
-      createdAt: Date.now(), expiresAt: FUTURE, liftedAt: null });
+      createdAt: Date.now(), expiresAt: FUTURE, liftedAt: 1 /* lifted: a banned account cannot sign in to delete itself */ });
     doc.subscribers[AE] = { email: AE, status: 'confirmed' };
     fs.writeFileSync(DATA_FILE, JSON.stringify(doc));
 

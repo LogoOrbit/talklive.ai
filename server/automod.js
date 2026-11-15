@@ -220,7 +220,10 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
     const distinctTargets = new Set(recent.map((x) => x.target)).size;
     const why = [];
     let w = 1;
-    if (distinctTargets > 5) { w *= 0.2; why.push(`reporter filed ${distinctTargets} reports today`); }
+    // A script reporting everyone it meets: past 15 different people in a day the
+    // reports carry no weight at all (the socket layer also caps them per hour).
+    if (distinctTargets > 15) { w = 0; why.push(`reporter filed ${distinctTargets} reports today (flood)`); }
+    else if (distinctTargets > 5) { w *= 0.2; why.push(`reporter filed ${distinctTargets} reports today`); }
     else if (distinctTargets > 3) { w *= 0.5; why.push(`reporter filed ${distinctTargets} reports today`); }
     const judged = r.cleared + r.confirmed;
     if (judged >= 3 && r.cleared / judged > 0.7) { w *= 0.3; why.push('most of this reporter\'s past reports were cleared'); }
