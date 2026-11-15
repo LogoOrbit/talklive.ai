@@ -2568,6 +2568,25 @@ function visibleThread(viewerClientId, otherClientId) {
   return list.filter((m) => (!cut || m.ts > cut) && !(m.exp && m.exp <= now));
 }
 
+// One page of a thread, newest last. `before` (a timestamp, with the id of the
+// message it belongs to, since two messages can share a millisecond) asks for
+// the page that ends just under that message. Anything malformed means "no
+// paging", which is the whole thread - never an error a chat could stall on.
+const THREAD_PAGE_MAX = 100;
+function pageThread(thread, { limit, before, beforeId } = {}) {
+  const n = Number(limit);
+  if (!Number.isFinite(n) || n < 1) return { messages: thread, paged: false };
+  const size = Math.min(Math.floor(n), THREAD_PAGE_MAX);
+  let end = thread.length;
+  const cut = Number(before);
+  if (Number.isFinite(cut) && before !== null && typeof before !== 'object') {
+    const at = typeof beforeId === 'string' ? thread.findIndex((m) => m.id === beforeId) : -1;
+    end = at !== -1 ? at : thread.filter((m) => m.ts < cut).length;
+  }
+  const start = Math.max(0, end - size);
+  return { messages: thread.slice(start, end), paged: true, hasMore: start > 0, older: end < thread.length };
+}
+
 // What each side is told about a conversation's disappearing setting.
 function disappearingFor(viewerClientId, otherClientId) {
   const d = disappearing.get(pairKey(viewerClientId, otherClientId));
@@ -2587,8 +2606,13 @@ function sweepDisappearing(now = Date.now()) {
     const b = key.slice(cut + 1);
     const ids = gone.map((m) => m.id).filter(Boolean);
     for (const [me, other] of [[a, b], [b, a]]) {
+      // An expired message must not keep counting as unread.
+      const unreadGone = removeNotificationsWhere(me, (n) => n.type === 'message' && n.fromClientId === other && ids.includes(n.msgId));
       const s = getSocketByClientId(me);
-      if (s) s.emit('friend-messages-expired', { friendClientId: other, ids });
+      if (s) {
+        s.emit('friend-messages-expired', { friendClientId: other, ids });
+        if (unreadGone) syncClientState(s, me);
+      }
     }
     persistSocial();
   }
@@ -3208,10 +3232,24 @@ function syncClientState(socket, clientId) {
   // out of both (unfriended, aged out of history, blocked) counted in the
   // badge forever, with nothing on screen that could clear them.
   const ownHistory = chatHistory.get(clientId) || [];
+  // The same goes for a marker whose message is gone - unsent, cleared away,
+  // expired, or pushed out of the 200 a chat keeps. The count has to be what
+  // the thread can show, or the badge says 3 and the chat holds nothing new.
+  const liveIds = new Map(); // sender -> Set of message ids still in view
+  const stillThere = (n) => {
+    if (!n.msgId) return true; // markers from before ids were recorded
+    let ids = liveIds.get(n.fromClientId);
+    if (!ids) {
+      ids = new Set(visibleThread(clientId, n.fromClientId).map((m) => m.id));
+      liveIds.set(n.fromClientId, ids);
+    }
+    return ids.has(n.msgId);
+  };
   removeNotificationsWhere(clientId, (n) => n.type === 'message' && (
     !n.fromClientId
     || isBlockedPair(clientId, n.fromClientId)
     || (!isFriend(clientId, n.fromClientId) && !ownHistory.some((e) => e.clientId === n.fromClientId))
+    || !stillThere(n)
   ));
   socket.emit('state-sync', {
     friends: friendList,
@@ -8250,7 +8288,7 @@ io.on('connection', (socket) => {
     if (targetSocket) targetSocket.emit('friend-typing', { fromClientId: me.clientId });
   });
 
-  socket.on('get-friend-chat', ({ friendClientId } = {}) => {
+  socket.on('get-friend-chat', ({ friendClientId, limit, before, beforeId } = {}) => {
     const me = profiles.get(socket.id);
     friendClientId = validId(friendClientId);
     // Same bar as sending: a "message back" conversation with a recent match
@@ -8258,9 +8296,16 @@ io.on('connection', (socket) => {
     // chat opened empty and every earlier message looked lost.
     if (!me || !friendClientId || !canOpenThread(me.clientId, friendClientId)) return;
     if (isBlockedPair(me.clientId, friendClientId)) return;
+    // Paging is opt-in: a client that names a `limit` gets the newest page and
+    // walks back with `before`; one that sends nothing (a cached page, Android
+    // 3.9.x) gets the whole stored thread as it always did. The store keeps at
+    // most 200 messages per chat, so that is bounded, just not small.
+    const thread = visibleThread(me.clientId, friendClientId);
+    const paged = pageThread(thread, { limit, before, beforeId });
     socket.emit('friend-chat-history', {
       friendClientId,
-      messages: visibleThread(me.clientId, friendClientId),
+      messages: paged.messages,
+      ...(paged.paged ? { hasMore: paged.hasMore, older: paged.older } : {}),
       gate: dmGate(me.clientId, friendClientId),
       voice: voiceStateFor(me.clientId, friendClientId),
       disappearing: disappearingFor(me.clientId, friendClientId),
