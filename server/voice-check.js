@@ -181,12 +181,15 @@ function addSession(rec, summary, ctx, now = Date.now()) {
   if (!features) return { ok: false, reason: 'invalid' };
   const next = { ...blank(), ...(rec || {}) };
   next.s = fresh(next, now);
-  const today = next.s.filter((e) => now - e[1] < DAY).length;
-  if (!ctx.alreadyThisCall && today >= MAX_SESSIONS_PER_DAY) return { ok: false, reason: 'limit' };
+  // The day's calls are counted from their own list: `s` keeps only the last
+  // five estimates (and a retry empties it), so it cannot enforce a limit of eight.
+  next.q = (next.q || []).filter((t) => now - t < DAY);
+  if (!ctx.alreadyThisCall && next.q.length >= MAX_SESSIONS_PER_DAY) return { ok: false, reason: 'limit' };
   const logit = clamp(score(features), -6, 6);
   // A longer summary later in the same call replaces the first one.
   if (ctx.alreadyThisCall && next.s.length) next.s.pop();
   next.s.push([Math.round(logit * 1000) / 1000, now]);
+  if (!ctx.alreadyThisCall) next.q.push(now);
   while (next.s.length > MAX_SESSIONS) next.s.shift();
   const p = sigmoid(logit);
   // Worth another, longer listen in this call when this one was unsure.

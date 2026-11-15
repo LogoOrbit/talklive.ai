@@ -10623,6 +10623,8 @@ socket.on('matched', async ({ initiator, partner, rematched, callback, samePerso
   // Switching directly from a previous call (e.g. accepting a callback while
   // already connected) - tear the old peer down first so it never leaks.
   if (pc) teardownPeer();
+  // Ending the old call (just above) clears this, so it is set again here.
+  voiceWantedThisCall = !!voice;
   if (typeof friendsDropdown !== 'undefined') closeSidePanel(friendsDropdown, friendsOverlay);
   if (callback && historyPanel.classList.contains('open')) closeHistoryPanel();
   enterCallUI();
