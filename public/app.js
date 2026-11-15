@@ -660,23 +660,38 @@ const excludeCountries = new Set(); // draft "Non Interested Countries" - never 
 let localStream = null;
 
 // --- Voice check (opt-in; the analysis itself is voice-gender.js) ---
-// Off by default. When on, the person's own device compares their voice with
-// the gender they picked; only the verdict is kept (here and on the server
-// for this connection) and it only feeds "Voice-checked only" matching.
-// Turning it off forgets the verdict.
+// Voice check: an estimate of whether this person's voice sounds like the
+// gender they picked, used by the Men / Women filter. During some voice calls
+// the device summarises their own speech into about 30 numbers
+// (voice-features.js) and the server makes the estimate from those. No audio
+// is sent. The switch and everything below it live on the server, so they
+// follow the account from the website to the app; the local key only remembers
+// the switch for the moment before the server answers.
 const VOICE_CHECK_KEY = 'talklive_voice_check';
-const VOICE_RESULT_KEY = 'talklive_voice_result';
 const voiceCheckToggle = document.getElementById('voiceCheckToggle');
 const voiceCheckStatus = document.getElementById('voiceCheckStatus');
 const voiceCheckRow = document.getElementById('voiceCheckRow');
-// Locked behind the voiceCheck feature flag until Premium launches.
+const voiceCheckActions = document.getElementById('voiceCheckActions');
+const voiceRetryBtn = document.getElementById('voiceRetryBtn');
+const voiceAppealBtn = document.getElementById('voiceAppealBtn');
+// FEATURE_FLAGS can switch the whole thing off.
 const voiceCheckAvailable = featureFlag('voiceCheck');
 let voiceCheckEnabled = false;
-let voiceResult = null;
-try {
-  voiceCheckEnabled = voiceCheckAvailable && localStorage.getItem(VOICE_CHECK_KEY) === 'on';
-  voiceResult = voiceCheckEnabled ? JSON.parse(localStorage.getItem(VOICE_RESULT_KEY) || 'null') : null;
-} catch (_) { voiceResult = null; }
+// What the server last said: { on, state, disputed, retriesLeft, appeal, calls }.
+let voiceView = null;
+// The server asked for a summary in the current call ('matched' with voice).
+let voiceWantedThisCall = false;
+try { voiceCheckEnabled = voiceCheckAvailable && localStorage.getItem(VOICE_CHECK_KEY) === 'on'; } catch (_) { /* storage blocked */ }
+try { localStorage.removeItem('talklive_voice_result'); } catch (_) { /* a verdict older versions kept on the device */ }
+
+const VOICE_STATE_KEYS = {
+  none: 'voiceCheckNoGender',
+  pending: 'voiceCheckPending',
+  confirmed: 'voiceCheckConfirmed',
+  reviewed: 'voiceCheckReviewed',
+  unclear: 'voiceCheckUnclear',
+  mismatch: 'voiceCheckMismatch',
+};
 
 function renderVoiceCheck() {
   if (voiceCheckRow) {
@@ -685,49 +700,55 @@ function renderVoiceCheck() {
   }
   if (voiceCheckToggle) voiceCheckToggle.checked = voiceCheckEnabled;
   if (!voiceCheckStatus) return;
-  let key = '';
-  if (voiceCheckEnabled) {
-    if (!voiceResult) key = 'voiceCheckPending';
-    else key = voiceResult.label === genderGroup.dataset.value ? 'voiceCheckConfirmed' : 'voiceCheckUnconfirmed';
-  }
-  voiceCheckStatus.textContent = key ? t(key) : '';
-  voiceCheckStatus.hidden = !key;
+  const state = voiceCheckEnabled ? ((voiceView && voiceView.on && voiceView.state) || 'pending') : '';
+  let text = state && VOICE_STATE_KEYS[state] ? t(VOICE_STATE_KEYS[state]) : '';
+  if (voiceView && voiceView.disputed) text = t('voiceCheckDisputed');
+  if (voiceView && voiceView.appeal === 'open') text += (text ? ' ' : '') + t('voiceCheckAppealOpen');
+  voiceCheckStatus.textContent = text;
+  voiceCheckStatus.hidden = !text;
+  // Retry and review are offered when the result is not the one they chose.
+  const stuck = voiceCheckEnabled && voiceView && (state === 'mismatch' || state === 'unclear' || voiceView.disputed);
+  if (voiceCheckActions) voiceCheckActions.hidden = !stuck;
+  if (voiceRetryBtn) voiceRetryBtn.disabled = !(voiceView && voiceView.retriesLeft > 0);
+  if (voiceAppealBtn) voiceAppealBtn.hidden = !(voiceView && voiceView.appeal !== 'open' && (state === 'mismatch' || voiceView.disputed));
 }
 
-// Loaded on demand: only people who turn Voice check on download it.
+// Loaded on demand: only people who turn Voice check on download them.
 let voiceGenderLoad = null;
+function loadScriptOnce(src) {
+  return new Promise((resolve, reject) => {
+    const el = document.createElement('script');
+    el.src = src;
+    el.onload = resolve;
+    el.onerror = reject;
+    document.head.appendChild(el);
+  });
+}
 function loadVoiceGender() {
-  if (window.VoiceGender) return Promise.resolve();
+  if (window.VoiceGender && window.VoiceFeatures) return Promise.resolve();
   if (!voiceGenderLoad) {
-    voiceGenderLoad = new Promise((resolve, reject) => {
-      const el = document.createElement('script');
-      el.src = 'voice-gender.js?v=2ae95509f9';
-      el.onload = resolve;
-      el.onerror = () => { voiceGenderLoad = null; reject(); };
-      document.head.appendChild(el);
-    });
+    voiceGenderLoad = loadScriptOnce('voice-features.js?v=0000000000')
+      .then(() => loadScriptOnce('voice-gender.js?v=2ae95509f9'))
+      .catch((err) => { voiceGenderLoad = null; throw err; });
   }
   return voiceGenderLoad;
 }
 
 function startVoiceCheck() {
-  if (!voiceCheckEnabled || voiceResult) return;
-  if (!window.VoiceGender) {
+  if (!voiceCheckEnabled || !voiceWantedThisCall) return;
+  if (!window.VoiceGender || !window.VoiceFeatures) {
     // Start once loaded, if a call is still up by then.
     loadVoiceGender().then(() => { if (pc && window.VoiceGender) startVoiceCheck(); }).catch(() => {});
     return;
   }
   if (!localStream) return;
-  window.VoiceGender.start(localStream, (result) => {
-    if (!voiceCheckEnabled) return;
-    voiceResult = result;
-    try { localStorage.setItem(VOICE_RESULT_KEY, JSON.stringify(result)); } catch (_) { /* storage blocked */ }
-    socket.emit('voice-gender', result);
-    renderVoiceCheck();
+  window.VoiceGender.start(localStream, (summary) => {
+    if (voiceCheckEnabled && summary) socket.emit('voice-features', summary);
   });
 }
 
 function stopVoiceCheck() {
+  voiceWantedThisCall = false;
   if (window.VoiceGender) window.VoiceGender.stop();
 }
 let pc = null;
@@ -1293,16 +1314,37 @@ renderVoiceCheck();
 if (voiceCheckToggle) {
   voiceCheckToggle.addEventListener('change', () => {
     voiceCheckEnabled = voiceCheckToggle.checked;
-    try {
-      localStorage.setItem(VOICE_CHECK_KEY, voiceCheckEnabled ? 'on' : 'off');
-      if (!voiceCheckEnabled) localStorage.removeItem(VOICE_RESULT_KEY);
-    } catch (_) { /* storage blocked */ }
-    if (voiceCheckEnabled) startVoiceCheck();
-    else { voiceResult = null; stopVoiceCheck(); }
-    registerProfile();
+    try { localStorage.setItem(VOICE_CHECK_KEY, voiceCheckEnabled ? 'on' : 'off'); } catch (_) { /* storage blocked */ }
+    if (!voiceCheckEnabled) { voiceView = null; stopVoiceCheck(); }
+    socket.emit('voice-check-set', { on: voiceCheckEnabled });
     renderVoiceCheck();
   });
 }
+if (voiceRetryBtn) {
+  voiceRetryBtn.addEventListener('click', () => {
+    socket.emit('voice-retry', (res) => {
+      showToast(t(res && res.ok ? 'voiceRetryDone' : 'voiceRetryLimit'));
+    });
+  });
+}
+if (voiceAppealBtn) {
+  voiceAppealBtn.addEventListener('click', () => {
+    socket.emit('voice-appeal', {}, (res) => {
+      showToast(t(res && res.ok ? 'voiceAppealSent' : 'voiceAppealLater'));
+    });
+  });
+}
+// The server's view of this profile's voice check, at sign-in and after
+// every change. `more` asks for a longer listen in the current call.
+socket.on('voice-check', (view) => {
+  if (!voiceCheckAvailable || !view || typeof view !== 'object') return;
+  voiceView = view;
+  voiceCheckEnabled = !!view.on;
+  try { localStorage.setItem(VOICE_CHECK_KEY, voiceCheckEnabled ? 'on' : 'off'); } catch (_) { /* storage blocked */ }
+  if (view.more && window.VoiceGender) window.VoiceGender.more(!!view.again);
+  if (view.genderHeld) showToast(t('genderHeld'));
+  renderVoiceCheck();
+});
 // Age group: optional, self-reported, only used in aggregate analytics.
 const ageGroupEl = document.getElementById('ageGroup');
 initPillGroup(ageGroupEl);
@@ -8556,8 +8598,6 @@ function registerProfile() {
     ageGroup: ageGroupEl.dataset.value,
     prefGender: appliedFilters.prefGender,
     prefVoiceChecked: !!appliedFilters.prefVoiceChecked,
-    voiceCheck: voiceCheckEnabled,
-    voiceGender: voiceCheckEnabled && voiceResult ? voiceResult : undefined,
     includeCountries: appliedFilters.includeCountries,
     excludeCountries: appliedFilters.excludeCountries,
     interests: appliedFilters.interests,
@@ -8907,9 +8947,15 @@ const reportReasons = document.getElementById('reportReasons');
 const reportCustomInput = document.getElementById('reportCustomInput');
 const reportSubmitBtn = document.getElementById('reportSubmitBtn');
 let selectedReportReason = null;
+// "Not who I filtered for" is only offered to the person whose own Men /
+// Women filter chose this partner. It is feedback about the match, not a
+// report about the person.
+let matchedByGenderFilter = false;
+const reportWrongMatch = document.getElementById('reportWrongMatch');
 
 function openReportModal() {
   selectedReportReason = null;
+  if (reportWrongMatch) reportWrongMatch.hidden = !matchedByGenderFilter;
   reportReasons.querySelectorAll('.report-reason').forEach((b) => b.classList.remove('selected'));
   reportCustomInput.value = '';
   openModal(reportModal);
@@ -8938,6 +8984,15 @@ reportSubmitBtn.addEventListener('click', () => {
   isSearching = true;
   setCallState('searching');
   setState('waiting');
+  if (selectedReportReason === 'wrong-match') {
+    // Tell the matcher, then move on like a skip: nobody is reported or blocked.
+    matchedByGenderFilter = false;
+    socket.emit('gender-feedback');
+    socket.emit('skip');
+    setConnection('orange', 'connSearching');
+    showToast(t('wrongMatchThanks'));
+    return;
+  }
   setConnection('red', 'connReported');
   setStatusText('statusReported');
   socket.emit('report', { reason: selectedReportReason, detail });
@@ -10553,8 +10608,12 @@ function sendAdsConversion() {
   window.gtag('event', 'conversion', { send_to: 'AW-18500257801/LPruCP3u4ZQdEImQzvVE' });
 }
 
-socket.on('matched', async ({ initiator, partner, rematched, callback, samePersonality, sameFilms }) => {
+socket.on('matched', async ({ initiator, partner, rematched, callback, samePersonality, sameFilms, filtered, voice }) => {
   markSearchAcked();
+  // The server picks which calls to listen to for Voice check, and says when
+  // this person's own gender filter chose the partner.
+  voiceWantedThisCall = !!voice;
+  matchedByGenderFilter = !!filtered;
   hideKeepFilters();
   sendAdsConversion();
   endedNoticeUntil = 0;

@@ -24,11 +24,12 @@ const DEFS = {
   // provider. No such analysis exists in this codebase today.
   ageBandSignal: { default: false, client: false },
 
-  // Opt-in on-device voice check and the "Voice-checked only" gender filter
-  // (public/voice-gender.js). Held back until Premium subscriptions launch:
-  // off, the Settings switch and filter option are hidden and the server
-  // ignores every voice-check field.
-  voiceCheck: { default: false, client: true },
+  // Voice check behind the gender filter (server/voice-check.js). On since
+  // Plus went on sale; this is the switch to turn it off again:
+  // FEATURE_FLAGS='{"voiceCheck":false}' hides the Settings switch and the
+  // "Voice-checked only" option, the server ignores every voice-check event,
+  // and the gender filter goes back to the gender each person picked.
+  voiceCheck: { default: true, client: true },
 };
 
 function parse(raw) {

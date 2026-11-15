@@ -128,6 +128,10 @@ function defaults() {
     // Bot quarantine, so a restart does not hand scripted clients a clean slate:
     // 'c:<clientId>' | 'i:<ip>' -> { until, strikes }.
     quarantine: {},
+    // Voice check (server/voice-check.js): clientId -> { on, s: [[logit, ts]],
+    // r: [retry ts], d: [[reporter hash, ts]], appeal, manual }. Estimates
+    // only: no audio and no voice features are ever stored.
+    voice: {},
     // Trust scores (server/reputation.js): clientId -> [a, b, lastTs, quickRate].
     reputation: {},
     // Online match-quality model weights (server/match-model.js).
@@ -2468,6 +2472,36 @@ function engageSet(clientId, rec) {
   save();
 }
 
+// Voice check records (server/voice-check.js). A null record removes it.
+function voiceGet(clientId) {
+  return (data.voice && data.voice[clientId]) || null;
+}
+function voiceSet(clientId, rec) {
+  if (!clientId) return;
+  if (!data.voice) data.voice = {};
+  if (rec) data.voice[clientId] = rec; else delete data.voice[clientId];
+  save();
+}
+// Open appeals for the owner's review queue, oldest first.
+function voiceAppeals() {
+  const out = [];
+  for (const [clientId, rec] of Object.entries(data.voice || {})) {
+    if (rec && rec.appeal && rec.appeal.state === 'open') out.push({ clientId, rec });
+  }
+  return out.sort((a, b) => a.rec.appeal.at - b.rec.appeal.at);
+}
+// Records with nothing left to say (the check was turned off, every estimate
+// and complaint has aged out) are dropped. `isEmpty` is voice-check's empty().
+function pruneVoice(isEmpty) {
+  let dropped = 0;
+  const now = Date.now();
+  for (const [cid, rec] of Object.entries(data.voice || {})) {
+    if (isEmpty(rec, now)) { delete data.voice[cid]; dropped++; }
+  }
+  if (dropped) save();
+  return dropped;
+}
+
 function isPremiumClient(clientId) {
   const rec = data.premium[clientId];
   if (!rec || rec.revokedAt) return false;
@@ -2667,7 +2701,7 @@ function deleteAccount(usernameLower) {
 // renewal or refund notice still finds it, so only the extras go.
 function purgeClientData(clientId) {
   for (const key of ['engage', 'favFilms', 'talkTime', 'likes', 'push', 'notifPrefs', 'plusLook', 'heldFace',
-    'contactConsent', 'contactCapture', 'identityEpochs']) {
+    'contactConsent', 'contactCapture', 'identityEpochs', 'voice']) {
     if (data[key]) delete data[key][clientId];
   }
   if (data.msgCounts && data.msgCounts.users) delete data.msgCounts.users[clientId];
@@ -4165,6 +4199,10 @@ module.exports = {
   recordFeatureUser,
   engageGet,
   engageSet,
+  voiceGet,
+  voiceSet,
+  voiceAppeals,
+  pruneVoice,
   deleteAccount,
   premiumExpiry,
   referralCodeFor,
