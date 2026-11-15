@@ -14,18 +14,31 @@
 //   test      FLEURS test splits of eight languages the model never trained
 //             on + LibriSpeech test-clean and test-other (different speakers):
 //             reported, never tuned on
-// The model is a small neural network (33 inputs, 16 hidden units). A plain
-// logistic regression is trained too, as the baseline it has to beat.
+// The model is a small neural network (33 inputs, a few dozen hidden units).
+// A plain logistic regression is trained too, as the baseline it has to beat.
+//
+// Everything that is chosen (hidden size, learning rate, L2 strength, when to
+// stop, calibration, thresholds) is chosen on the validation group only, and
+// only on validation summaries with n >= 80 voiced frames: a device never
+// sends fewer, so shorter summaries must not steer decisions about what a
+// device will see. The test group is scored once, at the end.
+//
+//   --quick   a small search grid (for trying changes; the shipped model uses the full grid)
 const fs = require('fs');
 const path = require('path');
 
 const args = process.argv.slice(2);
+const quickIdx = args.indexOf('--quick');
+const QUICK = quickIdx >= 0;
+if (QUICK) args.splice(quickIdx, 1);
 const outIdx = args.indexOf('--out');
 const outPath = outIdx >= 0 ? args.splice(outIdx, 2)[1] : path.join(__dirname, '..', '..', 'server', 'voice-model.json');
 if (!args.length) { console.error('usage: train.js feats.jsonl [...] [--out file]'); process.exit(1); }
 
 const FEATURE_VERSION = require('../../public/voice-features.js').VERSION;
 const OPTIONAL = [27, 28, 29, 30]; // formant medians: null when too few frames had them
+// A device sends its first summary at 80 voiced frames (server/voice-check.js MIN_FRAMES).
+const MIN_FRAMES = 80;
 const TEST_LANGS = new Set(['ps_af', 'mr_in', 'it_it', 'ms_my', 'yo_ng', 'th_th', 'am_et', 'sd_in']);
 
 function rng(seed) {
@@ -37,7 +50,8 @@ function rng(seed) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-const rand = rng(20261115);
+const SEED = 20261115;
+let rand = rng(SEED);
 function gauss() { return Math.sqrt(-2 * Math.log(rand() + 1e-12)) * Math.cos(2 * Math.PI * rand()); }
 
 // --- Data ------------------------------------------------------------------
@@ -101,7 +115,6 @@ for (const r of groups.train) r.w = groups.train.length / (cells * cell[`${r.set
 
 // --- Models ----------------------------------------------------------------
 const sigmoid = (v) => 1 / (1 + Math.exp(-v));
-const H = 16;
 
 function initNet(hidden) {
   const p = { hidden: [], out: { w: [], b: 0 } };
@@ -140,13 +153,17 @@ function nll(p, data) {
   for (const r of data) { const q = sigmoid(forward(p, r.x)); s -= r.y ? Math.log(q + 1e-12) : Math.log(1 - q + 1e-12); }
   return s / data.length;
 }
-function accuracy(p, data) {
-  let ok = 0;
-  for (const r of data) if ((forward(p, r.x) >= 0 ? 1 : 0) === r.y) ok++;
-  return ok / data.length;
-}
 
-function train(hidden, { epochs = 60, lr = 0.003, l2 = 1e-3, batch = 64 } = {}) {
+// What the device sees: only summaries with at least MIN_FRAMES frames.
+for (const g of Object.keys(groups)) {
+  const dev = groups[g].filter((r) => r.n >= MIN_FRAMES);
+  console.log(`${g}: ${dev.length} of them have n >= ${MIN_FRAMES}`);
+}
+const valDevice = groups.val.filter((r) => r.n >= MIN_FRAMES);
+
+function train(hidden, { epochs = 300, lr = 0.003, l2 = 1e-3, batch = 128, patience = 12 } = {}) {
+  // Same seed for every candidate: runs differ only by their settings.
+  rand = rng(SEED);
   const p = initNet(hidden);
   let theta = flat(p);
   const m = new Array(theta.length).fill(0);
@@ -188,9 +205,10 @@ function train(hidden, { epochs = 60, lr = 0.003, l2 = 1e-3, batch = 64 } = {}) 
       }
       unflat(p, theta);
     }
-    const loss = nll(p, groups.val);
+    // Early stopping looks at the rows a device would send, not at everything.
+    const loss = nll(p, valDevice);
     if (loss < best.loss) best = { loss, theta: theta.slice(), epoch };
-    else if (epoch - best.epoch >= 8) break;
+    else if (epoch - best.epoch >= patience) break;
   }
   unflat(p, best.theta);
   return { p, epoch: best.epoch, valLoss: best.loss };
@@ -200,8 +218,8 @@ function train(hidden, { epochs = 60, lr = 0.003, l2 = 1e-3, batch = 64 } = {}) 
 function calibrate(p) {
   let scale = 1;
   let shift = 0;
-  const zs = groups.val.map((r) => [forward(p, r.x), r.y]);
-  for (let it = 0; it < 2000; it++) {
+  const zs = valDevice.map((r) => [forward(p, r.x), r.y]);
+  for (let it = 0; it < 3000; it++) {
     let gs = 0;
     let gb = 0;
     for (const [zv, y] of zs) { const e = sigmoid(scale * zv + shift) - y; gs += e * zv; gb += e; }
@@ -210,14 +228,24 @@ function calibrate(p) {
   }
   return { scale: Math.round(scale * 10000) / 10000, shift: Math.round(shift * 10000) / 10000 };
 }
+function calibratedLoss(p, cal, data) {
+  let s = 0;
+  for (const r of data) { const q = sigmoid(forward(p, r.x) * cal.scale + cal.shift); s -= r.y ? Math.log(q + 1e-12) : Math.log(1 - q + 1e-12); }
+  return s / data.length;
+}
 
-function report(p, cal, data) {
-  const res = data.map((r) => {
+const pct = (v) => (v === null ? null : Math.round(v * 1000) / 10);
+const acc = (list) => (list.length ? list.filter((e) => e.ok).length / list.length : null);
+
+function score(p, cal, data) {
+  return data.map((r) => {
     const q = sigmoid(forward(p, r.x) * cal.scale + cal.shift);
     return { r, q, conf: Math.max(q, 1 - q), ok: (q >= 0.5 ? 1 : 0) === r.y };
   });
-  const acc = (list) => (list.length ? list.filter((e) => e.ok).length / list.length : null);
-  const pct = (v) => (v === null ? null : Math.round(v * 1000) / 10);
+}
+
+// The same breakdown for any list of scored rows.
+function breakdown(res) {
   const by = (fn) => {
     const m = {};
     for (const e of res) { const k = fn(e); if (k === null) continue; (m[k] = m[k] || []).push(e); }
@@ -242,58 +270,116 @@ function report(p, cal, data) {
     byCondition: by((e) => (e.r.aug === 'clean' ? 'clean' : e.r.aug.includes('narrow') ? 'narrow-band' : e.r.aug.includes('noise') ? 'noisy' : 'filtered')),
     byLength: by((e) => (e.r.n < 80 ? 'under 80 frames' : e.r.n < 140 ? '80-139 frames' : '140+ frames')),
     bySet: by((e) => e.r.set),
-    atConfidence: { 0.8: atConf(0.8), 0.9: atConf(0.9), 0.95: atConf(0.95), 0.98: atConf(0.98) },
-    _res: res,
+    atConfidence: { 0.8: atConf(0.8), 0.9: atConf(0.9), 0.95: atConf(0.95), 0.98: atConf(0.98), 0.99: atConf(0.99) },
   };
 }
 
-// Lowest confidence at which validation answers are right at least `target`
-// of the time, searched on a grid and kept inside [min, max].
-function thresholdFor(res, target, min, max) {
-  for (let t = min; t <= max + 1e-9; t += 0.01) {
-    const kept = res.filter((e) => e.conf >= t);
-    if (kept.length && kept.filter((e) => e.ok).length / kept.length >= target) return Math.round(t * 100) / 100;
+// Full report: everything, plus the same restricted to what devices send.
+// With thresholds, also the two numbers the product cares about:
+//   falseMismatchRate  share of rows the server would call a mismatch while wrong
+//   confirmedShare     share it would confirm, and how often those are right
+function report(res, thr) {
+  const out = { ...breakdown(res) };
+  const dev = res.filter((e) => e.r.n >= MIN_FRAMES);
+  out.deviceLength = breakdown(dev);
+  if (thr) {
+    const wrongMismatch = dev.filter((e) => !e.ok && e.conf >= thr.mismatch);
+    const confirmed = dev.filter((e) => e.conf >= thr.confirm);
+    out.falseMismatchRate = pct(wrongMismatch.length / dev.length);
+    out.confirmedShare = { share: pct(confirmed.length / dev.length), accuracy: pct(acc(confirmed)) };
   }
-  return max;
+  return out;
 }
 
-const lr = train(0, { epochs: 80, lr: 0.01, l2: 1e-3 });
-const net = train(H, { epochs: 120, lr: 0.003, l2: 2e-3 });
-const lrCal = calibrate(lr.p);
-const netCal = calibrate(net.p);
-const lrVal = report(lr.p, lrCal, groups.val);
-const netVal = report(net.p, netCal, groups.val);
-console.log(`logistic regression: val accuracy ${lrVal.accuracy}%, loss ${lr.valLoss.toFixed(4)} (epoch ${lr.epoch})`);
-console.log(`neural network (${H} hidden): val accuracy ${netVal.accuracy}%, loss ${net.valLoss.toFixed(4)} (epoch ${net.epoch})`);
+// Lowest confidence at which validation answers are right at least `target`
+// of the time, searched on a grid. If the target is never reached, says so
+// (the caller must then decide, openly) instead of quietly returning the end of the grid.
+function thresholdFor(res, target, min, max, step) {
+  for (let t = min; t <= max + 1e-9; t += step) {
+    const kept = res.filter((e) => e.conf >= t - 1e-9);
+    if (kept.length && kept.filter((e) => e.ok).length / kept.length >= target) return { value: Math.round(t * 1000) / 1000, reached: true };
+  }
+  return { value: max, reached: false };
+}
 
-// The network ships only if it is actually better on held-back speakers.
-const useNet = net.valLoss < lr.valLoss;
-const chosen = useNet ? net.p : lr.p;
-const cal = useNet ? netCal : lrCal;
-const val = useNet ? netVal : lrVal;
-const test = report(chosen, cal, groups.test);
-const baseline = report(useNet ? lr.p : net.p, useNet ? lrCal : netCal, groups.test);
+// --- Search, on validation only -------------------------------------------
+const GRID = QUICK
+  ? { hidden: [0, 16], lr: [0.003, 0.001], l2: [1e-3] }
+  : { hidden: [0, 8, 16, 32], lr: [0.003, 0.001, 0.0003], l2: [1e-4, 1e-3, 1e-2] };
+const candidates = [];
+for (const hidden of GRID.hidden) {
+  for (const lr of GRID.lr) {
+    for (const l2 of GRID.l2) {
+      const t0 = Date.now();
+      const fit = train(hidden, { lr, l2 });
+      const cal = calibrate(fit.p);
+      const loss = calibratedLoss(fit.p, cal, valDevice);
+      const accVal = acc(score(fit.p, cal, valDevice));
+      candidates.push({ hidden, lr, l2, epoch: fit.epoch, fit, cal, loss, accVal });
+      console.log(`hidden ${String(hidden).padStart(2)} lr ${lr} l2 ${l2}: best epoch ${fit.epoch}, val loss ${loss.toFixed(4)}, val accuracy ${pct(accVal)}% (${((Date.now() - t0) / 1000).toFixed(0)}s)`);
+    }
+  }
+}
+candidates.sort((a, b) => a.loss - b.loss);
+// Logistic regression is the baseline: the network ships only if its
+// validation loss is lower than the best logistic regression's.
+const bestLr = candidates.find((c) => c.hidden === 0);
+const bestNet = candidates.find((c) => c.hidden > 0);
+const useNet = !!bestNet && bestNet.loss < bestLr.loss;
+const pick = useNet ? bestNet : bestLr;
+const other = useNet ? bestLr : bestNet;
+console.log(`\nbest logistic regression: val loss ${bestLr.loss.toFixed(4)}, accuracy ${pct(bestLr.accVal)}%`);
+if (bestNet) console.log(`best network: ${bestNet.hidden} hidden, lr ${bestNet.lr}, l2 ${bestNet.l2}, epoch ${bestNet.epoch}, val loss ${bestNet.loss.toFixed(4)}, accuracy ${pct(bestNet.accVal)}%`);
+console.log(`shipping: ${useNet ? 'network' : 'logistic regression'}`);
 
-const thresholds = {
-  // "Confirmed": right 99% of the time on validation.
-  confirm: thresholdFor(val._res, 0.99, 0.8, 0.97),
-  // "Does not match": right 99.7% of the time, and the server still asks for two calls.
-  mismatch: thresholdFor(val._res, 0.997, 0.9, 0.995),
-};
-const strip = (r) => { const { _res, ...rest } = r; return rest; };
+const chosen = pick.fit.p;
+const cal = pick.cal;
+const valRes = score(chosen, cal, groups.val);
+const valDeviceRes = valRes.filter((e) => e.r.n >= MIN_FRAMES);
+
+// Thresholds from validation rows a device could send. Targets:
+//   confirm   accuracy at or above it is >= 99%   (grid 0.80 .. 0.97)
+//   mismatch  accuracy at or above it is >= 99.7% (grid 0.90 .. 0.995)
+const confirm = thresholdFor(valDeviceRes, 0.99, 0.8, 0.97, 0.005);
+const mismatch = thresholdFor(valDeviceRes, 0.997, 0.9, 0.995, 0.0025);
+console.log(`thresholds: confirm ${confirm.value} (reached ${confirm.reached}), mismatch ${mismatch.value} (reached ${mismatch.reached})`);
+const thresholds = { confirm: confirm.value, mismatch: mismatch.value };
+
+// Where do the validation errors sit? Errors concentrated in one corpus
+// language suggest wrong labels there, not a weak model. Printed, never dropped.
+{
+  const per = {};
+  for (const e of valDeviceRes) {
+    const k = e.r.set;
+    per[k] = per[k] || { n: 0, wrong: 0, confWrong: 0 };
+    per[k].n++;
+    if (!e.ok) { per[k].wrong++; if (e.conf >= thresholds.confirm) per[k].confWrong++; }
+  }
+  console.log('validation (n >= 80) errors per set: wrong / rows (wrong at confidence >= confirm)');
+  for (const [k, c] of Object.entries(per).sort((a, b) => b[1].confWrong - a[1].confWrong || b[1].wrong / b[1].n - a[1].wrong / a[1].n).slice(0, 12)) {
+    console.log(`  ${k}: ${c.wrong}/${c.n} (${c.confWrong})`);
+  }
+}
+
+const val = report(valRes, thresholds);
+const test = report(score(chosen, cal, groups.test), thresholds);
+const baselineTest = other ? breakdown(score(other.fit.p, other.cal, groups.test)).accuracy : null;
+
 const round = (v) => Math.round(v * 100000) / 100000;
+const kind = useNet ? `neural network, ${pick.hidden} hidden units (tanh)` : 'logistic regression';
 
 const model = {
   about: 'TalkLive voice model: P(a voice sounds feminine) from the summary in public/voice-features.js. Built by scripts/voice/train.js; do not edit by hand.',
   featureVersion: FEATURE_VERSION,
   trainedAt: new Date().toISOString().slice(0, 10),
-  kind: useNet ? `neural network, ${H} hidden units (tanh)` : 'logistic regression',
+  kind,
   data: {
     train: 'Google FLEURS train splits (16 languages, balanced sample) + LibriSpeech dev-clean; each recording also as two degraded copies (noise, filtering, narrow-band)',
-    validation: 'FLEURS dev splits with both genders + LibriSpeech dev-other',
+    validation: 'FLEURS dev splits with both genders (24 languages) + LibriSpeech dev-other',
     test: 'FLEURS test splits of 8 languages never trained on (ps, mr, it, ms, yo, th, am, sd) + LibriSpeech test-clean and test-other',
     counts: Object.fromEntries(Object.entries(groups).map(([g, list]) => [g, list.length])),
   },
+  training: { hidden: pick.hidden, learningRate: pick.lr, l2: pick.l2, bestEpoch: pick.epoch, seed: SEED },
   mean: mean.map(round),
   std: std.map(round),
   optional: OPTIONAL,
@@ -303,9 +389,14 @@ const model = {
   out: { w: chosen.out.w.map(round), b: round(chosen.out.b) },
   calibration: cal,
   thresholds,
-  metrics: { validation: strip(val), test: strip(test), otherModelTestAccuracy: baseline.accuracy },
+  metrics: {
+    validation: val,
+    test,
+    otherModelTestAccuracy: baselineTest,
+    search: candidates.map((c) => ({ hidden: c.hidden, lr: c.lr, l2: c.l2, epoch: c.epoch, valLoss: Math.round(c.loss * 10000) / 10000, valAccuracy: pct(c.accVal) })),
+  },
 };
 fs.writeFileSync(outPath, JSON.stringify(model, null, 1) + '\n');
-console.log(`\nchosen: ${model.kind}; thresholds ${JSON.stringify(thresholds)}`);
-console.log('TEST (never tuned on):', JSON.stringify(strip(test), null, 1));
+console.log(`\nchosen: ${kind}; thresholds ${JSON.stringify(thresholds)}`);
+console.log('TEST (never tuned on):', JSON.stringify(test, null, 1));
 console.log(`wrote ${outPath}`);

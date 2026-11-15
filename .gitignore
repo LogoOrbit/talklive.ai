@@ -16,3 +16,6 @@ node_modules/
 /mobile/node_modules/
 *.jks
 *.keystore
+
+# Work copies made for parallel agents during development. Never part of the app.
+/.claude/worktrees/
