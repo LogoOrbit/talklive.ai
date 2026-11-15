@@ -20,6 +20,10 @@
 }
 [dir="rtl"] .tl-set-page,
 [dir="rtl"] .settings-quick { --set-dir: -1; }
+/* The Filters panel reuses the segmented control, whose sliding highlight needs this
+   (without it the highlight stayed on the first option). */
+#filtersPanel { --set-dir: 1; --set-spring: cubic-bezier(0.34, 1.56, 0.64, 1); }
+[dir="rtl"] #filtersPanel { --set-dir: -1; }
 
 @keyframes tlSetIn { from { opacity: 0; transform: translateY(10px); } }
 @keyframes tlSetRise { from { opacity: 0; transform: translateY(14px); } }
@@ -919,3 +923,25 @@ html:not(.tl-set-css) .tl-set-page { visibility: hidden; }
     transition-duration: 0.01ms !important;
   }
 }
+
+/* --- Voice check ----------------------------------------------------------- */
+/* The result line under the hint. Uses the accent so it reads as a status, not as more help text. */
+.tl-set-text small.tl-voice-status {
+  margin-top: 4px;
+  padding-inline-start: 10px;
+  border-inline-start: 3px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  color: var(--text);
+  font-weight: 600;
+}
+.tl-set-text small.tl-voice-status[hidden] { display: none; }
+/* Retry / ask for a review: sits under the switch, buttons wrap on a narrow phone. */
+.tl-voice-actions {
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  min-height: 0;
+  padding-top: 10px;
+  padding-bottom: 14px;
+}
+.tl-voice-actions[hidden] { display: none; }
+.tl-voice-actions .btn { flex: 1 1 150px; min-height: 44px; font-size: 14px; }
+.tl-voice-actions .btn[hidden] { display: none; }
