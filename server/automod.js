@@ -509,7 +509,26 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
   }
 
   // Copy-pasted spam to many strangers (server/patterns.js). Once a day.
-  function onPattern({ clientId, account, username, text, partners }) {
+  function onPattern({ clientId, account, username, text, partners, kind }) {
+    // Behaviour signals that are not about what was said (a long message sent to
+    // many people, a new identity opening with links, request or voice-note
+    // spraying): one event per kind a day, half a report's weight, so it queues
+    // for the owner but never warns on its own.
+    if (kind && !off() && clientId) {
+      const label = {
+        'same-text': `the same long message to ${partners} different people within an hour`,
+        'link-first': `a brand-new identity opened ${partners} chats with a link`,
+        'friend-request': `friend requests to ${partners} different people within an hour`,
+        'voice-note': `voice messages to ${partners} different people within an hour`,
+      }[kind] || `unusual activity (${kind})`;
+      const p = person(clientId, account, { username });
+      const source = 'spam:' + kind + ':' + new Date().toISOString().slice(0, 10);
+      if (p.events.some((e) => e.type === 'pattern' && e.source === source)) return;
+      pushEvent(p, { ts: Date.now(), type: 'pattern', source, weight: 0.5, why: [label], detail: String(text || label).slice(0, 160), evidence: text ? [String(text).slice(0, 300)] : [] });
+      store.save();
+      schedule(p);
+      return;
+    }
     if (clientId && policyOn() && guardPolicy.detect(text).money) {
       const p = person(clientId, account, { username });
       if (!p.policy) p.policy = { money: [], warned: {}, bans: 0 };

@@ -1582,6 +1582,11 @@ const patterns = createPatterns({
   talkguard,
   onSpam: (x) => automod.onPattern({ ...x, account: accountOfClient(x.clientId) }),
   isFlagged: (clientId) => automod.isFlagged(clientId),
+  // The link filter's own verdict, so whatever it allows (the site's own address,
+  // social profile links) is never counted as a funnel link.
+  isLink: (text) => containsLink(text),
+  isNewIdentity: (clientId) => !identityHasState(clientId),
+  count: (name) => store.recordFeature(name),
 });
 app.get('/talkguard/model.json', (req, res) => {
   const m = talkguard.modelJson();
@@ -7695,9 +7700,13 @@ io.on('connection', (socket) => {
     if (alreadyPending) {
       return socket.emit('friend-request-result', { ok: true, sent: true, pending: true });
     }
-    if (!socialRateOk('friend-request', me.clientId, 20, 10 * 60000)) {
+    // A script's tell is the hourly total, not the burst: 20 per ten minutes is
+    // 120 an hour. The hourly cap is lenient for a real person; the pattern
+    // below queues spraying for the owner well before it.
+    if (!socialRateOk('friend-request', me.clientId, 20, 10 * 60000) || !socialRateOk('friend-request-hour', me.clientId, 40, 3600000)) {
       return socket.emit('friend-request-result', { ok: false, rateLimited: true, error: 'Too many friend requests. Try again in a few minutes.' });
     }
+    patterns.onAction({ kind: 'friend-request', from: me.clientId, to: targetClientId, username: me.username });
     // They said no a moment ago: this looks sent from here and goes nowhere.
     if (recentlyDeclined(me.clientId, targetClientId)) {
       noteSentRequest(me.clientId, targetClientId, { ...snapshotOf(targetClientId, me.clientId), held: true });
@@ -8151,7 +8160,8 @@ io.on('connection', (socket) => {
       reply({ ok: true, id: dup.id, ts: dup.ts, voice: dup.voice });
       return;
     }
-    if (!socialRateOk('friend-voice-note', me.clientId, 5, 60000)) return reply({ ok: false, reason: 'rate' });
+    if (!socialRateOk('friend-voice-note', me.clientId, 5, 60000) || !socialRateOk('friend-voice-note-hour', me.clientId, 60, 3600000)) return reply({ ok: false, reason: 'rate' });
+    patterns.onAction({ kind: 'voice-note', from: me.clientId, to: toClientId, username: me.username });
     const noteId = 'v' + crypto.randomBytes(12).toString('hex');
     const friendInfo = (friends.get(me.clientId) || new Map()).get(toClientId);
     try {

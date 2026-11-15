@@ -953,7 +953,12 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deviceIdOfClie
   // --- TalkGuard model + behaviour patterns ---------------------------------
   router.get('/api/talkguard', (req, res) => {
     if (!talkguard) return res.status(503).json({ error: 'TalkGuard is not running.' });
-    res.json({ model: talkguard.summary(), patterns: patterns ? patterns.summary() : null });
+    // Today's counts of the behaviour signals (patterns.js) and ban evasion, so a
+    // quiet day and a script run read differently at a glance.
+    const f = (store.day() || {}).features || {};
+    const counters = {};
+    for (const k of ['spam_copypaste', 'spam_same_text', 'spam_link_first', 'spam_friend_spray', 'spam_voice_spray', 'ban_evasion']) counters[k] = f[k] || 0;
+    res.json({ model: talkguard.summary(), patterns: patterns ? { ...patterns.summary(), counters } : null });
   });
   router.post('/api/talkguard/score', (req, res) => {
     const text = String((req.body || {}).text || '').slice(0, 600);
