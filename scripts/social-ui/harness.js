@@ -64,9 +64,13 @@ function seed() {
   };
 }
 
-async function start({ port }) {
+// `mutate` lets a test reshape the seeded store (a very long chat, say) before
+// the server reads it.
+async function start({ port, mutate }) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tl-social-ui-'));
-  fs.writeFileSync(path.join(dir, 'owner-data.json'), JSON.stringify(seed()));
+  const data = seed();
+  if (mutate) mutate(data);
+  fs.writeFileSync(path.join(dir, 'owner-data.json'), JSON.stringify(data));
   const srv = spawn(process.execPath, [REPO + '/server/index.js'], {
     env: { ...process.env, PORT: String(port), DATA_DIR: dir, NODE_ENV: 'development', GIPHY_API_KEY: '', CALL_BACK_LIVE_MS: '500', IDENTITY_SECRET: SECRET },
     stdio: ['ignore', 'pipe', 'pipe'],

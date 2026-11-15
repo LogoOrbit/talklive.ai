@@ -606,6 +606,8 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "chatUnmuted": "Notifications back on",
     "strangerTyping": "Stranger is typing",
     "seen": "Seen",
+    "delivered": "Delivered",
+    "sentTick": "Sent",
     "messageSeen": "Read receipts (Seen)",
     "readReceipts": "Read Receipts",
     "readOurBlog": "Read our blog",

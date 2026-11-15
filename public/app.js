@@ -5663,6 +5663,7 @@ function renderFriendChatMessages(opts = {}) {
   // down to the newest one; only follow the conversation when already there.
   const stick = opts.toBottom || box.scrollHeight - box.scrollTop - box.clientHeight < 80;
   const prevTop = box.scrollTop;
+  const prevHeight = box.scrollHeight;
   friendChatMessages.innerHTML = '';
   // The whole list is re-rendered, so every id the controller knows about is
   // stale - drop them before the new bubbles register themselves. Same chat
@@ -5704,7 +5705,15 @@ function renderFriendChatMessages(opts = {}) {
       meta.insertBefore(ed, meta.firstChild);
     }
     const ticks = meta.querySelector('.chat-msg-ticks');
-    if (ticks && !m.pending) ticks.classList.replace('sending', 'sent');
+    if (ticks && !m.pending) {
+      // One tick: the server has it. Two: it reached their device. Two in the
+      // accent colour: they have read it - shown only to someone who also
+      // shares their own read receipts, as in every messenger.
+      const state = m.seen && messageSeenEnabled ? 'seen' : (m.delivered || m.seen) ? 'delivered' : 'sent';
+      ticks.classList.add('dm-ticks');
+      ticks.classList.replace('sending', state);
+      ticks.setAttribute('title', t(state === 'seen' ? 'seen' : state === 'delivered' ? 'delivered' : 'sentTick'));
+    }
     if (m.pending) el.classList.add('is-pending');
     if (m.failed) el.classList.add('is-failed');
     friendChatMessages.appendChild(el);
@@ -5737,7 +5746,9 @@ function renderFriendChatMessages(opts = {}) {
       friendChatMessages.appendChild(seenEl);
     }
   }
-  box.scrollTop = stick ? box.scrollHeight : prevTop;
+  // An older page went in above: keep what was on screen where it was.
+  if (opts.keepPlace) box.scrollTop = prevTop + (box.scrollHeight - prevHeight);
+  else box.scrollTop = stick ? box.scrollHeight : prevTop;
 }
 
 // Whether a live (accepted) call is in progress with this friend. Kept so the
@@ -5819,6 +5830,23 @@ function friendChatName(clientId) {
   return (past && labelForClientId(clientId, past.username)) || '';
 }
 
+// A chat opens on its newest messages and loads older ones as you scroll up,
+// so a long conversation costs one small page to open, not the whole thread.
+const FRIEND_PAGE = 40;
+const friendChatMore = new Map(); // clientId -> { hasMore, loading }
+function loadOlderFriendMessages() {
+  const id = activeFriendChatId;
+  const more = id && friendChatMore.get(id);
+  if (!more || !more.hasMore || more.loading) return;
+  const first = (friendChatCache.get(id) || []).find((m) => !m.pending && !m.failed && m.ts);
+  if (!first) return;
+  more.loading = true;
+  socket.emit('get-friend-chat', { friendClientId: id, limit: FRIEND_PAGE, before: first.ts, beforeId: first.id });
+}
+friendChatMessages.addEventListener('scroll', () => {
+  if (friendChatMessages.scrollTop < 80) loadOlderFriendMessages();
+}, { passive: true });
+
 function openFriendChat(friendClientId) {
   // The composer belongs to a conversation: text typed to one person used to
   // stay in the box when another chat was opened, and went to the wrong one.
@@ -5837,7 +5865,8 @@ function openFriendChat(friendClientId) {
   closeSidePanel(friendProfileModal, friendProfileOverlay);
   openSidePanel(friendChatModal, friendChatOverlay);
 
-  socket.emit('get-friend-chat', { friendClientId });
+  friendChatMore.delete(friendClientId);
+  socket.emit('get-friend-chat', { friendClientId, limit: FRIEND_PAGE });
   socket.emit('mark-messages-read', { friendClientId });
   if (messageSeenEnabled) socket.emit('chat-seen', { friendClientId });
   notifData = notifData.filter((n) => !(n.type === 'message' && n.fromClientId === friendClientId));
@@ -6425,6 +6454,12 @@ friendChatMessages.addEventListener('click', (e) => {
 // Re-registered after a drop: anything still unacknowledged goes again.
 socket.on('register-result', ({ ok } = {}) => {
   if (ok === false) return;
+  // Whatever happened while the socket was down - new messages, an unsend, an
+  // edit, a receipt - is in the stored thread, not in this page. Fetch the
+  // open chat's newest page again so it catches up without being reopened.
+  if (activeFriendChatId && friendChatModal.classList.contains('open')) {
+    socket.emit('get-friend-chat', { friendClientId: activeFriendChatId, limit: FRIEND_PAGE });
+  }
   friendOutbox.forEach((entry, id) => {
     const msg = outboxMessage(id);
     if (msg && msg.failed) { msg.failed = false; msg.pending = true; repaintChat(entry.toClientId); }
@@ -6530,26 +6565,27 @@ socket.on('chat-seen', ({ byClientId, ts } = {}) => {
   if (!cache) return;
   const myId = getClientId();
   cache.forEach((m) => {
-    if (m.from === myId && (!m.ts || m.ts <= ts)) m.seen = true;
+    if (m.from === myId && (!m.ts || m.ts <= ts)) { m.seen = true; m.delivered = true; }
   });
   if (activeFriendChatId === byClientId) renderFriendChatMessages();
 });
 
-socket.on('friend-message-sent', ({ toClientId, text, ts, id, replyTo, gif, voice }) => {
+socket.on('friend-message-sent', ({ toClientId, text, ts, id, replyTo, gif, voice, delivered }) => {
   settleFriendMessage(id);
   const cache = friendChatCache.get(toClientId) || [];
   const mine = id && cache.find((m) => m.id === id);
   if (mine) {
     // The optimistic copy: it is delivered now, stamped with the server's time.
-    const changed = mine.pending || mine.failed;
+    const changed = mine.pending || mine.failed || (delivered && !mine.delivered);
     mine.pending = false;
     mine.failed = false;
     mine.ts = ts || mine.ts;
+    if (delivered) mine.delivered = true;
     if (voice) settleVoiceNote(id, voice);
     if (changed) repaintChat(toClientId);
     return;
   }
-  cache.push({ from: getClientId(), text, ts, id, replyTo, gif, voice });
+  cache.push({ from: getClientId(), text, ts, id, replyTo, gif, voice, delivered: !!delivered });
   friendChatCache.set(toClientId, cache);
   noteLastMessage(toClientId, { id, mine: true, text: text || '', gif: !!gif, voice: !!voice, ts });
   renderFriendsList();
@@ -6563,7 +6599,7 @@ socket.on('dm-gate', ({ clientId, gate } = {}) => {
   if (activeFriendChatId === clientId) applyFriendChatLock();
 });
 
-socket.on('friend-chat-history', ({ friendClientId, messages, gate, voice }) => {
+socket.on('friend-chat-history', ({ friendClientId, messages, gate, voice, hasMore, older }) => {
   if (voice) {
     friendVoiceState.set(friendClientId, voice);
     if (activeFriendChatId === friendClientId) renderVoiceGate();
@@ -6574,12 +6610,39 @@ socket.on('friend-chat-history', ({ friendClientId, messages, gate, voice }) => 
   }
   // Anything still on its way is not in the server's copy yet - keep it.
   const stored = messages || [];
+  const held = friendChatCache.get(friendClientId) || [];
+  if (older) {
+    // An older page: it goes in front of what is already loaded.
+    const known = new Set(held.map((m) => m.id));
+    friendChatCache.set(friendClientId, stored.filter((m) => !known.has(m.id)).concat(held));
+    friendChatMore.set(friendClientId, { hasMore: !!hasMore, loading: false });
+    if (activeFriendChatId === friendClientId) renderFriendChatMessages({ keepPlace: true });
+    return;
+  }
   const have = new Set(stored.map((m) => m.id));
-  const waiting = (friendChatCache.get(friendClientId) || [])
-    .filter((m) => (m.pending || m.failed) && !have.has(m.id));
+  const waiting = held.filter((m) => (m.pending || m.failed) && !have.has(m.id));
   stored.forEach((m) => { if (friendOutbox.has(m.id)) settleFriendMessage(m.id); });
-  friendChatCache.set(friendClientId, stored.concat(waiting));
+  // The newest page replaces what was loaded for that stretch of time (that is
+  // how an unsend or edit made while away reaches this screen), but older
+  // pages already scrolled back to stay where they are.
+  const floor = stored.length && hasMore !== undefined ? stored[0].ts : -Infinity;
+  const kept = held.filter((m) => !m.pending && !m.failed && m.ts && m.ts < floor && !have.has(m.id));
+  friendChatCache.set(friendClientId, kept.concat(stored, waiting));
+  if (hasMore !== undefined) {
+    const prev = friendChatMore.get(friendClientId);
+    friendChatMore.set(friendClientId, { hasMore: kept.length && prev ? prev.hasMore : !!hasMore, loading: false });
+  }
   if (activeFriendChatId === friendClientId) renderFriendChatMessages();
+});
+
+// The recipient's device has it: two ticks.
+socket.on('friend-message-delivered', ({ toClientId, ids } = {}) => {
+  const cache = friendChatCache.get(toClientId);
+  if (!cache || !Array.isArray(ids)) return;
+  const mine = new Set(ids);
+  let changed = false;
+  cache.forEach((m) => { if (mine.has(m.id) && !m.delivered) { m.delivered = true; changed = true; } });
+  if (changed && activeFriendChatId === toClientId) renderFriendChatMessages();
 });
 
 // --- Recent people ---
