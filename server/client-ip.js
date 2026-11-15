@@ -41,7 +41,9 @@ function clientIpFrom(headers = {}, remoteAddress = '') {
   // Only a whole IPv4-mapped address loses its prefix; "::ffff:" can also
   // appear inside an ordinary IPv6 address, which must stay intact.
   const mapped = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i.exec(ip);
-  return mapped ? mapped[1] : ip;
+  // An address is at most 45 characters (plus a port some proxies append).
+  // Anything longer is not one, and it is used as a key for rate limits and bans.
+  return mapped ? mapped[1] : ip.slice(0, 64);
 }
 
 // The bucket an address is counted in for rate limits and lockouts. An IPv6

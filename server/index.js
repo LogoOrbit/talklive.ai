@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const net = require('net');
 const crypto = require('crypto');
 const express = require('express');
 const http = require('http');
@@ -27,6 +28,7 @@ const NICK_ERRORS = {
 };
 const store = require('./store');
 const reputation = require('./reputation');
+const voiceCheck = require('./voice-check');
 const matchModel = require('./match-model');
 const { TrackedMap } = require('./doc-json');
 const modTags = require('./moderation-tags');
@@ -43,7 +45,7 @@ const push = require('./push');
 push.setFilter((clientId, category) => store.getNotifPrefs(clientId)[category] !== false);
 // Old guest talk-time records go once a day (and shortly after start).
 setTimeout(() => { try { store.compactStore(); } catch (_) { /* store not loaded yet */ } }, 5 * 60 * 1000).unref();
-setInterval(() => { try { store.compactStore(); } catch (_) { /* ignore */ } }, 24 * 60 * 60 * 1000).unref();
+setInterval(() => { try { store.compactStore(); store.pruneVoice(voiceCheck.empty); } catch (_) { /* ignore */ } }, 24 * 60 * 60 * 1000).unref();
 const flags = require('./flags');
 const { minifiedScripts } = require('./minified');
 const ageAssurance = require('./age-assurance');
@@ -1481,7 +1483,16 @@ app.get('/talkguard/model.json', (req, res) => {
   if (req.headers['if-none-match'] === tag) return res.status(304).end();
   res.json(m);
 });
-const admin = createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getUserStats, automod, talkguard, patterns, support, getLiveGames: () => gameTracker.live(), grantPlus: (who, days) => grantPlusTo(who, days, 'dashboard') });
+const admin = createAdmin({
+  io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getUserStats, automod, talkguard, patterns, support,
+  getLiveGames: () => gameTracker.live(), grantPlus: (who, days) => grantPlusTo(who, days, 'dashboard'),
+  // An appeal was decided: show the person the outcome if they are online.
+  onVoiceDecision: (clientId) => {
+    const sid = clientSockets.get(clientId);
+    const sock = sid ? io.sockets.sockets.get(sid) : null;
+    if (sock && profiles.get(sid)) sendVoiceView(sock, profiles.get(sid));
+  },
+});
 app.use('/owner', admin.router);
 
 // Maintenance mode: when on, every non-dashboard page gets a friendly 503.
@@ -4048,7 +4059,10 @@ function getClientIp(socket) {
 }
 
 function lookupGeo(ip) {
-  const geo = geoip.lookup(ip);
+  // Only a real address is looked up: the geo library parses whatever it is
+  // handed, and a long or malformed string (an X-Forwarded-For value off Fly)
+  // is slow to reject there.
+  const geo = net.isIP(String(ip || '')) ? geoip.lookup(ip) : null;
   if (!geo) return { country: 'XX', countryName: 'Unknown', city: 'Unknown' };
   const code = geo.country || 'XX';
   return {
@@ -4675,8 +4689,8 @@ function disconnectPartner(socketId, opts = {}) {
       if (partnerProfile) settleReferral(partnerProfile.clientId);
     }
   }
-  if (profile) { profile.matchedAt = 0; profile.mx = null; profile.mPos = false; }
-  if (partnerProfile) { partnerProfile.matchedAt = 0; partnerProfile.mx = null; partnerProfile.mPos = false; }
+  if (profile) { profile.matchedAt = 0; profile.mx = null; profile.mPos = false; profile.micMuted = false; }
+  if (partnerProfile) { partnerProfile.matchedAt = 0; partnerProfile.mx = null; partnerProfile.mPos = false; partnerProfile.micMuted = false; }
 
   if (profile && partnerProfile) {
     notePairParted(profile.clientId, partnerProfile.clientId, opts.failed);
@@ -4863,25 +4877,76 @@ function hasSoftFilters(p) {
     || !!p.prefLang;
 }
 
-// The only values a client's voice check may report; anything else is dropped.
-function sanitizeVoiceGender(v) {
-  if (!v || (v.label !== 'male' && v.label !== 'female')) return null;
-  const confidence = Number(v.confidence);
-  if (!(confidence >= 0.85 && confidence <= 1)) return null;
-  return { label: v.label, confidence };
+// --- Voice check -------------------------------------------------------------
+// An estimate of how a person's voice sounds, made by the server from a
+// summary their own device computes during voice calls (server/voice-check.js).
+// It backs the gender filter: someone filtering for Men or Women is matched
+// with people who chose that gender, checked voices first, and never with a
+// profile whose voice has repeatedly and confidently disagreed with it.
+// It never changes anyone's gender and is never shown to another person.
+function voiceOn() {
+  return flags.isOn('voiceCheck');
+}
+function voiceRec(clientId) {
+  return voiceOn() ? store.voiceGet(clientId) : null;
+}
+function voiceEnabled(rec) {
+  return !!(rec && rec.on);
+}
+function voiceView(profile) {
+  const rec = voiceRec(profile.clientId);
+  return voiceCheck.view(rec, profile.gender, voiceEnabled(rec));
+}
+function sendVoiceView(socket, profile, extra) {
+  if (!voiceOn() || !socket || !profile) return;
+  socket.emit('voice-check', { ...voiceView(profile), ...(extra || {}) });
+}
+// Counted once per change of state, for the dashboard.
+function saveVoiceRec(profile, rec, before) {
+  // The gender it is compared with, so the dashboard can count without a live profile.
+  if (rec) rec.g = profile.gender;
+  store.voiceSet(profile.clientId, rec && voiceCheck.empty(rec) ? null : rec);
+  const after = voiceCheck.status(rec, profile.gender, voiceEnabled(rec));
+  if (after !== before && (after === 'confirmed' || after === 'mismatch' || after === 'unclear')) store.recordFeature('voice_' + after);
 }
 
-// Voice-checked: opted in, and the voice agreed with the gender they picked.
-// A voice that reads differently never changes anyone's gender - they are
-// simply not "voice-checked", exactly like someone who never turned it on.
-function voiceChecked(p) {
-  return !!(p.voiceGender && p.voiceGender.label === p.gender);
-}
+// "I am" changes, per profile, for voiceCheck.declare(): clientId -> { g, t, at }.
+const declaredGender = new Map();
 
 function genderPrefMet(seeker, candidate) {
   if (!seeker.prefGender || seeker.prefGender === 'any') return true;
-  if (candidate.gender !== seeker.prefGender) return false;
-  return !seeker.prefVoiceChecked || voiceChecked(candidate);
+  if (!voiceOn()) return candidate.gender === seeker.prefGender;
+  const rec = store.voiceGet(candidate.clientId);
+  return voiceCheck.eligible(rec, candidate.gender, voiceEnabled(rec), seeker.prefGender, !!seeker.prefVoiceChecked);
+}
+
+// Among people who pass the filter, a checked voice goes first.
+function genderRankBonus(seeker, candidate) {
+  if (!voiceOn() || !seeker.prefGender || seeker.prefGender === 'any') return 0;
+  const rec = store.voiceGet(candidate.clientId);
+  return voiceCheck.rankBonus(rec, candidate.gender, voiceEnabled(rec));
+}
+
+// The gender used for matching. "I am" can be changed freely, but a profile
+// that keeps flipping it in one day stays on its earlier choice until tomorrow.
+function declaredAs(clientId, wanted) {
+  if (!voiceOn()) return wanted;
+  const out = voiceCheck.declare(declaredGender.get(clientId), wanted);
+  declaredGender.set(clientId, out.entry);
+  return out.gender;
+}
+
+// Turning Voice check on is consent to estimates being kept; turning it off
+// forgets them (complaints and an appeal are safety records and stay).
+function setVoiceConsent(profile, on) {
+  if (!profile) return;
+  const rec = store.voiceGet(profile.clientId);
+  if (!!(rec && rec.on) === on) return;
+  const before = voiceCheck.status(rec, profile.gender, voiceEnabled(rec));
+  const next = { s: [], r: [], d: [], ...(rec || {}), on };
+  if (!on) next.s = [];
+  store.recordFeature(on ? 'voice_on' : 'voice_off');
+  saveVoiceRec(profile, next, before);
 }
 
 // Returns true if candidate's profile satisfies seeker's filters, and vice versa.
@@ -4980,7 +5045,8 @@ const PREMIUM_QUEUE_BONUS = 1000;
 
 function matchScore(a, b) {
   return sharedInterestCount(a, b) * 2 + (a.lang && a.lang === b.lang ? 1 : 0)
-    + (b.premium ? PREMIUM_QUEUE_BONUS : 0);
+    + (b.premium ? PREMIUM_QUEUE_BONUS : 0)
+    + genderRankBonus(a, b) + genderRankBonus(b, a);
 }
 
 function findBestMatch(socketId) {
@@ -5097,6 +5163,13 @@ function pairSockets(socketId, partnerId, opts = {}) {
   }
 
   const mode = seekerProfile.mode || 'talk';
+  // Whose gender filter chose whom, so only that person can say the filter
+  // gave them the wrong match (see 'gender-feedback').
+  const filtered = (a, b) => voiceOn() && a.prefGender && a.prefGender !== 'any' && !a.randomFallbackActive && b.gender === a.prefGender;
+  for (const [a, b] of [[seekerProfile, partnerProfile], [partnerProfile, seekerProfile]]) {
+    a.filterMatch = filtered(a, b) ? { clientId: b.clientId, gender: b.gender, at: a.matchedAt } : null;
+    a.micMuted = false;
+  }
   // Feature vector captured now, learned from when the match ends.
   seekerProfile.mPos = partnerProfile.mPos = false;
   partnerProfile.mx = null;
@@ -5108,8 +5181,21 @@ function pairSockets(socketId, partnerId, opts = {}) {
   // Quarantined pairs are counted on their own, so the dashboard's matches are people.
   store.recordFeature(quarantined(seekerProfile) ? 'bot_match' : (mode === 'chat' ? 'chat_match' : 'match'));
   const samePersonality = sharedPersonality(seekerProfile, partnerProfile);
-  partnerSocket.emit('matched', { initiator: true, partner: publicProfile(seekerProfile), rematched, mode, samePersonality, sameFilms: sharedFilms(partnerProfile, seekerProfile), undo: opts.undo ? 'them' : undefined });
-  seekerSocket.emit('matched', { initiator: false, partner: publicProfile(partnerProfile), rematched, mode, samePersonality, sameFilms: sharedFilms(seekerProfile, partnerProfile), undo: opts.undo ? 'me' : undefined });
+  // `voice`: this side's device should send a voice summary this call. Asked
+  // for until a few calls agree, and now and then afterwards so an estimate
+  // made on someone else's voice does not vouch for a profile for months.
+  const wantsVoice = (p) => {
+    if (mode !== 'talk' || !voiceOn() || (p.gender !== 'male' && p.gender !== 'female')) return undefined;
+    const rec = store.voiceGet(p.clientId);
+    if (!voiceEnabled(rec)) return undefined;
+    const est = voiceCheck.estimate(rec);
+    const settled = est && est.sessions >= 3 && voiceCheck.status(rec, p.gender, true) === 'confirmed';
+    return !settled || Math.random() < 0.25 ? true : undefined;
+  };
+  // `filtered`: this side's gender filter picked the partner, so its call
+  // screen may offer "Not who I filtered for".
+  partnerSocket.emit('matched', { initiator: true, partner: publicProfile(seekerProfile), rematched, mode, samePersonality, sameFilms: sharedFilms(partnerProfile, seekerProfile), undo: opts.undo ? 'them' : undefined, filtered: partnerProfile.filterMatch ? true : undefined, voice: wantsVoice(partnerProfile) });
+  seekerSocket.emit('matched', { initiator: false, partner: publicProfile(partnerProfile), rematched, mode, samePersonality, sameFilms: sharedFilms(seekerProfile, partnerProfile), undo: opts.undo ? 'me' : undefined, filtered: seekerProfile.filterMatch ? true : undefined, voice: wantsVoice(seekerProfile) });
 
   // Remember each other so either side can message back, call back, add or
   // report later. This used to happen for text matches only, which left every
@@ -5405,7 +5491,7 @@ const HOLD_UNTIL_REGISTERED = new Set([
   'remove-friend', 'rename-friend', 'block-friend', 'unblock-user', 'clear-friend-chat',
   'clear-notification', 'mark-notifications-seen', 'call-back-request-later',
   'set-status-visibility', 'set-call-availability', 'find-by-friend-id', 'voice-invite-join',
-  'pin-friend', 'mute-chat', 'remove-history-entry',
+  'pin-friend', 'mute-chat', 'remove-history-entry', 'voice-check-set',
 ]);
 const MAX_HELD_EVENTS = 40;
 const HELD_EVENTS_TTL_MS = 20 * 1000;
@@ -6332,20 +6418,15 @@ io.on('connection', (socket) => {
       city: geo.city,
       // Echoed to other people (online list, owner dashboard) and compared in
       // matching, so only the three values the UI offers are kept.
-      gender: (authedAccount && authedAccount.gender && audience.normGender(data.gender) === 'unspecified') ? authedAccount.gender : audience.normGender(data.gender),
+      gender: declaredAs(clientId, (authedAccount && authedAccount.gender && audience.normGender(data.gender) === 'unspecified') ? authedAccount.gender : audience.normGender(data.gender)),
       // Self-reported in Settings, never verified; only used for the owner's
       // aggregate audience analytics.
       ageGroup: (authedAccount && authedAccount.ageGroup && audience.normAge(data.ageGroup) === 'unspecified') ? authedAccount.ageGroup : audience.normAge(data.ageGroup),
       device: audience.parseUA(socket.handshake.headers['user-agent']).device,
       prefGender: premium && (data.prefGender === 'male' || data.prefGender === 'female') ? data.prefGender : 'any',
       // "Voice-checked only": with a gender preference, match only people whose
-      // on-device voice check agreed with the gender they picked themselves.
-      prefVoiceChecked: premium && flags.isOn('voiceCheck') && data.prefVoiceChecked === true,
-      // Opt-in result of voice-gender.js, which runs on the person's own
-      // device. Kept in memory for this socket only, never stored, never sent
-      // to anyone else, and only ever used to confirm the self-declared gender.
-      voiceGender: flags.isOn('voiceCheck') && data.voiceCheck === true ? sanitizeVoiceGender(data.voiceGender) : null,
-      voiceCheck: flags.isOn('voiceCheck') && data.voiceCheck === true,
+      // voice check agreed with the gender they picked themselves.
+      prefVoiceChecked: premium && voiceOn() && data.prefVoiceChecked === true,
       includeCountries: sanitizeCountryList(data.includeCountries),
       excludeCountries: sanitizeCountryList(data.excludeCountries),
       randomFallbackActive: false,
@@ -6378,6 +6459,14 @@ io.on('connection', (socket) => {
     });
     clientSockets.set(clientId, socket.id);
     socket.emit('contact-consent', { on: store.hasContactConsent(clientId) });
+    // Voice check is switched with 'voice-check-set'. Registration can only
+    // turn it on (how apps before 3.10 said so): cached pages from before
+    // this feature send `voiceCheck: false` on every visit, which must not
+    // undo a choice made on another device.
+    if (voiceOn()) {
+      if (data.voiceCheck === true) setVoiceConsent(profiles.get(socket.id), true);
+      sendVoiceView(socket, profiles.get(socket.id), profiles.get(socket.id).genderHeld ? { genderHeld: true } : null);
+    }
     {
       const p = profiles.get(socket.id);
       const ua = audience.parseUA(socket.handshake.headers['user-agent']);
@@ -7067,13 +7156,105 @@ io.on('connection', (socket) => {
   // incident to the dashboard transcript store (no email). Rate-limited per
   // socket so a hostile client can't spam the log.
   const lastModerationAlert = {};
-  // voice-gender.js reached a confident verdict on this person's own voice.
-  // Ignored unless they opted in to Voice check for this profile.
-  socket.on('voice-gender', (data) => {
+  // --- Voice check ---------------------------------------------------------
+  // The device's summary of this person's own speech in the current voice
+  // call. The server scores it; a device cannot report a result of its own.
+  // (Apps before 3.10 sent 'voice-gender' with a label; that is ignored.)
+  socket.on('voice-features', (summary) => {
     const p = profiles.get(socket.id);
-    if (!p || !p.voiceCheck) return;
-    const v = sanitizeVoiceGender(data);
-    if (v) p.voiceGender = v;
+    if (!p || !voiceOn()) return;
+    const rec = store.voiceGet(p.clientId);
+    if (!voiceEnabled(rec)) return;
+    // Only in a live voice call, a few times per call at most.
+    if (!partners.has(socket.id) || (p.mode || 'talk') !== 'talk' || !p.matchedAt || quarantined(p, socket.id)) return;
+    if (p.voiceCall !== p.matchedAt) { p.voiceCall = p.matchedAt; p.voiceSends = 0; p.voiceScored = false; }
+    if (++p.voiceSends > 3) return;
+    const before = voiceCheck.status(rec, p.gender, true);
+    const out = voiceCheck.addSession(rec, summary, {
+      callMs: Date.now() - p.matchedAt,
+      muted: !!p.micMuted,
+      alreadyThisCall: p.voiceScored,
+    });
+    if (out.ok) {
+      p.voiceScored = true;
+      store.recordFeature('voice_scored');
+      saveVoiceRec(p, out.rec, before);
+    }
+    // `more`: keep listening and send a longer summary. `again`: this one
+    // could not be used (muted, or too early in the call), send a fresh one.
+    const again = !out.ok && (out.reason === 'early' || out.reason === 'muted') && p.voiceSends < 3;
+    sendVoiceView(socket, p, { more: (out.ok && out.more && p.voiceSends < 3) || again, again });
+  });
+
+  // The Settings switch, without waiting for the next registration.
+  socket.on('voice-check-set', ({ on } = {}) => {
+    const p = profiles.get(socket.id);
+    if (!p || !voiceOn() || typeof on !== 'boolean') return;
+    if (!socialRateOk('voice-set', p.clientId, 20, 60 * 60000)) return;
+    setVoiceConsent(p, on);
+    sendVoiceView(socket, p);
+  });
+
+  // "Check again": forget the estimates so the next calls start fresh.
+  socket.on('voice-retry', (ack) => {
+    const reply = typeof ack === 'function' ? ack : () => {};
+    const p = profiles.get(socket.id);
+    if (!p || !voiceOn()) return reply({ ok: false });
+    const rec = store.voiceGet(p.clientId);
+    if (!voiceEnabled(rec)) return reply({ ok: false, reason: 'off' });
+    const before = voiceCheck.status(rec, p.gender, true);
+    const out = voiceCheck.retry(rec);
+    if (!out.ok) return reply({ ok: false, reason: out.reason, retryAt: out.retryAt });
+    store.recordFeature('voice_retry');
+    saveVoiceRec(p, out.rec, before);
+    p.voiceCall = 0;
+    sendVoiceView(socket, p);
+    reply({ ok: true });
+  });
+
+  // Ask a person on the team to review it (the owner's dashboard decides).
+  socket.on('voice-appeal', ({ note } = {}, ack) => {
+    const reply = typeof ack === 'function' ? ack : () => {};
+    const p = profiles.get(socket.id);
+    if (!p || !voiceOn()) return reply({ ok: false });
+    if (!socialRateOk('voice-appeal', p.clientId, 5, 24 * 60 * 60000)) return reply({ ok: false, reason: 'limit' });
+    const rec = store.voiceGet(p.clientId);
+    const out = voiceCheck.openAppeal(rec, p.gender, typeof note === 'string' ? note.trim() : '');
+    if (!out.ok) return reply({ ok: false, reason: out.reason, retryAt: out.retryAt });
+    out.rec.appeal.username = p.username;
+    out.rec.appeal.country = p.countryName || p.country || '';
+    out.rec.appeal.account = socketAuth.get(socket.id) || null;
+    store.recordFeature('voice_appeal');
+    store.voiceSet(p.clientId, out.rec);
+    admin.sendAlertEmail('voice-appeal', 'TalkLive: a voice check review was requested',
+      `${p.username} asked for their voice check to be reviewed by a person.\n\nReview it at ${OWNER_URL}#voice`);
+    sendVoiceView(socket, p);
+    reply({ ok: true });
+  });
+
+  // "Not who I filtered for": only from someone whose own gender filter chose
+  // this partner, about that partner, during the call or just after it.
+  socket.on('gender-feedback', (ack) => {
+    const reply = typeof ack === 'function' ? ack : () => {};
+    const p = profiles.get(socket.id);
+    const via = p && p.filterMatch;
+    if (!p || !voiceOn() || !via || Date.now() - via.at > 30 * 60000) return reply({ ok: false });
+    p.filterMatch = null;
+    if (!socialRateOk('gender-feedback', p.clientId, 10, 24 * 60 * 60000)) return reply({ ok: false, reason: 'limit' });
+    const targetSocketId = clientSockets.get(via.clientId);
+    const target = targetSocketId ? profiles.get(targetSocketId) : null;
+    const rec = store.voiceGet(via.clientId);
+    const wasDisputed = voiceCheck.disputed(rec, via.gender, voiceEnabled(rec));
+    const next = voiceCheck.addDispute(rec, p.clientId);
+    store.voiceSet(via.clientId, next);
+    store.recordFeature('voice_dispute');
+    // The two are not offered to each other again today.
+    pairCooldowns.set(pairKey(p.clientId, via.clientId), { until: Date.now() + 24 * 60 * 60000, failed: true });
+    if (target && !wasDisputed && voiceCheck.disputed(next, target.gender, voiceEnabled(next))) {
+      store.recordFeature('voice_disputed');
+      sendVoiceView(io.sockets.sockets.get(targetSocketId), target);
+    }
+    reply({ ok: true });
   });
 
   socket.on('moderation-alert', ({ type, detail, transcript } = {}) => {
@@ -7110,6 +7291,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('mic-state', (muted) => {
+    const self = profiles.get(socket.id);
+    if (self) self.micMuted = !!muted;
     const partnerId = partners.get(socket.id);
     if (partnerId) {
       // Clients send and read a plain boolean; never relay anything else.
@@ -8556,6 +8739,9 @@ function sweepEphemeralState() {
   }
   for (const [key, ts] of reportCooldowns) {
     if (now - ts > REPORT_COOLDOWN_TTL_MS) reportCooldowns.delete(key);
+  }
+  for (const [clientId, entry] of declaredGender) {
+    if (now - (entry.at || 0) > 24 * 60 * 60 * 1000 && !clientSockets.has(clientId)) declaredGender.delete(clientId);
   }
   // Pair holds carry their own expiry; this only reclaims the ones no matcher
   // pass happened to look at again.
