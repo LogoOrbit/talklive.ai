@@ -2660,6 +2660,7 @@ window.banUser=(clientId,ip,username,country,city)=>{
      <label>Reason <span style="text-transform:none;letter-spacing:0">(saved to the audit log)</span></label>
      <select id="banReasonSel">${BAN_REASONS.map(r=>`<option>${r}</option>`).join('')}<option value="__custom">Write my own…</option></select>
      <input id="banReason" class="hidden" style="margin-top:8px" placeholder="Reason">
+     <label style="display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:0;margin-top:12px"><input type="checkbox" id="banDevice" checked> Also ban this device (and the account, if signed in). Stops a new browser or cleared site data; unrelated people on the same network are not affected.</label>
      <div class="rowbtns" style="margin-top:16px">
        <button class="danger" id="banGo" style="padding:9px 16px">Ban user</button>
        <button id="banCancel" style="padding:9px 16px">Cancel</button>
@@ -2673,7 +2674,7 @@ window.banUser=(clientId,ip,username,country,city)=>{
         const reason=(sel.value==='__custom'?free.value.trim():sel.value)||'Owner ban';
         const label=(DUR.find(d=>d[0]===String(minutes))||['','?'])[1];
         try{
-          await post('ban',{clientId,ip,username,country,city,minutes,reason});
+          await post('ban',{clientId,ip,username,country,city,minutes,reason,alsoDevice:sheet.querySelector('#banDevice').checked});
           closeModal();
           toast('Banned '+(username||clientId),`${label} · ${reason}`,'good');
           load();
@@ -2825,12 +2826,12 @@ async function viewBans(){
     <div class="seg"><button data-bf="active" class="${banFilter==='active'?'on':''}">Active (${active.length})</button><button data-bf="all" class="${banFilter==='all'?'on':''}">All (${r.bans.length})</button></div>
     ${exportLink('bans','Export bans')}
   </div>
-  <table><tr><th>User</th><th>Reason</th><th>Banned</th><th>Expires</th><th>Status</th><th></th></tr>
+  <table><tr><th>User</th><th>Reason</th><th>Covers</th><th>Banned</th><th>Expires</th><th>Status</th><th></th></tr>
   ${list.map(b=>{const st=state(b);
   return `<tr style="${st==='active'?'':'opacity:.55'}"><td><b>${esc(b.username)}</b><br><span class="muted">${esc(b.country)}${b.city?', '+esc(b.city):''} · ${esc((b.ip||''))}</span></td>
-  <td>${esc(b.reason)}</td><td>${fmtTs(b.createdAt)}</td><td>${fmtTs(b.expiresAt)}${st==='active'?`<br><span class="muted">${until(b.expiresAt)}</span>`:''}</td>
+  <td>${esc(b.reason)}</td><td class="muted">${b.clientId?'profile':''}${b.account?' · account <b>'+esc(b.account)+'</b>':''}${b.deviceBound?' · device':''}${b.ip?' · network':''}${(b.evasions&&b.evasions.length)?`<br><span class="pill warn">Tried again as ${b.evasions.map(e=>esc(String(e.clientId).slice(0,10))+' ('+esc(e.via)+(e.count>1?' x'+e.count:'')+')').join(', ')}</span>`:''}</td><td>${fmtTs(b.createdAt)}</td><td>${fmtTs(b.expiresAt)}${st==='active'?`<br><span class="muted">${until(b.expiresAt)}</span>`:''}</td>
   <td>${st==='lifted'?'<span class="pill info">Lifted</span>':st==='active'?'<span class="pill crit">Active</span>':'<span class="pill good">Expired</span>'}</td>
-  <td>${st==='active'?`<div class="rowbtns"><button onclick="unban('${jsq(b.id)}')">Lift ban</button></div>`:''}</td></tr>`;}).join('')||`<tr><td colspan="6" class="muted">${banFilter==='active'?'No active bans right now.':'No bans on record.'}</td></tr>`}</table></div>`;
+  <td>${st==='active'?`<div class="rowbtns"><button onclick="unban('${jsq(b.id)}')">Lift ban</button></div>`:''}</td></tr>`;}).join('')||`<tr><td colspan="7" class="muted">${banFilter==='active'?'No active bans right now.':'No bans on record.'}</td></tr>`}</table></div>`;
   document.querySelectorAll('[data-bf]').forEach(b=>b.onclick=()=>{banFilter=b.dataset.bf;load();});
 }
 window.unban=async(id)=>{try{await post('unban',{banId:id});toast('Ban lifted','The user can connect again.','good');load();}catch(e){toast('Could not lift ban',e.message,'bad');}};

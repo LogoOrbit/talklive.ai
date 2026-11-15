@@ -803,7 +803,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deviceIdOfClie
     const withCounts = source.map((r) => ({
       ...r,
       totalReportsOnUser: r.reported ? counts.get(r.reported.clientId) || 0 : 0,
-      activeBan: r.reported ? !!store.findActiveBan(r.reported.clientId, r.reported.ip) : false,
+      activeBan: r.reported ? !!store.findActiveBan(r.reported.clientId, r.reported.ip, { deviceId: r.reported.deviceId }) : false,
     }));
     // Leaderboard of the most-reported people over the chosen window (days,
     // 0 = everything on record), with their ban state for one-click action.
@@ -853,7 +853,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deviceIdOfClie
   });
 
   router.get('/api/bans', (req, res) => {
-    res.json({ bans: store.data.bans.slice(0, 300), now: Date.now() });
+    res.json({ bans: store.data.bans.slice(0, 300).map(({ deviceId, ...b }) => ({ ...b, deviceBound: !!deviceId })), now: Date.now() });
   });
 
   router.post('/api/ban', (req, res) => {

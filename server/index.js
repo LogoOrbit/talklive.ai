@@ -5715,10 +5715,11 @@ io.on('connection', (socket) => {
   socket.emit('siteModes', store.publicModes());
 
   // Banned by IP: refuse service entirely until the ban expires or is lifted.
-  // The device cookie counts too, so a banned browser is refused before it
-  // has a clientId to change.
-  socket.data.deviceId = deviceIdFrom(socket, '');
+  // Only the network is checked here. The device is checked when the browser
+  // registers (or signs in), so that the new clientId it tries can be recorded
+  // against the ban as an evasion attempt.
   if (refuseBanned(socket, null, null)) return;
+  socket.data.deviceId = deviceIdFrom(socket, '');
 
   store.recordConnection();
   store.recordPeakOnline(onlineCount());
