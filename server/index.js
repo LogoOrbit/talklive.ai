@@ -419,6 +419,25 @@ function isPremium(clientId) {
   return envPremiumClients.has(clientId) || store.isPremiumClient(clientId);
 }
 
+// What the pages need to show the true state of someone's Plus: where it came
+// from, when it ends, and whether it renews. `source` is one of play (a
+// Google Play subscription), pass (a Google Play pass), granted (given by
+// TalkLive or the owner) or earlier (a purchase from before Google Play).
+function premiumInfo(clientId) {
+  if (envPremiumClients.has(clientId)) return { expiresAt: null, source: 'granted', renews: false, state: 'active' };
+  const rec = store.data.premium[clientId];
+  const live = isPremium(clientId);
+  const src = !rec ? null : rec.source === 'play' ? 'play' : rec.source === 'play-pass' ? 'pass' : rec.source === 'stripe' ? 'earlier' : 'granted';
+  const ps = rec && rec.playState;
+  return {
+    expiresAt: store.premiumExpiry(clientId),
+    source: live ? src : null,
+    // Only a Google Play subscription that Google still reports as active renews.
+    renews: !!(live && src === 'play' && ps === 'SUBSCRIPTION_STATE_ACTIVE'),
+    state: !live ? (rec && rec.expiresAt ? 'expired' : 'none') : ps === 'SUBSCRIPTION_STATE_IN_GRACE_PERIOD' ? 'grace' : ps === 'SUBSCRIPTION_STATE_CANCELED' ? 'ending' : 'active',
+  };
+}
+
 // Lets the pricing page (a separate static page) confirm activation. It answers
 // for any clientId, so it is rate limited to stop anyone sweeping through ids;
 // the pricing page itself asks at most 11 times.
@@ -431,7 +450,7 @@ app.get('/premium-status', httpRateLimit('premium-status', 60, 60000), (req, res
     // "Plus is active" rather than a renewal date. Only shown to the holder of
     // the identity token: a clientId alone is not a secret.
     ...(validIdentityToken(clientId, String(req.query.identityToken || ''))
-      ? { expiresAt: envPremiumClients.has(clientId) ? null : store.premiumExpiry(clientId) } : {}),
+      ? premiumInfo(clientId) : {}),
   });
 });
 
@@ -632,9 +651,13 @@ app.post('/billing/play/verify', httpRateLimit('play-verify', 30, 60000), expres
   }
   const key = playTokenKey(purchaseToken);
   const owner = store.data.playPurchases[key];
-  if (owner && owner !== clientId) {
-    // A token belongs to the profile that bought it. A signed-in person on a
-    // new phone gets that profile back by signing in (adoptProfile).
+  const ownerIsAccount = !!(owner && store.findUsernameByClientId(owner));
+  const requesterIsAccount = !!store.findUsernameByClientId(String(clientId));
+  // A token belongs to the profile that bought it. A signed-in person on a new
+  // phone gets that profile back by signing in. The one exception is a purchase
+  // made while signed out: see playBilling.canMovePurchase, decided below once
+  // Google has confirmed who made it.
+  if (owner && owner !== clientId && (ownerIsAccount || !requesterIsAccount)) {
     return res.status(403).json({ error: 'This purchase belongs to another TalkLive profile. Sign in with the account that bought it.' });
   }
   let sub;
@@ -644,13 +667,27 @@ app.post('/billing/play/verify', httpRateLimit('play-verify', 30, 60000), expres
     console.error('[play] lookup failed:', err.message);
     return res.status(err.status && err.status < 500 ? 400 : 502).json({ error: 'Could not check this purchase with Google. Try again.' });
   }
-  if (sub && sub.accountId && sub.accountId !== playBilling.accountIdFor(clientId)) {
+  const moving = !!owner && owner !== clientId && playBilling.canMovePurchase({
+    ownerId: owner, requesterId: String(clientId), ownerIsAccount, requesterIsAccount, subAccountId: sub && sub.accountId,
+  });
+  if (owner && owner !== clientId && !moving) {
+    return res.status(403).json({ error: 'This purchase belongs to another TalkLive profile. Sign in with the account that bought it.' });
+  }
+  if (!moving && sub && sub.accountId && sub.accountId !== playBilling.accountIdFor(clientId)) {
     return res.status(403).json({ error: 'This purchase was made by another TalkLive profile.' });
   }
-  if (!owner) store.data.playPurchases[key] = String(clientId);
+  if (!owner || moving) store.data.playPurchases[key] = String(clientId);
+  if (moving) {
+    // The guest profile gives the subscription up; the account now has it.
+    const old = store.data.premium[owner];
+    if (old && old.source === 'play' && old.playToken === playTokenKey(purchaseToken)) {
+      store.revokePremium(owner, { lastEvent: 'play:moved-to-account' });
+      emitPremiumStatus(owner);
+    }
+  }
   const step = await applyPlayPurchase(String(clientId), purchaseToken, sub, typeof productId === 'string' ? productId : '');
   if (step.op === 'skip' && step.reason !== 'ignored') console.log(`[play] ${clientId}: ${step.reason}`);
-  res.json({ premium: isPremium(clientId), expiresAt: store.premiumExpiry(clientId), state: sub ? sub.state : null });
+  res.json({ premium: isPremium(clientId), expiresAt: store.premiumExpiry(clientId), state: sub ? sub.state : null, moved: moving });
 });
 
 // A one-time pass (1, 7 or 15 days of Plus). Each purchase token is granted
@@ -827,7 +864,12 @@ app.get('/config.js', (req, res) => {
 // Small same-origin conversion endpoint. Only a fixed vocabulary is accepted,
 // so public traffic cannot create unbounded dashboard keys. These counters are
 // deliberately aggregate and contain no message text or personal data.
+// Plus upgrade moments (public/plus-moments.js, PlusMoments.kt): one view,
+// dismiss and tap counter per moment, web and Android apart, so the dashboard
+// shows which moment converts. Built from a fixed list, never from user input.
+const PLUS_MOMENTS = require('./plus-moments');
 const GROWTH_EVENTS = new Set([
+  ...PLUS_MOMENTS.eventNames(),
   'pricing_view',
   'premium_checkout_click',
   'premium_upsell_click',
@@ -4493,18 +4535,72 @@ function emitPremiumStatus(clientId) {
     if (profile.clientId !== clientId) continue;
     // Queue priority follows the grant straight away, not at the next register.
     profile.premium = isPremium(clientId);
+    // A member who just lost Plus must not keep the Plus-only filters that
+    // were applied to this live profile while they had it.
+    if (!profile.premium) dropPlusOnlyFilters(profile);
     const sock = io.sockets.sockets.get(sid);
     if (!sock) continue;
-    sock.emit('premium-status', {
-      premium: profile.premium,
-      look: lookStatus(clientId),
-      expiresAt: envPremiumClients.has(clientId) ? null : store.premiumExpiry(clientId),
-      limits: FREE_LIMITS,
-      // The Android app can sell Plus through Google Play.
-      play: play.configured(),
-    });
+    sock.emit('premium-status', premiumStatusPayload(clientId, profile.premium));
   }
+  armPremiumTimer(clientId);
 }
+
+// The same payload on register, on every change and on expiry.
+function premiumStatusPayload(clientId, premium) {
+  const info = premiumInfo(clientId);
+  return {
+    premium,
+    look: lookStatus(clientId),
+    expiresAt: info.expiresAt,
+    source: info.source,
+    renews: info.renews,
+    state: info.state,
+    limits: FREE_LIMITS,
+    // The Android app can sell Plus through Google Play.
+    play: play.configured(),
+  };
+}
+
+// Back to what the free tier allows: the same caps register applies.
+function dropPlusOnlyFilters(profile) {
+  profile.prefGender = 'any';
+  profile.prefVoiceChecked = false;
+  profile.includeCountries = (profile.includeCountries || []).slice(0, FREE_LIMITS.countries);
+  profile.excludeCountries = (profile.excludeCountries || []).slice(0, FREE_LIMITS.countries);
+  profile.interests = (profile.interests || []).slice(0, FREE_LIMITS.interests);
+}
+
+// Plus that ends while someone is connected (a pass that runs out at 14:03)
+// must stop at 14:03, not at their next reconnect. Server-side gates already
+// read the expiry on every use; this updates the flag cached on the live
+// profile and tells every open tab and the app. setTimeout cannot wait more
+// than about 24 days, so long grants re-arm hourly.
+const premiumTimers = new Map();
+function armPremiumTimer(clientId) {
+  clearTimeout(premiumTimers.get(clientId));
+  premiumTimers.delete(clientId);
+  const at = envPremiumClients.has(clientId) ? null : store.premiumExpiry(clientId);
+  if (!at || !isPremium(clientId)) return;
+  const wait = Math.min(Math.max(at - Date.now() + 25, 25), 60 * 60 * 1000);
+  const t = setTimeout(() => {
+    premiumTimers.delete(clientId);
+    const live = [...profiles.values()].some((p) => p.clientId === clientId);
+    if (live) emitPremiumStatus(clientId); // re-arms itself while still Plus
+  }, wait);
+  if (t.unref) t.unref();
+  premiumTimers.set(clientId, t);
+}
+// Safety net for anything the exact timers miss (a grant changed behind our
+// back, a restart in between): cached flag and truth must agree.
+const premiumSweep = setInterval(() => {
+  const seen = new Set();
+  for (const p of profiles.values()) {
+    if (!p.clientId || seen.has(p.clientId)) continue;
+    seen.add(p.clientId);
+    if (!!p.premium !== isPremium(p.clientId)) emitPremiumStatus(p.clientId);
+  }
+}, 20000);
+if (premiumSweep.unref) premiumSweep.unref();
 
 // Close out a live pairing, recording how long it actually lasted.
 //
@@ -5129,6 +5225,10 @@ function waitingPayload(socketId) {
     fallbackInSeconds: counting && p.queuedAt
       ? Math.max(0, Math.ceil((RANDOM_FALLBACK_MS - (Date.now() - p.queuedAt)) / 1000)) : null,
     keepingFilters: !!(p && p.keepFilters && hasSoftFilters(p)),
+    // True only while a free member is waiting alongside at least two other
+    // people, i.e. the queue really is contended. The app uses it to show the
+    // true line "Plus members are matched first" and never otherwise.
+    contended: !!(p && !p.premium && waitingQueue.filter((id) => id !== socketId).length >= 2),
   };
 }
 
@@ -6500,14 +6600,8 @@ io.on('connection', (socket) => {
       city: geo.city,
     });
 
-    socket.emit('premium-status', {
-      premium,
-      look: lookStatus(clientId),
-      expiresAt: envPremiumClients.has(clientId) ? null : store.premiumExpiry(clientId),
-      limits: FREE_LIMITS,
-      // The Android app can sell Plus through Google Play.
-      play: play.configured(),
-    });
+    socket.emit('premium-status', premiumStatusPayload(clientId, premium));
+    armPremiumTimer(clientId);
     socket.emit('identity-token', { clientId, token: issuedIdentityToken });
     socket.emit('engage-state', Engage.view(store.engageGet(clientId), { tz: profiles.get(socket.id).timezone, plus: isPremium(clientId) }));
     // Unacknowledged owner warnings. Checked again shortly after, because a

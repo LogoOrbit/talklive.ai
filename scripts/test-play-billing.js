@@ -30,9 +30,11 @@ const iso = (ms) => new Date(ms).toISOString();
   ok('summarise tolerates junk', p.summarise(null) === null && p.summarise({}).expiryMs === 0);
 
   // --- decide -----------------------------------------------------------------
-  ok('active -> grant until expiry', JSON.stringify(p.decide(sub, now)) === JSON.stringify({ action: 'grant', until: sub.expiryMs }));
+  ok('active -> grant until expiry', (() => { const d = p.decide(sub, now); return d.action === 'grant' && d.until === sub.expiryMs && d.state === 'SUBSCRIPTION_STATE_ACTIVE'; })());
   ok('cancelled keeps access to expiry', p.decide({ ...sub, state: 'SUBSCRIPTION_STATE_CANCELED' }, now).action === 'grant');
   ok('grace period keeps access', p.decide({ ...sub, state: 'SUBSCRIPTION_STATE_IN_GRACE_PERIOD' }, now).action === 'grant');
+  const grace = p.decide({ ...sub, state: 'SUBSCRIPTION_STATE_IN_GRACE_PERIOD', expiryMs: now - DAY }, now);
+  ok('grace period with an expiry already passed keeps access for a few days', grace.action === 'grant' && grace.until === now + p.GRACE_FALLBACK_MS);
   ok('expired revokes', p.decide({ ...sub, state: 'SUBSCRIPTION_STATE_EXPIRED' }, now).action === 'revoke');
   ok('on hold revokes', p.decide({ ...sub, state: 'SUBSCRIPTION_STATE_ON_HOLD' }, now).action === 'revoke');
   ok('refund (revoked) revokes', p.decide({ ...sub, state: 'SUBSCRIPTION_STATE_REVOKED' }, now).action === 'revoke');
@@ -58,6 +60,17 @@ const iso = (ms) => new Date(ms).toISOString();
   ok('Play never revokes a Stripe grant', s.op === 'skip');
   s = p.nextPremium({ activatedAt: 1 }, { action: 'revoke' }, 'tok-aaaaaaaaaaaaaaaaaaaa', now);
   ok('Play never revokes a manual grant', s.op === 'skip');
+  s = p.nextPremium({ source: 'play-pass', expiresAt: now + 90 * DAY, playToken: 'x' }, grant, 'tok-aaaaaaaaaaaaaaaaaaaa', now);
+  ok('a longer pass keeps its own source so a refund of the subscription cannot take pass days', s.op === 'set' && s.info.source === 'play-pass' && s.info.expiresAt === now + 90 * DAY);
+  s = p.nextPremium(null, { action: 'grant', until: now + DAY, state: 'SUBSCRIPTION_STATE_CANCELED' }, 'tok-aaaaaaaaaaaaaaaaaaaa', now);
+  ok('the Play state is kept so pages can say ends on / renews on', s.info.playState === 'SUBSCRIPTION_STATE_CANCELED');
+  // A purchase made as a guest moves once to the account that signs in; never to another guest or a second account.
+  const mv = (o) => p.canMovePurchase({ ownerId: 'g1', requesterId: 'a_1', ownerIsAccount: false, requesterIsAccount: true, subAccountId: p.accountIdFor('g1'), ...o });
+  ok('guest purchase may move to the signed-in account', mv({}));
+  ok('a purchase owned by an account never moves', !mv({ ownerIsAccount: true }));
+  ok('a purchase never moves to another guest', !mv({ requesterIsAccount: false }));
+  ok('Google must confirm the old profile made the purchase', !mv({ subAccountId: p.accountIdFor('someone-else') }) && !mv({ subAccountId: '' }));
+  ok('same profile is not a move', !mv({ requesterId: 'g1' }));
   ok('ignore is skipped', p.nextPremium(null, { action: 'ignore', reason: 'x' }, 't').op === 'skip');
 
   // --- token validation ----------------------------------------------------------
