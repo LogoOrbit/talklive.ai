@@ -420,7 +420,7 @@ function generateConclusion(runtime, report) {
 }
 
 // --- Module wiring ---
-function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deviceIdOfClient, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats, automod, talkguard, patterns, support, grantPlus, onVoiceDecision }) {
+function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate, deviceIdOfClient, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats, automod, talkguard, patterns, support, grantPlus, onVoiceDecision }) {
   if (automod) automod.setAlert(sendAlertEmail);
   try { paymentLog.installPaymentLog(store); } catch (e) { console.log('[owner] payment log not installed:', e.message); }
   const router = express.Router();
@@ -709,6 +709,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deviceIdOfClie
         unhandledReports: store.data.reports.filter((r) => !r.handled).length,
         autoReview: automod ? automod.openReviews() : 0,
         voiceAppeals: store.voiceAppeals().length,
+        banAppeals: store.unansweredAppeals(),
         errors: store.data.errors.length,
         feedback: store.data.feedback.length,
         activeBans: store.activeBans().length,
@@ -1017,10 +1018,27 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deviceIdOfClie
     res.json({ ok: true });
   });
 
+  // Answer a ban appeal. `action`: reply (just answer), keep (answer, ban stays)
+  // or lift (answer and lift the ban: the person leaves the banned screen now).
+  router.post('/api/bans/:id/appeals/:aid/reply', (req, res) => {
+    const body = req.body || {};
+    const text = String(body.message || '').trim().slice(0, 1000);
+    if (text.length < 2) return res.status(400).json({ error: 'Write the reply first.' });
+    const action = ['lift', 'keep'].includes(body.action) ? body.action : 'reply';
+    const out = store.replyBanAppeal(req.params.id, req.params.aid, text);
+    if (!out) return res.status(404).json({ error: 'Appeal not found.' });
+    const who = out.ban.username || out.ban.account || out.ban.clientId || out.ban.ip;
+    if (action === 'lift') store.liftBan(out.ban.id);
+    store.audit('ban-appeal-reply', reqIp(req), `Replied to ban appeal from ${who}${action === 'lift' ? ' and lifted the ban' : action === 'keep' ? ' and kept the ban' : ''}`);
+    if (pushBanUpdate) pushBanUpdate(out.ban);
+    res.json({ ok: true, lifted: action === 'lift' });
+  });
+
   router.post('/api/unban', (req, res) => {
     const ban = store.liftBan((req.body || {}).banId);
     if (!ban) return res.status(404).json({ error: 'Ban not found or already lifted.' });
     store.audit('unban', reqIp(req), `Lifted ban on ${ban.username || ban.clientId || ban.ip}`);
+    if (pushBanUpdate) pushBanUpdate(ban);
     res.json({ ok: true });
   });
 

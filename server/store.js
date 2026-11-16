@@ -2402,6 +2402,50 @@ function warningCountFor(clientId, account) {
     && ((clientId && w.clientId === clientId) || (acct && w.account === acct))).length;
 }
 
+// --- Ban appeals -----------------------------------------------------------
+// A banned person can write to the owner from the banned screen. At most one
+// appeal waits for an answer at a time and three are kept per ban.
+const APPEAL_MIN = 10;
+const APPEAL_MAX = 1000;
+const APPEALS_PER_BAN = 3;
+
+function addBanAppeal(banId, text) {
+  const ban = data.bans.find((b) => b.id === banId);
+  if (!ban) return { error: 'gone' };
+  const t = String(text || '').trim();
+  if (t.length < APPEAL_MIN || t.length > APPEAL_MAX) return { error: 'length' };
+  if (!Array.isArray(ban.appeals)) ban.appeals = [];
+  if (ban.appeals.some((a) => !a.reply)) return { error: 'open' };
+  if (ban.appeals.length >= APPEALS_PER_BAN) return { error: 'limit' };
+  const rec = { id: crypto.randomUUID(), ts: Date.now(), text: t, reply: null, repliedAt: null, seenAt: null };
+  ban.appeals.push(rec);
+  save();
+  return { ban, appeal: rec };
+}
+
+function replyBanAppeal(banId, appealId, text) {
+  const ban = data.bans.find((b) => b.id === banId);
+  const a = ban && (ban.appeals || []).find((x) => x.id === appealId);
+  if (!a) return null;
+  a.reply = String(text || '').trim().slice(0, 1000);
+  a.repliedAt = Date.now();
+  a.seenAt = null;
+  save();
+  return { ban, appeal: a };
+}
+
+function markBanAppealsSeen(ban) {
+  let changed = false;
+  for (const a of ban.appeals || []) if (a.reply && !a.seenAt) { a.seenAt = Date.now(); changed = true; }
+  if (changed) save();
+}
+
+function unansweredAppeals() {
+  let n = 0;
+  for (const b of data.bans) if (!b.liftedAt) for (const a of b.appeals || []) if (!a.reply) n++;
+  return n;
+}
+
 function liftBan(banId) {
   const ban = data.bans.find((b) => b.id === banId);
   if (ban && !ban.liftedAt) {
@@ -4228,6 +4272,11 @@ module.exports = {
   withdrawWarning,
   warningCountFor,
   liftBan,
+  addBanAppeal,
+  replyBanAppeal,
+  markBanAppealsSeen,
+  unansweredAppeals,
+  APPEALS_PER_BAN,
   upsertAccount,
   saveAccount,
   getAccountClientId,

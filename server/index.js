@@ -1475,8 +1475,77 @@ function kickBanned(clientId, ip, ban) {
     if (!sock) continue;
     if ((clientId && p.clientId === clientId) || (ip && store.sameNetwork(getClientIp(sock), ip))
       || (account && socketAuth.get(sid) === account) || (deviceId && p.deviceId === deviceId)) {
-      sock.emit('banned', { until: ban.expiresAt, reason: ban.reason });
-      sock.disconnect(true);
+      enterBanned(sock, ban);
+    }
+  }
+}
+
+// --- Banned state ------------------------------------------------------------
+// A banned person can still sign in and connect, but every TalkLive feature is
+// off: the socket only answers BANNED_EVENTS (see the middleware in the
+// connection handler). They are shown why, can appeal to the owner and can
+// delete their account.
+const BANNED_EVENTS = new Set([
+  'register', 'login', 'resume-session', 'google-auth', 'logout', 'delete-account',
+  'ban-appeal', 'ban-status', 'app-ping',
+]);
+const BAN_PERMANENT_MS = 3 * 365 * 864e5;
+function bannedPayload(ban) {
+  const list = ban.appeals || [];
+  const open = list.some((a) => !a.reply);
+  const last = list[list.length - 1];
+  const appeal = { state: open ? 'open' : (last ? 'answered' : 'none') };
+  if (last) {
+    appeal.text = last.text;
+    appeal.at = last.reply ? last.repliedAt : last.ts;
+    if (last.reply) appeal.reply = last.reply;
+  }
+  return {
+    until: ban.expiresAt,
+    reason: ban.reason,
+    permanent: ban.expiresAt - ban.createdAt >= BAN_PERMANENT_MS,
+    appeal,
+    canAppeal: !open && list.length < store.APPEALS_PER_BAN,
+  };
+}
+// Takes someone off the matching floor without closing their connection.
+function dropBannedPresence(sock) {
+  const sid = sock.id;
+  disconnectPartner(sid, { dropped: true });
+  noteSearchAbandoned(sid);
+  clearFromQueue(sid);
+  clearWaitFallbackTimer(sid);
+  clearChatAway(sid);
+  const profile = profiles.get(sid);
+  if (profile) {
+    if (clientSockets.get(profile.clientId) === sid) {
+      clientSockets.delete(profile.clientId);
+      resyncWatchers(profile.clientId);
+    }
+    profiles.delete(sid);
+    broadcastOnlineCount();
+  }
+}
+function sendBanned(sock, ban) {
+  sock.emit('banned', bannedPayload(ban));
+  if ((ban.appeals || []).some((a) => a.reply && !a.seenAt)) store.markBanAppealsSeen(ban);
+}
+function enterBanned(sock, ban, before) {
+  dropBannedPresence(sock);
+  sock.data.ban = ban;
+  if (before) before();
+  sendBanned(sock, ban);
+}
+// The owner answered an appeal or lifted the ban: tell whoever is on the screen.
+function pushBanUpdate(ban) {
+  for (const sock of io.sockets.sockets.values()) {
+    const b = sock.data.ban;
+    if (!b || b.id !== ban.id) continue;
+    if (ban.liftedAt || ban.expiresAt <= Date.now()) {
+      sock.data.ban = null;
+      sock.emit('ban-lifted');
+    } else {
+      sendBanned(sock, ban);
     }
   }
 }
@@ -1526,11 +1595,11 @@ function deviceIdOfClient(clientId) {
 // sign-in is checked (the account the person is signing in to); a match that
 // came through a different identity than the banned one is recorded on the ban
 // as an evasion attempt. It never extends the ban.
-function refuseBanned(socket, clientId, account) {
+function refuseBanned(socket, clientId, account, before) {
   const ip = getClientIp(socket);
   const who = { account: account || socketAuth.get(socket.id) || null, deviceId: socket.data.deviceId || '' };
   const ban = store.findActiveBan(clientId, ip, who);
-  if (!ban) return false;
+  if (!ban) { socket.data.ban = null; return false; }
   const kind = store.banMatchKind(ban, clientId, who);
   const current = (profiles.get(socket.id) || {}).clientId || clientId;
   if (kind === 'device' || kind === 'account' || (kind === 'client' && account)) {
@@ -1538,8 +1607,9 @@ function refuseBanned(socket, clientId, account) {
       console.log(`[ban] ${current} tried to get around a ban through ${kind}`);
     }
   }
-  socket.emit('banned', { until: ban.expiresAt, reason: ban.reason });
-  socket.disconnect(true);
+  // The account is known so it can be deleted and its appeal tied to it.
+  if (account) socketAuth.set(socket.id, account);
+  enterBanned(socket, ban, before);
   return true;
 }
 
@@ -1673,7 +1743,7 @@ app.get('/talkguard/model.json', (req, res) => {
   res.json(m);
 });
 const admin = createAdmin({
-  io, getRuntime, getLiveCounts, kickBanned, deviceIdOfClient, deliverWarning, deliverFeedbackReply, getUserStats, automod, talkguard, patterns, support,
+  io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate, deviceIdOfClient, deliverWarning, deliverFeedbackReply, getUserStats, automod, talkguard, patterns, support,
   getLiveGames: () => gameTracker.live(), grantPlus: (who, days) => grantPlusTo(who, days, 'dashboard'),
   // An appeal was decided: show the person the outcome if they are online.
   onVoiceDecision: (clientId) => {
@@ -6067,6 +6137,12 @@ io.on('connection', (socket) => {
     RATE.tokens -= cost;
     next();
   });
+  // A banned socket answers only a handful of events; the rest are dropped.
+  socket.use((packet, next) => {
+    if (!socket.data.ban) return next();
+    const event = Array.isArray(packet) ? packet[0] : '';
+    if (BANNED_EVENTS.has(event)) next();
+  });
   // Swallow rate-limit errors quietly instead of disconnecting on the first
   // over-limit event, so a brief burst just drops packets rather than the call.
   socket.on('error', () => { /* rate-limited or malformed packet - ignore */ });
@@ -6105,11 +6181,11 @@ io.on('connection', (socket) => {
   }
   socket.emit('siteModes', store.publicModes());
 
-  // Banned by IP: refuse service entirely until the ban expires or is lifted.
+  // Banned by IP: the socket is put in the banned state (no features) until the ban expires or is lifted.
   // Only the network is checked here. The device is checked when the browser
   // registers (or signs in), so that the new clientId it tries can be recorded
   // against the ban as an evasion attempt.
-  if (refuseBanned(socket, null, null)) return;
+  refuseBanned(socket, null, null);
   socket.data.deviceId = deviceIdFrom(socket, '');
 
   store.recordConnection();
@@ -6305,7 +6381,10 @@ io.on('connection', (socket) => {
     loginAttemptSucceeded(ip, usernameLower, reserved);
     if (!io.sockets.sockets.has(socket.id)) return;
     // A banned account stays banned on a fresh browser or phone.
-    if (refuseBanned(socket, store.getAccountClientId(usernameLower), usernameLower)) return;
+    if (refuseBanned(socket, store.getAccountClientId(usernameLower), usernameLower, () => socket.emit('login-result', {
+      ok: true, banned: true, username, nickname: account.nickname, email: account.email || '',
+      sessionToken: store.createAuthSession(usernameLower),
+    }))) return;
     socketAuth.set(socket.id, (username || '').toLowerCase());
     store.recordFeature('login');
     store.upsertAccount((username || '').toLowerCase(), {
@@ -6338,7 +6417,9 @@ io.on('connection', (socket) => {
       socket.emit('resume-session-result', { ok: false });
       return sendFriendId(socket);
     }
-    if (refuseBanned(socket, store.getAccountClientId(usernameLower), usernameLower)) return;
+    if (refuseBanned(socket, store.getAccountClientId(usernameLower), usernameLower, () => socket.emit('resume-session-result', {
+      ok: true, banned: true, username: usernameLower, nickname: account.nickname, email: account.email || '',
+    }))) return;
     socketAuth.set(socket.id, usernameLower);
     store.upsertAccount(usernameLower, {
       nickname: account.nickname, country: geo.countryName, city: geo.city, ip, lastSeen: Date.now(),
@@ -6407,7 +6488,10 @@ io.on('connection', (socket) => {
     }
     try {
       const { username, account, profile, created } = await findOrCreateGoogleAccount(credential, { dob, socket });
-      if (refuseBanned(socket, store.getAccountClientId(username.toLowerCase()), username.toLowerCase())) return;
+      if (refuseBanned(socket, store.getAccountClientId(username.toLowerCase()), username.toLowerCase(), () => socket.emit('google-auth-result', {
+        ok: true, banned: true, username, nickname: account.nickname, email: account.email || '',
+        sessionToken: store.createAuthSession(username.toLowerCase()),
+      }))) return;
       socketAuth.set(socket.id, username.toLowerCase());
       store.recordFeature('google_signin');
       store.upsertAccount(username.toLowerCase(), {
@@ -6726,7 +6810,10 @@ io.on('connection', (socket) => {
       clearLoginLocks(ip, usernameLower);
       store.recordFeature('password_reset_complete');
       if (!io.sockets.sockets.has(socket.id)) return;
-      if (refuseBanned(socket, store.getAccountClientId(usernameLower), usernameLower)) return;
+      if (refuseBanned(socket, store.getAccountClientId(usernameLower), usernameLower, () => socket.emit('reset-password-result', {
+        ok: true, banned: true, username: usernameLower, nickname: account.nickname, email: account.email || '',
+        sessionToken: store.createAuthSession(usernameLower),
+      }))) return;
       socketAuth.set(socket.id, usernameLower);
       store.upsertAccount(usernameLower, {
         nickname: account.nickname, country: geo.countryName, city: geo.city, ip, lastSeen: Date.now(),
@@ -8351,6 +8438,35 @@ io.on('connection', (socket) => {
   // their eyes nor their phone (see pushNotification).
   // The app checks its connection is really alive after coming back from the
   // background (a socket can look connected long after the network dropped it).
+  // --- Banned screen: appeal + status -----------------------------------------
+  socket.on('ban-status', () => {
+    const ban = socket.data.ban;
+    if (!ban) return socket.emit('ban-lifted');
+    // The ban may have been lifted or expired since this socket was marked.
+    if (ban.liftedAt || ban.expiresAt <= Date.now()) {
+      socket.data.ban = null;
+      return socket.emit('ban-lifted');
+    }
+    sendBanned(socket, ban);
+  });
+  socket.on('ban-appeal', (payload = {}, ack) => {
+    const reply = typeof ack === 'function' ? ack : () => {};
+    const ban = socket.data.ban;
+    if (!ban || ban.liftedAt || ban.expiresAt <= Date.now()) return reply({ ok: false, error: 'gone' });
+    const text = typeof payload.text === 'string' ? payload.text.trim() : '';
+    const out = store.addBanAppeal(ban.id, text);
+    if (out.error) return reply({ ok: false, error: out.error });
+    store.recordFeature('ban_appeal');
+    const who = ban.username || socketAuth.get(socket.id) || ban.clientId || 'someone';
+    admin.sendAlertEmail('ban-appeal', 'TalkLive: a banned user sent an appeal',
+      `${who} appealed their ban.\nBan reason: ${ban.reason}\n\n${text}\n\nReply at ${OWNER_URL}#bans`);
+    push.send('owner:support', {
+      topic: 'ban-appeal:' + ban.id, title: `Ban appeal from ${who}`, body: text.slice(0, 120), url: '/owner#bans', tag: 'ban-appeal',
+    }).catch(() => {});
+    pushBanUpdate(ban);
+    reply({ ok: true });
+  });
+
   socket.on('app-ping', (ack) => { if (typeof ack === 'function') ack({ ok: true }); });
 
   // The bell on a friend: tell me when they come online.
