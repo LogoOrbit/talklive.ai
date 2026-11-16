@@ -666,7 +666,10 @@ class ServerE2ETest {
     // the app shows who it is waiting for and "Match with anyone" widens it.
     @Test fun gender_filter_holds_until_widened() {
         ctx.getSharedPreferences("id_plus", android.content.Context.MODE_PRIVATE).edit()
-            .putString("client_id", "a_e2eplus000000000000000000000001").commit()
+            .putString("client_id", "a_e2eplus000000000000000000000001")
+            // A Plus id is an identity with something to lose, so the server
+            // only lets a device that holds its signed token use it.
+            .putString("identity_token", LocalServer.identityToken("a_e2eplus000000000000000000000001")).commit()
         val plus = Client("plus", withCalls = true)
         plus.engage.setFilters(app.talklive.engage.Filters(prefGender = "female"))
         Thread.sleep(800)

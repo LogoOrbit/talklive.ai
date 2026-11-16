@@ -13,6 +13,16 @@ import java.util.Collections
  * that runs in production. Needs `node` and the repo's node_modules.
  */
 class LocalServer : AutoCloseable {
+    companion object {
+        const val IDENTITY_SECRET = "e2e-identity-secret"
+        /** The token the server issues for [clientId] (version 0: HMAC-SHA256 of the id). */
+        fun identityToken(clientId: String): String {
+            val mac = javax.crypto.Mac.getInstance("HmacSHA256")
+            mac.init(javax.crypto.spec.SecretKeySpec(IDENTITY_SECRET.toByteArray(), "HmacSHA256"))
+            return mac.doFinal(clientId.toByteArray()).joinToString("") { "%02x".format(it) }
+        }
+    }
+
     val port: Int = ServerSocket(0).use { it.localPort }
     val url = "http://127.0.0.1:$port"
     private val dataDir: File = Files.createTempDirectory("tl-android-e2e").toFile()
@@ -35,6 +45,8 @@ class LocalServer : AutoCloseable {
                 environment()["ENGAGE_GOOD_CALL_SECONDS"] = "1"
                 // A fixed Plus member, for the gender-filter tests (see ServerE2ETest.PLUS_ID).
                 environment()["PREMIUM_CLIENT_IDS"] = "a_e2eplus000000000000000000000001"
+                // Fixed, so a test can sign its own identity token for the Plus id above.
+                environment()["IDENTITY_SECRET"] = IDENTITY_SECRET
                 // Never send real email, push or payments from tests: drop every
                 // credential the machine running them happens to have.
                 environment().keys.filter { k ->
