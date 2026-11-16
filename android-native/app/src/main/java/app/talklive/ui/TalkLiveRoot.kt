@@ -197,6 +197,8 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     val sent by social.sent.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { social.toasts.collect { t -> launch { snackbar.say(t.get(context)) } } }
     val engageVm: app.talklive.ui.engage.EngageViewModel = hiltViewModel()
+    // "I am" changed too often today: the earlier choice stays for matching until tomorrow.
+    LaunchedEffect(Unit) { engageVm.genderHeld.collect { launch { snackbar.say(context.getString(R.string.gender_held)) } } }
     val engage by engageVm.engage.collectAsStateWithLifecycle()
     val filters by engageVm.filters.collectAsStateWithLifecycle()
     val premium by engageVm.premium.collectAsStateWithLifecycle()
@@ -643,6 +645,10 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                     onMute = vm::toggleMute,
                     onSpeaker = vm::toggleSpeaker,
                     onReport = vm::report,
+                    onWrongMatch = {
+                        vm.wrongMatch()
+                        scope.launch { snackbar.say(context.getString(R.string.wrong_match_thanks)) }
+                    },
                     autoConnect = autoConnect,
                     onAutoConnect = vm::setAutoConnect,
                     bands = { voiceBands },
@@ -751,7 +757,8 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
             onRestore = engageVm::restoreStreak, onPlus = { why -> showStreak = false; openPlus("streak", why) },
         )
     }
-    if (showFilters) app.talklive.ui.engage.FiltersSheet(filters, premium.active, onApply = engageVm::setFilters, onDismiss = { showFilters = false }, onPlus = { why -> showFilters = false; openPlus("locked", why) }, loadCounts = engageVm::countryCounts)
+    if (showFilters) app.talklive.ui.engage.FiltersSheet(filters, premium.active, onApply = engageVm::setFilters, onDismiss = { showFilters = false }, onPlus = { why -> showFilters = false; openPlus("locked", why) }, loadCounts = engageVm::countryCounts,
+        voiceCheck = "voiceCheck" in engageVm.flags.collectAsStateWithLifecycle().value)
     // Same favourite film or show as the person who just connected: say so.
     val myFilms by engageVm.films.collectAsStateWithLifecycle()
     val livePartner = (state.phase as? CallPhase.Connected)?.partner

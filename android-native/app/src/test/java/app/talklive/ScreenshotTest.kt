@@ -102,6 +102,22 @@ class ScreenshotTest {
             engageVm = app.talklive.ui.engage.EngageViewModel(app.talklive.engage.EngageRepository(ctx, socket), app.talklive.voice.MicMonitor(ctx, socket)),
         )
     }
+    // The Voice check row as someone whose estimate disagreed sees it: status, Check again, Ask a person.
+    @Config(qualifiers = "w400dp-h1500dp-xxhdpi")
+    @Test fun profileVoiceCheck() = shot("13b_profile_voice") {
+        val ctx = ApplicationProvider.getApplicationContext<Application>()
+        val identity = IdentityStore(ctx).apply { animal = "owl" }
+        val socket = TalkSocket(identity)
+        val mic = app.talklive.voice.MicMonitor(ctx, socket).apply {
+            seedForPreview(app.talklive.voice.VoiceCheckView(on = true, state = "mismatch", retriesLeft = 2, appeal = "none", calls = 2))
+        }
+        val engage = app.talklive.engage.EngageRepository(ctx, socket).apply { seedFlags(setOf("voiceCheck")); setMyGender("female") }
+        app.talklive.ui.profile.ProfileScreen(
+            onSignIn = {},
+            vm = app.talklive.ui.profile.ProfileViewModel(app.talklive.call.CallManager(socket, app.talklive.net.IceServerApi(ctx), app.talklive.call.RtcFactory(ctx, mic), app.talklive.call.AudioRouter(ctx), identity, ctx, mic), AuthRepository(ctx, socket, identity), identity, app.talklive.data.ThemeStore(ctx), app.talklive.sound.Sounds(ctx), app.talklive.data.PrivacyStore(ctx), socket, app.talklive.social.SocialRepository(socket, identity), app.talklive.data.NotifSettings(ctx, socket)),
+            engageVm = app.talklive.ui.engage.EngageViewModel(engage, mic),
+        )
+    }
     private fun socialVm(seed: app.talklive.social.SocialRepository.() -> Unit = {}): app.talklive.ui.social.SocialViewModel {
         val ctx = ApplicationProvider.getApplicationContext<Application>()
         val identity = IdentityStore(ctx)

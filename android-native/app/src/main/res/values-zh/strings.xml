@@ -234,6 +234,8 @@
     <string name="likes_locked">来自 %1$s 的人喜欢你。TalkLive Plus 可以看到是谁。</string>
     <string name="online">在线</string>
     <string name="invite_title">邀请好友</string>
+    <string name="invite_body">每有 %1$d 位好友加入并真正聊过天，就能免费获得 TalkLive Plus。</string>
+    <string name="invite_progress">距下次奖励 %1$d/%2$d · 已加入 %3$d 人 · 已获得 %4$d 小时 Plus</string>
     <string name="share_link">分享邀请链接</string>
     <string name="invite_share_text">来 TalkLive 和我聊天吧，与全球的人免费语音聊天：%1$s</string>
     <string name="feedback_title">发送反馈</string>
@@ -352,10 +354,9 @@
     <string name="gender_female">女</string>
     <string name="gender_unspecified">不想透露</string>
     <string name="voice_check">声音验证</string>
-    <string name="voice_check_desc">通话时，你的设备会将你的声音与你选择的性别进行比对。音频不会离开你的设备，也没有人能看到结果。</string>
-    <string name="voice_check_pending">尚未验证——在通话中说一分钟话即可。</string>
-    <string name="voice_check_confirmed">已确认：你的声音与所选性别一致。</string>
-    <string name="voice_check_unconfirmed">无法确认。你不会出现在“仅限声音已验证”的匹配中。</string>
+    <string name="voice_check_desc">语音通话时，你的设备会测量你的声音特征，并只发送这些数字，绝不发送音频，用来估计它是否与你选择的性别相符。按“男性”或“女性”筛选的人会优先匹配到已通过声音验证的人。这只是估计，不是证明，与你通话的人都看不到。</string>
+    <string name="voice_check_pending">尚未验证。请在语音通话中说一分钟话。</string>
+    <string name="voice_check_confirmed">已验证：你的声音与你选择的性别相符。</string>
     <string name="age_group">年龄段</string>
     <string name="plus_perk_gender_body">选择女生或男生，国家想加多少都行。</string>
     <string name="plus_perk_likes_body">看看谁点了爱心，在线时就能回拨。</string>
@@ -366,6 +367,8 @@
     <string name="plus_perk_badge_body">名字旁边的 💎。</string>
     <string name="plus_hero">更快遇见你想认识的人。</string>
     <string name="plus_hero_active">Plus 已开启。感谢支持 TalkLive。</string>
+    <string name="plus_earn_title">或者免费获得</string>
+    <string name="plus_earn_body">邀请 3 位加入并聊过天的好友，即可获得 Plus 时长。</string>
     <string name="plus_subscribe_price">以 %1$s 订阅</string>
     <string name="plus_free_filters">继续使用免费筛选</string>
     <string name="theme_dark">深色</string>
@@ -441,7 +444,7 @@
     <string name="n_accepted_body">打个招呼吧：随时都可以发消息。</string>
     <string name="n_missed_body">点按回拨。</string>
     <string name="support_quick">快速解答</string>
-    <string name="film_match">你们都喜欢《%1$s》！</string>
+    <string name="film_match">🎬 你们都喜欢《%1$s》！</string>
     <string name="plus_perk_streak">恢复连续记录</string>
     <string name="plus_perk_streak_body">漏了一天？每月可恢复一次连续记录。</string>
     <string name="connecting_short">连接中</string>
@@ -532,6 +535,23 @@
     <string name="pass_best">最划算</string>
     <string name="pass_buy">%1$d 天 %2$s</string>
     <string name="pass_once">一次性付款，非订阅。</string>
+    <string name="gender_filter_note">为你匹配选择了该性别的人，优先匹配已通过声音验证的人。声音验证只是估计，不能证明任何人的性别。</string>
+    <string name="voice_check_reviewed">已由我们的团队核实。</string>
+    <string name="voice_check_unclear">我们还无法判断。这很常见。你下次通话时我们会再听一次。</string>
+    <string name="voice_check_mismatch">你的声音与你选择的性别不符，因此暂时不会出现在筛选匹配中。这只是估计：请重新验证，或请真人复核。</string>
+    <string name="voice_check_disputed">有些通过筛选匹配到你的人表示，这不是他们想找的对象。通过声音验证或申请复核后，才会重新出现在筛选匹配中。</string>
+    <string name="voice_check_no_gender">请先在个人资料中选择男或女，才能使用声音验证。</string>
+    <string name="voice_check_appeal_open">已申请复核。我们会尽快处理。</string>
+    <string name="voice_check_retry">重新验证</string>
+    <string name="voice_check_appeal">申请真人复核</string>
+    <string name="voice_retry_done">已清除。你下次语音通话时我们会再听一次。</string>
+    <string name="voice_retry_limit">你可以明天再验证。</string>
+    <string name="voice_appeal_sent">已发送。我们团队的成员会进行复核。</string>
+    <string name="voice_appeal_later">已有复核正在进行，或最近刚答复过。</string>
+    <string name="gender_held">你今天已多次更改此项。在明天之前，匹配仍使用你之前的选择。</string>
+    <string name="report_wrong_match">不是我筛选的对象</string>
+    <string name="wrong_match_thanks">谢谢。这有助于我们为你更好地匹配。</string>
+    <string name="voice_checked_only">仅限声音已验证</string>
     <plurals name="visitors_today">
         <item quantity="other">今日访客 %1$s 人</item>
     </plurals>

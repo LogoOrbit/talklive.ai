@@ -91,6 +91,8 @@ data class CallState(
     val voiceInviteSent: Boolean = false,
     /** Set when the partner turned down switching to voice. */
     val voiceInviteDeclined: Boolean = false,
+    /** This person's own Men / Women filter chose the current partner ("Not who I filtered for"). */
+    val filtered: Boolean = false,
 )
 
 /**
@@ -178,6 +180,7 @@ class CallManager @Inject constructor(
                 if (_state.value.phase == CallPhase.Idle) return@collect
                 _state.update { it.copy(onHold = lost) }
                 session?.setMuted(lost || _state.value.muted)
+                mic.setMuted(lost || _state.value.muted)
                 socket.emit("mic-state", lost || _state.value.muted)
             }
         }
@@ -319,6 +322,22 @@ class CallManager @Inject constructor(
         setPhase(CallPhase.Searching())
     }
 
+    /**
+     * "Not who I filtered for": tells the matcher this partner did not fit the
+     * Men / Women filter that chose them, then moves on exactly like Next. It
+     * is feedback about the match, not a report: nobody is blocked.
+     */
+    fun wrongMatch() = scope.launch {
+        val phase = _state.value.phase
+        if (!_state.value.filtered || (phase !is CallPhase.Connected && phase !is CallPhase.Connecting)) return@launch
+        teardown()
+        // Before the skip, so the server still knows who the filter chose.
+        socket.emit("gender-feedback")
+        socket.emit("skip")
+        _state.update { it.copy(friendCall = false, filtered = false) }
+        setPhase(CallPhase.Searching())
+    }
+
     fun end() = scope.launch {
         icePrefetch?.cancel()
         teardown()
@@ -338,7 +357,7 @@ class CallManager @Inject constructor(
     fun toggleMute() = scope.launch {
         val muted = !_state.value.muted
         session?.setMuted(muted || _state.value.onHold)
-        mic.setMuted(muted)
+        mic.setMuted(muted || _state.value.onHold)
         socket.emit("mic-state", muted)
         _state.update { it.copy(muted = muted) }
     }
@@ -488,7 +507,7 @@ class CallManager @Inject constructor(
         _chat.value = emptyList()
         _state.update {
             it.copy(partnerMuted = false, notice = null, friendCall = m.callback, ratePrompt = null, isHost = m.initiator,
-                voiceInviteFrom = null, voiceInviteSent = false, voiceInviteDeclined = false)
+                voiceInviteFrom = null, voiceInviteSent = false, voiceInviteDeclined = false, filtered = m.filtered)
         }
         // A text chat has no audio to set up: it is live the moment it matches.
         if (m.mode == "chat") {
@@ -526,8 +545,8 @@ class CallManager @Inject constructor(
             return
         }
         session = s
-        mic.setMuted(_state.value.muted)
-        mic.start()
+        mic.setMuted(_state.value.muted || _state.value.onHold)
+        mic.start(voice = m.voice)
         val silent = _state.value.muted || _state.value.onHold
         s.setMuted(silent)
         if (silent) socket.emit("mic-state", true)

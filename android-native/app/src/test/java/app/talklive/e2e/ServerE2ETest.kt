@@ -48,7 +48,8 @@ class ServerE2ETest {
         val socket = TalkSocket(identity)
         val social = SocialRepository(socket, identity)
         val auth = AuthRepository(ctx, socket, identity, "acc_$name")
-        val calls = if (withCalls) app.talklive.voice.MicMonitor(ctx, socket).let { mic -> CallManager(socket, IceServerApi(ctx), RtcFactory(ctx, mic), AudioRouter(ctx), identity, ctx, mic) } else null
+        val mic = app.talklive.voice.MicMonitor(ctx, socket, "voice_$name")
+        val calls = if (withCalls) CallManager(socket, IceServerApi(ctx), RtcFactory(ctx, mic), AudioRouter(ctx), identity, ctx, mic) else null
         val engage = app.talklive.engage.EngageRepository(ctx, socket, "engage_$name")
         val events = CopyOnWriteArrayList<ServerEvent>()
 
@@ -476,6 +477,44 @@ class ServerE2ETest {
 
         a.engage.sendFeedback("Love the Android app")
         check("feedback stored") { server.logTail(200).contains("Love the Android app") || true }
+    }
+
+    /**
+     * Voice check end to end: the switch goes to the server, a voice call
+     * asks this phone for a summary (`matched.voice`), and a real summary
+     * (scripts/voice/fixtures.json, a voice the model is sure about) sent after
+     * 4 s of call comes back as `confirmed` for the gender this person picked.
+     * Socket-level calls: WebRTC needs a real device.
+     */
+    @Test fun voice_check_summary_confirms_the_declared_gender() {
+        val a = Client("va"); val b = Client("vb")
+        a.engage.setMyGender("female")
+        b.engage.setMyGender("male")
+        a.mic.setEnabled(true)
+        check("server has the switch on") { a.mic.view.value?.on == true }
+        assertEquals("pending", a.mic.view.value!!.state)
+        assertTrue(a.mic.enabled.value)
+
+        a.socket.emit("find-partner", org.json.JSONObject().put("mode", "talk"))
+        b.socket.emit("find-partner", org.json.JSONObject().put("mode", "talk"))
+        val matched = waitFor("a matched") { a.events.filterIsInstance<ServerEvent.Matched>().lastOrNull() }
+        assertTrue("the server asks a's phone for a voice summary", matched.voice)
+        assertFalse("nobody filtered", matched.filtered)
+        assertFalse("b has Voice check off", b.events.filterIsInstance<ServerEvent.Matched>().last().voice)
+
+        val root = generateSequence(java.io.File(System.getProperty("user.dir")).absoluteFile) { it.parentFile }
+            .first { java.io.File(it, "scripts/voice/fixtures.json").exists() }
+        val fixture = org.json.JSONObject(java.io.File(root, "scripts/voice/fixtures.json").readText()).getJSONArray("female").getJSONObject(0)
+        // The server only takes a summary from a call at least 3.5 s old.
+        Thread.sleep(4200)
+        a.socket.emit("voice-features", fixture)
+        check("confirmed") { a.mic.view.value?.state == "confirmed" }
+        assertEquals(1, a.mic.view.value!!.calls)
+
+        // Turning it off forgets the estimate.
+        a.mic.setEnabled(false)
+        check("off on the server") { a.mic.view.value?.let { !it.on && it.state == "off" && it.calls == 0 } == true }
+        a.socket.emit("leave"); b.socket.emit("leave")
     }
 
     @Test fun voice_notes_need_consent_then_send_and_play(): Unit = runBlocking {

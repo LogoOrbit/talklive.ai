@@ -27,7 +27,13 @@ class EngageViewModel @Inject constructor(private val repo: EngageRepository, pr
     val ageGroup = repo.ageGroup
     val flags = repo.flags
     val voiceCheck = mic.enabled
-    val voiceResult = mic.result
+    /** The server's view of this profile's Voice check (state, retries, review). */
+    val voiceView = mic.view
+    val genderHeld = mic.genderHeld
+    /** "Check again": true when the server cleared the estimates. */
+    suspend fun retryVoice(): Boolean = mic.retry()?.optBoolean("ok") == true
+    /** "Ask a person to review": true when the request was sent. */
+    suspend fun appealVoice(): Boolean = mic.appeal()?.optBoolean("ok") == true
     fun setMyGender(g: String) = repo.setMyGender(g)
     fun setAgeGroup(a: String) = repo.setAgeGroup(a)
     fun setVoiceCheck(on: Boolean) = mic.setEnabled(on)

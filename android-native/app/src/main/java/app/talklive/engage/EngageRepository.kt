@@ -87,6 +87,9 @@ class EngageRepository(
     private val _flags = MutableStateFlow<Set<String>>(emptySet())
     val flags: StateFlow<Set<String>> = _flags
 
+    /** Previews and screenshots: flags as the server would send them. */
+    internal fun seedFlags(names: Set<String>) { _flags.value = names }
+
     fun loadFlags() = scope.launch(Dispatchers.IO) {
         runCatching {
             http.newCall(Request.Builder().url("${app.talklive.net.ServerConfig.url}/config.js").build()).execute().use { r ->
@@ -275,6 +278,7 @@ class EngageRepository(
             .putString("exclude", f.excludeCountries.joinToString(","))
             .putString("gender", f.prefGender)
             .putString("lang", f.prefLang)
+            .putBoolean("voice_checked", f.prefVoiceChecked)
             .apply()
         socket.register()
     }
@@ -285,6 +289,7 @@ class EngageRepository(
         excludeCountries = prefs.getString("exclude", "").orEmpty().split(",").filter { it.length == 2 },
         prefGender = prefs.getString("gender", "any") ?: "any",
         prefLang = prefs.getString("lang", "") ?: "",
+        prefVoiceChecked = prefs.getBoolean("voice_checked", false),
     )
 
     private fun filtersJson(f: Filters) = JSONObject()
@@ -292,6 +297,8 @@ class EngageRepository(
         .put("includeCountries", JSONArray(f.includeCountries))
         .put("excludeCountries", JSONArray(f.excludeCountries))
         .put("prefGender", f.prefGender)
+        // Only means something with a gender picked (the server checks Plus and the flag).
+        .put("prefVoiceChecked", f.prefVoiceChecked && f.prefGender != "any")
         .apply { if (f.prefLang.isNotBlank()) put("prefLang", f.prefLang) }
 
     private fun get(url: String): JSONObject? =

@@ -62,6 +62,8 @@ data class Filters(
     val excludeCountries: List<String> = emptyList(),
     val prefGender: String = "any",
     val prefLang: String = "",
+    /** "Voice-checked only": with Men or Women, only people whose voice check agreed with the gender they picked. */
+    val prefVoiceChecked: Boolean = false,
 ) {
     val activeCount: Int get() = listOf(interests.isNotEmpty(), includeCountries.isNotEmpty(), excludeCountries.isNotEmpty(), prefGender != "any", prefLang.isNotEmpty()).count { it }
 }
