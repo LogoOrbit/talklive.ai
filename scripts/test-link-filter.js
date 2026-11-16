@@ -12,6 +12,7 @@ const a = src.indexOf('const LINK_RE');
 const b = src.indexOf('function containsLink');
 // eslint-disable-next-line no-eval
 const { stripSocialLinks } = require('../public/social-links.js'); // eslint-disable-line no-unused-vars
+const textNorm = require('../server/text-normalize'); // eslint-disable-line no-unused-vars
 const containsLink = eval(`${src.slice(a, b)}${src.slice(b, src.indexOf('}', b) + 1)}; containsLink`);
 const pass = ['asad.123', 'asadsyed.director', 'add me asadsyed.director pls', 'https://talklive.app/pricing',
   'www.talklive.app', 'support@talklive.app', 'I am fine. com on', 'its 10.30 now', 'version 2.0.1', 'hello',

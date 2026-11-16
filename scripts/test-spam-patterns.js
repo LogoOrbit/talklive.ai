@@ -103,7 +103,7 @@ const send = (p, from, n, text) => { for (let i = 0; i < n; i++) p.onMessage({ f
   ok('voice notes to 12 different people', s2.length === 1 && s2[0].kind === 'voice-note' && c2.spam_voice_spray === 1, s2);
   p2.onAction({ kind: 'bogus', from: 'v', to: 'r' });
   p2.onAction({});
-  p2.onAction(undefined === 1 ? 0 : { kind: 'voice-note' });
+  p2.onAction({ kind: 'voice-note' });
   ok('malformed actions are ignored', s2.length === 1);
   ok('the dashboard summary lists the spraying', p.summary().copyPaste.some((x) => x.kind === 'friend-request'));
 }
