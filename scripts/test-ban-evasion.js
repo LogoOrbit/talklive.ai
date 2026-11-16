@@ -169,7 +169,7 @@ async function signup(sock, details) {
     await wait(300);
     const fresh = browser({ ip: '203.0.113.200', cookie: token() });
     await tryRegister(fresh);
-    const loginRes = new Promise((res) => { fresh.once('banned', () => res('banned')); fresh.once('login-result', (r) => res(r.ok ? 'in' : 'denied')); setTimeout(() => res('timeout'), 3000); });
+    const loginRes = new Promise((res) => { fresh.once('banned', () => res('banned')); fresh.once('login-result', (r) => res(r.banned ? 'banned' : r.ok ? 'in' : 'denied')); setTimeout(() => res('timeout'), 3000); });
     fresh.emit('login', { username: 'banneduser', password: 'a-long-pass-1' });
     ok('signing in from a fresh browser on another network is refused', (await loginRes) === 'banned');
     const row4 = (await bans()).find((x) => x.id === b4.ban.id);
@@ -177,7 +177,7 @@ async function signup(sock, details) {
 
     // The signed-in session token also gets nowhere.
     const resumed = browser({ ip: '203.0.113.201', cookie: token() });
-    const resumeRes = new Promise((res) => { resumed.once('banned', () => res('banned')); resumed.once('resume-session-result', (r) => res(r.ok ? 'in' : 'denied')); setTimeout(() => res('timeout'), 3000); });
+    const resumeRes = new Promise((res) => { resumed.once('banned', () => res('banned')); resumed.once('resume-session-result', (r) => res(r.banned ? 'banned' : r.ok ? 'in' : 'denied')); setTimeout(() => res('timeout'), 3000); });
     resumed.emit('resume-session', { token: made.sessionToken });
     ok('resuming the account is refused too', (await resumeRes) === 'banned');
 
@@ -213,7 +213,7 @@ async function signup(sock, details) {
     ok('lifted: the device can register again', (await tryRegister(back)).outcome === 'ok');
     const back2 = browser({ ip: '203.0.113.211', cookie: token() });
     await tryRegister(back2);
-    const lr = new Promise((res) => { back2.once('banned', () => res('banned')); back2.once('login-result', (r) => res(r.ok ? 'in' : 'denied')); setTimeout(() => res('timeout'), 3000); });
+    const lr = new Promise((res) => { back2.once('banned', () => res('banned')); back2.once('login-result', (r) => res(r.banned ? 'banned' : r.ok ? 'in' : 'denied')); setTimeout(() => res('timeout'), 3000); });
     back2.emit('login', { username: 'banneduser', password: 'a-long-pass-1' });
     ok('lifted: the account can sign in again', (await lr) === 'in');
     const back3 = browser({ ip: '2001:db8:aa:bb:5555::1', cookie: token() });

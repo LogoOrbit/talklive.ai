@@ -2446,7 +2446,9 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
     res.json({ ok: true, modes: cur });
   });
 
-  return { router, sendAlertEmail };
+  // A change that did not come through the dashboard (a ban appeal) must show up at once.
+  const clearCache = () => { reportCache.clear(); voiceCache = null; };
+  return { router, sendAlertEmail, clearCache };
 }
 
 // `generateConclusion` is exported for scripts/test-analytics-visits.js: the

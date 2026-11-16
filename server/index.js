@@ -8457,6 +8457,7 @@ io.on('connection', (socket) => {
     const out = store.addBanAppeal(ban.id, text);
     if (out.error) return reply({ ok: false, error: out.error });
     store.recordFeature('ban_appeal');
+    if (admin.clearCache) admin.clearCache();
     const who = ban.username || socketAuth.get(socket.id) || ban.clientId || 'someone';
     admin.sendAlertEmail('ban-appeal', 'TalkLive: a banned user sent an appeal',
       `${who} appealed their ban.\nBan reason: ${ban.reason}\n\n${text}\n\nReply at ${OWNER_URL}#bans`);
