@@ -2798,7 +2798,7 @@ function renderSettingsProfileRow() {
 // --- Shop ------------------------------------------------------------------
 // Passes: every Plus feature for 1, 7 or 15 days, one-time payment. They are
 // bought in the Android app through Google Play (the same prices as /pricing);
-// the button here opens the pricing page that explains it.
+// the Play link below the tiers is the only buy button.
 const SHOP_PASSES = [
   { id: 'd1', days: 1, price: '' },
   { id: 'd7', days: 7, price: '' },

@@ -71,7 +71,15 @@ async function befriend(a, b, B) {
     process.exit(code);
   };
   try {
-    for (let i = 0; i < 60; i++) { try { await fetch(BASE + '/healthz'); break; } catch (_) { await wait(250); } }
+    // Wait up to 60 s for the server (a cold CI runner can take longer than 15 s),
+    // and fail with a clear message instead of falling through to "fetch failed".
+    let up = false;
+    for (let i = 0; i < 240 && !up; i++) {
+      if (srv.exitCode !== null) throw new Error('server exited early with code ' + srv.exitCode);
+      try { up = (await fetch(BASE + '/healthz')).ok; } catch (_) { /* not listening yet */ }
+      if (!up) await wait(250);
+    }
+    if (!up) throw new Error('server did not answer /healthz within 60 s on port ' + PORT);
     const json = { 'Content-Type': 'application/json' };
     const setup = await (await fetch(BASE + '/owner/api/setup', { method: 'POST', headers: json, body: JSON.stringify({ password: 'correct horse battery', setupToken: 'test-setup-token' }) })).json();
     const conf = await fetch(BASE + '/owner/api/setup-confirm', { method: 'POST', headers: json, body: JSON.stringify({ code: totp.totpCode(setup.secret), setupToken: 'test-setup-token' }) });

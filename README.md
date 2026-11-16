@@ -145,7 +145,7 @@ A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.app/owne
 - **Traffic tab:** where visitors come from and what brought them (`server/traffic.js`). Every arrival from outside the site is attributed to a **source** (Google, Bing, Facebook, ChatGPT, a referring domain, a `utm_source` tag, or Direct), a **channel** (search, AI, social, referral, campaign, installed app, direct), the **landing page**, and the **search term** when the referrer carries one. A reload within 30 minutes is not a second arrival. Per-page view counts for every page are kept too. All of it is aggregate counts per UTC day, never per person. Verify with `npm run test:traffic`.
 
   **Google search keywords.** Google never passes the search query to the site it sends someone to, so the words people typed into Google exist only in Search Console. The Traffic tab reads them through the Search Console API (`server/search-console.js`): clicks, impressions, CTR and position per query, which page each query landed on, and clicks by page, country and device. To connect it: in Google Cloud enable the **Google Search Console API**, create a service account with a JSON key, add that service account's email as a user on the Search Console property, then `fly secrets set GSC_CREDENTIALS="$(base64 -w0 key.json)" GSC_SITE_URL=sc-domain:talklive.app`. Until then the tab shows these steps in place of the keyword table.
-- **Moderation:** every user report is stored with reporter/reported details; one-click bans from 30 minutes up to 5 years (by clientId **and** IP - banned users cannot connect at all until the ban expires or you lift it). Users are auto-banned for 30 minutes after 3 reports.
+- **Moderation:** every user report is stored with reporter/reported details; one-click bans from 30 minutes up to 5 years (by clientId **and** IP - a ban also follows the account, the device and the IPv6 /64. Banned users can still sign in, but only see the banned screen, where they can appeal, delete their account or sign out, until the ban expires or you lift it; appeals show in the dashboard). Users are auto-banned for 30 minutes after 3 reports.
 - **Errors:** client-side JS errors and server crashes are collected in the Errors tab (duplicates collapsed).
 - **Maintenance mode:** one button takes the site offline with a friendly message; the dashboard stays reachable.
 
@@ -182,7 +182,7 @@ A secured owner dashboard lives at **`/owner`** (e.g. `https://talklive.app/owne
 
 ### Premium (TalkLive Plus)
 
-Free tier limits (enforced server-side): max 2 preferred + 2 avoided countries, and the gender filter locked. Friends are unlimited for everyone. Premium unlocks all filters and removes ads. `/pricing` shows local prices; buying on the website is "coming soon" and links to the Android app (see "Grants come from" below).
+Free tier limits (enforced server-side): max 2 preferred + 2 avoided countries, and the gender filter locked. Friends are unlimited for everyone. Premium unlocks all filters and removes ads. `/pricing` shows local prices; buying on the website is not available; Plus and passes are bought in the Android app (see "Grants come from" below).
 
 Matching is instant for everyone. The free tier used to be held ~5s before the
 next search after a skip; that was removed because the client also emits `skip`

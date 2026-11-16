@@ -47,6 +47,7 @@ are also rendered in `ScreenshotTest`.
 | Voice check (opt-in, behind the server's `voiceCheck` flag): the phone summarises its own mic into voice features (`VoiceFeatures.kt`, a port of `public/voice-features.js`); the server makes the estimate. Status, Check again, Ask a person to review | Profile → You | `VoiceAnalysisTest` (parity with the website on fixtures from `scripts/voice/make-parity-fixtures.js`), ✅ e2e (real summary confirmed by the server) |
 | "Voice-checked only" filter and the gender filter note | Filters → Who you meet (Men or Women) | — |
 | "Not who I filtered for" (feedback on a gender-filtered match, then Next; not a report) | Call → Report | — |
+| Banned screen: appeal, delete account, sign out (banned people can sign in but see only this) | Full-screen banned view | ✅ ban appeal test (server) |
 | Shouting alert for moderators (same as mobile web) | Automatic during calls | `VoiceAnalysisTest` |
 | 17 languages | System or per-app language (Android 13+) | screenshots (ar, hi, de, ja) |
 | Themes: Dark (default), Light, Ocean, Sunset | Profile → Appearance | screenshots |

@@ -1,5 +1,57 @@
 # Changelog
 
+## 2026-11-16 — Voice check v2, fairer matching, safety and messaging (web + server + Android 3.10.0 (129))
+
+**Voice check v2**
+- The phone (or browser) sends voice features, not audio. The server makes an
+  estimate with a trained model (`server/voice-model.json`) and uses it for the
+  Men/Women filter. It is an estimate, not proof.
+- Retry, appeal and a review queue for people the check gets wrong. A daily
+  call limit applies. After a gender-filtered match you can tap "Not who I
+  filtered for"; it is feedback, not a report.
+- Can be turned off with `FEATURE_FLAGS='{"voiceCheck":false}'`.
+
+**Matchmaking**
+- Fair waiting (longer waits rank higher), memory of recent partners so you do
+  not get the same person again at once, and a real wait estimate.
+- A gender filter is never dropped silently. If nobody matches, you see a wait
+  line and a "Match with anyone" button.
+- A call can resume after a short connection loss.
+- WebRTC tuning: Opus settings, adaptive bitrate, ICE restart, faster setup.
+  A warning is logged when `TURN_URLS` has no TCP/TLS entry.
+
+**Moderation and security**
+- A ban follows the account, the device (cookie and Android id, hashed) and the
+  IPv6 /64. The dashboard has a bans view.
+- Rate limits for feedback, client errors, reports, blocks, rename, typing and
+  ICE. Push endpoints are checked against an allowlist. A race in Play token
+  handling is fixed.
+- Disguised links and addresses are folded before the link filter; disguised
+  social links are allowed like plain ones. New spam signals: the same long
+  text sent again, link-first identities, friend-request and voice-note spraying.
+- Blocks cannot be detected by the blocked person; they are hidden from
+  who-liked-you and hearts are cleared.
+
+**Banned screen and appeals**
+- Banned people can still sign in. They see only a banned screen with Appeal,
+  Delete account and Sign out (web and Android, 17 languages). Appeals appear
+  in the dashboard.
+
+**Messaging**
+- Friend chat loads history a page at a time, catches up after a reconnect,
+  shows delivered ticks, and unread markers follow their message.
+
+**Plus**
+- Price anchors ("was ...") come from the server and are honest. One shared
+  upgrade-moment policy on web and Android. Entitlement sync: expiry timers,
+  filter drop on expiry, a guest purchase moves to the account.
+- Shop modal on the web: removed an empty, disabled buy button (it never had
+  a label or an action). The only buy button is the link to the Android app.
+
+**Docs**
+- `docs/web-payments-2026-11.md`: research on taking payments on the web
+  (non-Stripe options, Google Play rules). Nothing is built.
+
 ## 2026-11-15 — Sharing socials is allowed (web + Android)
 
 People can now share their social media accounts and move to other apps.

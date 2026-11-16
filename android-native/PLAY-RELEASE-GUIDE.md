@@ -1,7 +1,7 @@
 # Publishing TalkLive on Google Play - step by step
 
 Everything below uses the real values from this repo: package `app.talklive`,
-version **3.9.6 (126)**, Plus subscription `talklive_plus`, passes
+version **3.10.0 (129)**, Plus subscription `talklive_plus`, passes
 `pass_1d` / `pass_7d` / `pass_15d`. Menu names are Play Console's as of late
 2026; if one has moved, use the search box at the top of Play Console.
 
@@ -9,7 +9,7 @@ Files you upload:
 
 | What | File |
 |---|---|
-| App bundle | `TalkLive-3.9.6-126.aab` (signed with your upload key, SHA-1 `6B:85:B9:…:F9:83:98`) |
+| App bundle | `TalkLive-3.10.0-129.aab` (signed with your upload key, SHA-1 `6B:85:B9:…:F9:83:98`) |
 | Phone screenshots (1080 x 1920) | `android-native/play-screenshots/01-home.png` … `08-plus_ready.png` |
 | Feature graphic (1024 x 500) | `android-native/play-screenshots/feature-graphic.png` |
 | App icon (512 x 512) | `mobile/store/icon-512.png` |
@@ -50,15 +50,16 @@ and nobody outside your list sees it.
 2. Releases tab > **Create new release**.
 3. **Play App Signing**: if asked, keep "Use Google-generated key" (an existing
    app is already enrolled - you will not see this).
-4. Upload `TalkLive-3.9.6-126.aab`. Release name fills in as `126 (3.9.6)`.
+4. Upload `TalkLive-3.10.0-129.aab`. Release name fills in as `129 (3.10.0)`.
 5. Release notes (en-US):
    ```
-   - Faster start, smoother calls, less battery and storage use
-   - Message notifications with Reply and Mark as read
-   - Clear message ticks: sent, delivered, seen
-   - Tap the signal bars to see your connection and how to improve it
-   - Mini-game invites and leaving mid-game fixed
-   - New animated avatars for Plus members
+   - Optional voice check for the Men/Women filter (an estimate, not proof)
+   - Fairer matching: shorter waits, fewer repeat partners, a real wait estimate
+   - "Match with anyone" if your filter finds nobody
+   - Calls reconnect and resume more reliably
+   - Chats catch up after a reconnect; delivered ticks; unread fixes
+   - Banned? Appeal from inside the app
+   - Clearer Plus prices
    ```
 6. Next > Save > **Start rollout to Internal testing**.
 7. Open the join link on your phone, accept, install from Play. This is the
@@ -177,6 +178,8 @@ Every item must show a green tick before review:
   short preview is sent through Google's push service for notifications);
   Audio (friend voice messages only - calls are never recorded); App activity;
   Crash logs; Device IDs (push token).
+- Device or other IDs: a hashed device id (from ANDROID_ID), collected, used
+  only for security/fraud prevention (ban enforcement), not shared.
 - Purposes: App functionality, Account management, Fraud prevention/safety,
   Analytics.
 - Shared: none sold; processors (Google Firebase, Google Play billing) are
@@ -186,7 +189,7 @@ Every item must show a green tick before review:
 
 1. Test and release > **Production** > Countries/regions: Add countries >
    select all (or your list) > Save.
-2. Create new release > **Add from library** > pick `126 (3.9.6)` (the bundle
+2. Create new release > **Add from library** > pick `129 (3.10.0)` (the bundle
    already uploaded to internal testing) > same release notes.
 3. Staged rollout: start at **20%**, watch Android vitals (crashes/ANRs)
    for 1-2 days, then Increase rollout to 100%.

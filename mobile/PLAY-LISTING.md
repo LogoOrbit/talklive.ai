@@ -38,10 +38,17 @@ PRACTISE A LANGUAGE
 Practise spoken English - or Spanish, Arabic, Hindi, French and more - with
 native speakers, in real conversations.
 
+VOICE CHECK (OPTIONAL)
+Turn on the voice check to make the Men/Women filter more reliable. It is an estimate from your voice, not proof.
+
+SHARE YOUR SOCIALS
+You can swap Instagram, Snapchat and other handles, or move to another app.
+
 SAFETY FIRST
 - Adults 18+ only
 - Report and Block on every call and chat
 - Automated safety checks and human moderation
+- Banned? You can appeal in the app
 - Clear community guidelines: talklive.app/community-guidelines
 
 Also: mini games in chat, GIFs, reactions, spirit-animal avatars and call
@@ -51,6 +58,18 @@ TalkLive is free and supported by ads.
 
 Website: https://talklive.app
 Support: info@talklive.app
+
+## What's new in 3.10.0
+
+```
+- Optional voice check for the Men/Women filter (an estimate, not proof)
+- Fairer matching: shorter waits, fewer repeat partners, a real wait estimate
+- "Match with anyone" if your filter finds nobody
+- Calls reconnect and resume more reliably
+- Chats catch up after a reconnect; delivered ticks; unread fixes
+- Banned? Appeal from inside the app
+- Clearer Plus prices
+```
 
 ## App details
 
