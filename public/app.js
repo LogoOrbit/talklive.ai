@@ -11063,7 +11063,7 @@ socket.on('banned', (info) => {
   if (!bannedLoad) {
     bannedLoad = new Promise((resolve) => {
       const s = document.createElement('script');
-      s.src = '/banned-screen.js?v=b625f90090';
+      s.src = '/banned-screen.js?v=2139b0c69b';
       s.onload = resolve;
       s.onerror = () => { bannedLoad = null; showError(t('errBanned')); };
       document.head.appendChild(s);

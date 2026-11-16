@@ -159,6 +159,7 @@
     if (!info) return;
     sock = socket;
     last = info;
+    note = '';
     if (!sock.__tlBanBound) {
       sock.__tlBanBound = true;
       sock.on('ban-lifted', function () { location.reload(); });

@@ -3757,7 +3757,7 @@
     if (!bannedLoad) {
       bannedLoad = new Promise(function (resolve) {
         var s = document.createElement('script');
-        s.src = '/banned-screen.js?v=b625f90090';
+        s.src = '/banned-screen.js?v=2139b0c69b';
         s.onload = resolve;
         s.onerror = function () {
           bannedLoad = null;
