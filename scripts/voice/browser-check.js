@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 'use strict';
+/* global window, document, localStorage, socket, voiceView, callState, pc */
 // Real end-to-end proof of Voice check, through the true browser path:
 //   getUserMedia -> Web Audio AnalyserNode -> public/voice-features.js ->
 //   socket 'voice-features' -> server/voice-check.js model -> status.
@@ -20,7 +21,7 @@
 //                      -filter_complex concat=n=3:v=0:a=1 -ac 1 -ar 48000 out.wav
 //   <gender>       what A says in "I am". Give the speaker's own gender to
 //                  expect `confirmed`, the other one for the cross case.
-//   --calls N      how many separate calls to make (default 1). The cross case
+//   --calls N      how many separate calls to make (default 3, stops early on confirmed). The cross case
 //                  needs 2: one disagreeing call is never a mismatch.
 //   --expect X     confirmed | mismatch | notconfirmed. Sets the exit code
 //                  (default: confirmed).
@@ -45,7 +46,7 @@ const flag = (name) => { const i = args.indexOf(name); return i >= 0 ? args.spli
 const opt = (name, def) => { const i = args.indexOf(name); if (i < 0) return def; const v = args[i + 1]; args.splice(i, 2); return v; };
 const HEADED = flag('--headed');
 const VERBOSE = flag('--verbose');
-const CALLS = Number(opt('--calls', '1'));
+const CALLS = Number(opt('--calls', '3'));
 const EXPECT = opt('--expect', 'confirmed');
 const TIMEOUT = Number(opt('--timeout', '90')) * 1000;
 const [wavArg, gender] = args;
@@ -74,14 +75,14 @@ const say = (...a) => console.log(stamp(), ...a);
   srv.stdout.on('data', (d) => { serverLog += d; });
   srv.stderr.on('data', (d) => { serverLog += d; });
 
-  const common = ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--autoplay-policy=no-user-gesture-required'];
+  const common = ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--autoplay-policy=no-user-gesture-required', '--disable-features=WebRtcHideLocalIpsWithMdns', '--allow-loopback-in-peer-connection'];
   // A's microphone is the speech file; B's is Chromium's default beep (B never gets a voice check).
   const browserA = await chromium.launch({ headless: !HEADED, args: [...common, `--use-file-for-fake-audio-capture=${WAV}`] });
-  const browserB = await chromium.launch({ headless: !HEADED, args: common });
+  // Same browser for B: two separate Chromium processes cannot reach each other in some sandboxes.
+  const browserB = browserA;
   let status = 'unknown';
   const cleanup = async () => {
     await browserA.close().catch(() => {});
-    await browserB.close().catch(() => {});
     srv.kill('SIGKILL');
     fs.rmSync(dataDir, { recursive: true, force: true });
   };
@@ -140,13 +141,14 @@ const say = (...a) => console.log(stamp(), ...a);
       await B.page.click('#startBtn');
       say(`call ${call}: both started "Tap to Talk"`);
       const callStart = Date.now();
+      if (VERBOSE) setTimeout(async () => say('   B:', JSON.stringify(await B.page.evaluate(() => ({ call: callState, ice: typeof pc !== 'undefined' && pc ? pc.iceConnectionState + '/' + pc.signalingState : null })).catch(() => null))), 9000);
       let reached = false;
       const baseCalls = (await view() || {}).calls || 0;
       while (Date.now() - callStart < TIMEOUT) {
         await wait(500);
         const v = await view();
         if (VERBOSE && Math.round((Date.now() - callStart) / 500) % 10 === 0) {
-          say('   heard:', JSON.stringify(await A.page.evaluate(() => (window.__tracker ? { voiced: window.__tracker.voiced, blocks: window.__tracker.seen } : null))));
+          say('   heard:', JSON.stringify(await A.page.evaluate(() => ({ call: typeof callState === 'undefined' ? null : callState, ice: typeof pc !== 'undefined' && pc ? pc.iceConnectionState + '/' + pc.signalingState : null, voiced: window.__tracker ? window.__tracker.voiced : null, blocks: window.__tracker ? window.__tracker.seen : null }))));
         }
         if (!v) continue;
         const key = `${v.state} calls=${v.calls} more=${!!v.more}`;
@@ -154,7 +156,7 @@ const say = (...a) => console.log(stamp(), ...a);
         final = v;
         const state = v.state;
         // A call is done once the server has scored it and is not asking for more.
-        if (v.calls > baseCalls && !v.more) { reached = true; if (call === CALLS || state === 'confirmed') break; }
+        if (v.calls > baseCalls && (!v.more || Date.now() - callStart > 30000)) { reached = true; if (call === CALLS || state === 'confirmed') break; }
         if (state === 'confirmed' || state === 'mismatch') { reached = true; break; }
       }
       if (!reached) say(`call ${call}: no scored summary within ${TIMEOUT / 1000}s`);
