@@ -4502,6 +4502,8 @@ function blockPair(clientIdA, clientIdB) {
   // the other side looking at a "Pending" that can never be answered.
   clearRequestPair(clientIdA, clientIdB);
   clearRequestPair(clientIdB, clientIdA);
+  // A heart one of them gave must not survive the block as a half-mutual match.
+  hearts.delete(pairKey(clientIdA, clientIdB));
   // Same for anything already sitting in either inbox: a blocked person's
   // unread messages, request or call-back ask must not linger as a badge.
   removeNotificationsWhere(clientIdA, (n) => notifSubject(n) === clientIdB);
@@ -6888,7 +6890,9 @@ io.on('connection', (socket) => {
     if (typeof ack !== 'function') return;
     const me = profiles.get(socket.id);
     if (!me) return ack({ count: 0, list: [] });
-    const list = store.likesFor(me.clientId);
+    // Someone this person blocked (or who blocked them) is not shown as a admirer: it
+    // would hand back the very contact the block was meant to end.
+    const list = store.likesFor(me.clientId).filter((l) => !isBlockedPair(me.clientId, l.from));
     if (!isPremium(me.clientId)) {
       return ack({ count: list.length, locked: true, countries: list.slice(0, 5).map((l) => l.country) });
     }
@@ -8091,8 +8095,15 @@ io.on('connection', (socket) => {
       reason, scope: 'friend', toClientId, id: parsed.id || null, text: parsed.text || '',
     });
     if (!ageGate('friends').ok || ageAssurance.isRestricted(toClientId)) return refuse('unreachable');
-    if (!canOpenThread(me.clientId, toClientId) || isBlockedPair(me.clientId, toClientId)) {
-      return refuse('unreachable');
+    if (!canOpenThread(me.clientId, toClientId)) return refuse('unreachable');
+    // A blocked person is not told: every other refusal here is one a person who
+    // is not blocked can never get, so it would reveal the block. The message is
+    // acknowledged as sent and goes nowhere (it is not stored, and never reaches
+    // the blocker's thread, inbox or push).
+    if (isBlockedPair(me.clientId, toClientId)) {
+      return socket.emit('friend-message-sent', {
+        toClientId, text: parsed.text || '', ts: Date.now(), id: parsed.id || null, replyTo: parsed.replyTo || null, gif: parsed.gif || null, delivered: false, seen: false,
+      });
     }
     // Friends can message each other any time - no call required. If the friend
     // is offline the message is still stored and a notification is queued, so it
@@ -8503,8 +8514,14 @@ io.on('connection', (socket) => {
     targetClientId = validId(targetClientId);
     if (!me || !targetClientId || targetClientId === me.clientId) return;
     store.recordFeature('call_back');
-    if (isBlockedPair(me.clientId, targetClientId) || !knowsEachOther(me.clientId, targetClientId)) {
+    // A block must not be detectable by the person it is aimed at, so a blocked
+    // pair is answered exactly like someone who is offline (and the later ask
+    // below is acknowledged and dropped). Only someone never met is told so.
+    if (!knowsEachOther(me.clientId, targetClientId)) {
       return socket.emit('call-back-request-result', { ok: false, reason: 'blocked' });
+    }
+    if (isBlockedPair(me.clientId, targetClientId)) {
+      return socket.emit('call-back-request-result', { ok: false, reason: 'offline', canQueue: true });
     }
     if (!socialRateOk('call-back', me.clientId, 6, 60000)) {
       return socket.emit('call-back-request-result', { ok: false, reason: 'rate' });
@@ -8580,8 +8597,11 @@ io.on('connection', (socket) => {
     const me = profiles.get(socket.id);
     targetClientId = validId(targetClientId);
     if (!me || !targetClientId || targetClientId === me.clientId) return;
-    if (isBlockedPair(me.clientId, targetClientId) || !knowsEachOther(me.clientId, targetClientId)) {
+    if (!knowsEachOther(me.clientId, targetClientId)) {
       return socket.emit('call-back-later-result', { ok: false, reason: 'blocked', targetClientId });
+    }
+    if (isBlockedPair(me.clientId, targetClientId)) {
+      return socket.emit('call-back-later-result', { ok: true, targetClientId });
     }
     if (!acceptsCalls(targetClientId)) {
       return socket.emit('call-back-later-result', { ok: false, reason: 'calls-off', targetClientId });

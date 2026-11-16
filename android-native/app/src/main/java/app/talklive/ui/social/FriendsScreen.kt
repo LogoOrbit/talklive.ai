@@ -526,6 +526,7 @@ private fun FriendActionsSheet(vm: SocialViewModel, p: Person, onDismiss: () -> 
             dismissButton = { TextButton(onClick = { renaming = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
+    val reportCtx = LocalContext.current
     confirm?.let { what ->
         AlertDialog(
             onDismissRequest = { confirm = null },
@@ -547,7 +548,7 @@ private fun FriendActionsSheet(vm: SocialViewModel, p: Person, onDismiss: () -> 
             },
             confirmButton = {
                 TextButton(onClick = {
-                    when (what) { "block" -> vm.block(p.clientId); "report" -> vm.report(p.clientId, "profile"); else -> vm.remove(p.clientId) }
+                    when (what) { "block" -> vm.block(p.clientId); "report" -> { vm.report(p.clientId, "profile"); android.widget.Toast.makeText(reportCtx, reportCtx.getString(R.string.report_sent), android.widget.Toast.LENGTH_SHORT).show() }; else -> vm.remove(p.clientId) }
                     confirm = null; onDismiss()
                 }) {
                     Text(
