@@ -554,8 +554,8 @@
   "shift": 0.3078
  },
  "thresholds": {
-  "confirm": 0.93,
-  "mismatch": 0.9575
+  "confirm": 0.91,
+  "mismatch": 0.97
  },
  "metrics": {
   "validation": {
@@ -777,7 +777,7 @@
    },
    "falseMismatchRate": 1,
    "confirmedShare": {
-    "share": 82.9,
+    "share": 85.2,
     "accuracy": 98.7
    }
   },
@@ -984,24 +984,24 @@
    },
    "falseMismatchRate": 0.6,
    "confirmedShare": {
-    "share": 78.1,
+    "share": 82,
     "accuracy": 99.1
    }
   },
   "otherModelTestAccuracy": 94.5,
   "thresholdSelection": {
    "confirm": {
-    "value": 0.93,
+    "value": 0.91,
     "reached": false,
     "accuracy": 98.7,
-    "share": 82.9,
+    "share": 85.2,
     "bestPossible": 98.7
    },
    "mismatch": {
-    "value": 0.9575,
+    "value": 0.97,
     "reached": false,
-    "accuracy": 98.7,
-    "share": 78.2,
+    "accuracy": 98.6,
+    "share": 72.6,
     "bestPossible": 98.7
    }
   },
