@@ -39,8 +39,15 @@ data class Partner(
 sealed interface ServerEvent {
     data object Registered : ServerEvent
     data object NeedsRegister : ServerEvent
-    data class Waiting(val estimatedSeconds: Int?) : ServerEvent
-    data class Matched(val initiator: Boolean, val partner: Partner, val callback: Boolean = false, val mode: String = "talk") : ServerEvent
+    /** [waitingForGender]: "male"/"female" while a Men/Women filter is holding the search (it can be widened). */
+    data class Waiting(val estimatedSeconds: Int?, val waitingForGender: String? = null) : ServerEvent
+    /** The search's filters changed (the fallback relaxed country/language); the gender filter may still hold. */
+    data class SearchStatus(val waitingForGender: String?) : ServerEvent
+    data class Matched(val initiator: Boolean, val partner: Partner, val callback: Boolean = false, val mode: String = "talk", val pairId: String? = null) : ServerEvent
+    /** Our socket dropped mid-call and came back in time: the call is ours again. */
+    data class CallResumed(val pairId: String?) : ServerEvent
+    /** The partner's socket dropped and came back. */
+    data object PartnerResumed : ServerEvent
     /** A text message from the stranger in a text chat. */
     data class StrangerMessage(val id: String, val text: String, val gifUrl: String?, val replyTo: String?, val ts: Long) : ServerEvent
     data object StrangerTyping : ServerEvent

@@ -127,6 +127,8 @@ fun CallScreen(
     onAutoConnect: (Boolean) -> Unit = {},
     bands: () -> FloatArray = { FloatArray(0) },
     premium: Boolean = false,
+    /** "Match with anyone": drop the Men/Women filter for this search. */
+    onWidenSearch: () -> Unit = {},
     noiseSuppression: Boolean = true,
     onNoiseSuppression: (Boolean) -> Unit = {},
     onProblem: (String) -> Unit = {},
@@ -243,6 +245,14 @@ fun CallScreen(
                     is CallPhase.Searching -> {
                         SearchingTitle()
                         p.etaSeconds?.takeIf { it > 0 }?.let { Spacer(Modifier.height(8.dp)); Subtitle(stringResource(R.string.searching_eta, it)) }
+                        // A gender filter is never dropped after a while like country
+                        // and language are: say who we are holding out for, and offer
+                        // to widen this one search.
+                        p.waitingForGender?.let { g ->
+                            Spacer(Modifier.height(8.dp))
+                            Subtitle(stringResource(if (g == "male") R.string.looking_for_men else R.string.looking_for_women))
+                            TextButton(onClick = onWidenSearch) { Text(stringResource(R.string.match_with_anyone)) }
+                        }
                         if (premium) { Spacer(Modifier.height(10.dp)); PlusPriority() }
                     }
                     is CallPhase.Connecting -> {

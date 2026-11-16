@@ -398,6 +398,10 @@
     <string name="avatars_characters">Movie characters</string>
     <string name="fallback_random">Nobody fits your filters right now, so you are being matched with anyone.</string>
     <string name="keep_filters">Keep my filters</string>
+    <string name="looking_for_women">Looking for women only · this can take longer.</string>
+    <string name="looking_for_men">Looking for men only · this can take longer.</string>
+    <string name="match_with_anyone">Match with anyone</string>
+    <string name="search_too_fast">You\'re moving through people very fast. Wait a few seconds, then try again.</string>
     <string name="feedback_reply_title">A reply from the TalkLive team</string>
     <string name="got_it">Got it</string>
     <string name="remove_from_list">Remove from this list</string>
