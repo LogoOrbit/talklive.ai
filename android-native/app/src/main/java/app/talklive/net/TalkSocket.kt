@@ -444,6 +444,8 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
             put("timezone", TimeZone.getDefault().id)
             put("lang", Locale.getDefault().language)
             put("surface", "call")
+            // This app confirms receipt of friend messages itself ("delivered").
+            put("caps", org.json.JSONArray().put("ack"))
             privacy?.let { put("hideStatus", it.hideStatus.value); put("acceptCalls", it.acceptCalls.value) }
             if (takeover) put("takeover", true)
             registerExtras()?.let { extra -> extra.keys().forEach { k -> put(k, extra.get(k)) } }
@@ -452,7 +454,12 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
         socket.emit("register", payload)
     }
 
+    /** Server time from the last registration: what "changes since" is measured from. */
+    @Volatile var serverNow: Long = 0L
+        private set
+
     private fun onRegisterResult(o: JSONObject?) {
+        o?.optLong("now", 0L)?.takeIf { it > 0 }?.let { serverNow = it }
         if (o == null || o.optBoolean("ok", true)) {
             registerFailures = 0
             waitingForIdentity = false
