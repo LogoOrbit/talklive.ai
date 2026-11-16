@@ -1165,6 +1165,13 @@ function hasRelay(servers) {
 // then. A deployment with no relay works fine for the developer testing it at
 // home and fails for a large share of real users - the gap this warning closes.
 function warnIfNoRelay() {
+  // UDP-only relays do nothing for the networks that need a relay most: many
+  // corporate, school and hotel firewalls pass only TCP 443. Managed providers
+  // already hand out turn:...?transport=tcp and turns: on 443.
+  const selfHosted = (process.env.TURN_URLS || '').split(',').map((u) => u.trim()).filter(Boolean);
+  if (selfHosted.length && !selfHosted.some((u) => /^turns:|transport=tcp/i.test(u))) {
+    console.warn('[turn] TURN_URLS has no TCP/TLS entry (e.g. turns:host:443?transport=tcp); locked-down networks that only pass TCP 443 cannot reach the relay. See DEPLOY-TURN.md.');
+  }
   if (hasRelay(buildIceServers()) || managedTurnConfigured()) {
     getManagedTurnServers().then((servers) => {
       if (managedTurnConfigured() && !servers.length) {
