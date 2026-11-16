@@ -1206,7 +1206,7 @@ const NAV=[
   ['Moderation',[
     ['reports','Reports',ico('reports'),[['reports','Reports','']]],
     ['chats','Messages',ico('chats'),[['chats','Chats',''],['voicenotes','Voice notes','']]],
-    ['automod','Safety',ico('automod'),[['automod','Auto-mod',''],['aiguard','AI guard',''],['bans','Bans',''],['warnings','Warnings','']]],
+    ['automod','Safety',ico('automod'),[['automod','Auto-mod',''],['aiguard','AI guard',''],['voice','Voice check',''],['bans','Bans',''],['warnings','Warnings','']]],
     ['feedback','Feedback',ico('feedback'),[['feedback','Feedback','']]]]],
   ['People',[
     ['users','Users',ico('users'),[['users','All users',''],['accounts','Accounts',''],['talktime','Talk time',''],['data','User data','']]],
@@ -1244,6 +1244,7 @@ function navBadge(id){
   if(id==='support'&&counts.supportWaiting)return `<span class="badge">${counts.supportWaiting}</span>`;
   if(id==='reports'&&counts.unhandledReports)return `<span class="badge">${counts.unhandledReports}</span>`;
   if(id==='automod'&&counts.autoReview)return `<span class="badge">${counts.autoReview}</span>`;
+  if(id==='voice'&&counts.voiceAppeals)return `<span class="badge">${counts.voiceAppeals}</span>`;
   if(id==='errors'&&counts.errors)return `<span class="badge" style="background:var(--serious)">${counts.errors}</span>`;
   return '';
 }
@@ -1489,6 +1490,7 @@ async function load(force){
     else if(tab==='warnings')await viewWarnings();
     else if(tab==='automod')await viewAutomod();
     else if(tab==='aiguard')await viewAiGuard();
+    else if(tab==='voice')await viewVoice();
     else if(tab==='chats')await viewChats();
     else if(tab==='voicenotes')await viewVoiceNotes();
     else if(tab==='users')await viewUsers();
@@ -2579,6 +2581,42 @@ async function viewAiGuard(){
 async function tgLabel(id,label){try{await post('talkguard/label',{id,label});toast(label==='skip'?'Skipped':'Learned',label==='skip'?'':'It retrains in a few seconds.','good');load();}catch(e){toast('Failed',e.message,'bad');}}
 async function tgRetrain(){try{const r=await post('talkguard/retrain');toast('Retrained','v'+r.stats.version+' in '+r.stats.ms+' ms','good');load();}catch(e){toast('Failed',e.message,'bad');}}
 
+/* ---------- Voice check ----------
+   The estimate behind the gender filter (server/voice-check.js): where
+   profiles stand, how the model scored on unseen speech, and appeals. */
+async function viewVoice(){
+  const r=await vapi('voice');
+  const c=r.counts,t=(r.model&&r.model.test)||{},th=(r.model&&r.model.thresholds)||{};
+  const tile=(k,v,s,col)=>`<div class="tile"><div class="k">${k}</div><div class="v" ${col?`style="color:${col}"`:''} data-count="${v}">0</div><div class="s">${s}</div></div>`;
+  $('#main').innerHTML=`<div class="grid tiles anim" style="margin-top:0">
+    ${tile('Voice check on',c.on,'profiles that turned it on')}
+    ${tile('Confirmed',c.confirmed+c.reviewed,'voice agrees with their choice','var(--good)')}
+    ${tile('Unclear',c.unclear+c.pending,'not enough to tell yet')}
+    ${tile('Does not match',c.mismatch,'left out of gender-filtered matches',c.mismatch?'var(--warn)':'')}
+    ${tile('Disputed',c.disputed,'3+ partners said wrong match',c.disputed?'var(--warn)':'')}
+  </div>
+  <div class="card anim"><h2>Reviews waiting <span class="sub">someone asked a person to check their result</span></h2>
+  ${r.appeals.length?`<table><tr><th>User</th><th>They chose</th><th>The model heard</th><th>Their note</th><th>Asked</th><th></th></tr>
+  ${r.appeals.map(a=>`<tr><td><b>${esc(a.username||'Unknown')}</b><br><span class="muted">${esc(a.country)}${a.account?' · @'+esc(a.account):''}</span></td>
+    <td>${esc(a.gender)}</td>
+    <td>${a.sounds?`${esc(a.sounds)} (${a.confidence}% sure, ${a.calls} call${a.calls===1?'':'s'})`:'no calls scored yet'}${a.disputes?`<br><span class="muted">${a.disputes} partner${a.disputes===1?'':'s'} said wrong match</span>`:''}</td>
+    <td>${esc(a.note)||'<span class="muted">none</span>'}</td><td>${ago(a.at)}</td>
+    <td class="rowbtns"><button onclick="voiceDecide('${esc(a.clientId)}',true)">Confirm their choice</button><button class="danger" onclick="voiceDecide('${esc(a.clientId)}',false)">Decline</button></td></tr>`).join('')}</table>
+  <p class="muted" style="font-size:.8rem;margin-top:8px">Confirming means their chosen gender counts as checked from now on, whatever the model hears. Declining leaves things as they are; they can ask again in 7 days. The model only hears how a voice sounds. It is wrong for some people, and that is what this queue is for.</p>`
+  :'<div class="muted">Nobody is waiting.</div>'}</div>
+  <div class="card anim"><h2>The model <span class="sub">${esc(r.model.kind||'')} · trained ${esc(r.model.trainedAt||'')}</span></h2>
+  <div style="line-height:1.7;font-size:.88rem">
+    Tested on <b>${num(t.n||0)}</b> recordings it never trained on (other languages, other speakers): right <b>${t.accuracy}%</b> of the time
+    (women ${t.women}%, men ${t.men}%).
+    When it is at least ${Math.round((th.confirm||0)*100)}% sure it marks a voice "confirmed"; it only says "does not match" at ${Math.round((th.mismatch||0)*100)}% or more, on two separate calls.<br>
+    ${t.atConfidence?Object.entries(t.atConfidence).map(([k,v])=>`${Math.round(k*100)}%+ sure: ${v.share}% of recordings, ${v.accuracy}% right`).join(' · '):''}
+    <br><span class="muted">${r.enabled?'Voice check is on.':'Voice check is switched off (FEATURE_FLAGS).'} Nobody else ever sees a person's result.</span>
+  </div></div>`;
+}
+async function voiceDecide(clientId,grant){
+  if(!confirm(grant?'Confirm the gender this person chose? It will count as checked.':'Decline this review?'))return;
+  try{await post('voice/appeal',{clientId,grant});toast('Done','','good');load();}catch(e){toast('Failed',e.message,'bad');}
+}
 async function viewWarnings(){
   const r=await vapi('warnings');
   const all=r.warnings;

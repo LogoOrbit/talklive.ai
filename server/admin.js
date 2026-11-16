@@ -19,6 +19,8 @@ const health = require('./health');
 const insights = require('./insights');
 const plusStats = require('./plus-stats');
 const paymentLog = require('./payment-log');
+const flags = require('./flags');
+const voiceCheck = require('./voice-check');
 
 const SESSION_HOURS = 12;
 const OWNER_EMAIL = process.env.OWNER_EMAIL || '';
@@ -418,7 +420,7 @@ function generateConclusion(runtime, report) {
 }
 
 // --- Module wiring ---
-function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats, automod, talkguard, patterns, support, grantPlus }) {
+function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats, automod, talkguard, patterns, support, grantPlus, onVoiceDecision }) {
   if (automod) automod.setAlert(sendAlertEmail);
   try { paymentLog.installPaymentLog(store); } catch (e) { console.log('[owner] payment log not installed:', e.message); }
   const router = express.Router();
@@ -706,6 +708,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
         reports: store.data.reports.length,
         unhandledReports: store.data.reports.filter((r) => !r.handled).length,
         autoReview: automod ? automod.openReviews() : 0,
+        voiceAppeals: store.voiceAppeals().length,
         errors: store.data.errors.length,
         feedback: store.data.feedback.length,
         activeBans: store.activeBans().length,
@@ -886,6 +889,55 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     const out = automod ? automod.undo(req.params.id, reqIp(req)) : { error: 'Auto-mod is not running.' };
     if (out.error) return res.status(400).json(out);
     res.json(out);
+  });
+
+  // --- Voice check (server/voice-check.js) -----------------------------------
+  // How many profiles stand where, how the model scored on speech it never
+  // trained on, and the appeals waiting for a person to decide.
+  router.get('/api/voice', (req, res) => {
+    const now = Date.now();
+    const counts = { on: 0, pending: 0, confirmed: 0, unclear: 0, mismatch: 0, reviewed: 0, disputed: 0 };
+    for (const rec of Object.values(store.data.voice || {})) {
+      if (!rec) continue;
+      if (rec.on) counts.on++;
+      const st = voiceCheck.status(rec, rec.g, !!rec.on, now);
+      if (counts[st] !== undefined) counts[st]++;
+      if (voiceCheck.disputed(rec, rec.g, !!rec.on, now)) counts.disputed++;
+    }
+    const appeals = store.voiceAppeals().map(({ clientId, rec }) => {
+      const est = voiceCheck.estimate(rec, now);
+      return {
+        clientId,
+        username: rec.appeal.username || '',
+        country: rec.appeal.country || '',
+        account: rec.appeal.account || null,
+        gender: rec.appeal.gender,
+        note: rec.appeal.note || '',
+        at: rec.appeal.at,
+        calls: est ? est.sessions : 0,
+        // What the model heard, in the words the product uses: never a gender.
+        sounds: est ? (est.label === 'female' ? 'feminine' : 'masculine') : null,
+        confidence: est ? Math.round(est.confidence * 100) : null,
+        disputes: (rec.d || []).length,
+      };
+    });
+    const m = voiceCheck.MODEL;
+    res.json({
+      enabled: flags.isOn('voiceCheck'),
+      counts,
+      appeals,
+      model: { kind: m.kind, trainedAt: m.trainedAt, thresholds: m.thresholds, test: m.metrics && m.metrics.test, data: m.data },
+    });
+  });
+  router.post('/api/voice/appeal', (req, res) => {
+    const b = req.body || {};
+    const clientId = String(b.clientId || '');
+    const next = voiceCheck.decideAppeal(store.voiceGet(clientId), b.grant === true);
+    if (!next) return res.status(400).json({ error: 'No open appeal for that profile.' });
+    store.voiceSet(clientId, next);
+    store.audit('voice_appeal', reqIp(req), `${b.grant === true ? 'Granted' : 'Declined'} voice check review for ${next.appeal.username || clientId}`);
+    if (onVoiceDecision) onVoiceDecision(clientId);
+    res.json({ ok: true });
   });
 
   // --- TalkGuard model + behaviour patterns ---------------------------------
