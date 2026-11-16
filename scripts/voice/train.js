@@ -29,6 +29,8 @@ const path = require('path');
 
 const args = process.argv.slice(2);
 const quickIdx = args.indexOf('--quick');
+const nbIdx = args.indexOf('--no-balance');
+if (nbIdx >= 0) args.splice(nbIdx, 1);
 const QUICK = quickIdx >= 0;
 if (QUICK) args.splice(quickIdx, 1);
 const outIdx = args.indexOf('--out');
@@ -228,6 +230,22 @@ function calibrate(p) {
   }
   return { scale: Math.round(scale * 10000) / 10000, shift: Math.round(shift * 10000) / 10000 };
 }
+// Class balance: after Platt scaling, move the decision point (a shift on the
+// logit, which also moves every confidence) until women and men are equally
+// often right on validation rows a device could send. Searched on validation
+// only; among equally balanced shifts the closest to 0 wins.
+const NO_BALANCE = process.argv.includes('--no-balance');
+function balanceShift(p, cal) {
+  let best = { gap: Infinity, d: 0 };
+  for (let d = -2; d <= 2.0001; d += 0.02) {
+    const res = score(p, { scale: cal.scale, shift: cal.shift + d }, valDevice);
+    const w = res.filter((e) => e.r.y === 1);
+    const m = res.filter((e) => e.r.y === 0);
+    const gap = Math.abs(w.filter((e) => e.ok).length / w.length - m.filter((e) => e.ok).length / m.length);
+    if (gap < best.gap - 1e-9 || (Math.abs(gap - best.gap) <= 1e-9 && Math.abs(d) < Math.abs(best.d))) best = { gap, d };
+  }
+  return Math.round(best.d * 1000) / 1000;
+}
 function calibratedLoss(p, cal, data) {
   let s = 0;
   for (const r of data) { const q = sigmoid(forward(p, r.x) * cal.scale + cal.shift); s -= r.y ? Math.log(q + 1e-12) : Math.log(1 - q + 1e-12); }
@@ -348,7 +366,9 @@ if (bestNet) console.log(`best network: ${bestNet.hidden} hidden, lr ${bestNet.l
 console.log(`shipping: ${useNet ? 'network' : 'logistic regression'}`);
 
 const chosen = pick.fit.p;
-const cal = pick.cal;
+const balance = NO_BALANCE ? 0 : balanceShift(pick.fit.p, pick.cal);
+const cal = { scale: pick.cal.scale, shift: Math.round((pick.cal.shift + balance) * 10000) / 10000 };
+console.log(`class-balance shift on the logit: ${balance} (Platt shift ${pick.cal.shift} -> ${cal.shift})`);
 const valRes = score(chosen, cal, groups.val);
 const valDeviceRes = valRes.filter((e) => e.r.n >= MIN_FRAMES);
 
