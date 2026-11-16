@@ -187,7 +187,10 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
         socket.on("matched") { args ->
             val o = args.firstObject() ?: return@on
             _events.tryEmit(
-                ServerEvent.Matched(o.optBoolean("initiator"), Partner.from(o.optJSONObject("partner")), o.optBoolean("callback"), o.optString("mode", "talk")),
+                ServerEvent.Matched(
+                    o.optBoolean("initiator"), Partner.from(o.optJSONObject("partner")), o.optBoolean("callback"), o.optString("mode", "talk"),
+                    voice = o.optBoolean("voice"), filtered = o.optBoolean("filtered"),
+                ),
             )
         }
         socket.on("signal") { args -> args.firstObject()?.let { _events.tryEmit(ServerEvent.Signal(it)) } }
@@ -383,7 +386,7 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
     /** Extra fields for registration (match filters). */
     @Volatile var registerExtras: () -> JSONObject? = { null }
 
-    /** More registration fields from other parts of the app (voice check). */
+    /** More registration fields from other parts of the app (account, notification settings). */
     val registerFields = java.util.concurrent.CopyOnWriteArrayList<(JSONObject) -> Unit>()
 
     /** Sends the registration again, e.g. after the spirit animal changed. */

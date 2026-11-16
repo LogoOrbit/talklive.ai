@@ -40,7 +40,15 @@ sealed interface ServerEvent {
     data object Registered : ServerEvent
     data object NeedsRegister : ServerEvent
     data class Waiting(val estimatedSeconds: Int?) : ServerEvent
-    data class Matched(val initiator: Boolean, val partner: Partner, val callback: Boolean = false, val mode: String = "talk") : ServerEvent
+    /**
+     * [voice]: the server wants a Voice check summary from this phone in this call.
+     * [filtered]: this person's own Men / Women filter chose the partner, so
+     * "Not who I filtered for" may be offered.
+     */
+    data class Matched(
+        val initiator: Boolean, val partner: Partner, val callback: Boolean = false, val mode: String = "talk",
+        val voice: Boolean = false, val filtered: Boolean = false,
+    ) : ServerEvent
     /** A text message from the stranger in a text chat. */
     data class StrangerMessage(val id: String, val text: String, val gifUrl: String?, val replyTo: String?, val ts: Long) : ServerEvent
     data object StrangerTyping : ServerEvent

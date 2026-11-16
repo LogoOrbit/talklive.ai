@@ -78,6 +78,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -123,6 +124,7 @@ fun ProfileScreen(
     var plusWhy by remember { mutableStateOf(app.talklive.ui.engage.PlusWhy()) }
     val plusNow by engageVm.premium.collectAsStateWithLifecycle()
     var confirmSignOut by remember { mutableStateOf(false) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     LaunchedEffect(vm.saved) {
         vm.saved?.let { snackbar.showSnackbar(it); vm.saved = null }
     }
@@ -220,17 +222,12 @@ fun ProfileScreen(
                 SettingRow(Icons.Rounded.Cake, stringResource(R.string.age_group), if (ageGroup == "unspecified") stringResource(R.string.gender_unspecified) else ageGroup) { youSheet = "age" }
                 if ("voiceCheck" in flags) {
                     val voiceOn by engageVm.voiceCheck.collectAsStateWithLifecycle()
-                    val voiceResult by engageVm.voiceResult.collectAsStateWithLifecycle()
-                    SettingRow(
-                        Icons.Rounded.GraphicEq, stringResource(R.string.voice_check),
-                        when {
-                            !voiceOn -> stringResource(R.string.voice_check_desc)
-                            voiceResult == null -> stringResource(R.string.voice_check_pending)
-                            voiceResult == myGender -> stringResource(R.string.voice_check_confirmed)
-                            else -> stringResource(R.string.voice_check_unconfirmed)
-                        },
-                        onClick = { engageVm.setVoiceCheck(!voiceOn) },
-                        trailing = { Switch(checked = voiceOn, onCheckedChange = { engageVm.setVoiceCheck(it) }, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary)) },
+                    val voiceView by engageVm.voiceView.collectAsStateWithLifecycle()
+                    VoiceCheckRow(
+                        on = voiceOn, view = voiceView,
+                        onSwitch = { engageVm.setVoiceCheck(it) },
+                        onRetry = { scope.launch { vm.saved = context.getString(if (engageVm.retryVoice()) R.string.voice_retry_done else R.string.voice_retry_limit) } },
+                        onAppeal = { scope.launch { vm.saved = context.getString(if (engageVm.appealVoice()) R.string.voice_appeal_sent else R.string.voice_appeal_later) } },
                     )
                 }
             }
@@ -523,6 +520,7 @@ private fun SettingRow(
     title: String,
     value: String?,
     trailing: (@Composable () -> Unit)? = null,
+    valueLines: Int = 2,
     onClick: () -> Unit,
 ) {
     Row(
@@ -539,11 +537,53 @@ private fun SettingRow(
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
             value?.let {
-                Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = valueLines, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             }
         }
         if (trailing != null) trailing() else {
             Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+/**
+ * Profile > You > Voice check. The switch and everything under it come from
+ * the server (it makes the estimate; this phone only measures). When the
+ * estimate does not back the gender they picked, they can check again or ask
+ * a person to review it.
+ */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun VoiceCheckRow(on: Boolean, view: app.talklive.voice.VoiceCheckView?, onSwitch: (Boolean) -> Unit, onRetry: () -> Unit, onAppeal: () -> Unit) {
+    val state = if (on) view?.takeIf { it.on }?.state ?: "pending" else ""
+    var text = when (state) {
+        "" -> stringResource(R.string.voice_check_desc)
+        "none" -> stringResource(R.string.voice_check_no_gender)
+        "confirmed" -> stringResource(R.string.voice_check_confirmed)
+        "reviewed" -> stringResource(R.string.voice_check_reviewed)
+        "unclear" -> stringResource(R.string.voice_check_unclear)
+        "mismatch" -> stringResource(R.string.voice_check_mismatch)
+        else -> stringResource(R.string.voice_check_pending)
+    }
+    if (on && view?.disputed == true) text = stringResource(R.string.voice_check_disputed)
+    if (on && view?.appeal == "open") text += " " + stringResource(R.string.voice_check_appeal_open)
+    SettingRow(
+        Icons.Rounded.GraphicEq, stringResource(R.string.voice_check), text,
+        valueLines = Int.MAX_VALUE,
+        onClick = { onSwitch(!on) },
+        trailing = { Switch(checked = on, onCheckedChange = onSwitch, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary)) },
+    )
+    if (on && view != null && view.on && view.stuck) {
+        androidx.compose.foundation.layout.FlowRow(
+            Modifier.fillMaxWidth().padding(start = 60.dp, end = 12.dp, bottom = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            androidx.compose.material3.TextButton(onClick = onRetry, enabled = view.retriesLeft > 0) {
+                Text(stringResource(R.string.voice_check_retry))
+            }
+            if (view.canAppeal) androidx.compose.material3.TextButton(onClick = onAppeal) {
+                Text(stringResource(R.string.voice_check_appeal))
+            }
         }
     }
 }

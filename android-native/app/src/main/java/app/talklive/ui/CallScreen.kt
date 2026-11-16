@@ -123,6 +123,7 @@ fun CallScreen(
     onMute: () -> Unit,
     onSpeaker: () -> Unit,
     onReport: (String) -> Unit,
+    onWrongMatch: () -> Unit = {},
     autoConnect: Boolean = true,
     onAutoConnect: (Boolean) -> Unit = {},
     bands: () -> FloatArray = { FloatArray(0) },
@@ -344,6 +345,9 @@ fun CallScreen(
                     reasons.forEach { (key, label) ->
                         TextButton(onClick = { reporting = false; onReport(key) }) { Text(stringResource(label)) }
                     }
+                    // Only when their own Men / Women filter chose this person. Not a
+                    // report: it tells the matcher, then moves on like Next.
+                    if (state.filtered) TextButton(onClick = { reporting = false; onWrongMatch() }) { Text(stringResource(R.string.report_wrong_match)) }
                 }
             },
             confirmButton = {},

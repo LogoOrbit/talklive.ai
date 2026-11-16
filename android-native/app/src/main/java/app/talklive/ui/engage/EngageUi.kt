@@ -343,7 +343,7 @@ private fun Modifier.matchParentSizeCompat() = this.fillMaxWidth().aspectRatio(2
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun FiltersSheet(current: Filters, premium: Boolean, onApply: (Filters) -> Unit, onDismiss: () -> Unit, onPlus: (PlusWhy) -> Unit = {}, loadCounts: suspend () -> Map<String, Int> = { emptyMap() }) {
+fun FiltersSheet(current: Filters, premium: Boolean, onApply: (Filters) -> Unit, onDismiss: () -> Unit, onPlus: (PlusWhy) -> Unit = {}, loadCounts: suspend () -> Map<String, Int> = { emptyMap() }, voiceCheck: Boolean = false) {
     val freeCountries = 2 // the website's free limit per list (server FREE_LIMITS)
     var f by remember { mutableStateOf(current) }
     var newInterest by remember { mutableStateOf("") }
@@ -417,6 +417,25 @@ fun FiltersSheet(current: Filters, premium: Boolean, onApply: (Filters) -> Unit,
                     onClear = if (f.prefGender != "any") ({ f = f.copy(prefGender = "any") }) else null,
                 ) {
                     GenderPicker(f.prefGender, premium) { g -> if (premium || g == "any") f = f.copy(prefGender = g) else onPlus(PlusWhy(PlusReason.GenderFilter)) }
+                    // With Voice check live, Men / Women prefers people whose voice
+                    // check agreed with what they picked, and can be narrowed to them.
+                    if (voiceCheck && f.prefGender != "any") {
+                        Text(
+                            stringResource(R.string.gender_filter_note), style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 10.dp),
+                        )
+                        Row(
+                            Modifier.fillMaxWidth().padding(top = 6.dp).clip(RoundedCornerShape(14.dp))
+                                .clickable { f = f.copy(prefVoiceChecked = !f.prefVoiceChecked) }.padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(stringResource(R.string.voice_checked_only), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+                            androidx.compose.material3.Switch(
+                                checked = f.prefVoiceChecked, onCheckedChange = { f = f.copy(prefVoiceChecked = it) },
+                                colors = androidx.compose.material3.SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary),
+                            )
+                        }
+                    }
                 }
                 Spacer(Modifier.height(12.dp))
             }
