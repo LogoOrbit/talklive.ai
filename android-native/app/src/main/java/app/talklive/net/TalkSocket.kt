@@ -393,6 +393,8 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
             put("clientId", identity.clientId)
             identity.identityToken?.let { put("identityToken", it) }
             identity.animal?.let { put("animal", it) }
+            // Hashed, app-scoped device id: used only to enforce bans.
+            put("deviceId", identity.deviceId)
             put("timezone", TimeZone.getDefault().id)
             put("lang", Locale.getDefault().language)
             put("surface", "call")

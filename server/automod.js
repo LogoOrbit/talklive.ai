@@ -157,6 +157,8 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
     if (info.username) p.username = String(info.username).slice(0, 40);
     if (info.country) p.country = String(info.country).slice(0, 60);
     if (info.ip) p.ip = info.ip;
+    // Kept so a ban from the review queue can also bind the device.
+    if (info.deviceId) p.deviceId = String(info.deviceId).slice(0, 130);
     p.lastAt = Date.now();
     return p;
   }
@@ -218,7 +220,10 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
     const distinctTargets = new Set(recent.map((x) => x.target)).size;
     const why = [];
     let w = 1;
-    if (distinctTargets > 5) { w *= 0.2; why.push(`reporter filed ${distinctTargets} reports today`); }
+    // A script reporting everyone it meets: past 15 different people in a day the
+    // reports carry no weight at all (the socket layer also caps them per hour).
+    if (distinctTargets > 15) { w = 0; why.push(`reporter filed ${distinctTargets} reports today (flood)`); }
+    else if (distinctTargets > 5) { w *= 0.2; why.push(`reporter filed ${distinctTargets} reports today`); }
     else if (distinctTargets > 3) { w *= 0.5; why.push(`reporter filed ${distinctTargets} reports today`); }
     const judged = r.cleared + r.confirmed;
     if (judged >= 3 && r.cleared / judged > 0.7) { w *= 0.3; why.push('most of this reporter\'s past reports were cleared'); }
@@ -492,7 +497,7 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
     if (!policyDry()) {
       const cid = p.clientIds[p.clientIds.length - 1];
       // Device only, not the IP: mobile carriers put many people on one IP.
-      const ban = store.addBan({ clientId: cid, username: p.username, country: p.country, reason: 'Auto: ' + why, minutes: mins });
+      const ban = store.addBan({ clientId: cid, account: p.account, deviceId: p.deviceId, username: p.username, country: p.country, reason: 'Auto: ' + why, minutes: mins });
       try { kickBanned(cid, null, ban); } catch (_) { /* offline */ }
       store.audit('ban', '', `Auto-banned ${p.username || p.key} for ${days} days - ${why}`);
       alert('automod-ban', `${p.username || 'A user'} was auto-banned for ${days} days`, `${why}.\nLast message: "${String(text).slice(0, 200)}"\n\nUndo from the dashboard -> Safety -> Bans.`);
@@ -504,7 +509,26 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
   }
 
   // Copy-pasted spam to many strangers (server/patterns.js). Once a day.
-  function onPattern({ clientId, account, username, text, partners }) {
+  function onPattern({ clientId, account, username, text, partners, kind }) {
+    // Behaviour signals that are not about what was said (a long message sent to
+    // many people, a new identity opening with links, request or voice-note
+    // spraying): one event per kind a day, half a report's weight, so it queues
+    // for the owner but never warns on its own.
+    if (kind && !off() && clientId) {
+      const label = {
+        'same-text': `the same long message to ${partners} different people within an hour`,
+        'link-first': `a brand-new identity opened ${partners} chats with a link`,
+        'friend-request': `friend requests to ${partners} different people within an hour`,
+        'voice-note': `voice messages to ${partners} different people within an hour`,
+      }[kind] || `unusual activity (${kind})`;
+      const p = person(clientId, account, { username });
+      const source = 'spam:' + kind + ':' + new Date().toISOString().slice(0, 10);
+      if (p.events.some((e) => e.type === 'pattern' && e.source === source)) return;
+      pushEvent(p, { ts: Date.now(), type: 'pattern', source, weight: 0.5, why: [label], detail: String(text || label).slice(0, 160), evidence: text ? [String(text).slice(0, 300)] : [] });
+      store.save();
+      schedule(p);
+      return;
+    }
     if (clientId && policyOn() && guardPolicy.detect(text).money) {
       const p = person(clientId, account, { username });
       if (!p.policy) p.policy = { money: [], warned: {}, bans: 0 };
@@ -609,7 +633,7 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
     if (action === 'ban') {
       const mins = Math.min(Math.max(Number(minutes) || 1440, 30), 5 * 365 * 24 * 60);
       const cid = p.clientIds[p.clientIds.length - 1];
-      const ban = store.addBan({ clientId: cid, ip: p.ip, username: p.username, country: p.country, reason: 'Auto-mod review: ' + ((p.review && p.review.why) || 'repeated reports').slice(0, 120), minutes: mins });
+      const ban = store.addBan({ clientId: cid, account: p.account, deviceId: p.deviceId, ip: p.ip, username: p.username, country: p.country, reason: 'Auto-mod review: ' + ((p.review && p.review.why) || 'repeated reports').slice(0, 120), minutes: mins });
       kickBanned(cid, p.ip, ban);
       for (const rid of reporters) reporter(rid).confirmed += 1;
       if (p.review) p.review.status = 'banned';

@@ -22,6 +22,7 @@
     <string name="banned">Your access is paused. Contact support if this is a mistake.</string>
     <string name="report_title">Report this person?</string>
     <string name="report_body">They will be disconnected and you will not be matched again.</string>
+    <string name="report_sent">Report sent. Thank you.</string>
     <string name="report_inappropriate">Inappropriate or sexual</string>
     <string name="report_harassment">Harassment or hate</string>
     <string name="report_spam">Spam or scam</string>

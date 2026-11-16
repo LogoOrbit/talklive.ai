@@ -488,7 +488,7 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                 androidx.compose.material3.TextButton(onClick = {
                     when (what) {
                         "clear" -> vm.clearChat(clientId)
-                        "report" -> { vm.report(clientId, "profile"); onBack() }
+                        "report" -> { vm.report(clientId, "profile"); android.widget.Toast.makeText(context, context.getString(R.string.report_sent), android.widget.Toast.LENGTH_SHORT).show(); onBack() }
                         else -> { vm.block(clientId); onBack() }
                     }
                     confirm = null

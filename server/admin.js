@@ -420,7 +420,7 @@ function generateConclusion(runtime, report) {
 }
 
 // --- Module wiring ---
-function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats, automod, talkguard, patterns, support, grantPlus, onVoiceDecision }) {
+function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deviceIdOfClient, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats, automod, talkguard, patterns, support, grantPlus, onVoiceDecision }) {
   if (automod) automod.setAlert(sendAlertEmail);
   try { paymentLog.installPaymentLog(store); } catch (e) { console.log('[owner] payment log not installed:', e.message); }
   const router = express.Router();
@@ -803,7 +803,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
     const withCounts = source.map((r) => ({
       ...r,
       totalReportsOnUser: r.reported ? counts.get(r.reported.clientId) || 0 : 0,
-      activeBan: r.reported ? !!store.findActiveBan(r.reported.clientId, r.reported.ip) : false,
+      activeBan: r.reported ? !!store.findActiveBan(r.reported.clientId, r.reported.ip, { deviceId: r.reported.deviceId }) : false,
     }));
     // Leaderboard of the most-reported people over the chosen window (days,
     // 0 = everything on record), with their ban state for one-click action.
@@ -853,16 +853,26 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
   });
 
   router.get('/api/bans', (req, res) => {
-    res.json({ bans: store.data.bans.slice(0, 300), now: Date.now() });
+    res.json({ bans: store.data.bans.slice(0, 300).map(({ deviceId, ...b }) => ({ ...b, deviceBound: !!deviceId })), now: Date.now() });
   });
 
   router.post('/api/ban', (req, res) => {
-    const { clientId, ip, username, country, city, reason, minutes } = req.body || {};
-    if (!clientId && !ip) return res.status(400).json({ error: 'clientId or ip required.' });
+    const { clientId, ip, username, country, city, reason, minutes, account } = req.body || {};
+    if (!clientId && !ip && !account) return res.status(400).json({ error: 'clientId, account or ip required.' });
     const mins = Math.min(Math.max(Number(minutes) || 30, 30), 5 * 365 * 24 * 60); // 30 min .. 5 years
-    const ban = store.addBan({ clientId, ip, username, country, city, reason, minutes: mins });
-    store.audit('ban', reqIp(req), `Banned ${username || clientId || ip} for ${mins} min - ${reason || 'no reason'}`);
-    kickBanned(clientId, ip, ban);
+    // "Also ban this device" is on unless the owner turns it off: a ban on a
+    // clientId alone is undone by clearing site data. The id comes from the
+    // dashboard row when it knows one, else from the person's live profile.
+    const body = req.body || {};
+    const wantDevice = body.alsoDevice !== false;
+    let deviceId = null;
+    if (wantDevice) {
+      const given = typeof body.deviceId === 'string' && /^[wa]:[A-Za-z0-9_-]{16,128}$/.test(body.deviceId) ? body.deviceId : '';
+      deviceId = given || (clientId && deviceIdOfClient ? deviceIdOfClient(clientId) : null) || null;
+    }
+    const ban = store.addBan({ clientId, ip, username, country, city, reason, minutes: mins, account, deviceId });
+    store.audit('ban', reqIp(req), `Banned ${username || clientId || account || ip} for ${mins} min${ban.deviceId ? ' (device too)' : ''}${ban.account ? ` (account ${ban.account})` : ''} - ${reason || 'no reason'}`);
+    kickBanned(ban.clientId, ip, ban);
     res.json({ ok: true, ban });
   });
 
@@ -943,7 +953,12 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deliverWarning
   // --- TalkGuard model + behaviour patterns ---------------------------------
   router.get('/api/talkguard', (req, res) => {
     if (!talkguard) return res.status(503).json({ error: 'TalkGuard is not running.' });
-    res.json({ model: talkguard.summary(), patterns: patterns ? patterns.summary() : null });
+    // Today's counts of the behaviour signals (patterns.js) and ban evasion, so a
+    // quiet day and a script run read differently at a glance.
+    const f = (store.day() || {}).features || {};
+    const counters = {};
+    for (const k of ['spam_copypaste', 'spam_same_text', 'spam_link_first', 'spam_friend_spray', 'spam_voice_spray', 'ban_evasion']) counters[k] = f[k] || 0;
+    res.json({ model: talkguard.summary(), patterns: patterns ? { ...patterns.summary(), counters } : null });
   });
   router.post('/api/talkguard/score', (req, res) => {
     const text = String((req.body || {}).text || '').slice(0, 600);

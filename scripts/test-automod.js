@@ -142,5 +142,16 @@ const actions = (am) => am._state().log.map((l) => l.action);
   ok('clean chat weakens the report', person(am, 'C2').events[0].weight <= 0.5, person(am, 'C2').events[0].weight);
 }
 
+// A script reporting everyone it meets: past 15 different people in a day its
+// reports weigh nothing, so it cannot push anyone up the ladder.
+{
+  const { am } = setup('live');
+  for (let i = 0; i < 18; i++) report(am, 'V' + i, 'flooder');
+  const last = person(am, 'V17').events[0];
+  ok('a report flood from one reporter weighs nothing', last.weight === 0 && /flood/.test(last.why.join(' ')), last);
+  report(am, 'V0', 'honest1');
+  ok('an ordinary reporter still counts', person(am, 'V0').events.find((e) => e.source === 'honest1').weight > 0);
+}
+
 console.log(failed ? `${failed} failed` : 'All automod checks passed');
 process.exit(failed ? 1 : 0);

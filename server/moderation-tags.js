@@ -33,7 +33,7 @@ function riskFlags(text) {
   const s = String(text || '');
   const out = [];
   // Links to social profiles are allowed, so they are not a 'link'.
-  const noSocial = stripSocialLinks(s);
+  const noSocial = stripSocialLinks(require('./text-normalize').normalizeForChecks(s));
   for (const [name, re] of RISK_RULES) if (re.test(name === 'link' ? noSocial : s)) out.push(name);
   // The site rules catch money requests and picture requests the short
   // keyword list misses ("send me 500 rs", "send your pic").

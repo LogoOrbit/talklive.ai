@@ -1212,6 +1212,9 @@
     socket.emit('report', { reason: selectedReason, detail: detail });
     clearMessages();
     goSearch(false);
+    // Said out loud: the chat vanishes the moment a report is sent, which
+    // otherwise looks the same as the other person simply leaving.
+    flashSearchNote(t('reportUserSent'));
   });
   $('reportCloseBtn').addEventListener('click', function () { closeModal(reportModal); });
   reportModal.addEventListener('click', function (e) { if (e.target === reportModal) closeModal(reportModal); });

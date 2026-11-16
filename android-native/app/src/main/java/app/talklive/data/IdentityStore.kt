@@ -4,6 +4,8 @@ import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import android.provider.Settings
+import java.security.MessageDigest
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -18,7 +20,24 @@ import javax.inject.Singleton
 class IdentityStore(context: Context, name: String) {
     @Inject constructor(@ApplicationContext context: Context) : this(context, "identity")
 
+    private val appContext = context.applicationContext ?: context
     private val prefs = context.getSharedPreferences(name, Context.MODE_PRIVATE)
+
+    /**
+     * A stable id for this phone that survives "clear data" and reinstalls, so a
+     * ban on a device is not undone by a new clientId. It is the SHA-256 of
+     * ANDROID_ID mixed with an app constant: the raw id never leaves the phone,
+     * and the hash is useless in any other app. The server uses it only to
+     * enforce bans and abuse limits. If the system gives no id (some emulators
+     * and tests) a random one kept in preferences stands in.
+     */
+    val deviceId: String by lazy {
+        val raw = runCatching { Settings.Secure.getString(appContext.contentResolver, Settings.Secure.ANDROID_ID) }.getOrNull()
+        val seed = if (raw.isNullOrBlank()) {
+            prefs.getString(KEY_DEVICE_FALLBACK, null) ?: UUID.randomUUID().toString().also { prefs.edit().putString(KEY_DEVICE_FALLBACK, it).apply() }
+        } else raw
+        MessageDigest.getInstance("SHA-256").digest((DEVICE_SALT + seed).toByteArray()).joinToString("") { "%02x".format(it) }
+    }
 
     val clientId: String
         get() = prefs.getString(KEY_CLIENT_ID, null) ?: newClientId()
@@ -78,6 +97,8 @@ class IdentityStore(context: Context, name: String) {
         const val KEY_CLIENT_ID = "client_id"
         const val KEY_TOKEN = "identity_token"
         const val KEY_ANIMAL = "animal"
+        const val KEY_DEVICE_FALLBACK = "device_fallback"
+        const val DEVICE_SALT = "app.talklive.device.v1:"
         const val KEY_ANIMAL_DIRTY = "animal_dirty"
     }
 }

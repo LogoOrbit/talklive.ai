@@ -21,6 +21,7 @@
 "banned": "Your access is paused. Contact support if this is a mistake.",
 "report_title": "Report this person?",
 "report_body": "They will be disconnected and you will not be matched again.",
+"report_sent": "Report sent. Thank you.",
 "report_inappropriate": "Inappropriate or sexual",
 "report_harassment": "Harassment or hate",
 "report_spam": "Spam or scam",

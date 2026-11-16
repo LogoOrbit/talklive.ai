@@ -37,6 +37,7 @@ const { createAutomod } = require('./automod');
 const { createTalkGuard } = require('./talkguard');
 const { createPatterns } = require('./patterns');
 const { createChatGuard } = require('./chat-guard');
+const textNorm = require('./text-normalize');
 const compress = require('./compress');
 const pricing = require('./pricing');
 const playBilling = require('./play-billing');
@@ -176,6 +177,33 @@ app.use((req, res, next) => {
   if (process.env.NODE_ENV === 'production') {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   }
+  next();
+});
+
+// Device cookie for ban enforcement (see "Device identity" below). Set once on
+// an HTML page response when the browser has none: a random token, first-party,
+// HttpOnly so page scripts and trackers cannot read it, one year. A person who
+// clears localStorage to get a new clientId keeps it. It is sent to the socket
+// in the handshake and used only to enforce bans and abuse limits. Never set on
+// API calls, the owner dashboard or for crawlers.
+app.use((req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  const p = req.path;
+  const isPage = p === '/' || p.endsWith('.html') || !/\.[A-Za-z0-9]{1,6}$/.test(p);
+  if (!isPage || p.startsWith('/owner') || p.startsWith('/api/') || p.startsWith('/socket.io')) return next();
+  if (isBotUserAgent(req.headers['user-agent'])) return next();
+  if (cleanDeviceId(cookieFromHeader(req.headers.cookie, DEVICE_COOKIE))) return next();
+  const token = crypto.randomBytes(24).toString('hex');
+  res.append('Set-Cookie', `${DEVICE_COOKIE}=${token}; Max-Age=31536000; Path=/; HttpOnly; SameSite=Lax${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`);
+  // A page that sets a cookie must never be stored by a shared cache and handed
+  // to someone else: every visitor would then share one device id. Static HTML
+  // is sent as `public`, so it is downgraded just before the headers go out.
+  const writeHead = res.writeHead;
+  res.writeHead = function patchedWriteHead(...args) {
+    const cc = res.getHeader('Cache-Control');
+    res.setHeader('Cache-Control', typeof cc === 'string' ? cc.replace(/\bpublic\b/, 'private') : 'private, max-age=0, must-revalidate');
+    return writeHead.apply(this, args);
+  };
   next();
 });
 
@@ -648,7 +676,13 @@ app.post('/billing/play/verify', httpRateLimit('play-verify', 30, 60000), expres
   if (sub && sub.accountId && sub.accountId !== playBilling.accountIdFor(clientId)) {
     return res.status(403).json({ error: 'This purchase was made by another TalkLive profile.' });
   }
-  if (!owner) store.data.playPurchases[key] = String(clientId);
+  // Re-read after the awaits above: two profiles presenting the same token at
+  // once both saw no owner, and the later one would otherwise take it over.
+  const ownerNow = store.data.playPurchases[key];
+  if (ownerNow && ownerNow !== String(clientId)) {
+    return res.status(403).json({ error: 'This purchase belongs to another TalkLive profile. Sign in with the account that bought it.' });
+  }
+  if (!ownerNow) store.data.playPurchases[key] = String(clientId);
   const step = await applyPlayPurchase(String(clientId), purchaseToken, sub, typeof productId === 'string' ? productId : '');
   if (step.op === 'skip' && step.reason !== 'ignored') console.log(`[play] ${clientId}: ${step.reason}`);
   res.json({ premium: isPremium(clientId), expiresAt: store.premiumExpiry(clientId), state: sub ? sub.state : null });
@@ -697,7 +731,7 @@ async function verifyPlayPass(req, res, clientId, productId, purchaseToken) {
 
 // Real-time Developer Notifications, pushed by Pub/Sub. Each is re-checked
 // with Google; only the token is taken from the message.
-app.post('/billing/play/rtdn', express.json({ limit: '64kb' }), async (req, res) => {
+app.post('/billing/play/rtdn', httpRateLimit('play-rtdn', 600, 60000), express.json({ limit: '64kb' }), async (req, res) => {
   const secret = process.env.PLAY_RTDN_SECRET;
   if (!secret || !play.configured()) return res.status(503).end();
   const given = String(req.query.secret || '');
@@ -725,6 +759,9 @@ app.post('/billing/play/rtdn', express.json({ limit: '64kb' }), async (req, res)
 app.post('/internal/premium/grant', express.json({ limit: '2kb' }), (req, res) => {
   const ip = String((req.socket && req.socket.remoteAddress) || '');
   if (!/^(127\.0\.0\.1|::1|::ffff:127\.0\.0\.1)$/.test(ip)) return res.status(404).end();
+  // A proxy running on the same machine would also look like loopback; a request
+  // that went through any proxy carries one of these, and flyctl ssh does not.
+  if (req.headers['fly-client-ip'] || req.headers['x-forwarded-for'] || req.headers['cf-connecting-ip'] || req.headers['forwarded']) return res.status(404).end();
   const r = grantPlusTo(req.body && req.body.who, req.body && req.body.days, 'ssh');
   res.status(r.status || 200).json(r);
 });
@@ -766,12 +803,16 @@ app.post('/push/subscribe', httpRateLimit('push', 20, 60000), express.json({ lim
   if (!clientId || !validIdentityToken(String(clientId), String(identityToken || ''))) {
     return res.status(403).json({ error: 'Unrecognised client.' });
   }
-  if (!subscription || typeof subscription.endpoint !== 'string' || !/^https:\/\//.test(subscription.endpoint)) {
+  if (!subscription || !push.allowedEndpoint(subscription.endpoint)) {
     return res.status(400).json({ error: 'Invalid subscription.' });
   }
+  // Only the two key strings web push needs, kept short.
+  const k = subscription.keys && typeof subscription.keys === 'object' ? subscription.keys : {};
+  const keys = {};
+  for (const name of ['p256dh', 'auth']) if (typeof k[name] === 'string' && k[name].length <= 200) keys[name] = k[name];
   store.savePushSubscription(String(clientId), {
     endpoint: subscription.endpoint,
-    keys: subscription.keys || {},
+    keys,
   }, req.headers['user-agent']);
   store.recordFeature('push_subscribed');
   res.status(204).end();
@@ -1163,7 +1204,7 @@ function warnIfNoRelay() {
   );
 }
 
-app.get('/ice-servers', async (req, res) => {
+app.get('/ice-servers', httpRateLimit('ice', 120, 60000), async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const iceServers = buildIceServers();
   // A provider outage must degrade to STUN + any static TURN, never to an error
@@ -1349,15 +1390,82 @@ function flagUnderageText(profile, text) {
   });
 }
 
+// A ban can name a profile, a network, an account and a device (see
+// store.findActiveBan); everyone online who matches any of them is dropped now.
 function kickBanned(clientId, ip, ban) {
+  const account = ban && ban.account ? ban.account : '';
+  const deviceId = ban && ban.deviceId ? ban.deviceId : '';
   for (const [sid, p] of profiles) {
     const sock = io.sockets.sockets.get(sid);
     if (!sock) continue;
-    if ((clientId && p.clientId === clientId) || (ip && getClientIp(sock) === ip)) {
+    if ((clientId && p.clientId === clientId) || (ip && store.sameNetwork(getClientIp(sock), ip))
+      || (account && socketAuth.get(sid) === account) || (deviceId && p.deviceId === deviceId)) {
       sock.emit('banned', { until: ban.expiresAt, reason: ban.reason });
       sock.disconnect(true);
     }
   }
+}
+
+// --- Device identity (ban evasion) -------------------------------------------
+// A ban on a clientId is dodged by clearing site data, and a ban on an IP by
+// switching network. A device id survives both: on the web a random token the
+// server puts in a first-party cookie on the HTML page response (it outlives
+// localStorage being cleared), on Android a hashed app-scoped id the app sends
+// at register. It is used only to enforce bans and abuse limits, never for
+// analytics or ads, and never shown to other users.
+const DEVICE_COOKIE = 'tl_dev';
+const DEVICE_ID_RE = /^[A-Za-z0-9_-]{16,128}$/;
+function cleanDeviceId(v) { return typeof v === 'string' && DEVICE_ID_RE.test(v) ? v : ''; }
+function cookieFromHeader(header, name) {
+  for (const part of String(header || '').split(';')) {
+    const i = part.indexOf('=');
+    if (i !== -1 && part.slice(0, i).trim() === name) return part.slice(i + 1).trim();
+  }
+  return '';
+}
+// The cookie wins over a value the client types into the register packet: a
+// browser cannot be made to look like a different device by editing the packet,
+// while the app has no cookie jar and has nothing else to offer.
+function deviceIdFrom(socket, fromPacket) {
+  const cookie = cleanDeviceId(cookieFromHeader(socket.handshake.headers.cookie, DEVICE_COOKIE));
+  if (cookie) return 'w:' + cookie;
+  const app = cleanDeviceId(fromPacket);
+  return app ? 'a:' + app : '';
+}
+// clientId -> device id for people who have gone offline since, so the owner can
+// still ban "this device" from a report or the review queue. Bounded.
+const deviceByClient = new Map();
+const DEVICE_BY_CLIENT_MAX = 50000;
+function rememberDevice(clientId, deviceId) {
+  if (!clientId || !deviceId) return;
+  deviceByClient.delete(clientId);
+  deviceByClient.set(clientId, deviceId);
+  if (deviceByClient.size > DEVICE_BY_CLIENT_MAX) deviceByClient.delete(deviceByClient.keys().next().value);
+}
+function deviceIdOfClient(clientId) {
+  for (const p of profiles.values()) if (p.clientId === clientId && p.deviceId) return p.deviceId;
+  return deviceByClient.get(clientId) || null;
+}
+
+// Refuses the socket when any identity it carries is banned. `via` names why a
+// sign-in is checked (the account the person is signing in to); a match that
+// came through a different identity than the banned one is recorded on the ban
+// as an evasion attempt. It never extends the ban.
+function refuseBanned(socket, clientId, account) {
+  const ip = getClientIp(socket);
+  const who = { account: account || socketAuth.get(socket.id) || null, deviceId: socket.data.deviceId || '' };
+  const ban = store.findActiveBan(clientId, ip, who);
+  if (!ban) return false;
+  const kind = store.banMatchKind(ban, clientId, who);
+  const current = (profiles.get(socket.id) || {}).clientId || clientId;
+  if (kind === 'device' || kind === 'account' || (kind === 'client' && account)) {
+    if (store.noteBanEvasion(ban, { clientId: current, via: kind === 'device' ? 'device' : 'account', ip })) {
+      console.log(`[ban] ${current} tried to get around a ban through ${kind}`);
+    }
+  }
+  socket.emit('banned', { until: ban.expiresAt, reason: ban.reason });
+  socket.disconnect(true);
+  return true;
 }
 
 // Owner warnings: shown as a notice the person has to acknowledge. Sent now to
@@ -1474,6 +1582,11 @@ const patterns = createPatterns({
   talkguard,
   onSpam: (x) => automod.onPattern({ ...x, account: accountOfClient(x.clientId) }),
   isFlagged: (clientId) => automod.isFlagged(clientId),
+  // The link filter's own verdict, so whatever it allows (the site's own address,
+  // social profile links) is never counted as a funnel link.
+  isLink: (text) => containsLink(text),
+  isNewIdentity: (clientId) => !identityHasState(clientId),
+  count: (name) => store.recordFeature(name),
 });
 app.get('/talkguard/model.json', (req, res) => {
   const m = talkguard.modelJson();
@@ -1485,7 +1598,7 @@ app.get('/talkguard/model.json', (req, res) => {
   res.json(m);
 });
 const admin = createAdmin({
-  io, getRuntime, getLiveCounts, kickBanned, deliverWarning, deliverFeedbackReply, getUserStats, automod, talkguard, patterns, support,
+  io, getRuntime, getLiveCounts, kickBanned, deviceIdOfClient, deliverWarning, deliverFeedbackReply, getUserStats, automod, talkguard, patterns, support,
   getLiveGames: () => gameTracker.live(), grantPlus: (who, days) => grantPlusTo(who, days, 'dashboard'),
   // An appeal was decided: show the person the outcome if they are online.
   onVoiceDecision: (clientId) => {
@@ -3253,8 +3366,13 @@ const LINK_RE = new RegExp(
 // TalkLive's own site and email addresses are the one exception.
 const OWN_LINK_RE = /(?:https?:\/\/)?(?:www\.)?talklive\.app(?:\/[^\s]*)?|[a-z0-9._%+-]+@talklive\.app\b/gi;
 
+// The text is folded first (text-normalize.js: zero-width and bidi characters,
+// full-width and look-alike letters, "hxxp", "[dot]"), so a disguised address is
+// judged as the plain one it reads as, and a disguised social profile link is
+// allowed exactly like the plain one.
 function containsLink(text) {
-  return LINK_RE.test(stripSocialLinks(String(text || '').replace(OWN_LINK_RE, ' ')));
+  const t = textNorm.normalizeForChecks(text);
+  return LINK_RE.test(stripSocialLinks(t.replace(OWN_LINK_RE, ' '))) || textNorm.hasInternationalAddress(t);
 }
 
 // Clearly illegal / scam content is blocked in stranger chat (mirrors the
@@ -3296,7 +3414,10 @@ function cleanGif(g) {
 function readChatPayload(raw) {
   const obj = typeof raw === 'string' ? { text: raw } : raw;
   if (!obj || typeof obj !== 'object') return null;
-  const text = typeof obj.text === 'string' ? obj.text.trim().slice(0, 1000) : '';
+  // Bidi controls and zero-width characters are removed from every message before
+  // any check or any recipient sees it: they hide a word from a filter, and a
+  // right-to-left override can make one text read as another.
+  const text = typeof obj.text === 'string' ? textNorm.stripInvisible(obj.text).trim().slice(0, 1000) : '';
   const gif = cleanGif(obj.gif);
   if (!text && !gif) return null;
   return { text, gif, id: cleanMsgId(obj.id), replyTo: cleanMsgId(obj.replyTo) };
@@ -3386,7 +3507,7 @@ function deliverFriendMessage(socket, me, toClientId, parsed, msgId) {
   });
   if (parsed.text) {
     automod.onChatText({
-      from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), username: me.username, country: me.countryName },
+      from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), deviceId: me.deviceId || null, username: me.username, country: me.countryName },
       to: toClientId, pair: pairKey(me.clientId, toClientId), text: parsed.text, kind: 'chat',
     });
     patterns.onMessage({ from: me.clientId, to: toClientId, text: parsed.text, username: me.username });
@@ -4386,6 +4507,8 @@ function blockPair(clientIdA, clientIdB) {
   // the other side looking at a "Pending" that can never be answered.
   clearRequestPair(clientIdA, clientIdB);
   clearRequestPair(clientIdB, clientIdA);
+  // A heart one of them gave must not survive the block as a half-mutual match.
+  hearts.delete(pairKey(clientIdA, clientIdB));
   // Same for anything already sitting in either inbox: a blocked person's
   // unread messages, request or call-back ask must not linger as a badge.
   removeNotificationsWhere(clientIdA, (n) => notifSubject(n) === clientIdB);
@@ -4997,7 +5120,7 @@ function cleanInterests(list) {
   const out = [];
   for (const raw of list) {
     if (typeof raw !== 'string') continue;
-    const i = raw.trim().slice(0, 40);
+    const i = textNorm.stripInvisible(raw).replace(/\s+/g, ' ').trim().slice(0, 40);
     const key = i.toLowerCase();
     if (!i || seen.has(key)) continue;
     if (containsLink(i) || UNSAFE_RE.test(i) || /\d{5,}/.test(i.replace(/[\s().+-]/g, ''))) continue;
@@ -5621,12 +5744,11 @@ io.on('connection', (socket) => {
   socket.emit('siteModes', store.publicModes());
 
   // Banned by IP: refuse service entirely until the ban expires or is lifted.
-  const ipBan = store.findActiveBan(null, ip);
-  if (ipBan) {
-    socket.emit('banned', { until: ipBan.expiresAt, reason: ipBan.reason });
-    socket.disconnect(true);
-    return;
-  }
+  // Only the network is checked here. The device is checked when the browser
+  // registers (or signs in), so that the new clientId it tries can be recorded
+  // against the ban as an evasion attempt.
+  if (refuseBanned(socket, null, null)) return;
+  socket.data.deviceId = deviceIdFrom(socket, '');
 
   store.recordConnection();
   store.recordPeakOnline(onlineCount());
@@ -5820,6 +5942,8 @@ io.on('connection', (socket) => {
     }
     loginAttemptSucceeded(ip, usernameLower, reserved);
     if (!io.sockets.sockets.has(socket.id)) return;
+    // A banned account stays banned on a fresh browser or phone.
+    if (refuseBanned(socket, store.getAccountClientId(usernameLower), usernameLower)) return;
     socketAuth.set(socket.id, (username || '').toLowerCase());
     store.recordFeature('login');
     store.upsertAccount((username || '').toLowerCase(), {
@@ -5852,6 +5976,7 @@ io.on('connection', (socket) => {
       socket.emit('resume-session-result', { ok: false });
       return sendFriendId(socket);
     }
+    if (refuseBanned(socket, store.getAccountClientId(usernameLower), usernameLower)) return;
     socketAuth.set(socket.id, usernameLower);
     store.upsertAccount(usernameLower, {
       nickname: account.nickname, country: geo.countryName, city: geo.city, ip, lastSeen: Date.now(),
@@ -5920,6 +6045,7 @@ io.on('connection', (socket) => {
     }
     try {
       const { username, account, profile, created } = await findOrCreateGoogleAccount(credential, { dob, socket });
+      if (refuseBanned(socket, store.getAccountClientId(username.toLowerCase()), username.toLowerCase())) return;
       socketAuth.set(socket.id, username.toLowerCase());
       store.recordFeature('google_signin');
       store.upsertAccount(username.toLowerCase(), {
@@ -5966,6 +6092,9 @@ io.on('connection', (socket) => {
     }
     const nick = Nick.check(nickname);
     if (!nick.ok) return socket.emit('update-nickname-result', { ok: false, error: NICK_ERRORS[nick.error], errorKey: nick.error });
+    // A rename is pushed to every friend's screen; renaming in a loop is a way
+    // to spam them.
+    if (!socialRateOk('rename-self', authedUsername, 10, 3600000)) return socket.emit('update-nickname-result', { ok: false, error: 'You changed your name a lot just now. Please try again later.' });
     const account = accounts.get(authedUsername);
     account.nickname = nick.value;
     persistAccount(authedUsername);
@@ -6235,6 +6364,7 @@ io.on('connection', (socket) => {
       clearLoginLocks(ip, usernameLower);
       store.recordFeature('password_reset_complete');
       if (!io.sockets.sockets.has(socket.id)) return;
+      if (refuseBanned(socket, store.getAccountClientId(usernameLower), usernameLower)) return;
       socketAuth.set(socket.id, usernameLower);
       store.upsertAccount(usernameLower, {
         nickname: account.nickname, country: geo.countryName, city: geo.city, ip, lastSeen: Date.now(),
@@ -6370,12 +6500,9 @@ io.on('connection', (socket) => {
     identityTokens.set(clientId, issuedIdentityToken);
     identityTokenSeen.set(clientId, Date.now());
     // Banned by persistent clientId: refuse until the ban expires or is lifted.
-    const ban = store.findActiveBan(clientId, ip);
-    if (ban) {
-      socket.emit('banned', { until: ban.expiresAt, reason: ban.reason });
-      socket.disconnect(true);
-      return;
-    }
+    socket.data.deviceId = deviceIdFrom(socket, data.deviceId);
+    if (refuseBanned(socket, clientId, null)) return;
+    rememberDevice(clientId, socket.data.deviceId);
     if (geo.country === 'XX') Object.assign(geo, placeFromHints(data.timezone, socket.handshake.headers['accept-language']));
     const premium = isPremium(clientId);
     // Free-tier caps enforced server-side: gender preference and country lists
@@ -6414,6 +6541,7 @@ io.on('connection', (socket) => {
     patterns.onConnect({ ip: getClientIp(socket), clientId, username: chosenName || '' });
     profiles.set(socket.id, {
       clientId,
+      deviceId: socket.data.deviceId || null,
       // A name saved before the nickname rules is tidied rather than refused.
       username: chosenName || guestNameFor(clientId),
       country: geo.country,
@@ -6608,12 +6736,7 @@ io.on('connection', (socket) => {
       return;
     }
     // Banned users can never connect to anyone until the ban is lifted.
-    const ban = store.findActiveBan(profile.clientId, ip);
-    if (ban) {
-      socket.emit('banned', { until: ban.expiresAt, reason: ban.reason });
-      socket.disconnect(true);
-      return;
-    }
+    if (refuseBanned(socket, profile.clientId, null)) return;
     let mode = (opts && opts.mode === 'chat') ? 'chat' : 'talk';
     // Restricted profile (fix list 3.1, age-band signal): text-only. Only ever
     // set when the ageBandSignal flag is on and a signal reported an under-18
@@ -6772,7 +6895,9 @@ io.on('connection', (socket) => {
     if (typeof ack !== 'function') return;
     const me = profiles.get(socket.id);
     if (!me) return ack({ count: 0, list: [] });
-    const list = store.likesFor(me.clientId);
+    // Someone this person blocked (or who blocked them) is not shown as a admirer: it
+    // would hand back the very contact the block was meant to end.
+    const list = store.likesFor(me.clientId).filter((l) => !isBlockedPair(me.clientId, l.from));
     if (!isPremium(me.clientId)) {
       return ack({ count: list.length, locked: true, countries: list.slice(0, 5).map((l) => l.country) });
     }
@@ -6865,6 +6990,7 @@ io.on('connection', (socket) => {
     clearWaitFallbackTimer(socket.id);
   });
 
+  const REPORTS_PER_HOUR = 10; // in-call and profile reports share this budget
   socket.on('report', (payload = {}) => {
     const partnerId = partners.get(socket.id);
     const seeker = profiles.get(socket.id);
@@ -6874,7 +7000,11 @@ io.on('connection', (socket) => {
     if (seeker && partner) {
       const reportKey = `${seeker.clientId}|${partner.clientId}`;
       const now = Date.now();
-      if (now - (reportCooldowns.get(reportKey) || 0) < 24 * 60 * 60 * 1000) {
+      // Reports against many different people are what a script (or a grudge)
+      // produces. Past the hourly cap the person is just moved on, exactly as for
+      // a repeat report, so nothing tells a script it has been limited.
+      if (!socialRateOk('report', seeker.clientId, REPORTS_PER_HOUR, 3600000)
+        || now - (reportCooldowns.get(reportKey) || 0) < 24 * 60 * 60 * 1000) {
         disconnectPartner(socket.id);
         return tryMatch(socket.id);
       }
@@ -6886,7 +7016,7 @@ io.on('connection', (socket) => {
       reputation.note(partner.clientId, 'reported', { reporter: seeker.clientId });
       const rec = store.addReport({
         reporter: { clientId: seeker.clientId, username: seeker.username, country: seeker.countryName, city: seeker.city },
-        reported: { clientId: partner.clientId, username: partner.username, country: partner.countryName, city: partner.city, ip: reportedIp },
+        reported: { clientId: partner.clientId, username: partner.username, country: partner.countryName, city: partner.city, ip: reportedIp, deviceId: partner.deviceId || null },
         reason,
         detail,
       });
@@ -6902,7 +7032,7 @@ io.on('connection', (socket) => {
       automod.onReport({
         reportId: rec.id,
         reporter: { clientId: seeker.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), username: seeker.username, country: seeker.countryName },
-        reported: { clientId: partner.clientId, account: socketAuth.get(partnerId) || null, ip: reportedIp, username: partner.username, country: partner.countryName },
+        reported: { clientId: partner.clientId, account: socketAuth.get(partnerId) || null, ip: reportedIp, deviceId: partner.deviceId || null, username: partner.username, country: partner.countryName },
         reason, detail,
         seconds: partner.matchedAt ? Math.round((Date.now() - partner.matchedAt) / 1000) : null,
       });
@@ -6930,6 +7060,7 @@ io.on('connection', (socket) => {
     if (!known) return;
     const reportKey = `${me.clientId}|${targetClientId}`;
     const now = Date.now();
+    if (!socialRateOk('report', me.clientId, REPORTS_PER_HOUR, 3600000)) return;
     if (now - (reportCooldowns.get(reportKey) || 0) < 24 * 60 * 60 * 1000) return;
     reportCooldowns.set(reportKey, now);
     // Same outcome as blocking them from this screen: the friendship goes and
@@ -6950,6 +7081,7 @@ io.on('connection', (socket) => {
         country: (targetProfile && targetProfile.countryName) || '',
         city: (targetProfile && targetProfile.city) || '',
         ip: targetSocket ? getClientIp(targetSocket) : null,
+        deviceId: (targetProfile && targetProfile.deviceId) || deviceIdOfClient(targetClientId),
       },
       reason: typeof reason === 'string' ? reason.slice(0, 40) : 'profile',
       detail: typeof detail === 'string' ? detail.slice(0, 300) : '',
@@ -6961,7 +7093,7 @@ io.on('connection', (socket) => {
       reporter: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), username: me.username, country: me.countryName },
       reported: {
         clientId: targetClientId, account: targetSocketId ? socketAuth.get(targetSocketId) || null : null,
-        ip: targetSocket ? getClientIp(targetSocket) : null, username: rec.reported.username, country: rec.reported.country,
+        ip: targetSocket ? getClientIp(targetSocket) : null, deviceId: rec.reported.deviceId || null, username: rec.reported.username, country: rec.reported.country,
       },
       reason: rec.reason, detail: rec.detail, seconds: null,
     });
@@ -7026,6 +7158,10 @@ io.on('connection', (socket) => {
     const text = typeof payload.text === 'string' ? payload.text.trim().slice(0, 1000) : '';
     if (!text) return;
     const p = profiles.get(socket.id);
+    // Each submission is stored forever and shows on the owner's dashboard: a few
+    // an hour per person, and a looser cap per network so a script that mints
+    // identities cannot fill it either.
+    if (!socialRateOk('feedback', p ? p.clientId : socket.id, 6, 3600000) || !socialRateOk('feedback-ip', ipKey, 30, 3600000)) return;
     const who = p ? `${p.username} (${p.country})` : socket.id;
     // Which surface it was sent from - Settings, or the landing screen's
     // "still under development" notice. Both land in the same dashboard list;
@@ -7067,6 +7203,9 @@ io.on('connection', (socket) => {
   socket.on('client-error', (payload = {}) => {
     const message = typeof payload.message === 'string' ? payload.message.slice(0, 400) : '';
     if (!message) return;
+    // A page stuck in an error loop reports it thousands of times; the Errors tab
+    // needs a sample, not all of them.
+    if (!socialRateOk('client-error', ipKey, 30, 600000)) return;
     // Same filter as public/error-reporter.js. Repeated here because app.js is
     // served immutable for a year: browsers still running a cached copy from
     // before that filter existed would otherwise keep filling the Errors tab
@@ -7286,7 +7425,7 @@ io.on('connection', (socket) => {
       // reason it was sent, never trusted on its own.
       if (them && transcriptStr && type !== 'shouting') {
         automod.onChatText({
-          from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), username: me.username, country: me.countryName },
+          from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), deviceId: me.deviceId || null, username: me.username, country: me.countryName },
           to: them.clientId, pair: pairKey(me.clientId, them.clientId), text: transcriptStr, kind: 'voice',
         });
       }
@@ -7348,7 +7487,7 @@ io.on('connection', (socket) => {
       });
       if (msg.text) {
         automod.onChatText({
-          from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), username: me.username, country: me.countryName },
+          from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), deviceId: me.deviceId || null, username: me.username, country: me.countryName },
           to: them.clientId, pair: pairKey(me.clientId, them.clientId), text: msg.text, kind: 'chat',
         });
         patterns.onMessage({ from: me.clientId, to: them.clientId, text: msg.text, username: me.username });
@@ -7399,6 +7538,11 @@ io.on('connection', (socket) => {
 
   socket.on('typing', () => {
     const partnerId = partners.get(socket.id);
+    // The indicator is useful a few times a second at most; the generic bucket
+    // lets 125 a second through for the signalling events it also covers.
+    const nowT = Date.now();
+    if (nowT - (socket.data.lastTypingAt || 0) < 300) return;
+    socket.data.lastTypingAt = nowT;
     if (partnerId) {
       io.to(partnerId).emit('typing');
     }
@@ -7565,9 +7709,13 @@ io.on('connection', (socket) => {
     if (alreadyPending) {
       return socket.emit('friend-request-result', { ok: true, sent: true, pending: true });
     }
-    if (!socialRateOk('friend-request', me.clientId, 20, 10 * 60000)) {
+    // A script's tell is the hourly total, not the burst: 20 per ten minutes is
+    // 120 an hour. The hourly cap is lenient for a real person; the pattern
+    // below queues spraying for the owner well before it.
+    if (!socialRateOk('friend-request', me.clientId, 20, 10 * 60000) || !socialRateOk('friend-request-hour', me.clientId, 40, 3600000)) {
       return socket.emit('friend-request-result', { ok: false, rateLimited: true, error: 'Too many friend requests. Try again in a few minutes.' });
     }
+    patterns.onAction({ kind: 'friend-request', from: me.clientId, to: targetClientId, username: me.username });
     // They said no a moment ago: this looks sent from here and goes nowhere.
     if (recentlyDeclined(me.clientId, targetClientId)) {
       noteSentRequest(me.clientId, targetClientId, { ...snapshotOf(targetClientId, me.clientId), held: true });
@@ -7837,8 +7985,14 @@ io.on('connection', (socket) => {
     // client cannot grow it without bound.
     const mine = blocks.get(me.clientId);
     if (mine && mine.size >= MAX_BLOCKS && !mine.has(friendClientId)) return;
-    store.recordFeature('block');
-    reputation.note(friendClientId, 'blocked', { from: me.clientId });
+    const already = !!(mine && mine.has(friendClientId));
+    // Each new block counts against the other person's reputation, so blocking
+    // people in bulk would be a way to smear them.
+    if (!already && !socialRateOk('block', me.clientId, 60, 3600000)) return;
+    if (!already) {
+      store.recordFeature('block');
+      reputation.note(friendClientId, 'blocked', { from: me.clientId });
+    }
     endPairingWith(socket.id, friendClientId);
     blockPair(me.clientId, friendClientId);
     syncClientState(socket, me.clientId);
@@ -7946,6 +8100,10 @@ io.on('connection', (socket) => {
       reason, scope: 'friend', toClientId, id: parsed.id || null, text: parsed.text || '',
     });
     if (!ageGate('friends').ok || ageAssurance.isRestricted(toClientId)) return refuse('unreachable');
+    // Said out loud, as above. This refusal is shared with people who cannot be
+    // reached for other reasons (restricted, never met), so it does not name a
+    // block; hiding it completely (acknowledging and dropping the message) is a
+    // product decision left to the owner.
     if (!canOpenThread(me.clientId, toClientId) || isBlockedPair(me.clientId, toClientId)) {
       return refuse('unreachable');
     }
@@ -8015,7 +8173,8 @@ io.on('connection', (socket) => {
       reply({ ok: true, id: dup.id, ts: dup.ts, voice: dup.voice });
       return;
     }
-    if (!socialRateOk('friend-voice-note', me.clientId, 5, 60000)) return reply({ ok: false, reason: 'rate' });
+    if (!socialRateOk('friend-voice-note', me.clientId, 5, 60000) || !socialRateOk('friend-voice-note-hour', me.clientId, 60, 3600000)) return reply({ ok: false, reason: 'rate' });
+    patterns.onAction({ kind: 'voice-note', from: me.clientId, to: toClientId, username: me.username });
     const noteId = 'v' + crypto.randomBytes(12).toString('hex');
     const friendInfo = (friends.get(me.clientId) || new Map()).get(toClientId);
     try {
@@ -8042,7 +8201,7 @@ io.on('connection', (socket) => {
     reply({ ok: true, id: msg.id, ts: msg.ts, voice: msg.voice });
     if (note.transcript) {
       automod.onChatText({
-        from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), username: me.username, country: me.countryName },
+        from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), deviceId: me.deviceId || null, username: me.username, country: me.countryName },
         to: toClientId, pair: pairKey(me.clientId, toClientId), text: note.transcript, kind: 'voice-note',
       });
     }
@@ -8219,7 +8378,7 @@ io.on('connection', (socket) => {
       country: me.countryName, text: '[edited] ' + next, msgId,
     });
     automod.onChatText({
-      from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), username: me.username, country: me.countryName },
+      from: { clientId: me.clientId, account: socketAuth.get(socket.id) || null, ip: getClientIp(socket), deviceId: me.deviceId || null, username: me.username, country: me.countryName },
       to: toClientId, pair: key, text: next, kind: 'chat',
     });
     // An unread notification still quoting the old words shows the new ones.
@@ -8357,8 +8516,14 @@ io.on('connection', (socket) => {
     targetClientId = validId(targetClientId);
     if (!me || !targetClientId || targetClientId === me.clientId) return;
     store.recordFeature('call_back');
-    if (isBlockedPair(me.clientId, targetClientId) || !knowsEachOther(me.clientId, targetClientId)) {
+    // A block must not be detectable by the person it is aimed at, so a blocked
+    // pair is answered exactly like someone who is offline (and the later ask
+    // below is acknowledged and dropped). Only someone never met is told so.
+    if (!knowsEachOther(me.clientId, targetClientId)) {
       return socket.emit('call-back-request-result', { ok: false, reason: 'blocked' });
+    }
+    if (isBlockedPair(me.clientId, targetClientId)) {
+      return socket.emit('call-back-request-result', { ok: false, reason: 'offline', canQueue: true });
     }
     if (!socialRateOk('call-back', me.clientId, 6, 60000)) {
       return socket.emit('call-back-request-result', { ok: false, reason: 'rate' });
@@ -8434,8 +8599,11 @@ io.on('connection', (socket) => {
     const me = profiles.get(socket.id);
     targetClientId = validId(targetClientId);
     if (!me || !targetClientId || targetClientId === me.clientId) return;
-    if (isBlockedPair(me.clientId, targetClientId) || !knowsEachOther(me.clientId, targetClientId)) {
+    if (!knowsEachOther(me.clientId, targetClientId)) {
       return socket.emit('call-back-later-result', { ok: false, reason: 'blocked', targetClientId });
+    }
+    if (isBlockedPair(me.clientId, targetClientId)) {
+      return socket.emit('call-back-later-result', { ok: true, targetClientId });
     }
     if (!acceptsCalls(targetClientId)) {
       return socket.emit('call-back-later-result', { ok: false, reason: 'calls-off', targetClientId });
