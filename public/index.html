@@ -54,7 +54,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=153fc85b70" crossorigin />
-<link rel="stylesheet" href="style.css?v=2c9a1e6b83" />
+<link rel="stylesheet" href="style.css?v=23f6911f6e" />
 <link rel="stylesheet" href="chat-extras.css?v=4b7b6398b3" />
 <link rel="stylesheet" href="games.css?v=27142968d1" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
@@ -213,17 +213,19 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
       "@type": "FAQPage",
       "@id": "https://talklive.app/#faq",
       "mainEntity": [
-        { "@type": "Question", "name": "Is TalkLive free?", "acceptedAnswer": { "@type": "Answer", "text": "Core random voice and text matching is free - never a paywall. Wait time depends on compatible people in the live queue; optional Premium adds advanced filters." } },
-        { "@type": "Question", "name": "Do I need to sign up to talk to strangers?", "acceptedAnswer": { "@type": "Answer", "text": "No account is required for a basic random voice or text match. An optional account can keep friends and history between visits." } },
+        { "@type": "Question", "name": "Is TalkLive free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Voice calls and text chat are free and unlimited, and there is no paywall. Plus is an optional upgrade." } },
+        { "@type": "Question", "name": "Do I need an account?", "acceptedAnswer": { "@type": "Answer", "text": "No. Open the page and tap Talk or Chat. An account is optional and only keeps your friends and history between visits." } },
         { "@type": "Question", "name": "Is TalkLive anonymous?", "acceptedAnswer": { "@type": "Answer", "text": "A basic match does not require a real name, email or phone number. TalkLive still processes operational data described in its Privacy Policy, and another participant may record on their own device." } },
         { "@type": "Question", "name": "Can I chat by text instead of calling?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Tap to Chat starts a random text match without microphone permission. Typed messages are kept in a moderation log (the newest 5,000 messages across the site), and direct-message conversations keep their newest 200 messages; see the Privacy Policy." } },
         { "@type": "Question", "name": "Does TalkLive use video?", "acceptedAnswer": { "@type": "Answer", "text": "No. TalkLive is voice and text only, which keeps it private, low-bandwidth, and pressure-free. You connect through conversation, not appearance." } },
         { "@type": "Question", "name": "Can I choose who I talk to?", "acceptedAnswer": { "@type": "Answer", "text": "Optional preferences can guide matching, but they do not verify or guarantee a person's gender, country, identity, language or availability." } },
         { "@type": "Question", "name": "What languages does TalkLive support?", "acceptedAnswer": { "@type": "Answer", "text": "TalkLive is available in 17 languages: English, Spanish, Portuguese, French, German, Russian, Turkish, Arabic, Persian, Hindi, Bengali, Urdu, Indonesian, Italian, Japanese, Korean and Chinese. Right-to-left languages (Arabic, Persian and Urdu) are fully supported." } },
-        { "@type": "Question", "name": "Is TalkLive safe?", "acceptedAnswer": { "@type": "Answer", "text": "TalkLive is for adults 18+. You can leave any conversation in one tap, and block or report the other person from every screen; reports are reviewed and lead to bans. No service that pairs strangers can guarantee safety, so never share personal details, money or codes." } },
+        { "@type": "Question", "name": "Is TalkLive safe?", "acceptedAnswer": { "@type": "Answer", "text": "It is built for adults 18 and over, with one-tap block and report, moderation and no voice recording. No service that connects strangers can promise perfect safety, so never share passwords, codes or money." } },
+        { "@type": "Question", "name": "Can I choose to talk to men or women?", "acceptedAnswer": { "@type": "Answer", "text": "Yes, with Plus. The Men/Women filter is a Plus feature, and it is a preference, not a verified guarantee. Free users can still choose countries." } },
+        { "@type": "Question", "name": "Does TalkLive work on Android?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. It works in the browser on Android, iPhone and computers, and there is an Android app on Google Play." } },
+        { "@type": "Question", "name": "How is TalkLive different from Omegle?", "acceptedAnswer": { "@type": "Answer", "text": "Omegle closed in 2023. TalkLive is a separate service with no connection to it. It is voice and text only with no video, limited to adults 18 and over, and needs no account." } },
         { "@type": "Question", "name": "Is TalkLive the same as Talkliv?", "acceptedAnswer": { "@type": "Answer", "text": "No. TalkLive is the free voice and text chat at talklive.app. It is not connected to other apps or sites with similar names." } },
-        { "@type": "Question", "name": "Is TalkLive a dating app?", "acceptedAnswer": { "@type": "Answer", "text": "No. TalkLive is a random social conversation service for adults, not a dating or matchmaking service." } },
-        { "@type": "Question", "name": "Do I need a TalkLive login?", "acceptedAnswer": { "@type": "Answer", "text": "No login is required for a basic random match. Sign-in is optional for account features such as keeping friends between visits." } }
+        { "@type": "Question", "name": "Is TalkLive a dating app?", "acceptedAnswer": { "@type": "Answer", "text": "No. TalkLive is a random social conversation service for adults, not a dating or matchmaking service." } }
       ]
     }
   ]
@@ -2312,6 +2314,36 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
 
 
+  <!-- Plain-language answers for people arriving from search. Below the app and
+       the tour, real HTML in the first response (translated client-side via
+       data-i18n; the 16 localized homepages get the same copy from scripts/build-seo.js). -->
+  <section class="seo-section hc-about" aria-labelledby="hcTitle">
+    <div class="seo-inner">
+      <h2 id="hcTitle" data-i18n="hcH2">TalkLive at a glance: what it is, what it costs, how to stay safe</h2>
+      <h3 data-i18n="hcWhatH">What is TalkLive?</h3>
+      <p data-i18n="hcWhatP">TalkLive is a free way to talk to a random person by voice or text, right in your browser. Tap Talk for a live voice call or Chat for a text conversation. There is no video, and you do not need an account.</p>
+      <h3 data-i18n="hcHowH">How it works</h3>
+      <ol class="seo-list">
+        <li data-i18n="hcHow1">Tap Talk for voice or Chat for text. You can set optional filters first.</li>
+        <li data-i18n="hcHow2">TalkLive connects you with another adult who is looking to talk right now. How long it takes depends on who is online.</li>
+        <li data-i18n="hcHow3">Say hello. Not a fit? Move on to someone new, or add a friend to talk again later.</li>
+      </ol>
+      <h3 data-i18n="hcPlanH">Free and Plus</h3>
+      <p data-i18n="hcPlanP">Voice calls and text chat are free and unlimited, with ads. Free users can pick up to 2 preferred and 2 avoided countries. Plus is optional and adds a Men/Women filter, up to 50 preferred and avoided countries, priority matching when it is busy, and no ads. You buy it in the Android app through Google Play.</p>
+      <h3 data-i18n="hcSafeH">Staying safe</h3>
+      <p data-i18n="hcSafeP">TalkLive is for people aged 18 and over. You can block or report anyone in one tap, and the team reviews reports. Voice calls are never recorded, links to other websites are blocked in chat, and automated checks look for abuse. Sharing your Instagram or Snapchat is allowed, but only with people you trust. Never share passwords, codes or money.</p>
+      <h3 data-i18n="hcFaqH">Common questions</h3>
+      <div class="hc-faq">
+        <details><summary data-i18n="hcQ1">Is TalkLive free?</summary><p data-i18n="hcA1">Yes. Voice calls and text chat are free and unlimited, and there is no paywall. Plus is an optional upgrade.</p></details>
+        <details><summary data-i18n="hcQ2">Do I need an account?</summary><p data-i18n="hcA2">No. Open the page and tap Talk or Chat. An account is optional and only keeps your friends and history between visits.</p></details>
+        <details><summary data-i18n="hcQ3">Can I choose to talk to men or women?</summary><p data-i18n="hcA3">Yes, with Plus. The Men/Women filter is a Plus feature, and it is a preference, not a verified guarantee. Free users can still choose countries.</p></details>
+        <details><summary data-i18n="hcQ4">Is TalkLive safe?</summary><p data-i18n="hcA4">It is built for adults 18 and over, with one-tap block and report, moderation and no voice recording. No service that connects strangers can promise perfect safety, so never share passwords, codes or money.</p></details>
+        <details><summary data-i18n="hcQ5">Does TalkLive work on Android?</summary><p data-i18n="hcA5">Yes. It works in the browser on Android, iPhone and computers, and there is an Android app on Google Play.</p></details>
+        <details><summary data-i18n="hcQ6">How is TalkLive different from Omegle?</summary><p data-i18n="hcA6">Omegle closed in 2023. TalkLive is a separate service with no connection to it. It is voice and text only with no video, limited to adults 18 and over, and needs no account.</p></details>
+      </div>
+    </div>
+  </section>
+
   <!-- Crawlable content region: gives search engines a rich, indexable
        description of TalkLive and links out to the keyword landing pages.
        Sits below the app so it never interferes with the call experience. -->
@@ -2438,12 +2470,9 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
       <h3>Frequently asked questions</h3>
       <div class="seo-faq">
-        <p><strong>Is TalkLive free?</strong> Core random voice and text matching is free - never a paywall. Wait time depends on compatible people in the live queue; optional Premium adds extra controls.</p>
-        <p><strong>Do I need an account?</strong> No. A basic random match is account-free; an optional account keeps friends and history between visits.</p>
         <p><strong>Is it anonymous?</strong> A basic match needs no real name or phone number, but TalkLive processes operational data and another participant may record on their own device.</p>
         <p><strong>Can I chat without talking?</strong> Yes. Tap to Chat uses text without microphone permission. Typed messages may be retained under the Privacy Policy.</p>
         <p><strong>Is there video?</strong> No. TalkLive is intentionally voice-and-text only for privacy and comfort.</p>
-        <p><strong>Is TalkLive safe?</strong> TalkLive is for adults 18+. You can leave any conversation in one tap, and block or report the other person from every screen; reports are reviewed and lead to bans. No service that pairs strangers can guarantee safety, so never share personal details, money or codes. See the <a href="/safety">Safety Center</a>.</p>
         <p><strong>Is TalkLive a dating app?</strong> No. It is a random voice and text chat for conversation, not a dating or matchmaking service.</p>
         <p><strong>Is TalkLive the same as Talkliv?</strong> No. TalkLive is the free voice and text chat at talklive.app. It is not connected to other apps or sites with similar names.</p>
         <p><strong>Which languages are supported?</strong> <!-- langs:faq -->TalkLive is available in 17 languages: English, Spanish, Portuguese, French, German, Russian, Turkish, Arabic, Persian, Hindi, Bengali, Urdu, Indonesian, Italian, Japanese, Korean and Chinese. Right-to-left languages (Arabic, Persian and Urdu) are fully supported.<!-- /langs:faq --></p>
@@ -2589,7 +2618,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        browser finish parsing and paint the page first. -->
   <script defer src="/vendor/socket.io.min.js?v=7bcff1b4f1"></script>
   <script defer src="countries.js?v=30bcd7f146"></script>
-  <script defer src="i18n.js?v=04fcdddbca"></script>
+  <script defer src="i18n.js?v=3738722142"></script>
   <script defer src="chat-time.js?v=9d4e50bcf7"></script>
   <script defer src="animals.js?v=e934300459"></script>
   <script defer src="characters.js?v=7df196acd3"></script>

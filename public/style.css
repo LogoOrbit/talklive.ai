@@ -7374,3 +7374,10 @@ html.perf-lite .side-panel { box-shadow: none; }
 .chat-msg-ticks.dm-ticks.seen svg path:nth-child(2) { display: inline; }
 .chat-msg-ticks.dm-ticks.delivered svg { fill: rgba(255,255,255,0.9); opacity: 1; }
 .chat-msg-ticks.dm-ticks.seen svg { fill: #7fe3ff; opacity: 1; }
+
+/* Home "at a glance" block: collapsed FAQ answers (the question is the summary). */
+.hc-faq details { border-top: 1px solid var(--line, rgba(255,255,255,0.08)); }
+.hc-faq details:last-child { border-bottom: 1px solid var(--line, rgba(255,255,255,0.08)); }
+.hc-faq summary { cursor: pointer; font-weight: 700; color: var(--text); padding: 12px 0; }
+.hc-faq details p { margin: 0 0 14px; }
+.hc-about + .seo-section { padding-top: 0; border-top: 0; }

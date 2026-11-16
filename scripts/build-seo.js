@@ -135,6 +135,16 @@ const ART_ALT = {
   bn: ["ভয়েস কলে যুক্ত সারা বিশ্বের মানুষ", "প্রশ্নের উত্তর পাচ্ছেন এমন একজন", "একসাথে হাঁটতে হাঁটতে গল্প করা দুই বন্ধু"],
 };
 
+function loadHomeStrings(code) {
+  const sandbox = { window: {} };
+  require('vm').runInNewContext(fs.readFileSync(path.join(__dirname, '..', 'public', 'i18n', code + '.js'), 'utf8'), sandbox);
+  const o = sandbox.window.I18N_STRINGS[code];
+  for (const k of ['hcH2', 'hcWhatH', 'hcWhatP', 'hcPlanH', 'hcPlanP', 'hcSafeH', 'hcSafeP', 'hcQ3', 'hcA3', 'hcQ5', 'hcA5', 'hcQ6', 'hcA6']) {
+    if (!o[k]) throw new Error('missing ' + k + ' in i18n/' + code + '.js');
+  }
+  return o;
+}
+
 function localeHome(loc) {
   const canonical = `${SITE}/${loc.code}/`;
   const appVoice = appHref('/', 'seo');
@@ -142,6 +152,12 @@ function localeHome(loc) {
   const alternates = homeAlternates((href, lang) => `<link rel="alternate" href="${href}" hreflang="${lang}" />`).join('\n');
   const features = loc.features.map(f => `<div class="card"><div class="ico">${icon(f.icon)}</div><h3>${f.h}</h3><p>${f.p}</p></div>`).join('');
   const steps = loc.steps.map(s => `<div class="step"><h3>${s.h}</h3><p>${s.p}</p></div>`).join('');
+  // Shared "at a glance" copy (what it is, free vs Plus, safety, three more FAQs)
+  // is read from the app's own translations so the page and the app never drift.
+  const hc = loadHomeStrings(loc.code);
+  const hcFaq = [3, 5, 6].map(n => ({ q: hc['hcQ' + n], a: hc['hcA' + n] }));
+  loc = Object.assign({}, loc, { faq: loc.faq.concat(hcFaq) });
+  const hcHtml = `<section id="about"><div class="wrap"><h2>${hc.hcH2}</h2><h3>${hc.hcWhatH}</h3><p>${hc.hcWhatP}</p><h3>${hc.hcPlanH}</h3><p>${hc.hcPlanP}</p><h3>${hc.hcSafeH}</h3><p>${hc.hcSafeP}</p></div></section>`;
   const faqHtml = loc.faq.map(f => `<details><summary>${f.q}</summary><p>${f.a}</p></details>`).join('');
   const ld = {
     '@context': 'https://schema.org',
@@ -249,6 +265,7 @@ ${alternates}
       <div class="steps">${steps}</div>
     </div>
   </section>
+  ${hcHtml}
   <section class="faq">
     <div class="wrap">
       <h2>${loc.faqH}</h2>
