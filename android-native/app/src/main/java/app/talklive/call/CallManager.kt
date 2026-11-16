@@ -34,7 +34,8 @@ import javax.inject.Singleton
 
 sealed interface CallPhase {
     data object Idle : CallPhase
-    data class Searching(val etaSeconds: Int? = null) : CallPhase
+    /** [waitingForGender]: "male"/"female" while a Men/Women filter holds the search; it can be widened. */
+    data class Searching(val etaSeconds: Int? = null, val waitingForGender: String? = null) : CallPhase
     data class Connecting(val partner: Partner) : CallPhase
     data class Connected(val partner: Partner, val sinceMs: Long) : CallPhase
 }
@@ -165,6 +166,21 @@ class CallManager @Inject constructor(
     private var matchId = 0
     private var watchdog: Job? = null
     private val pendingSignals = mutableListOf<JSONObject>()
+    /** The pairing this call belongs to; signals stamped with another `pid` are dropped. */
+    private var pairId: String? = null
+
+    // Recovery of a broken media path, as on the website: ICE restarts with
+    // backoff (SdpTune.restartDelayMs) and a bound, inside a 30 s window after
+    // which the call moves on. A FAILED state used to end the call at once.
+    private var linkUp = false
+    private var everConnected = false
+    private var restartCount = 0
+    private var lastRestartAt = 0L
+    private var restartRetry: Job? = null
+    private var recoverJob: Job? = null
+    private var bitrate = SdpTune.BitrateState()
+    /** Waiting to hear whether the server kept our call through a socket reconnect. */
+    private var resumeJob: Job? = null
 
     init {
         // "In a call" audio mode only while someone is actually on the line.
@@ -201,24 +217,71 @@ class CallManager @Inject constructor(
                 _state.update { it.copy(speakerOn = speaker) }
             }
         }
-        // After a reconnect the server has forgotten our search (and our call):
-        // start searching again so a network blip never strands the user.
+        // After a reconnect the server has forgotten our search: search again so
+        // a network blip never strands the user. A call is different: the server
+        // holds a live call open for a few seconds after a drop and hands it to
+        // our new socket ('call-resumed'), and the audio, which is peer to peer,
+        // often never noticed. So a call is only given up if that does not come.
         scope.launch {
             socket.connected.drop(1).filter { it }.collect {
                 val st = _state.value
-                when {
-                    st.phase == CallPhase.Idle -> Unit
-                    // A friend call cannot be resumed by searching: end it.
-                    st.friendCall && st.phase !is CallPhase.Searching -> {
-                        teardown()
-                        audio.stop()
-                        val name = (st.phase as? CallPhase.Connected)?.partner?.username ?: (st.phase as? CallPhase.Connecting)?.partner?.username
-                        _state.update { CallState(speakerOn = it.speakerOn, mode = it.mode, notice = CallNotice.CallEnded(name ?: "Your friend")) }
+                if (st.phase is CallPhase.Connected || st.phase is CallPhase.Connecting) {
+                    resumeJob?.cancel()
+                    val id = matchId
+                    resumeJob = scope.launch {
+                        delay(RESUME_WAIT_MS)
+                        if (id == matchId) endAfterLostSocket()
                     }
-                    else -> { teardown(); search() }
-                }
+                } else if (st.phase != CallPhase.Idle) { teardown(); search() }
             }
         }
+        // Wi-Fi to mobile data (or back): the path the call is using is about to
+        // die, so re-gather now while signalling still works rather than after
+        // ICE notices. GATHER_CONTINUALLY picks up the new interface; the restart
+        // makes the other side use it.
+        runCatching {
+            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+            cm.registerDefaultNetworkCallback(object : android.net.ConnectivityManager.NetworkCallback() {
+                private var current: android.net.Network? = null
+                override fun onAvailable(network: android.net.Network) {
+                    val changed = current != null && current != network
+                    current = network
+                    if (changed) scope.launch { onNetworkChanged() }
+                }
+            })
+        }.onFailure { Log.w(TAG, "network callback unavailable", it) }
+    }
+
+    private fun onNetworkChanged() {
+        if (session == null || !(_state.value.phase is CallPhase.Connected || _state.value.phase is CallPhase.Connecting)) return
+        // One side restarts unprompted when the link still looks fine; either
+        // side does when it is already broken (glare is resolved politely).
+        if (!initiator && linkUp) return
+        lastRestartAt = 0L
+        iceRestart(matchId)
+    }
+
+    /** The socket came back but the call did not: end it as before the server could resume. */
+    private fun endAfterLostSocket() {
+        val st = _state.value
+        when {
+            !(st.phase is CallPhase.Connected || st.phase is CallPhase.Connecting) -> Unit
+            // A friend call cannot be resumed by searching: end it.
+            st.friendCall -> {
+                teardown()
+                audio.stop()
+                val name = (st.phase as? CallPhase.Connected)?.partner?.username ?: (st.phase as? CallPhase.Connecting)?.partner?.username
+                _state.update { CallState(speakerOn = it.speakerOn, mode = it.mode, notice = CallNotice.CallEnded(name ?: "Your friend")) }
+            }
+            else -> { teardown(); search() }
+        }
+    }
+
+    /** Plus: drop the Men/Women filter for this search only ("Match with anyone"). */
+    fun widenSearch() = scope.launch {
+        val p = _state.value.phase as? CallPhase.Searching ?: return@launch
+        socket.emit("widen-search")
+        setPhase(p.copy(waitingForGender = null))
     }
 
     fun start(mode: CallMode = CallMode.Talk) = scope.launch {
@@ -395,7 +458,14 @@ class CallManager @Inject constructor(
     private suspend fun onEvent(e: ServerEvent) {
         val phase = _state.value.phase
         when (e) {
-            is ServerEvent.Waiting -> if (phase is CallPhase.Searching) setPhase(CallPhase.Searching(e.estimatedSeconds))
+            is ServerEvent.Waiting -> if (phase is CallPhase.Searching) setPhase(CallPhase.Searching(e.estimatedSeconds, e.waitingForGender))
+            is ServerEvent.SearchStatus -> if (phase is CallPhase.Searching) setPhase(phase.copy(waitingForGender = e.waitingForGender))
+            is ServerEvent.CallResumed -> if (phase is CallPhase.Connected || phase is CallPhase.Connecting) {
+                resumeJob?.cancel()
+                e.pairId?.let { pairId = it }
+                if (session != null && !linkUp) { lastRestartAt = 0L; iceRestart(matchId) }
+            }
+            ServerEvent.PartnerResumed -> if (session != null && !linkUp && initiator) { lastRestartAt = 0L; iceRestart(matchId) }
             ServerEvent.NeedsRegister -> if (phase is CallPhase.Searching) {
                 delay(800)
                 socket.emit("find-partner", searchOpts())
@@ -413,6 +483,7 @@ class CallManager @Inject constructor(
             is ServerEvent.Signal -> onSignal(e.data)
             is ServerEvent.PartnerMic -> _state.update { it.copy(partnerMuted = e.muted) }
             is ServerEvent.PartnerLeft -> if (!switchingToVoice && (phase is CallPhase.Connecting || phase is CallPhase.Connected)) {
+                resumeJob?.cancel()
                 teardown()
                 if (_state.value.friendCall) {
                     audio.stop()
@@ -501,6 +572,7 @@ class CallManager @Inject constructor(
         teardown()
         val id = ++matchId
         initiator = m.initiator
+        pairId = m.pairId
         switchingToVoice = false
         lastPartnerName = m.partner.username
         resetPartnerState()
@@ -557,13 +629,21 @@ class CallManager @Inject constructor(
         }
 
         runCatching {
-            if (initiator) socket.emit("signal", sdpJson(s.createOffer()))
+            if (initiator) {
+                val offer = s.createOffer()
+                if (id != matchId) return
+                socket.emit("signal", sdpJson(offer))
+            }
             pendingSignals.toList().also { pendingSignals.clear() }.forEach { onSignal(it) }
         }.onFailure { Log.w(TAG, "handshake failed", it); failAndRetry() }
     }
 
     private suspend fun onSignal(data: JSONObject) {
+        // A signal for a call we have already left (older servers send no pid).
+        val pid = data.optString("pid")
+        if (pid.isNotEmpty() && pairId != null && pid != pairId) return
         val s = session
+        val id = matchId
         if (s == null) {
             if (_state.value.phase is CallPhase.Connecting && pendingSignals.size < 64) pendingSignals += data
             return
@@ -575,7 +655,9 @@ class CallManager @Inject constructor(
                     if (initiator && s.signalingState != PeerConnection.SignalingState.STABLE) return
                     val sdp = data.getJSONObject("sdp").getString("sdp")
                     val answer = s.acceptOffer(SessionDescription(SessionDescription.Type.OFFER, sdp))
-                    socket.emit("signal", sdpJson(answer))
+                    // The exchange can outlive the call (Next tapped meanwhile):
+                    // never answer an old offer to whoever we are with now.
+                    if (id == matchId && session === s) socket.emit("signal", sdpJson(answer))
                 }
                 "answer" -> s.acceptAnswer(
                     SessionDescription(SessionDescription.Type.ANSWER, data.getJSONObject("sdp").getString("sdp")),
@@ -592,16 +674,66 @@ class CallManager @Inject constructor(
         when (state) {
             PeerConnection.PeerConnectionState.CONNECTED -> {
                 watchdog?.cancel()
+                linkUp = true
+                everConnected = true
+                restartCount = 0
+                restartRetry?.cancel()
+                recoverJob?.cancel()
+                recoverJob = null
+                session?.setSendBitrate(bitrate.bitrate)
                 _state.update { it.copy(unstable = false) }
                 if (_state.value.phase !is CallPhase.Connected) {
                     setPhase(CallPhase.Connected(partner, System.currentTimeMillis()))
                     startStats()
                 }
             }
-            PeerConnection.PeerConnectionState.DISCONNECTED -> _state.update { it.copy(unstable = true) }
-            PeerConnection.PeerConnectionState.FAILED -> failAndRetry()
+            PeerConnection.PeerConnectionState.DISCONNECTED, PeerConnection.PeerConnectionState.FAILED -> {
+                linkUp = false
+                _state.update { it.copy(unstable = true) }
+                val id = matchId
+                if (recoverJob == null) recoverJob = scope.launch {
+                    delay(RECOVER_WINDOW_MS)
+                    if (id != matchId || linkUp) return@launch
+                    recoverJob = null
+                    if (everConnected) giveUpDroppedCall() else failAndRetry()
+                }
+                // The caller (impolite peer) restarts at once; the other side only if
+                // it is still broken a moment later, covering a caller whose own
+                // network is the one that dropped.
+                if (initiator) iceRestart(id)
+                else scope.launch { delay(3_000); if (id == matchId && !linkUp) iceRestart(id) }
+            }
             else -> Unit
         }
+    }
+
+    /** An ICE restart (new credentials, re-gathered paths), backed off and bounded per call. */
+    private fun iceRestart(id: Int) {
+        val s = session ?: return
+        if (id != matchId || restartCount >= SdpTune.ICE_RESTART_MAX) return
+        val now = System.currentTimeMillis()
+        if (now - lastRestartAt < maxOf(2_000L, SdpTune.restartDelayMs(restartCount))) return
+        lastRestartAt = now
+        restartCount++
+        // If this one does not bring the link back, try the next step of the backoff.
+        restartRetry?.cancel()
+        restartRetry = scope.launch {
+            delay(SdpTune.restartDelayMs(restartCount) + 500)
+            if (id == matchId && !linkUp) iceRestart(id)
+        }
+        scope.launch {
+            runCatching {
+                val offer = s.createRestartOffer()
+                if (id == matchId && session === s) socket.emit("signal", sdpJson(offer))
+            }.onFailure { Log.w(TAG, "ice restart failed", it) }
+        }
+    }
+
+    /** A call that was working and could not be recovered: move on (not a failed pair). */
+    private fun giveUpDroppedCall() {
+        teardown()
+        setPhase(CallPhase.Searching())
+        socket.emit("skip")
     }
 
     /** Media never flowed: tell the server so it keeps this pair apart, then search again. */
@@ -655,6 +787,10 @@ class CallManager @Inject constructor(
                         }
                         _state.update { it.copy(quality = q, rttMs = st.rttMs, lossPct = loss * 100f, relayed = st.relay) }
                         quality.add(st, loss, q == LinkQuality.Poor)
+                        // Adaptive send bitrate from how our audio arrives over
+                        // there; what we receive stands in until RTCP reports it.
+                        bitrate = SdpTune.nextBitrate(bitrate, st.sentLoss ?: loss, st.sentRttMs ?: st.rttMs)
+                        if (bitrate.changed) s.setSendBitrate(bitrate.bitrate)
                     }
                 }
                 delay(250)
@@ -708,6 +844,16 @@ class CallManager @Inject constructor(
         matchId++
         watchdog?.cancel()
         watchdog = null
+        restartRetry?.cancel()
+        recoverJob?.cancel()
+        recoverJob = null
+        resumeJob?.cancel()
+        linkUp = false
+        everConnected = false
+        restartCount = 0
+        lastRestartAt = 0L
+        bitrate = SdpTune.BitrateState()
+        pairId = null
         pendingSignals.clear()
         mic.stop()
         session?.close()
@@ -726,5 +872,9 @@ class CallManager @Inject constructor(
     private companion object {
         const val TAG = "CallManager"
         const val CONNECT_TIMEOUT_MS = 25_000L
+        /** How long a call in trouble may try to recover before moving on (the website's window). */
+        const val RECOVER_WINDOW_MS = 30_000L
+        /** After a socket reconnect, how long to wait for the server to hand our call back. */
+        const val RESUME_WAIT_MS = 6_000L
     }
 }

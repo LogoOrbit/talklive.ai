@@ -407,7 +407,8 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         when (n) {
             is CallNotice.PartnerLeft -> stringResource(if (n.dropped) R.string.partner_dropped else R.string.partner_left, n.name)
             CallNotice.Banned -> stringResource(R.string.banned)
-            is CallNotice.Refused -> n.reason
+            // The server's reason is a website i18n key; the ones the app has words for are mapped.
+            is CallNotice.Refused -> if (n.reason == "searchTooFast") stringResource(R.string.search_too_fast) else n.reason
             is CallNotice.CallEnded -> stringResource(R.string.call_ended, n.name)
         }
     }
@@ -653,6 +654,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                     onAutoConnect = vm::setAutoConnect,
                     bands = { voiceBands },
                     premium = premium.active,
+                    onWidenSearch = vm::widenSearch,
                     noiseSuppression = vm.noiseSuppression.collectAsStateWithLifecycle().value,
                     onNoiseSuppression = vm::setNoiseSuppression,
                     onProblem = { engageVm.sendFeedback("[call] $it", problem = true) },

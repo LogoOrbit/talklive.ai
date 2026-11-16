@@ -661,4 +661,32 @@ class ServerE2ETest {
         kotlinx.coroutines.runBlocking { c.auth.signOut() }
         assertEquals(null, c.auth.account.value)
     }
+
+    // A Plus member's Men/Women filter is never dropped by the 10 s fallback;
+    // the app shows who it is waiting for and "Match with anyone" widens it.
+    @Test fun gender_filter_holds_until_widened() {
+        ctx.getSharedPreferences("id_plus", android.content.Context.MODE_PRIVATE).edit()
+            .putString("client_id", "a_e2eplus000000000000000000000001").commit()
+        val plus = Client("plus", withCalls = true)
+        plus.engage.setFilters(app.talklive.engage.Filters(prefGender = "female"))
+        Thread.sleep(800)
+        val man = Client("man", withCalls = true)
+        man.engage.setMyGender("male")
+        Thread.sleep(500)
+        plus.calls!!.start(CallMode.Chat)
+        man.calls!!.start(CallMode.Chat)
+        runCatching {
+            check("the search says it is waiting for women") {
+                (plus.calls.state.value.phase as? CallPhase.Searching)?.waitingForGender == "female"
+            }
+        }.onFailure { throw AssertionError("phase=${plus.calls.state.value.phase} events=${plus.events.filter { it is ServerEvent.Waiting || it is ServerEvent.Matched || it is ServerEvent.SearchStatus }}", it) }
+        Thread.sleep(11_500) // past the server's fallback
+        assertTrue("still searching after the fallback", plus.calls.state.value.phase is CallPhase.Searching)
+        assertEquals("female", (plus.calls.state.value.phase as CallPhase.Searching).waitingForGender)
+        plus.calls.widenSearch()
+        check("widened: matched with the man") {
+            plus.calls.state.value.phase is CallPhase.Connected && man.calls.state.value.phase is CallPhase.Connected
+        }
+        plus.calls.end(); man.calls.end()
+    }
 }

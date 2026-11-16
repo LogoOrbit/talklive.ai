@@ -182,17 +182,21 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
         socket.on("waiting") { args ->
             val o = args.firstObject()
             val eta = o?.takeUnless { it.isNull("estimatedSeconds") }?.optInt("estimatedSeconds")
-            _events.tryEmit(ServerEvent.Waiting(eta))
+            _events.tryEmit(ServerEvent.Waiting(eta, o?.let(::genderHeld)))
         }
+        socket.on("search-status") { args -> _events.tryEmit(ServerEvent.SearchStatus(args.firstObject()?.let(::genderHeld))) }
         socket.on("matched") { args ->
             val o = args.firstObject() ?: return@on
             _events.tryEmit(
                 ServerEvent.Matched(
                     o.optBoolean("initiator"), Partner.from(o.optJSONObject("partner")), o.optBoolean("callback"), o.optString("mode", "talk"),
                     voice = o.optBoolean("voice"), filtered = o.optBoolean("filtered"),
+                    pairId = o.optNullableString("pairId"),
                 ),
             )
         }
+        socket.on("call-resumed") { args -> _events.tryEmit(ServerEvent.CallResumed(args.firstObject()?.optNullableString("pairId"))) }
+        socket.on("partner-resumed") { _events.tryEmit(ServerEvent.PartnerResumed) }
         socket.on("signal") { args -> args.firstObject()?.let { _events.tryEmit(ServerEvent.Signal(it)) } }
         socket.on("partner-left") { args ->
             val o = args.firstObject()
@@ -456,3 +460,7 @@ data class OnlinePerson(
     val interests: List<String>,
     val waiting: Boolean,
 )
+
+/** The gender a search is still holding out for ('waiting' / 'search-status'), if it can be widened. */
+private fun genderHeld(o: JSONObject): String? =
+    if (o.optString("waitingFor") == "gender" && o.optBoolean("canWiden")) o.optString("gender").takeIf { it == "male" || it == "female" } else null

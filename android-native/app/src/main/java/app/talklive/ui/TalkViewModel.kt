@@ -90,6 +90,7 @@ class TalkViewModel @Inject constructor(
     fun rematch() = games.rematch()
     fun leaveGame() = games.leave()
     fun next() = calls.next()
+    fun widenSearch() = calls.widenSearch()
     fun end() = calls.end()
     fun toggleMute() = calls.toggleMute()
     fun toggleSpeaker() = calls.toggleSpeaker()

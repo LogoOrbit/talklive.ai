@@ -33,6 +33,8 @@ class LocalServer : AutoCloseable {
                 environment()["GIPHY_API_KEY"] = ""
                 // A one-second chat counts toward the streak in tests.
                 environment()["ENGAGE_GOOD_CALL_SECONDS"] = "1"
+                // A fixed Plus member, for the gender-filter tests (see ServerE2ETest.PLUS_ID).
+                environment()["PREMIUM_CLIENT_IDS"] = "a_e2eplus000000000000000000000001"
                 // Never send real email, push or payments from tests: drop every
                 // credential the machine running them happens to have.
                 environment().keys.filter { k ->

@@ -192,4 +192,13 @@ credentials, and periodically - an expired TLS certificate or a lapsed provider
 account degrades calls silently for exactly the users least able to report it.
 
 Credentials minted by `/ice-servers` last one hour, so a browser that sits on
-the page longer than that picks up fresh ones on its next call.
+the page longer than that picks up fresh ones on its next call. The response
+also carries `expiresAt` (ms since epoch) for the soonest-expiring credential
+in it - managed providers' credentials are shared and refreshed ten minutes
+before they expire, so a list can have far less than an hour left. The website
+refetches when fewer than ten minutes remain, and whenever a search starts, so
+a call never waits on this fetch.
+
+The server warns at boot if `TURN_URLS` lists no TCP or TLS entry: include at
+least one `turn:...?transport=tcp` and, ideally, `turns:host:443?transport=tcp`
+for networks that only pass TCP 443.

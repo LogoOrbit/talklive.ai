@@ -119,6 +119,9 @@ function emitFindPartner() {
   searchAcked = false;
   // Looking for the next person: whoever dropped is no longer the news.
   if (typeof hidePeerGone === 'function') hidePeerGone();
+  // Fetch fresh TURN credentials while we wait, so the call that follows never
+  // waits on the network for them (a no-op while the cached list is fresh).
+  try { refreshIceConfigIfStale(); } catch (_) { /* the call refetches if it must */ }
   socket.emit('find-partner', findPartnerPayload());
 }
 function markSearchAcked() {
@@ -541,6 +544,81 @@ function messageIsUnsafe(text) {
   return UNSAFE_RE.test(String(text || ''));
 }
 
+// <sdp-tune> - pure functions, no DOM or globals. scripts/test-sdp-tune.js
+// evaluates exactly this block in Node, so keep it self-contained.
+//
+// Opus as the browsers negotiate it by default is tuned for music on a good
+// link: no DTX, in-band FEC only sometimes, up to ~40kbps or more for mono.
+// A voice call between strangers on phones is the opposite case. The fmtp
+// parameters in OUR description tell the OTHER side how to send to us:
+//   useinbandfec=1       - carry a low-bitrate copy of the previous frame, so a
+//                          lost packet is rebuilt instead of heard as a gap
+//   usedtx=1             - send almost nothing during silence (half of a call)
+//   maxaveragebitrate    - plenty for one voice, small enough for 3G
+// Our own sending is capped separately with RTCRtpSender.setParameters, which
+// works whatever the other side's SDP says.
+const OPUS_MAX_AVG_BITRATE = 28000;
+const AUDIO_LOW_BITRATE = 16000;
+function tuneOpusSdp(sdp, opts) {
+  if (typeof sdp !== 'string' || !sdp) return sdp;
+  const o = Object.assign({ fec: true, dtx: true, maxAverageBitrate: OPUS_MAX_AVG_BITRATE }, opts);
+  const eol = sdp.indexOf('\r\n') !== -1 ? '\r\n' : '\n';
+  const lines = sdp.split(eol);
+  const opus = new Set();
+  const withFmtp = new Set();
+  lines.forEach((l) => {
+    const m = /^a=rtpmap:(\d+) opus\/48000/i.exec(l);
+    if (m) opus.add(m[1]);
+    const f = /^a=fmtp:(\d+) /.exec(l);
+    if (f) withFmtp.add(f[1]);
+  });
+  if (!opus.size) return sdp;
+  const want = { useinbandfec: o.fec ? '1' : '0', usedtx: o.dtx ? '1' : '0' };
+  if (o.maxAverageBitrate) want.maxaveragebitrate = String(Math.round(o.maxAverageBitrate));
+  const params = (rest) => {
+    const kept = String(rest || '').split(';').map((x) => x.trim()).filter(Boolean)
+      .filter((kv) => !(kv.split('=')[0].trim().toLowerCase() in want));
+    return kept.concat(Object.keys(want).map((k) => k + '=' + want[k])).join(';');
+  };
+  const out = [];
+  for (const l of lines) {
+    const f = /^a=fmtp:(\d+) (.*)$/.exec(l);
+    if (f && opus.has(f[1])) { out.push('a=fmtp:' + f[1] + ' ' + params(f[2])); continue; }
+    out.push(l);
+    const r = /^a=rtpmap:(\d+) opus\/48000/i.exec(l);
+    // An Opus payload with no fmtp line at all gets one, right after its rtpmap.
+    if (r && !withFmtp.has(r[1])) out.push('a=fmtp:' + r[1] + ' ' + params(''));
+  }
+  return out.join(eol);
+}
+
+// One step of the adaptive send bitrate, from a 2-second stats sample of how
+// our audio is arriving at the other side (loss 0..1, round trip in ms; null
+// when unknown). Three bad samples in a row (6s) drop to the low rate; five
+// good ones (10s) bring the normal rate back. Unknown is neither.
+function nextAudioBitrate(state, sample) {
+  const st = Object.assign({ bitrate: OPUS_MAX_AVG_BITRATE, bad: 0, good: 0 }, state);
+  const loss = sample && sample.loss != null ? sample.loss : null;
+  const rtt = sample && sample.rttMs != null ? sample.rttMs : null;
+  const bad = (loss != null && loss >= 0.05) || (rtt != null && rtt >= 400);
+  const good = !bad && (loss == null || loss < 0.02) && (rtt == null || rtt < 250) && (loss != null || rtt != null);
+  st.bad = bad ? st.bad + 1 : 0;
+  st.good = good ? st.good + 1 : 0;
+  st.changed = false;
+  if (st.bitrate !== AUDIO_LOW_BITRATE && st.bad >= 3) { st.bitrate = AUDIO_LOW_BITRATE; st.changed = true; st.bad = 0; }
+  else if (st.bitrate !== OPUS_MAX_AVG_BITRATE && st.good >= 5) { st.bitrate = OPUS_MAX_AVG_BITRATE; st.changed = true; st.good = 0; }
+  return st;
+}
+
+// Minimum gap before ICE restart number `count` (0-based) of one call: the
+// first at once, then 2s, 4s, 8s, 8s... ICE_RESTART_MAX bounds the total; the
+// 30s reconnect window moves on regardless.
+const ICE_RESTART_MAX = 6;
+function iceRestartDelay(count) {
+  return count <= 0 ? 0 : Math.min(2000 * 2 ** (count - 1), 8000);
+}
+// </sdp-tune>
+
 // Static fallback used until (and if) the server's /ice-servers responds.
 // STUN only: public "free TURN" endpoints are unreliable and the ones that used
 // to sit here no longer exist, so relying on them just produced silent calls.
@@ -584,6 +662,11 @@ const ICE_CONFIG_MAX_AGE_MS = 45 * 60 * 1000; // comfortably inside the 1h crede
 // A hung request must not block the call forever - startCall() awaits this.
 const ICE_FETCH_TIMEOUT_MS = 6000;
 let iceConfigFetchedAt = 0;
+// When the TURN credentials in the current list stop working, if the server
+// said (`expiresAt`). Managed providers' credentials are shared and refreshed
+// server-side ten minutes before they expire, so a list fetched late in that
+// cycle can have far less than the 45 minutes assumed above.
+let iceConfigExpiresAt = 0;
 
 // The RTCPeerConnection constructor validates every ICE entry and throws
 // *synchronously* if one is malformed - a turn: URL with no username/credential
@@ -617,6 +700,7 @@ function applyIceConfig(data) {
   if (clean && clean.length) {
     ICE_SERVERS = clean;
     iceConfigFetchedAt = Date.now();
+    iceConfigExpiresAt = Number(data.expiresAt) > 0 ? Number(data.expiresAt) : 0;
   }
   // A failed fetch keeps the last policy.
   if (!data) return;
@@ -640,9 +724,10 @@ let iceConfigReady = fetchIceConfig();
 // Called just before a call is set up. Cheap no-op while the cached config is
 // still fresh; a refetch once its credentials are near expiry.
 function refreshIceConfigIfStale() {
-  if (iceConfigFetchedAt && Date.now() - iceConfigFetchedAt < ICE_CONFIG_MAX_AGE_MS) {
-    return iceConfigReady;
-  }
+  const fresh = iceConfigFetchedAt && Date.now() - iceConfigFetchedAt < ICE_CONFIG_MAX_AGE_MS
+    // A call can last a while on the same credentials: keep ten minutes in hand.
+    && (!iceConfigExpiresAt || iceConfigExpiresAt - Date.now() > 10 * 60 * 1000);
+  if (fresh) return iceConfigReady;
   iceConfigReady = fetchIceConfig();
   return iceConfigReady;
 }
@@ -7447,6 +7532,9 @@ function setQualityLevel(level) {
 // round-trip time, loss, jitter, how much of the call was "poor", and whether
 // the audio went through the TURN relay. Sent once when the call ends.
 let qualitySummary = null;
+// Adaptive send bitrate (nextAudioBitrate): stepped down while the other side
+// reports sustained loss or delay on our audio, restored once it recovers.
+let audioBitrateState = { bitrate: OPUS_MAX_AVG_BITRATE, bad: 0, good: 0 };
 
 function reportCallQuality() {
   const q = qualitySummary;
@@ -7465,6 +7553,7 @@ function reportCallQuality() {
 function startQualityMonitor() {
   stopQualityMonitor();
   qualitySummary = { samples: 0, rtt: 0, rttN: 0, jit: 0, jitN: 0, lost: 0, recv: 0, poor: 0, relay: false };
+  audioBitrateState = { bitrate: OPUS_MAX_AVG_BITRATE, bad: 0, good: 0 };
   qualityIndicator.classList.remove('hidden');
   setQualityLevel(3);
   qualityInterval = setInterval(async () => {
@@ -7476,7 +7565,14 @@ function startQualityMonitor() {
       let received = 0;
       let jitter = null;
       let localCandidate = null;
+      // How OUR audio is arriving, as the other side reports it (RTCP).
+      let sentLoss = null;
+      let sentRtt = null;
       stats.forEach((r) => {
+        if (r.type === 'remote-inbound-rtp' && r.kind === 'audio') {
+          if (r.fractionLost != null) sentLoss = r.fractionLost;
+          if (r.roundTripTime != null) sentRtt = r.roundTripTime;
+        }
         if (r.type === 'candidate-pair' && r.state === 'succeeded' && r.currentRoundTripTime != null) {
           rtt = r.currentRoundTripTime;
           localCandidate = r.localCandidateId;
@@ -7504,6 +7600,15 @@ function startQualityMonitor() {
         if (relayed) qs.relay = true;
       }
       lastQualityStats = { lost, received };
+
+      // Fall back to what we receive when the browser has no RTCP report yet:
+      // on a phone link the two directions usually suffer together.
+      const peer = pc;
+      audioBitrateState = nextAudioBitrate(audioBitrateState, {
+        loss: sentLoss != null ? sentLoss : lossRate,
+        rttMs: (sentRtt != null ? sentRtt : rtt) != null ? (sentRtt != null ? sentRtt : rtt) * 1000 : null,
+      });
+      if (audioBitrateState.changed) applyAudioSendParams(peer, audioBitrateState.bitrate);
 
       let level = 4;
       if (rtt != null) {
@@ -7910,24 +8015,47 @@ function startReconnectWindow() {
   }, RECONNECT_WINDOW_MS);
 }
 
-// ICE restart, throttled so it can retry (every 5s) without spamming offers.
-// Both peers may call this; offer glare is resolved politely in handleSignal.
+// ICE restart with backoff (iceRestartDelay: at once, then 2s, 4s, 8s...) and a
+// bound (ICE_RESTART_MAX per call). It used to be a flat 5s throttle with no
+// retry of its own: a restart whose offer was lost left ICE in 'failed', no
+// further state change ever fired, and the call sat silent until the 30s
+// window gave up. Now each restart schedules the next one in case it does not
+// work. Both peers may call this; offer glare is resolved politely in
+// handleSignal.
 let lastIceRestartAt = 0;
+let iceRestartCount = 0;
+let iceRestartRetry = null;
+function iceIsUp(peer) {
+  return peer.iceConnectionState === 'connected' || peer.iceConnectionState === 'completed';
+}
 function attemptIceRestart(peer) {
+  if (!peer || pc !== peer || iceRestartCount >= ICE_RESTART_MAX) return;
   const now = Date.now();
-  if (now - lastIceRestartAt < 5000) return;
+  if (now - lastIceRestartAt < Math.max(2000, iceRestartDelay(iceRestartCount))) return;
   lastIceRestartAt = now;
+  iceRestartCount += 1;
+  clearTimeout(iceRestartRetry);
+  iceRestartRetry = setTimeout(() => {
+    if (pc === peer && !iceIsUp(peer)) attemptIceRestart(peer);
+  }, iceRestartDelay(iceRestartCount) + 500);
   peer.createOffer({ iceRestart: true })
-    .then((offer) => peer.setLocalDescription(offer))
-    .then(() => socket.emit('signal', { type: 'offer', sdp: peer.localDescription }))
-    .catch(() => { /* the reconnect window will auto-advance if this fails */ });
+    .then((offer) => (pc === peer ? setTunedLocalDescription(peer, offer) : null))
+    .then((desc) => { if (desc && pc === peer) socket.emit('signal', { type: 'offer', sdp: desc }); })
+    .catch(() => { /* the retry above, or the reconnect window, takes it from here */ });
 }
 // Back online (Wi-Fi to mobile data, a lift, a tunnel): retry a dropped call at
 // once rather than waiting out the throttle, while the recovery window is open.
-function retryDroppedCallNow() {
+// A change of network type while the call still looks connected usually means
+// the path in use is about to die (Wi-Fi gone, now on mobile data), so the
+// caller re-gathers right away while signalling still works, instead of after
+// ICE notices seconds later. Only one side does that unprompted (glare would
+// be resolved anyway, but there is no need for two offers).
+function retryDroppedCallNow(e) {
   if (!pc || callState === 'idle' || callState === 'searching') return;
   const s = pc.iceConnectionState;
-  if (s !== 'disconnected' && s !== 'failed') return;
+  const broken = s === 'disconnected' || s === 'failed';
+  const switched = !!e && e.type === 'change' && mediaConnected && amCallInitiator;
+  if (!broken && !switched) return;
   lastIceRestartAt = 0;
   attemptIceRestart(pc);
 }
@@ -8141,6 +8269,47 @@ function watchMediaFlow(peer) {
   }, 500);
 }
 
+// One audio m-line, so everything rides one transport: 'max-bundle' and
+// 'require' skip gathering for (and checking) a second RTCP or media
+// transport that will never be used. A pool of one starts gathering when the
+// peer is built rather than when the offer is set, which on a TURN-heavy
+// network is the slowest step of connecting.
+const PEER_TRANSPORT = { bundlePolicy: 'max-bundle', rtcpMuxPolicy: 'require', iceCandidatePoolSize: 1 };
+
+// Our description with Opus tuned (tuneOpusSdp). A browser that refuses the
+// edited SDP gets its own back, unedited: a default-quality call beats none.
+async function setTunedLocalDescription(peer, desc) {
+  const tuned = { type: desc.type, sdp: tuneOpusSdp(desc.sdp) };
+  try {
+    await peer.setLocalDescription(tuned);
+    return tuned;
+  } catch (e) {
+    await peer.setLocalDescription(desc);
+    return desc;
+  }
+}
+
+// Cap what we send (and mark it as the most important traffic on the device)
+// whatever the other side's SDP asked for. Encodings only exist once
+// negotiation has run, so this is applied when ICE connects and again on every
+// adaptive step.
+function applyAudioSendParams(peer, maxBitrate) {
+  if (!peer || !peer.getSenders) return;
+  peer.getSenders().forEach((sender) => {
+    if (!sender.track || sender.track.kind !== 'audio' || !sender.getParameters) return;
+    try {
+      const p = sender.getParameters();
+      if (!p.encodings || !p.encodings.length) return;
+      p.encodings.forEach((enc) => {
+        enc.maxBitrate = maxBitrate;
+        enc.priority = 'high';
+        enc.networkPriority = 'high';
+      });
+      sender.setParameters(p).catch(() => { /* older browsers: the SDP cap still applies */ });
+    } catch (_) { /* never break a call over a bitrate */ }
+  });
+}
+
 function createPeerConnection(isInitiator) {
   // ICE_TRANSPORT_POLICY is 'relay' only when the server published a real TURN
   // relay (relay-only hides both peers' IPs); otherwise 'all', so host/STUN
@@ -8153,18 +8322,16 @@ function createPeerConnection(isInitiator) {
   // Fail closed: never expose IPs when relay-only.
   if (ICE_TRANSPORT_POLICY === 'relay' && !iceListHasRelay(ICE_SERVERS)) throw new Error('no relay');
   try {
-    peer = new RTCPeerConnection({
+    peer = new RTCPeerConnection(Object.assign({
       iceServers: ICE_SERVERS,
       iceTransportPolicy: ICE_TRANSPORT_POLICY,
-      iceCandidatePoolSize: 0,
-    });
+    }, PEER_TRANSPORT));
   } catch (e) {
     if (ICE_TRANSPORT_POLICY === 'relay') throw e;
-    peer = new RTCPeerConnection({
+    peer = new RTCPeerConnection(Object.assign({
       iceServers: [{ urls: FALLBACK_STUN_URLS.slice() }],
       iceTransportPolicy: 'all',
-      iceCandidatePoolSize: 0,
-    });
+    }, PEER_TRANSPORT));
   }
   // A brand-new peer has no remote description yet, so start a fresh candidate
   // buffer (see handleSignal). Never carry candidates across connections.
@@ -8220,6 +8387,8 @@ function createPeerConnection(isInitiator) {
   // one - so a brand-new call that stalled had to wait out the full watchdog
   // instead of re-gathering straight away.
   lastIceRestartAt = 0;
+  iceRestartCount = 0;
+  clearTimeout(iceRestartRetry);
   armConnectWatchdog();
 
   peer.oniceconnectionstatechange = () => {
@@ -8232,6 +8401,9 @@ function createPeerConnection(isInitiator) {
     if (iceState === 'connected' || iceState === 'completed') {
       clearReconnectDeadline();
       iceRestartAttempted = false;
+      iceRestartCount = 0;
+      clearTimeout(iceRestartRetry);
+      applyAudioSendParams(peer, audioBitrateState.bitrate);
       // A live transport is not yet a working call: keep the connect watchdog
       // armed until watchMediaFlow() sees audio actually arriving. Restarting
       // the watcher also covers a recovery where ontrack never fires again.
@@ -8459,9 +8631,9 @@ async function startCall(initiator, generation) {
     const peer = pc;
     const offer = await peer.createOffer();
     if (stale() || pc !== peer) return;
-    await peer.setLocalDescription(offer);
+    const desc = await setTunedLocalDescription(peer, offer);
     if (stale() || pc !== peer) return;
-    socket.emit('signal', { type: 'offer', sdp: offer });
+    socket.emit('signal', { type: 'offer', sdp: desc });
   }
   await flushPendingSignals();
 }
@@ -8498,7 +8670,13 @@ async function flushPendingCandidates() {
   }
 }
 
+// The pairing this call belongs to ('matched' pairId). The server stamps every
+// relayed signal with it as `pid`; one from a call already left is dropped.
+// Either side missing (an older server) means no check, as before.
+let currentPairId = null;
+
 async function handleSignal(data) {
+  if (data && data.pid && currentPairId && data.pid !== currentPairId) return;
   if (!pc) {
     // Only buffer while a match is actually being set up (currentPartner is set
     // by 'matched' and cleared by teardownPeer), so a straggler from the last
@@ -8506,38 +8684,46 @@ async function handleSignal(data) {
     if (data && currentPartner && pendingSignals.length < 64) pendingSignals.push(data);
     return;
   }
+  // Held for the whole exchange: the awaits below can outlive this call (a
+  // skip, a new match), and reading the global `pc` after them answered the
+  // OLD partner's offer on the NEW call's connection.
+  const peer = pc;
+  const live = () => pc === peer;
   try {
     if (data.type === 'offer') {
       // Glare: an offer arrived while we have our own outstanding offer (both
       // sides fired an ICE restart). The impolite peer (call initiator) keeps
       // its own offer and ignores theirs; the polite peer rolls back and accepts.
-      if (pc.signalingState !== 'stable') {
+      if (peer.signalingState !== 'stable') {
         if (amCallInitiator) return;
         try {
           await Promise.all([
-            pc.setLocalDescription({ type: 'rollback' }),
-            pc.setRemoteDescription(new RTCSessionDescription(data.sdp)),
+            peer.setLocalDescription({ type: 'rollback' }),
+            peer.setRemoteDescription(new RTCSessionDescription(data.sdp)),
           ]);
         } catch (e) {
-          await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+          await peer.setRemoteDescription(new RTCSessionDescription(data.sdp));
         }
       } else {
-        await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+        await peer.setRemoteDescription(new RTCSessionDescription(data.sdp));
       }
+      if (!live()) return;
       await flushPendingCandidates();
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      socket.emit('signal', { type: 'answer', sdp: answer });
+      const answer = await peer.createAnswer();
+      if (!live()) return;
+      const desc = await setTunedLocalDescription(peer, answer);
+      if (!live()) return;
+      socket.emit('signal', { type: 'answer', sdp: desc });
     } else if (data.type === 'answer') {
       // Ignore a stray/duplicate answer that arrives when we're not expecting
       // one (e.g. after an ICE-restart glare) - applying it would throw.
-      if (pc.signalingState !== 'have-local-offer') return;
-      await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-      await flushPendingCandidates();
+      if (peer.signalingState !== 'have-local-offer') return;
+      await peer.setRemoteDescription(new RTCSessionDescription(data.sdp));
+      if (live()) await flushPendingCandidates();
     } else if (data.type === 'ice-candidate') {
       if (!data.candidate) return;
-      if (pc.remoteDescription && pc.remoteDescription.type) {
-        await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+      if (peer.remoteDescription && peer.remoteDescription.type) {
+        await peer.addIceCandidate(new RTCIceCandidate(data.candidate));
       } else {
         pendingCandidates.push(data.candidate);
       }
@@ -8556,6 +8742,8 @@ function teardownPeer() {
   // cannot finish building a peer after the call it belongs to is gone.
   callGeneration += 1;
   currentPartner = null;
+  currentPairId = null;
+  clearTimeout(iceRestartRetry);
   clearConnectWatchdog();
   clearReconnectDeadline();
   pendingCandidates = [];
@@ -10605,9 +10793,29 @@ function stopWideningCountdown() {
   clearInterval(wideningTimer);
   wideningTimer = null;
 }
+var widenSearchBtn = document.getElementById('widenSearchBtn');
 function hideKeepFilters() {
   stopWideningCountdown();
   if (keepFiltersBtn) keepFiltersBtn.classList.add('hidden');
+  if (widenSearchBtn) widenSearchBtn.classList.add('hidden');
+}
+// A Men/Women filter is a promise the server keeps: it is never dropped after
+// ten seconds the way country and language are. So the wait says who it is
+// holding out for, and offers to drop it for this search ('widen-search').
+// Returns whether it took over the sub line.
+function showGenderWait(info) {
+  const holding = !!(info && info.waitingFor === 'gender');
+  if (widenSearchBtn) widenSearchBtn.classList.toggle('hidden', !(holding && info.canWiden));
+  if (holding) setSubText(info.gender === 'male' ? 'subWaitingForMen' : 'subWaitingForWomen');
+  return holding;
+}
+if (widenSearchBtn) {
+  widenSearchBtn.addEventListener('click', () => {
+    widenSearchBtn.classList.add('hidden');
+    socket.emit('widen-search');
+    setStatusText('statusSearching');
+    setSubText('subHangTight');
+  });
 }
 function startWideningCountdown(seconds) {
   stopWideningCountdown();
@@ -10629,7 +10837,8 @@ if (keepFiltersBtn) {
   });
 }
 
-socket.on('waiting', ({ estimatedSeconds, predicted, fallbackInSeconds, keepingFilters } = {}) => {
+socket.on('waiting', (info = {}) => {
+  const { estimatedSeconds, predicted, fallbackInSeconds, keepingFilters } = info;
   markSearchAcked();
   setState('waiting');
   if (Date.now() < endedNoticeUntil) return;
@@ -10642,7 +10851,11 @@ socket.on('waiting', ({ estimatedSeconds, predicted, fallbackInSeconds, keepingF
     setStatusText('statusSearching');
   }
   hideKeepFilters();
-  if (typeof fallbackInSeconds === 'number' && fallbackInSeconds > 0) startWideningCountdown(fallbackInSeconds);
+  if (typeof fallbackInSeconds === 'number' && fallbackInSeconds > 0) {
+    startWideningCountdown(fallbackInSeconds);
+    // The countdown is about country and language; gender still holds.
+    if (widenSearchBtn) widenSearchBtn.classList.toggle('hidden', !(info.waitingFor === 'gender' && info.canWiden));
+  } else if (showGenderWait(info)) { /* the gender line says it */ }
   else if (keepingFilters) setSubText('subKeepingFilters');
   else if (estimatedSeconds) setSubText('subUsuallyMatches', { s: estimatedSeconds });
   else setSubText('subHangTight');
@@ -10652,7 +10865,10 @@ socket.on('waiting', ({ estimatedSeconds, predicted, fallbackInSeconds, keepingF
 // any random stranger instead of leaving the user stuck.
 // It used to blame "your chosen countries" whatever was set - including when
 // nothing was, or when it was the gender filter doing the narrowing.
-socket.on('random-fallback', () => {
+socket.on('random-fallback', (info) => {
+  // A server that keeps the gender filter also sends 'search-status', which
+  // says exactly what relaxed; "connecting you with anyone" would be untrue.
+  if (info && info.waitingFor) return;
   const f = appliedFilters;
   const filtered = (f.prefGender && f.prefGender !== 'any' && isPremiumUser)
     || (f.includeCountries || []).length || (f.excludeCountries || []).length;
@@ -10660,6 +10876,17 @@ socket.on('random-fallback', () => {
   setStatusText('statusConnectingRandom');
   setSubText(filtered ? 'subFiltersFallback' : 'subHangTight');
   if (keepFiltersBtn) keepFiltersBtn.classList.toggle('hidden', !(filtered || appliedFilters.prefLang));
+});
+
+// The fallback fired (or the search changed) and the gender filter is still
+// holding: country and language may have relaxed, gender has not.
+socket.on('search-status', (info = {}) => {
+  if (!isSearching || callState !== 'searching' || Date.now() < endedNoticeUntil) return;
+  stopWideningCountdown();
+  setStatusText('statusSearching');
+  if (!showGenderWait(info)) setSubText('subHangTight');
+  // "Keep my filters" can still take back a relaxed country or language.
+  if (keepFiltersBtn) keepFiltersBtn.classList.toggle('hidden', !(info.relaxed && info.relaxed.length));
 });
 
 // Google Ads conversion: a visitor actually connected to someone. Once per
@@ -10671,7 +10898,7 @@ function sendAdsConversion() {
   window.gtag('event', 'conversion', { send_to: 'AW-18500257801/LPruCP3u4ZQdEImQzvVE' });
 }
 
-socket.on('matched', async ({ initiator, partner, rematched, callback, samePersonality, sameFilms, filtered, voice }) => {
+socket.on('matched', async ({ initiator, partner, rematched, callback, samePersonality, sameFilms, filtered, voice, pairId }) => {
   markSearchAcked();
   // The server picks which calls to listen to for Voice check, and says when
   // this person's own gender filter chose the partner.
@@ -10691,6 +10918,7 @@ socket.on('matched', async ({ initiator, partner, rematched, callback, samePerso
   if (pc) teardownPeer();
   // Ending the old call (just above) clears this, so it is set again here.
   voiceWantedThisCall = !!voice;
+  currentPairId = typeof pairId === 'string' ? pairId : null;
   if (typeof friendsDropdown !== 'undefined') closeSidePanel(friendsDropdown, friendsOverlay);
   if (callback && historyPanel.classList.contains('open')) closeHistoryPanel();
   enterCallUI();
@@ -11285,6 +11513,18 @@ socket.on('call-back-declined', ({ username }) => {
 
 socket.on('signal', (data) => {
   handleSignal(data);
+});
+
+// Our socket dropped mid-call and came back within the server's grace window:
+// the pairing is ours again, on the new socket. The media may never have
+// noticed; if it did, re-gather now that signalling works again.
+socket.on('call-resumed', ({ pairId } = {}) => {
+  if (typeof pairId === 'string') currentPairId = pairId;
+  if (pc && !iceIsUp(pc)) { lastIceRestartAt = 0; attemptIceRestart(pc); }
+});
+// The other side's socket dropped and came back: same, from this end.
+socket.on('partner-resumed', () => {
+  if (pc && !iceIsUp(pc) && amCallInitiator) { lastIceRestartAt = 0; attemptIceRestart(pc); }
 });
 
 // A warning from the owner about this person's behaviour. The notice script

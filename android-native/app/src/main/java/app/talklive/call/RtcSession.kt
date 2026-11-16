@@ -24,6 +24,9 @@ data class LinkStats(
     val jitterMs: Int? = null,
     /** True when audio goes through a TURN relay rather than directly. */
     val relay: Boolean = false,
+    /** How OUR audio arrives at the other side, from their RTCP reports: loss 0..1 and round trip. */
+    val sentLoss: Float? = null,
+    val sentRttMs: Int? = null,
 )
 
 /** One audio-only peer connection to one stranger. */
@@ -67,6 +70,9 @@ class RtcSession(
                 continualGatheringPolicy = PeerConnection.ContinualGatheringPolicy.GATHER_CONTINUALLY
                 bundlePolicy = PeerConnection.BundlePolicy.MAXBUNDLE
                 rtcpMuxPolicy = PeerConnection.RtcpMuxPolicy.REQUIRE
+                // Start gathering when the peer is built rather than when the
+                // offer is set: on a TURN-heavy network that is the slowest step.
+                iceCandidatePoolSize = 1
             },
             object : PeerConnection.Observer {
                 override fun onIceCandidate(c: IceCandidate) = listener.onLocalCandidate(c)
@@ -109,10 +115,35 @@ class RtcSession(
         localTrack.setEnabled(!muted)
     }
 
-    suspend fun createOffer(): SessionDescription {
-        val offer = sdp { pc.createOffer(it, audioConstraints()) }
-        set { pc.setLocalDescription(it, offer) }
-        return offer
+    suspend fun createOffer(): SessionDescription = setTunedLocal(sdp { pc.createOffer(it, audioConstraints()) })
+
+    /** A fresh offer with new ICE credentials, to recover a broken media path. */
+    suspend fun createRestartOffer(): SessionDescription {
+        pc.restartIce()
+        return setTunedLocal(sdp { pc.createOffer(it, audioConstraints(iceRestart = true)) })
+    }
+
+    /** Our description with Opus tuned (SdpTune); if WebRTC refuses the edit, its own one unedited. */
+    private suspend fun setTunedLocal(d: SessionDescription): SessionDescription {
+        val tuned = SessionDescription(d.type, SdpTune.tuneOpus(d.description))
+        return runCatching { set { pc.setLocalDescription(it, tuned) }; tuned }
+            .getOrElse { set { pc.setLocalDescription(it, d) }; d }
+    }
+
+    /**
+     * Cap what we send for speech and mark it as the most important traffic on
+     * the device, whatever the other side's SDP asked for. Encodings exist only
+     * after negotiation, so this is applied on connect and on each adaptive step.
+     */
+    fun setSendBitrate(bps: Int) = runCatching {
+        val s = sender ?: return@runCatching
+        val params = s.parameters
+        if (params.encodings.isEmpty()) return@runCatching
+        params.encodings.forEach { e ->
+            e.maxBitrateBps = bps
+            e.networkPriority = org.webrtc.Priority.HIGH
+        }
+        s.parameters = params
     }
 
     suspend fun acceptOffer(offer: SessionDescription): SessionDescription {
@@ -121,9 +152,7 @@ class RtcSession(
         }
         set { pc.setRemoteDescription(it, offer) }
         flushRemoteCandidates()
-        val answer = sdp { pc.createAnswer(it, audioConstraints()) }
-        set { pc.setLocalDescription(it, answer) }
-        return answer
+        return setTunedLocal(sdp { pc.createAnswer(it, audioConstraints()) })
     }
 
     suspend fun acceptAnswer(answer: SessionDescription) {
@@ -144,9 +173,15 @@ class RtcSession(
             var received = 0L
             var jitter: Int? = null
             var localId: String? = null
+            var sentLoss: Float? = null
+            var sentRtt: Int? = null
             for (st in report.statsMap.values) {
                 val m = st.members
                 when (st.type) {
+                    "remote-inbound-rtp" -> if (m["kind"] == "audio") {
+                        (m["fractionLost"] as? Number)?.let { sentLoss = it.toFloat() }
+                        (m["roundTripTime"] as? Number)?.let { sentRtt = (it.toDouble() * 1000).toInt() }
+                    }
                     "inbound-rtp" -> if (m["kind"] == "audio") {
                         (m["audioLevel"] as? Number)?.let { level = it.toFloat() }
                         (m["packetsLost"] as? Number)?.let { lost = it.toLong() }
@@ -160,7 +195,7 @@ class RtcSession(
                 }
             }
             val relay = localId?.let { report.statsMap[it]?.members?.get("candidateType") == "relay" } ?: false
-            if (cont.isActive) cont.resume(LinkStats(level, rtt, lost, received, jitter, relay))
+            if (cont.isActive) cont.resume(LinkStats(level, rtt, lost, received, jitter, relay, sentLoss, sentRtt))
         }
     }
 
@@ -177,9 +212,10 @@ class RtcSession(
         pendingRemote.clear()
     }
 
-    private fun audioConstraints() = MediaConstraints().apply {
+    private fun audioConstraints(iceRestart: Boolean = false) = MediaConstraints().apply {
         mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveAudio", "true"))
         mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveVideo", "false"))
+        if (iceRestart) mandatory.add(MediaConstraints.KeyValuePair("IceRestart", "true"))
     }
 
     private suspend fun sdp(block: (SdpObserver) -> Unit): SessionDescription =

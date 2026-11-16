@@ -31,6 +31,7 @@ const store = require('./store');
 const reputation = require('./reputation');
 const voiceCheck = require('./voice-check');
 const matchModel = require('./match-model');
+const matchQueue = require('./match-queue');
 const { TrackedMap } = require('./doc-json');
 const modTags = require('./moderation-tags');
 const { createAutomod } = require('./automod');
@@ -238,6 +239,22 @@ app.get(['/healthz', '/ping'], (req, res) => {
   }
   res.type('text/plain').send('ok');
 });
+
+// Queue/partner invariants (match-queue.js checkInvariants), for the churn
+// tests. Only exists when MATCH_INVARIANTS=1 and never in production: it
+// exposes socket ids.
+if (process.env.MATCH_INVARIANTS === '1' && process.env.NODE_ENV !== 'production') {
+  app.get('/__match-invariants', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const alive = (id) => !!io.sockets.sockets.get(id) || parkedSockets.has(id);
+    res.json({
+      problems: matchQueue.checkInvariants({ queue: waitingQueue, partners, alive }),
+      queued: waitingQueue.length,
+      paired: partners.size,
+      parked: parkedPairings.size,
+    });
+  });
+}
 
 const PORT = process.env.PORT || 5000;
 // Canonical origin used for host/protocol normalization. Override via env.
@@ -1190,6 +1207,13 @@ function hasRelay(servers) {
 // then. A deployment with no relay works fine for the developer testing it at
 // home and fails for a large share of real users - the gap this warning closes.
 function warnIfNoRelay() {
+  // UDP-only relays do nothing for the networks that need a relay most: many
+  // corporate, school and hotel firewalls pass only TCP 443. Managed providers
+  // already hand out turn:...?transport=tcp and turns: on 443.
+  const selfHosted = (process.env.TURN_URLS || '').split(',').map((u) => u.trim()).filter(Boolean);
+  if (selfHosted.length && !selfHosted.some((u) => /^turns:|transport=tcp/i.test(u))) {
+    console.warn('[turn] TURN_URLS has no TCP/TLS entry (e.g. turns:host:443?transport=tcp); locked-down networks that only pass TCP 443 cannot reach the relay. See DEPLOY-TURN.md.');
+  }
   if (hasRelay(buildIceServers()) || managedTurnConfigured()) {
     getManagedTurnServers().then((servers) => {
       if (managedTurnConfigured() && !servers.length) {
@@ -1207,6 +1231,12 @@ function warnIfNoRelay() {
 app.get('/ice-servers', httpRateLimit('ice', 120, 60000), async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const iceServers = buildIceServers();
+  // When the soonest TURN credential in this answer stops working, so a client
+  // knows how long it may cache the list (older clients ignore it). Shared-secret
+  // credentials are minted for an hour; managed ones are shared server-side and
+  // may already be most of the way through theirs.
+  const expiries = [];
+  if ((process.env.TURN_URLS || '').trim() && process.env.TURN_SHARED_SECRET) expiries.push(Date.now() + 3600 * 1000);
   // A provider outage must degrade to STUN + any static TURN, never to an error
   // page: the browser treats a failed fetch as "keep the bare STUN fallback".
   let managed = [];
@@ -1216,9 +1246,12 @@ app.get('/ice-servers', httpRateLimit('ice', 120, 60000), async (req, res) => {
     console.warn('[turn] managed TURN lookup failed:', err.message);
   }
   const all = iceServers.concat(managed);
+  if (managed.length && providerCache && providerCache.expiresAt) expiries.push(providerCache.expiresAt);
   // Relay-only is only ever safe to ask for when a relay actually exists.
   const relayOnly = process.env.TURN_FORCE_RELAY === '1' && hasRelay(all);
-  res.json({ iceServers: all, iceTransportPolicy: relayOnly ? 'relay' : 'all' });
+  const out = { iceServers: all, iceTransportPolicy: relayOnly ? 'relay' : 'all' };
+  if (expiries.length) out.expiresAt = Math.min(...expiries);
+  res.json(out);
 });
 
 // sendFile bypasses the static middleware, so page shells served this way need
@@ -2196,11 +2229,30 @@ const VOICE_INVITE_TTL_MS = 2 * 60 * 1000; // plenty for two page loads; then it
 // How long after a skip "Undo skip" can still bring that person back.
 const UNDO_SKIP_MS = 15000;
 
-// If a search takes longer than this, we drop ALL matching filters for the
-// current search (gender + country preferences, everything except blocks) and
-// auto-match with any random stranger so nobody waits forever.
+// If a search takes longer than this, the searcher's own preferences give way
+// for the rest of this search: "Speaks" and "Preferred countries" are dropped
+// so nobody waits forever for a language or a country.
+//
+// The Men/Women filter is not: it is something Plus members pay for, and
+// quietly handing them whoever was around after ten seconds broke the promise.
+// They keep waiting for the gender they asked for, are told so ('waiting' and
+// 'search-status' carry waitingFor: 'gender'), and can drop it for this one
+// search with 'widen-search' ("Match with anyone"). Avoided countries, blocks,
+// mode and failed-pair holds are hard gates and never relax.
 const RANDOM_FALLBACK_MS = 10000;
 const waitFallbackTimers = new Map(); // socketId -> Timeout
+
+// Per-socket search and call state on a profile, as opposed to who the person
+// is and what they filter for: kept when the same socket registers again.
+const SESSION_FIELDS = [
+  'mode', 'queuedAt', 'searchSince', 'randomFallbackActive', 'widened', 'matchedAt', 'pairId',
+  'mx', 'mPos', 'lastSkipped', 'filterMatch', 'pendingRating', 'micMuted', 'voiceInviteFrom', 'lastVoiceInviteAt',
+];
+
+// Recent partners per person (ranking penalty, see match-queue.js) and the
+// real waits behind "Usually matches in about Ns".
+const recentPartners = matchQueue.createRecentPartners();
+const waitStats = matchQueue.createWaitStats();
 
 // clientId -> true when the user chose to hide their online status from their
 // added friends. Never affects the global online-user count.
@@ -4829,11 +4881,94 @@ function markMatchPositive(a, b) {
   if (a && b && a.matchedAt && b.matchedAt) a.mPos = b.mPos = true;
 }
 
+// --- Riding out a brief drop --------------------------------------------------
+// A phone switching from Wi-Fi to mobile data, a lift, a tunnel: the socket
+// drops and socket.io reconnects a second or two later on a NEW socket id. The
+// call's media is peer to peer and often never noticed - but the server ended
+// the pairing on the first disconnect, so the partner was told "connection
+// dropped" and hung up on a call that was still working.
+//
+// So a drop in the middle of a real call parks the pairing for
+// RESUME_GRACE_MS instead of ending it. If the same identity registers again
+// in that window (a valid identity token is required to register as anyone),
+// the new socket takes the old one's place in the pairing and both sides are
+// told ('call-resumed' / 'partner-resumed'; older clients ignore them and
+// simply keep their call). Otherwise the pairing ends exactly as it would have,
+// just later. Explicit leaves, skips and server kicks never park.
+const RESUME_GRACE_MS = 10000;
+// A pairing still in its first seconds is not worth holding the other person
+// for: they are on "Connecting..." and better off moving on.
+const RESUME_MIN_CALL_MS = 8000;
+const INVOLUNTARY_DROPS = new Set(['transport close', 'transport error', 'ping timeout']);
+const parkedPairings = new Map(); // clientId -> { oldId, partnerId, profile, timer }
+const parkedSockets = new Set(); // old socket ids whose pairing is parked
+// What a resumed socket takes over from the parked one.
+const RESUME_FIELDS = ['mode', 'matchedAt', 'pairId', 'mx', 'mPos', 'filterMatch', 'micMuted'];
+
+function parkPairing(socketId, profile) {
+  const partnerId = partners.get(socketId);
+  if (!profile || !partnerId || partners.get(partnerId) !== socketId) return false;
+  if (!profile.matchedAt || Date.now() - profile.matchedAt < RESUME_MIN_CALL_MS) return false;
+  if (!io.sockets.sockets.get(partnerId)) return false;
+  const earlier = parkedPairings.get(profile.clientId);
+  if (earlier) finishParked(profile.clientId, earlier);
+  const rec = { oldId: socketId, partnerId, profile };
+  rec.timer = setTimeout(() => finishParked(profile.clientId, rec), RESUME_GRACE_MS);
+  rec.timer.unref?.();
+  parkedPairings.set(profile.clientId, rec);
+  parkedSockets.add(socketId);
+  return true;
+}
+
+function unpark(clientId, rec) {
+  if (parkedPairings.get(clientId) !== rec) return false;
+  parkedPairings.delete(clientId);
+  parkedSockets.delete(rec.oldId);
+  clearTimeout(rec.timer);
+  return true;
+}
+
+// Nobody came back in time: end it the way the disconnect would have.
+function finishParked(clientId, rec) {
+  if (!unpark(clientId, rec)) return;
+  if (partners.get(rec.oldId) === rec.partnerId) disconnectPartner(rec.oldId, { dropped: true, selfProfile: rec.profile });
+}
+
+// The same identity registered again: hand the pairing to its new socket.
+function resumeParked(socket, clientId) {
+  const rec = parkedPairings.get(clientId);
+  if (!rec || !unpark(clientId, rec)) return false;
+  const me = profiles.get(socket.id);
+  const partnerSocket = io.sockets.sockets.get(rec.partnerId);
+  const partnerProfile = profiles.get(rec.partnerId);
+  const intact = partners.get(rec.oldId) === rec.partnerId && partners.get(rec.partnerId) === rec.oldId;
+  if (!me || !intact || !partnerSocket || !partnerProfile || partners.has(socket.id)) {
+    if (intact) disconnectPartner(rec.oldId, { dropped: true, selfProfile: rec.profile });
+    // The page may still be showing that call; say it is over rather than
+    // leave it on a dead connection until ICE gives up.
+    socket.emit('partner-left', { reason: 'left', username: partnerProfile ? partnerProfile.username : '' });
+    return false;
+  }
+  clearFromQueue(socket.id);
+  clearWaitFallbackTimer(socket.id);
+  partners.delete(rec.oldId);
+  partners.set(socket.id, rec.partnerId);
+  partners.set(rec.partnerId, socket.id);
+  // Games are keyed by socket; one in progress does not survive the switch.
+  gameTracker.onPairEnd(rec.oldId, rec.partnerId);
+  for (const k of RESUME_FIELDS) me[k] = rec.profile[k];
+  socket.emit('call-resumed', { mode: me.mode || 'talk', pairId: me.pairId, partner: publicProfile(partnerProfile) });
+  partnerSocket.emit('partner-resumed', { pairId: me.pairId });
+  store.recordFeature('call_resumed');
+  return true;
+}
+
 function disconnectPartner(socketId, opts = {}) {
   const partnerId = partners.get(socketId);
   if (!partnerId) return null;
   {
-    const me = profiles.get(socketId);
+    // `selfProfile`: a parked pairing ending after its socket is long gone.
+    const me = profiles.get(socketId) || opts.selfProfile;
     if (me && me.matchedAt && Date.now() - me.matchedAt < EARLY_END_MS) noteEarlyEnd(me.clientId);
     if (me && me.matchedAt) noteMatchEnd(socketId, me, Date.now() - me.matchedAt);
   }
@@ -4841,7 +4976,7 @@ function disconnectPartner(socketId, opts = {}) {
   partners.delete(partnerId);
   gameTracker.onPairEnd(socketId, partnerId);
 
-  const profile = profiles.get(socketId);
+  const profile = profiles.get(socketId) || opts.selfProfile;
   const partnerProfile = profiles.get(partnerId);
   const startedAt = (profile && profile.matchedAt) || (partnerProfile && partnerProfile.matchedAt) || 0;
   if (startedAt) {
@@ -5029,16 +5164,30 @@ function langAllowed(prefs, other) {
   return !prefs.prefLang || prefs.prefLang === other.lang;
 }
 
-// Everything one side asked for about the other, short of the hard gates.
-function prefsMet(a, b) {
-  return genderPrefMet(a, b) && countryAllowed(a, b.country) && langAllowed(a, b);
+// The preferences the random fallback relaxes: "Preferred countries" and
+// "Speaks". (Avoided countries are checked in hardGatesOk; gender too.)
+function softPrefsMet(a, b) {
+  return countryAllowed(a, b.country) && langAllowed(a, b);
 }
 
-// Any soft filter set, i.e. whether the random fallback would change anything.
+// Any filter set at all - what "Keep my filters" has to keep.
 function hasSoftFilters(p) {
-  return (p.prefGender && p.prefGender !== 'any')
-    || (p.includeCountries && p.includeCountries.length > 0)
-    || !!p.prefLang;
+  return hasGenderFilter(p) || hasRelaxableFilters(p);
+}
+
+// Filters the automatic fallback would actually drop. With none of these set,
+// the fallback changes nothing the person can see, so no countdown is shown
+// and old pages are not told "matching you with anyone".
+function hasRelaxableFilters(p) {
+  return (p.includeCountries && p.includeCountries.length > 0) || !!p.prefLang;
+}
+
+// A Men/Women filter this search is still holding to (not widened).
+function hasGenderFilter(p) {
+  return !!(p.prefGender && p.prefGender !== 'any');
+}
+function holdingGender(p) {
+  return hasGenderFilter(p) && !p.widened;
 }
 
 // --- Voice check -------------------------------------------------------------
@@ -5119,25 +5268,35 @@ function setVoiceConsent(profile, on) {
   saveVoiceRec(profile, next, before);
 }
 
+// The gates no fallback, mutual heart or "Undo skip" may open: the same
+// person, a block, the other pool, a pair whose media path already failed,
+// an avoided country on either side, and a gender filter on either side that
+// its owner has not widened for this search. Every way two people can be
+// put together goes through this.
+function hardGatesOk(a, b) {
+  // Never match a user with themselves (e.g. two tabs of the same browser).
+  if (a.clientId === b.clientId) return false;
+  if (isBlockedPair(a.clientId, b.clientId)) return false;
+  // Tap to Talk and Tap to Chat are separate pools: a voice caller must never
+  // land in a text chat and vice versa - that would put a mic-less chatter in
+  // a call.
+  if ((a.mode || 'talk') !== (b.mode || 'talk')) return false;
+  // A pair whose last call never connected: there is no filter to relax that
+  // would make that media path work, so handing them back to each other only
+  // costs both of them another failed connect.
+  if (pairOnCooldown(a.clientId, b.clientId, false)) return false;
+  // People who chose never to meet a country read a match from it as a bug.
+  if (countryAvoided(a, b.country) || countryAvoided(b, a.country)) return false;
+  // A gender filter is a promise to the person who set it (see
+  // RANDOM_FALLBACK_MS), so it holds on both sides until its owner widens.
+  if (holdingGender(a) && !genderPrefMet(a, b)) return false;
+  if (holdingGender(b) && !genderPrefMet(b, a)) return false;
+  return true;
+}
+
 // Returns true if candidate's profile satisfies seeker's filters, and vice versa.
 function mutuallyCompatible(seeker, candidate) {
-  // Never match a user with themselves (e.g. two tabs of the same browser).
-  if (seeker.clientId === candidate.clientId) return false;
-  if (isBlockedPair(seeker.clientId, candidate.clientId)) return false;
-
-  // Tap to Talk and Tap to Chat are separate pools: a voice caller must never
-  // land in a text chat and vice versa. Mode is a hard gate that survives the
-  // random fallback below - dropping it would put a mic-less chatter in a call.
-  if ((seeker.mode || 'talk') !== (candidate.mode || 'talk')) return false;
-
-  // A pair whose last call never connected is a hard gate, like a block: there
-  // is no filter to relax that would make that media path work, so handing them
-  // back to each other only costs both of them another failed connect.
-  if (pairOnCooldown(seeker.clientId, candidate.clientId, false)) return false;
-
-  // Avoided countries are a hard gate on both sides, fallback or not.
-  if (countryAvoided(seeker, candidate.country)) return false;
-  if (countryAvoided(candidate, seeker.country)) return false;
+  if (!hardGatesOk(seeker, candidate)) return false;
 
   // Just parted voluntarily - give them someone new first. Soft, so the random
   // fallback can still reunite them rather than leave anyone waiting on a
@@ -5145,11 +5304,11 @@ function mutuallyCompatible(seeker, candidate) {
   const relaxed = seeker.randomFallbackActive || candidate.randomFallbackActive;
   if (!relaxed && pairOnCooldown(seeker.clientId, candidate.clientId, true)) return false;
 
-  // After a long wait a side falls back to "anyone random": its own soft
-  // filters are dropped. The other side's still apply, so someone who chose
-  // to keep their filters is never handed a match outside them.
-  if (!seeker.randomFallbackActive && !prefsMet(seeker, candidate)) return false;
-  if (!candidate.randomFallbackActive && !prefsMet(candidate, seeker)) return false;
+  // After a long wait a side's country and language preferences give way. The
+  // other side's still apply, so someone who chose to keep their filters is
+  // never handed a match outside them.
+  if (!seeker.randomFallbackActive && !softPrefsMet(seeker, candidate)) return false;
+  if (!candidate.randomFallbackActive && !softPrefsMet(candidate, seeker)) return false;
   return true;
 }
 
@@ -5235,18 +5394,12 @@ function findBestMatch(socketId) {
     if (!candidate || !io.sockets.sockets.get(candidateId)) continue;
     if (churnHeld(candidate)) continue;
     if (quarantined(candidate, candidateId) !== seekerQuarantined) continue;
-    if (isBlockedPair(seeker.clientId, candidate.clientId)) continue;
-    // A mutual heart may override the preference filters, but never the two
-    // hard gates. Mode is one of them: this path used to skip it entirely, so a
-    // pair who hearted each other on a voice call and later queued for text
-    // chat (or the reverse) could be matched across pools - dropping a mic-less
-    // chatter into a call, which is precisely what mutuallyCompatible() calls
-    // out as something that must not happen. Self-matching (the same browser in
-    // two tabs) is the other.
-    if (candidate.clientId === seeker.clientId) continue;
-    if ((seeker.mode || 'talk') !== (candidate.mode || 'talk')) continue;
-    // A mutual heart cannot fix a media path that does not exist either.
-    if (pairOnCooldown(seeker.clientId, candidate.clientId, false)) continue;
+    // A mutual heart may override the soft preferences (the 60s hold, preferred
+    // countries, language), never the hard gates. This path used to check only
+    // blocks, mode and failed holds, so a mutual heart matched someone into a
+    // country they had chosen to avoid, or a Plus member filtering for women
+    // with a man they had hearted on an earlier search.
+    if (!hardGatesOk(seeker, candidate)) continue;
     const key = pairKey(seeker.clientId, candidate.clientId);
     const heartSet = hearts.get(key);
     if (heartSet && heartSet.has(seeker.clientId) && heartSet.has(candidate.clientId)) {
@@ -5279,7 +5432,13 @@ function findBestMatch(socketId) {
       adj = matchModel.rankAdjust(seekerTier, ct, md);
     }
 
-    const score = matchScore(seeker, candidate) + adj;
+    // Fair waiting and fewer repeats (see match-queue.js): the longer someone
+    // has been waiting the more they count, and someone met recently counts
+    // less. Both only reorder people who already passed every filter.
+    const since = candidate.searchSince || candidate.queuedAt || now;
+    const fair = matchQueue.waitAging(now - since) - recentPartners.penalty(seeker.clientId, candidate.clientId, now);
+
+    const score = matchScore(seeker, candidate) + adj + fair;
     if (score > bestScore) {
       bestScore = score;
       bestIdx = i;
@@ -5288,23 +5447,78 @@ function findBestMatch(socketId) {
   return bestIdx;
 }
 
+// What the search is holding out for, for the client to say so: a gender
+// filter is never dropped automatically, so "Looking for women..." and a
+// "Match with anyone" button ('widen-search') replace the old promise that
+// everyone would be matched with anyone after ten seconds.
+function searchStatus(p) {
+  const g = !!p && holdingGender(p);
+  return { waitingFor: g ? 'gender' : null, gender: g ? p.prefGender : null, canWiden: g };
+}
+
 // The fallback countdown is only worth showing when it would change anything:
-// soft filters set, not already relaxed, and not opted out with "keep waiting".
+// country or language filters set, not already relaxed, and not opted out with
+// "keep waiting".
 function waitingPayload(socketId) {
   const p = profiles.get(socketId);
-  const counting = p && !p.randomFallbackActive && !p.keepFilters && hasSoftFilters(p);
+  const counting = p && !p.randomFallbackActive && !p.keepFilters && hasRelaxableFilters(p);
   return {
-    estimatedSeconds: estimatedWaitSeconds(),
+    estimatedSeconds: estimatedWaitSeconds(p && p.mode),
     predicted: predictedMatch(socketId),
     fallbackInSeconds: counting && p.queuedAt
       ? Math.max(0, Math.ceil((RANDOM_FALLBACK_MS - (Date.now() - p.queuedAt)) / 1000)) : null,
     keepingFilters: !!(p && p.keepFilters && hasSoftFilters(p)),
+    ...searchStatus(p),
   };
 }
 
-function estimatedWaitSeconds() {
+// The median of what people in this pool really waited lately (see
+// match-queue.js), clamped to what the sentence can say. With too few recent
+// matches to go on - a quiet hour, a fresh deploy - the old guess from the
+// online count stands in.
+function estimatedWaitSeconds(mode) {
+  const real = waitStats.median(mode === 'chat' ? 'chat' : 'talk', Date.now());
+  if (real !== null) return Math.max(2, Math.min(120, Math.round(real)));
   const online = onlineCount() || 1;
   return Math.max(2, Math.min(20, Math.round(12 / Math.sqrt(online))));
+}
+
+// The search has waited RANDOM_FALLBACK_MS: relax its country and language
+// preferences (never gender, see RANDOM_FALLBACK_MS) and the 60s soft hold.
+// 'random-fallback' (all that older pages know) is sent only when a filter
+// they can see actually relaxed, so a page whose only filter is gender is
+// never told "matching you with anyone" while it is not; 'search-status' says
+// precisely what happened. Returns whether anything changed.
+function applyRandomFallback(socketId) {
+  const p = profiles.get(socketId);
+  if (!p || p.randomFallbackActive || p.keepFilters) return false;
+  clearWaitFallbackTimer(socketId);
+  p.randomFallbackActive = true;
+  const sock = io.sockets.sockets.get(socketId);
+  if (!sock) return true;
+  const relaxed = [];
+  if (p.includeCountries && p.includeCountries.length) relaxed.push('countries');
+  if (p.prefLang) relaxed.push('lang');
+  if (relaxed.length) sock.emit('random-fallback', { relaxed, ...searchStatus(p) });
+  if (relaxed.length || holdingGender(p)) sock.emit('search-status', { fallback: true, relaxed, ...searchStatus(p) });
+  return true;
+}
+
+// Re-run matching for a socket that is already waiting, without pulling it out
+// of the queue first: tryMatch() re-queues at the back and restarts the
+// fallback clock, which a waiter whose filters just changed must not pay for.
+function rematchInPlace(socketId) {
+  if (!waitingQueue.includes(socketId)) return;
+  if (findBestMatch(socketId) !== -1) return tryMatch(socketId);
+  const sock = io.sockets.sockets.get(socketId);
+  if (sock) sock.emit('waiting', waitingPayload(socketId));
+}
+
+// A short id per pairing, sent with 'matched' and stamped on every relayed
+// signal as `pid`, so a client can drop an offer or candidate that belongs to
+// a call it has already left (older clients ignore both fields).
+function newPairId() {
+  return crypto.randomBytes(6).toString('hex');
 }
 
 // Put two sockets in a call. Both must be live and out of the queue already.
@@ -5325,20 +5539,27 @@ function pairSockets(socketId, partnerId, opts = {}) {
   seekerProfile.matchedAt = Date.now();
   partnerProfile.matchedAt = seekerProfile.matchedAt;
   // Time each side spent searching, for the dashboard's wait-time view.
+  const mode = seekerProfile.mode || 'talk';
+  const bots = quarantined(seekerProfile, socketId);
   for (const p of [seekerProfile, partnerProfile]) {
     const since = p.searchSince || p.queuedAt || 0;
     const waited = since ? Math.max(0, Math.round((p.matchedAt - since) / 1000)) : 0;
     store.recordWait(waited, audience.bucketOf(audience.WAIT_BUCKETS, waited));
+    // Only real searches feed the "usually matches in" estimate: an undo is
+    // not a wait, and quarantined scripts live in their own little pool.
+    if (since && !bots && !opts.undo) waitStats.add(mode, (p.matchedAt - since) / 1000, p.matchedAt);
     p.searchSince = 0;
   }
-
-  const mode = seekerProfile.mode || 'talk';
+  recentPartners.note(seekerProfile.clientId, partnerProfile.clientId, seekerProfile.matchedAt);
+  seekerProfile.pairId = partnerProfile.pairId = newPairId();
   // Whose gender filter chose whom, so only that person can say the filter
   // gave them the wrong match (see 'gender-feedback').
-  const filtered = (a, b) => voiceOn() && a.prefGender && a.prefGender !== 'any' && !a.randomFallbackActive && b.gender === a.prefGender;
+  const filtered = (a, b) => voiceOn() && holdingGender(a) && b.gender === a.prefGender;
   for (const [a, b] of [[seekerProfile, partnerProfile], [partnerProfile, seekerProfile]]) {
     a.filterMatch = filtered(a, b) ? { clientId: b.clientId, gender: b.gender, at: a.matchedAt } : null;
     a.micMuted = false;
+    // "Match with anyone" was for the search that just ended.
+    a.widened = false;
   }
   // Feature vector captured now, learned from when the match ends.
   seekerProfile.mPos = partnerProfile.mPos = false;
@@ -5364,8 +5585,8 @@ function pairSockets(socketId, partnerId, opts = {}) {
   };
   // `filtered`: this side's gender filter picked the partner, so its call
   // screen may offer "Not who I filtered for".
-  partnerSocket.emit('matched', { initiator: true, partner: publicProfile(seekerProfile), rematched, mode, samePersonality, sameFilms: sharedFilms(partnerProfile, seekerProfile), undo: opts.undo ? 'them' : undefined, filtered: partnerProfile.filterMatch ? true : undefined, voice: wantsVoice(partnerProfile) });
-  seekerSocket.emit('matched', { initiator: false, partner: publicProfile(partnerProfile), rematched, mode, samePersonality, sameFilms: sharedFilms(seekerProfile, partnerProfile), undo: opts.undo ? 'me' : undefined, filtered: seekerProfile.filterMatch ? true : undefined, voice: wantsVoice(seekerProfile) });
+  partnerSocket.emit('matched', { initiator: true, partner: publicProfile(seekerProfile), rematched, mode, samePersonality, sameFilms: sharedFilms(partnerProfile, seekerProfile), undo: opts.undo ? 'them' : undefined, pairId: seekerProfile.pairId, filtered: partnerProfile.filterMatch ? true : undefined, voice: wantsVoice(partnerProfile) });
+  seekerSocket.emit('matched', { initiator: false, partner: publicProfile(partnerProfile), rematched, mode, samePersonality, sameFilms: sharedFilms(seekerProfile, partnerProfile), undo: opts.undo ? 'me' : undefined, pairId: seekerProfile.pairId, filtered: seekerProfile.filterMatch ? true : undefined, voice: wantsVoice(seekerProfile) });
 
   // Remember each other so either side can message back, call back, add or
   // report later. This used to happen for text matches only, which left every
@@ -5407,10 +5628,8 @@ function tryMatch(socketId) {
         waitFallbackTimers.delete(socketId);
         const p = profiles.get(socketId);
         if (!p || p.keepFilters || !waitingQueue.includes(socketId)) return;
-        p.randomFallbackActive = true;
-        const sock = io.sockets.sockets.get(socketId);
-        if (sock) sock.emit('random-fallback');
-        tryMatch(socketId);
+        applyRandomFallback(socketId);
+        rematchInPlace(socketId);
       }, RANDOM_FALLBACK_MS);
       waitFallbackTimers.set(socketId, timer);
     }
@@ -5428,19 +5647,18 @@ function tryMatch(socketId) {
 const QUEUE_SWEEP_MS = 3000;
 function sweepQueue() {
   pruneQueue();
-  // Premium waiters pick first (see PREMIUM_QUEUE_BONUS); otherwise queue order.
+  // Premium waiters pick first (see PREMIUM_QUEUE_BONUS); then whoever has
+  // been searching longest, so the pass itself is fair as well.
+  const since = (id) => { const p = profiles.get(id); return (p && (p.searchSince || p.queuedAt)) || Infinity; };
   const order = [...waitingQueue].sort((x, y) =>
-    (profiles.get(y)?.premium ? 1 : 0) - (profiles.get(x)?.premium ? 1 : 0));
+    ((profiles.get(y)?.premium ? 1 : 0) - (profiles.get(x)?.premium ? 1 : 0)) || (since(x) - since(y)));
   for (const socketId of order) {
     // Matched by an earlier iteration of this same pass.
     if (!waitingQueue.includes(socketId)) continue;
     const p = profiles.get(socketId);
     if (!p) continue;
     if (!p.randomFallbackActive && !p.keepFilters && p.queuedAt && Date.now() - p.queuedAt >= RANDOM_FALLBACK_MS) {
-      clearWaitFallbackTimer(socketId);
-      p.randomFallbackActive = true;
-      const sock = io.sockets.sockets.get(socketId);
-      if (sock) sock.emit('random-fallback');
+      applyRandomFallback(socketId);
     }
     if (findBestMatch(socketId) !== -1) tryMatch(socketId);
   }
@@ -6531,7 +6749,9 @@ io.on('connection', (socket) => {
 
       const stale = io.sockets.sockets.get(existingSocketId);
       if (stale) {
-        disconnectPartner(existingSocketId);
+        // The stale socket may be half of a call that is still flowing peer to
+        // peer: hand it to this socket below (resumeParked) instead of ending it.
+        if (!parkPairing(existingSocketId, profiles.get(existingSocketId))) disconnectPartner(existingSocketId);
         clearFromQueue(existingSocketId);
         clearWaitFallbackTimer(existingSocketId);
         profiles.delete(existingSocketId);
@@ -6632,6 +6852,17 @@ io.on('connection', (socket) => {
       // "Keep waiting" survives a re-register mid-search (saving filters).
       keepFilters: !!(prev && prev.keepFilters),
     });
+    // Re-registering the same socket (saving filters or a new avatar
+    // mid-search, the app's register() after any settings change) replaces the
+    // profile object, and the search and call state on it used to go with it:
+    // a text-chat searcher came back in the voice pool while still sitting in
+    // the queue, the fallback clock and wait time were lost, and a live call
+    // lost its start time. Carry the session state over; only the person's
+    // details and filters are new.
+    if (prev) {
+      const now = profiles.get(socket.id);
+      for (const k of SESSION_FIELDS) if (prev[k] !== undefined) now[k] = prev[k];
+    }
     clientSockets.set(clientId, socket.id);
     socket.emit('contact-consent', { on: store.hasContactConsent(clientId) });
     // Voice check is switched with 'voice-check-set'. Registration can only
@@ -6712,6 +6943,8 @@ io.on('connection', (socket) => {
     // mid-search when its socket dropped needs to know the new socket carries a
     // profile again before it re-enters the queue.
     socket.emit('register-result', { ok: true });
+    // Back within the grace window of a dropped call: carry on with it.
+    if (parkedPairings.has(clientId)) resumeParked(socket, clientId);
     refreshFriendSnapshots(clientId, profiles.get(socket.id));
     syncClientState(socket, clientId);
     deliverPendingTo(clientId);
@@ -6769,6 +7002,19 @@ io.on('connection', (socket) => {
   sendOnlineCountTo(socket);
   broadcastOnlineCount();
 
+  // Searches and skips cost a scan of the queue each. A token bucket per
+  // socket (match-queue.js: a burst of 20, then one a second) stops a script
+  // from spinning the matcher, while someone hammering Next never runs dry.
+  // Refused like any other search the server will not run, so every client
+  // already stops and says so instead of retrying into a loop.
+  const searchBucket = matchQueue.createTokenBucket({}, Date.now());
+  const searchAllowed = () => {
+    if (searchBucket.take(Date.now())) return true;
+    store.recordFeature('search_rate_limited');
+    socket.emit('search-refused', { reason: 'searchTooFast', retryIn: searchBucket.retryIn() });
+    return false;
+  };
+
   socket.on('find-partner', (opts = {}) => {
     const profile = profiles.get(socket.id);
     if (!profile) {
@@ -6805,6 +7051,8 @@ io.on('connection', (socket) => {
       return;
     }
 
+    if (!searchAllowed()) return;
+
     // Which pool this search joins: 'talk' (voice call) or 'chat' (text only).
     // Sticky on the profile so skip/auto-next re-searches stay in the same pool.
     profile.mode = mode;
@@ -6823,7 +7071,21 @@ io.on('connection', (socket) => {
     // A fresh, explicit search starts with the full set of filters again.
     profile.randomFallbackActive = false;
     profile.keepFilters = false;
+    profile.widened = false;
     tryMatch(socket.id);
+  });
+
+  // "Match with anyone": drop this person's own Men/Women filter for the
+  // current search only. Their country and language preferences, and every
+  // hard gate (avoided countries, blocks, the other side's own filters), are
+  // untouched. The next search starts with the gender filter again.
+  socket.on('widen-search', () => {
+    const profile = profiles.get(socket.id);
+    if (!profile || !waitingQueue.includes(socket.id) || !holdingGender(profile)) return;
+    if (!searchAllowed()) return;
+    profile.widened = true;
+    store.recordFeature('widen_search');
+    rematchInPlace(socket.id);
   });
 
   // "Keep my filters": stop (or undo) the random fallback for this search.
@@ -6866,9 +7128,11 @@ io.on('connection', (socket) => {
     const profile = profiles.get(socket.id);
     // For Premium "Undo skip": who was just skipped, and when.
     if (profile) profile.lastSkipped = !failed && skipped ? { clientId: skipped.clientId, at: Date.now() } : null;
-    if (profile) profile.randomFallbackActive = false;
+    if (profile) { profile.randomFallbackActive = false; profile.widened = false; }
     const refused = modeRefusal(socket, (profile && profile.mode) || 'talk');
     if (refused) return socket.emit('search-refused', { reason: refused });
+    // Ending the call above is always allowed; only the new search is limited.
+    if (!searchAllowed()) return;
     // Everyone skips straight to the next stranger. The free tier used to be
     // held back ~5s here, which cost far more than it earned: the client also
     // emits 'skip' for involuntary advances (a call whose media never arrived,
@@ -6889,9 +7153,13 @@ io.on('connection', (socket) => {
     if (!last || Date.now() - last.at > UNDO_SKIP_MS) return reply({ ok: false, reason: 'expired' });
     const otherId = clientSockets.get(last.clientId);
     const other = otherId ? profiles.get(otherId) : null;
+    // The person may have changed since the skip: blocked, filtered for a
+    // gender this one is not, avoiding this country. Undo used to check only
+    // blocks and mode, so it could pair two people their own filters ruled
+    // out. The other side's search must also still be one this fits.
     if (!other || !waitingQueue.includes(otherId) || partners.has(otherId)
-      || (other.mode || 'talk') !== (me.mode || 'talk')
-      || isBlockedPair(me.clientId, other.clientId)) {
+      || !hardGatesOk(me, other)
+      || quarantined(me, socket.id) !== quarantined(other, otherId)) {
       return reply({ ok: false, reason: 'busy' });
     }
     me.lastSkipped = null;
@@ -7335,6 +7603,10 @@ io.on('connection', (socket) => {
     } else {
       out = { type: data.type, sdp: { type: data.sdp.type, sdp: data.sdp.sdp } };
     }
+    // Which pairing this belongs to: socket.io keeps order per socket, but a
+    // client's async handling of an offer can outlive the call it was for.
+    const mine = profiles.get(socket.id);
+    if (mine && mine.pairId) out.pid = mine.pairId;
     io.to(partnerId).emit('signal', out);
   });
 
@@ -8761,9 +9033,10 @@ io.on('connection', (socket) => {
     // Call-backs are always voice calls, whatever pool either side was in.
     me.mode = 'talk';
     requesterProfile.mode = 'talk';
+    me.pairId = requesterProfile.pairId = newPairId();
     const samePersonality = sharedPersonality(me, requesterProfile);
-    requesterSocket.emit('matched', { initiator: true, partner: publicProfile(me), rematched: false, callback: true, mode: 'talk', samePersonality, sameFilms: sharedFilms(requesterProfile, me) });
-    socket.emit('matched', { initiator: false, partner: publicProfile(requesterProfile), rematched: false, callback: true, mode: 'talk', samePersonality, sameFilms: sharedFilms(me, requesterProfile) });
+    requesterSocket.emit('matched', { initiator: true, partner: publicProfile(me), rematched: false, callback: true, mode: 'talk', pairId: me.pairId, samePersonality, sameFilms: sharedFilms(requesterProfile, me) });
+    socket.emit('matched', { initiator: false, partner: publicProfile(requesterProfile), rematched: false, callback: true, mode: 'talk', pairId: me.pairId, samePersonality, sameFilms: sharedFilms(me, requesterProfile) });
     rememberPairing(socket, me, requesterSocket, requesterProfile);
   });
 
@@ -8871,16 +9144,21 @@ io.on('connection', (socket) => {
     otherProfile.matchedAt = me.matchedAt;
     me.mode = 'talk';
     otherProfile.mode = 'talk';
+    me.pairId = otherProfile.pairId = newPairId();
     const samePersonality = sharedPersonality(me, otherProfile);
-    otherSocket.emit('matched', { initiator: true, partner: publicProfile(me), rematched: false, callback: true, mode: 'talk', samePersonality, sameFilms: sharedFilms(otherProfile, me) });
-    socket.emit('matched', { initiator: false, partner: publicProfile(otherProfile), rematched: false, callback: true, mode: 'talk', samePersonality, sameFilms: sharedFilms(me, otherProfile) });
+    otherSocket.emit('matched', { initiator: true, partner: publicProfile(me), rematched: false, callback: true, mode: 'talk', pairId: me.pairId, samePersonality, sameFilms: sharedFilms(otherProfile, me) });
+    socket.emit('matched', { initiator: false, partner: publicProfile(otherProfile), rematched: false, callback: true, mode: 'talk', pairId: me.pairId, samePersonality, sameFilms: sharedFilms(me, otherProfile) });
     rememberPairing(socket, me, otherSocket, otherProfile);
   });
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', (reason) => {
     // The socket went away rather than the user pressing anything, so tell
-    // whoever they were talking to exactly that.
-    disconnectPartner(socket.id, { dropped: true });
+    // whoever they were talking to exactly that - unless it looks like a blip
+    // in a live call, which is held open for a moment (see parkPairing).
+    if (!parkedSockets.has(socket.id)
+      && !(INVOLUNTARY_DROPS.has(reason) && parkPairing(socket.id, profiles.get(socket.id)))) {
+      disconnectPartner(socket.id, { dropped: true });
+    }
     noteSearchAbandoned(socket.id);
     clearFromQueue(socket.id);
     clearWaitFallbackTimer(socket.id);
@@ -8966,6 +9244,7 @@ function sweepEphemeralState() {
   for (const [clientId, entry] of declaredGender) {
     if (now - (entry.at || 0) > 24 * 60 * 60 * 1000 && !clientSockets.has(clientId)) declaredGender.delete(clientId);
   }
+  recentPartners.sweep(now);
   // Pair holds carry their own expiry; this only reclaims the ones no matcher
   // pass happened to look at again.
   for (const [key, rec] of pairCooldowns) {
