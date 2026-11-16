@@ -2486,19 +2486,22 @@
   function renderSeenLabel() {
     var existing = friendChatMsgs.querySelector('.chat-seen-label');
     if (existing) existing.remove();
-    if (!messageSeenEnabled || !activeFriendChatId) return;
-    var seenTs = friendSeenTs[activeFriendChatId];
-    if (!seenTs) return;
+    if (!activeFriendChatId) return;
+    var seenTs = messageSeenEnabled ? friendSeenTs[activeFriendChatId] : 0;
     // Only while my message is the newest: after their reply the label would
     // sit under their bubble, and the reply already says it was read.
     var all = friendChatMsgs.querySelectorAll('.msg');
     var last = all[all.length - 1];
     if (!last || !last.classList.contains('me')) return;
     var sentAt = Number(last.dataset.ts || 0);
-    if (sentAt && sentAt > seenTs) return;
+    var seen = !!seenTs && !(sentAt && sentAt > seenTs);
+    // Below "Seen" there is "Delivered": the message is on their device.
+    var delivered = !seen && !!last.dataset.cxId && !!friendDelivered[last.dataset.cxId]
+      && !last.classList.contains('is-pending');
+    if (!seen && !delivered) return;
     var label = document.createElement('div');
     label.className = 'chat-seen-label';
-    label.textContent = t('seen');
+    label.textContent = t(seen ? 'seen' : 'delivered');
     friendChatMsgs.appendChild(label);
     friendChatMsgs.scrollTop = friendChatMsgs.scrollHeight;
   }
@@ -2813,6 +2816,26 @@
     renderHistory();
   });
 
+  // A chat opens on its newest messages and loads older ones as you scroll up,
+  // so a long conversation costs one small page to open, not the whole thread.
+  var FRIEND_PAGE = 40;
+  var friendMore = { hasMore: false, loading: false };
+  // Ids of my messages that reached the other person's device.
+  var friendDelivered = {};
+  function loadOlderFriendMessages() {
+    if (!activeFriendChatId || !friendMore.hasMore || friendMore.loading) return;
+    var first = friendChatMsgs.querySelector('.msg[data-cx-id][data-ts]');
+    if (!first) return;
+    friendMore.loading = true;
+    socket.emit('get-friend-chat', {
+      friendClientId: activeFriendChatId, limit: FRIEND_PAGE,
+      before: Number(first.dataset.ts), beforeId: first.dataset.cxId,
+    });
+  }
+  friendChatMsgs.addEventListener('scroll', function () {
+    if (friendChatMsgs.scrollTop < 80) loadOlderFriendMessages();
+  }, { passive: true });
+
   function openFriendChat(friend) {
     activeFriendChatId = friend.clientId;
     // Each conversation keeps its own unsent text: it used to stay in the box
@@ -2827,7 +2850,9 @@
     if (friendExtras) friendExtras.reset();
     closePanel(friendsPanel, friendsOverlay);
     openPanel(friendChatPanel, friendChatOverlay);
-    socket.emit('get-friend-chat', { friendClientId: friend.clientId });
+    friendMore = { hasMore: false, loading: false };
+    friendDelivered = {};
+    socket.emit('get-friend-chat', { friendClientId: friend.clientId, limit: FRIEND_PAGE });
     socket.emit('mark-messages-read', { friendClientId: friend.clientId });
     if (messageSeenEnabled) socket.emit('chat-seen', { friendClientId: friend.clientId });
     // Clear this friend's unread notifications locally so badges update now.
@@ -3234,11 +3259,35 @@
   socket.on('friend-chat-history', function (data) {
     if (!data || data.friendClientId !== activeFriendChatId) return;
     if (data.gate) { dmGateOverrides[data.friendClientId] = data.gate; applyFriendChatGate(); }
+    if (data.hasMore !== undefined) friendMore = { hasMore: !!data.hasMore, loading: false };
+    if (data.older) {
+      // An older page: build it above what is already on screen, and keep the
+      // reader where they were.
+      var kept = Array.prototype.slice.call(friendChatMsgs.childNodes);
+      var heightBefore = friendChatMsgs.scrollHeight;
+      var topBefore = friendChatMsgs.scrollTop;
+      friendChatMsgs.innerHTML = '';
+      (data.messages || []).forEach(function (m) {
+        appendFriendMsg(m.text, m.from === activeFriendChatId ? 'them' : 'me', m);
+        if (m.delivered || m.seen) friendDelivered[m.id] = true;
+      });
+      var days = friendChatMsgs.querySelectorAll('[data-day]');
+      var lastDay = days.length ? days[days.length - 1].dataset.day : null;
+      kept.forEach(function (node) {
+        // The page boundary can fall inside one day: one divider, not two.
+        if (lastDay && node.dataset && node.dataset.day === lastDay) { lastDay = null; return; }
+        friendChatMsgs.appendChild(node);
+      });
+      friendChatMsgs.scrollTop = topBefore + (friendChatMsgs.scrollHeight - heightBefore);
+      renderSeenLabel();
+      return;
+    }
     friendChatMsgs.innerHTML = '';
     if (friendExtras) friendExtras.reset();
     var stored = {};
     (data.messages || []).forEach(function (m) {
       stored[m.id] = true;
+      if (m.delivered || m.seen) friendDelivered[m.id] = true;
       appendFriendMsg(m.text, m.from === activeFriendChatId ? 'them' : 'me', m);
       if (m.seen && m.from !== activeFriendChatId) {
         friendSeenTs[activeFriendChatId] = Math.max(friendSeenTs[activeFriendChatId] || 0, m.ts || Date.now());
@@ -3265,10 +3314,16 @@
   function onScreen(id) {
     return !!(id && friendChatMsgs.querySelector('[data-cx-id="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]'));
   }
+  socket.on('friend-message-delivered', function (data) {
+    if (!data || !Array.isArray(data.ids)) return;
+    data.ids.forEach(function (id) { friendDelivered[id] = true; });
+    if (data.toClientId === activeFriendChatId) renderSeenLabel();
+  });
   socket.on('friend-message-sent', function (data) {
     if (!data) return;
+    if (data.delivered && data.id) friendDelivered[data.id] = true;
     settleFriendMessage(data.id);
-    if (data.toClientId === activeFriendChatId && onScreen(data.id)) return;
+    if (data.toClientId === activeFriendChatId && onScreen(data.id)) { renderSeenLabel(); return; }
     noteLastMessage(data.toClientId, { id: data.id, mine: true, text: data.text || '', gif: !!data.gif, ts: data.ts });
     if (data.toClientId === activeFriendChatId) appendFriendMsg(data.text, 'me', data);
     renderFriends();
@@ -3412,6 +3467,12 @@
     if (!res || res.ok !== false) {
       identityRetries = 0;
       if (document.visibilityState === 'hidden') reportVisibility();
+      // Whatever happened while the socket was down - new messages, an unsend,
+      // an edit, a receipt - is in the stored thread, not in this page. Fetch
+      // the open chat's newest page again so it catches up without a reopen.
+      if (activeFriendChatId && friendChatPanel.classList.contains('open')) {
+        socket.emit('get-friend-chat', { friendClientId: activeFriendChatId, limit: FRIEND_PAGE });
+      }
       // Re-registered after a drop: anything still unacknowledged goes again.
       Object.keys(friendOutbox).forEach(function (id) {
         friendOutbox[id].tries = 0;

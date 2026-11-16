@@ -78,6 +78,8 @@ class SocialViewModel @Inject constructor(
         repo.openChat = id
         if (id != null) repo.loadThread(id)
     }
+    val hasOlder = repo.hasOlder
+    fun loadOlder(id: String) = repo.loadOlder(id)
     fun send(to: String, text: String, replyTo: String?) = repo.send(to, text, replyTo)
     fun retry(to: String, id: String) = repo.retry(to, id)
     fun typing(to: String) = repo.typing(to)

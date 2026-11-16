@@ -7367,3 +7367,10 @@ html.perf-lite .side-panel { box-shadow: none; }
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3.4 20.4 21 12 3.4 3.6 3.3 10l12.6 2-12.6 2z'/%3E%3C/svg%3E") center / contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3.4 20.4 21 12 3.4 3.6 3.3 10l12.6 2-12.6 2z'/%3E%3C/svg%3E") center / contain no-repeat;
 }
+
+/* Direct messages: one tick = stored, two = on their device, accent = read. */
+.chat-msg-ticks.dm-ticks svg path:nth-child(2) { display: none; }
+.chat-msg-ticks.dm-ticks.delivered svg path:nth-child(2),
+.chat-msg-ticks.dm-ticks.seen svg path:nth-child(2) { display: inline; }
+.chat-msg-ticks.dm-ticks.delivered svg { fill: rgba(255,255,255,0.9); opacity: 1; }
+.chat-msg-ticks.dm-ticks.seen svg { fill: #7fe3ff; opacity: 1; }

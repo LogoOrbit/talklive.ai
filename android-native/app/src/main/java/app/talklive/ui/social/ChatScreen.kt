@@ -182,6 +182,17 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
         if (messages.isNotEmpty() && (listState.firstVisibleItemIndex <= 2 || messages.lastOrNull()?.mine == true)) listState.animateScrollToItem(0)
     }
 
+    // Scrolled up to the oldest message that is loaded: fetch the page before it.
+    // The list is reversed, so the oldest message is the last item, and a prepend
+    // leaves the reader where they were (items are keyed by message id).
+    val olderLeft by vm.hasOlder.collectAsStateWithLifecycle()
+    LaunchedEffect(clientId, olderLeft) {
+        androidx.compose.runtime.snapshotFlow {
+            val info = listState.layoutInfo
+            (info.visibleItemsInfo.lastOrNull()?.index ?: 0) >= info.totalItemsCount - 3
+        }.collect { atTop -> if (atTop && clientId in olderLeft) vm.loadOlder(clientId) }
+    }
+
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).imePadding()) {
         // Header.
         Surface(color = MaterialTheme.colorScheme.surface) {

@@ -121,6 +121,8 @@ class SocialRepository @Inject constructor(
             if (value != null) markRead(value)
         }
 
+    private companion object { const val PAGE = 40 }
+
     private val typingJobs = mutableMapOf<String, Job>()
     private var lastTypingSent = 0L
     private val random = SecureRandom()
@@ -129,7 +131,7 @@ class SocialRepository @Inject constructor(
         scope.launch {
             identity.switches.drop(1).collect {
                 _friends.value = emptyList(); _requests.value = emptyList(); _sent.value = emptySet()
-                _history.value = emptyList(); _unread.value = emptyMap(); _threads.value = emptyMap()
+                _history.value = emptyList(); _unread.value = emptyMap(); _threads.value = emptyMap(); _hasOlder.value = emptySet()
                 _typing.value = emptySet(); _myFriendId.value = null; _gates.value = emptyMap()
                 _voice.value = emptyMap(); _blocked.value = emptyList(); _activity.value = emptyList()
                 _muted.value = emptySet()
@@ -269,7 +271,16 @@ class SocialRepository @Inject constructor(
         // A friend call that connects arrives as a normal match.
         scope.launch { socket.events.collect { e -> if (e is ServerEvent.Matched) { _outgoing.value = null; _incoming.value = null } } }
         // Messages that were still sending when the connection dropped go again.
-        scope.launch { socket.events.collect { e -> if (e == ServerEvent.Registered) resendPending() } }
+        scope.launch {
+            socket.events.collect { e ->
+                if (e != ServerEvent.Registered) return@collect
+                resendPending()
+                // Whatever arrived, was unsent or was edited while the connection
+                // was down is in the stored thread: fetch the open chat's newest
+                // page again so it catches up without being reopened.
+                openChat?.let { loadThread(it) }
+            }
+        }
     }
 
     // --- Friends -----------------------------------------------------------
@@ -407,8 +418,28 @@ class SocialRepository @Inject constructor(
 
     // --- Messages ----------------------------------------------------------
 
+    /**
+     * A chat opens on its newest page; older messages are fetched as the reader
+     * scrolls up ([loadOlder]). A long conversation costs one small page to open.
+     */
     fun loadThread(clientId: String) {
-        socket.emit("get-friend-chat", JSONObject().put("friendClientId", clientId))
+        loadingOlder.remove(clientId)
+        socket.emit("get-friend-chat", JSONObject().put("friendClientId", clientId).put("limit", PAGE))
+    }
+
+    private val _hasOlder = MutableStateFlow<Set<String>>(emptySet())
+    /** Chats with messages older than what is loaded. */
+    val hasOlder: StateFlow<Set<String>> = _hasOlder
+    private val loadingOlder = mutableSetOf<String>()
+
+    fun loadOlder(clientId: String) {
+        if (clientId !in _hasOlder.value || !loadingOlder.add(clientId)) return
+        val first = _threads.value[clientId].orEmpty().firstOrNull { it.status != MsgStatus.Sending && it.status != MsgStatus.Failed }
+        if (first == null) { loadingOlder.remove(clientId); return }
+        socket.emit(
+            "get-friend-chat",
+            JSONObject().put("friendClientId", clientId).put("limit", PAGE).put("before", first.ts).put("beforeId", first.id),
+        )
     }
 
     fun send(toClientId: String, text: String, replyTo: String? = null) = scope.launch {
@@ -658,13 +689,31 @@ class SocialRepository @Inject constructor(
         o.optJSONObject("disappearing")?.let { d -> _disappearing.update { it + (id to Disappearing(d.optBoolean("on"), d.optBoolean("byMe"))) } }
         val arr = o.optJSONArray("messages") ?: JSONArray()
         val fromServer = (0 until arr.length()).mapNotNull { arr.optJSONObject(it)?.let { m -> ChatMessage.from(m, identity.clientId) } }
+        // Paging fields are absent from an older server, which sends the whole thread.
+        val paged = o.has("hasMore")
+        if (paged) {
+            _hasOlder.update { if (o.optBoolean("hasMore")) it + id else it - id }
+        }
+        loadingOlder.remove(id)
+        if (o.optBoolean("older")) {
+            // An older page goes in front of what is already loaded.
+            updateThread(id) { local -> fromServer.filter { m -> local.none { it.id == m.id } } + local }
+            return
+        }
         updateThread(id) { local ->
             // Keep messages still on their way; the server copy wins for the rest.
             val pending = local.filter { it.status == MsgStatus.Sending || it.status == MsgStatus.Failed }
                 .filter { p -> fromServer.none { it.id == p.id } }
             // A receipt already known never goes back to an older one.
             val known = local.associate { it.id to it.status }
-            fromServer.map { m -> known[m.id]?.takeIf { it.rank > m.status.rank }?.let { m.copy(status = it) } ?: m } + pending
+            // The newest page replaces what was loaded for that stretch of time
+            // (that is how an unsend or edit made while away reaches this phone);
+            // older pages already scrolled back to stay where they are.
+            val floor = fromServer.firstOrNull()?.ts
+            val older = if (paged && floor != null && _hasOlder.value.contains(id)) {
+                local.filter { it.ts < floor && it.status != MsgStatus.Sending && it.status != MsgStatus.Failed && fromServer.none { s -> s.id == it.id } }
+            } else emptyList()
+            older + fromServer.map { m -> known[m.id]?.takeIf { it.rank > m.status.rank }?.let { m.copy(status = it) } ?: m } + pending
         }
         _threads.value[id]?.lastOrNull()?.takeIf { it.mine && it.status.rank >= MsgStatus.Delivered.rank }
             ?.let { raiseReceipt(id, it.status, setOf(it.id)) }

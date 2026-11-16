@@ -323,6 +323,34 @@ class ServerE2ETest {
         check("a still has it") { a.social.threads.value[bId]?.any { it.text == "another" } == true }
     }
 
+    @Test fun long_chat_loads_newest_page_then_older_ones_and_shows_delivered() {
+        val a = Client("a"); val b = Client("b")
+        friends(a, b)
+        val aId = a.identity.clientId; val bId = b.identity.clientId
+        // A reply to an online friend is delivered to their device, not only stored.
+        a.social.send(bId, "first")
+        check("a sees it delivered") { a.social.threads.value[bId]?.any { it.text == "first" && it.status.rank >= MsgStatus.Delivered.rank } == true }
+        // The server allows ten sends per five seconds.
+        for (i in 2..45) {
+            a.social.send(bId, "m$i")
+            if (i % 8 == 0) Thread.sleep(5_200)
+        }
+        check("b has them all live") { b.social.threads.value[aId]?.any { it.text == "m45" } == true }
+        // A phone that opens the chat cold (no thread held yet) gets the newest page only.
+        val cold = SocialRepository(b.socket, b.identity)
+        cold.loadThread(aId)
+        check("only the newest page") { cold.threads.value[aId]?.let { it.size == 40 && it.last().text == "m45" } == true }
+        check("and says there is more") { aId in cold.hasOlder.value }
+        cold.loadOlder(aId)
+        check("older messages join in front, in order") {
+            cold.threads.value[aId]?.let { l -> l.size == 45 && l.first().text == "first" && l.map { it.ts }.zipWithNext().all { (x, y) -> x <= y } } == true
+        }
+        check("and the history ends") { aId !in cold.hasOlder.value }
+        // A reload keeps what was live-loaded.
+        b.social.loadThread(aId)
+        check("a warm reload keeps the whole thread") { b.social.threads.value[aId]?.size == 45 }
+    }
+
     @Test fun contact_consent_and_country_counts(): Unit = runBlocking {
         val a = Client("cc")
         assertFalse(a.socket.contactConsent.value)
