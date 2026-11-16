@@ -2565,6 +2565,38 @@ function clearRequestPair(fromClientId, targetClientId) {
 }
 const notifications = new Map(); // clientId -> Array<notification>
 const friendChats = new TrackedMap(); // pairKey -> Array<{ from, text, ts }>
+// Edit and unsend markers per thread, so a person who was away (or has the
+// thread cached) is told what changed since they last looked: pairKey ->
+// Array<{ id, t: 'del'|'edit', at, text?, edited? }>. Bounded, pruned by age
+// and with the thread.
+const threadChanges = new Map();
+const THREAD_CHANGES_MAX = 60;
+const THREAD_CHANGES_TTL_MS = 30 * 24 * 3600 * 1000;
+function noteThreadChange(key, entry) {
+  let list = threadChanges.get(key);
+  if (!list) { list = []; threadChanges.set(key, list); }
+  const at = Date.now();
+  // Latest word on a message wins: an unsend replaces its edits.
+  for (let i = list.length - 1; i >= 0; i--) if (list[i].id === entry.id) list.splice(i, 1);
+  list.push({ ...entry, at });
+  while (list.length > THREAD_CHANGES_MAX) list.shift();
+}
+function changesSince(clientId, since) {
+  const out = [];
+  const floor = Number(since);
+  if (!Number.isFinite(floor)) return out;
+  for (const [key, list] of threadChanges) {
+    const cut = key.indexOf('|');
+    const a = key.slice(0, cut);
+    const b = key.slice(cut + 1);
+    if (a !== clientId && b !== clientId) continue;
+    const other = a === clientId ? b : a;
+    if (isBlockedPair(clientId, other)) continue;
+    for (const c of list) if (c.at > floor) out.push({ friendClientId: other, id: c.id, type: c.t === 'del' ? 'deleted' : 'edited', text: c.text, edited: c.edited, at: c.at });
+  }
+  out.sort((x, y) => x.at - y.at);
+  return out.slice(-200);
+}
 const chatHistory = new TrackedMap(); // clientId -> Array<{ clientId, username, countryCode, mode, ts }> (newest last)
 // When each person was last connected: clientId -> ts. Only kept for people
 // someone could be looking for (friends, recent matches) - see the sweep.
@@ -2629,6 +2661,7 @@ function writeSocial() {
   return {
     friends: friendsObj,
     friendChats: chatsObj,
+    threadChanges: Object.fromEntries(Array.from(threadChanges).filter(([, l]) => l.length)),
     blocks: blocksObj,
     chatHistory: historyObj,
     friendRequests: mapOfMaps(friendRequests),
@@ -2698,6 +2731,9 @@ function hydrateFromStore() {
   }
   for (const [key, list] of Object.entries(social.friendChats || {})) {
     friendChats.set(key, Array.isArray(list) ? list : []);
+  }
+  for (const [key, list] of Object.entries(social.threadChanges || {})) {
+    if (Array.isArray(list) && list.length) threadChanges.set(key, list.filter((c) => c && typeof c.id === 'string' && Number.isFinite(c.at)).slice(-THREAD_CHANGES_MAX));
   }
   for (const [cid, arr] of Object.entries(social.blocks || {})) {
     blocks.set(cid, new Set(arr));
@@ -2949,6 +2985,7 @@ function pruneChatHistory(now = Date.now()) {
     if (inHistory(a, b) || inHistory(b, a)) continue;
     if (requested(a, b) || requested(b, a)) continue;
     friendChats.delete(key);
+    threadChanges.delete(key);
     const clips = list.filter((m) => m && m.voice && m.voice.id).map((m) => m.voice.id);
     if (clips.length) store.deleteVoiceNotes(clips).catch(() => {});
     changed = true;
@@ -3131,6 +3168,7 @@ function purgeSocialState(clientId) {
     if (!has(key)) continue;
     for (const m of list) if (m && m.voice && m.voice.id) clips.push(m.voice.id);
     friendChats.delete(key);
+    threadChanges.delete(key);
   }
   if (clips.length) store.deleteVoiceNotes(clips).catch(() => {});
   for (const m of [chatClears, disappearing, voiceConsent, hearts, declinedRequests]) {
@@ -3667,12 +3705,13 @@ function readVoicePayload(raw) {
 // their live socket, or they connected afterwards and were synced. Stored on
 // the message so a later thread or list fetch reports what the live events
 // already announced. Returns the ids newly marked.
-function markDelivered(fromClientId, toClientId) {
+function markDelivered(fromClientId, toClientId, only) {
   const list = friendChats.get(pairKey(fromClientId, toClientId));
   const ids = [];
   if (!list) return ids;
   for (const m of list) {
     if (m.from !== fromClientId || m.delivered || m.seen) continue;
+    if (only && !only.has(m.id)) continue;
     m.delivered = true;
     ids.push(m.id);
   }
@@ -3681,6 +3720,9 @@ function markDelivered(fromClientId, toClientId) {
 }
 // A client that just connected has now received everything waiting for it.
 function deliverPendingTo(clientId) {
+  // A device that announced acks says so itself, once the messages are on it.
+  const rs = getSocketByClientId(clientId);
+  if (rs && rs.data && rs.data.ack) return;
   const senders = new Set();
   for (const n of notifications.get(clientId) || []) if (n.type === 'message' && n.fromClientId) senders.add(n.fromClientId);
   for (const from of senders) {
@@ -3760,8 +3802,12 @@ function deliverFriendMessage(socket, me, toClientId, parsed, msgId) {
   const targetSocket = getSocketByClientId(toClientId);
   if (targetSocket) {
     targetSocket.emit('friend-message', wire);
-    msg.delivered = true;
-    persistSocial();
+    // Devices that ack (caps: ['ack']) confirm receipt themselves; older
+    // clients never would, so for them reaching the socket is all we know.
+    if (!targetSocket.data || !targetSocket.data.ack) {
+      msg.delivered = true;
+      persistSocial();
+    }
     if (theirsAdded) syncClientState(targetSocket, toClientId);
   }
   if (mineAdded) syncClientState(socket, me.clientId);
@@ -6044,7 +6090,7 @@ function sendFriendId(socket, { fresh = false } = {}) {
 // are simply re-sent by the client.
 const HOLD_UNTIL_REGISTERED = new Set([
   'friend-message', 'friend-reaction', 'friend-message-delete', 'friend-typing',
-  'get-friend-chat', 'mark-messages-read', 'chat-seen',
+  'get-friend-chat', 'mark-messages-read', 'chat-seen', 'friend-message-received', 'get-friend-changes',
   'friend-request', 'friend-request-respond', 'cancel-friend-request',
   'remove-friend', 'rename-friend', 'block-friend', 'unblock-user', 'clear-friend-chat',
   'clear-notification', 'mark-notifications-seen', 'call-back-request-later',
@@ -7123,7 +7169,8 @@ io.on('connection', (socket) => {
     // Positive acknowledgement, not just the failure case: a client that was
     // mid-search when its socket dropped needs to know the new socket carries a
     // profile again before it re-enters the queue.
-    socket.emit('register-result', { ok: true });
+    socket.data.ack = Array.isArray(data.caps) && data.caps.includes('ack');
+    socket.emit('register-result', { ok: true, now: Date.now() });
     // Back within the grace window of a dropped call: carry on with it.
     if (parkedPairings.has(clientId)) resumeParked(socket, clientId);
     refreshFriendSnapshots(clientId, profiles.get(socket.id));
@@ -8863,6 +8910,7 @@ io.on('connection', (socket) => {
     if (removed.voice) store.deleteVoiceNotes([removed.voice.id]).catch(() => {});
     const unreadGone = removeNotificationsWhere(toClientId,
       (n) => n.type === 'message' && n.fromClientId === me.clientId && n.msgId === msgId);
+    noteThreadChange(key, { id: msgId, t: 'del' });
     persistSocial();
     store.recordFeature('chat_unsend');
     socket.emit('friend-message-deleted', { chatWith: toClientId, id: msgId });
@@ -8913,6 +8961,7 @@ io.on('connection', (socket) => {
     for (const n of notifications.get(toClientId) || []) {
       if (n.type === 'message' && n.fromClientId === me.clientId && n.msgId === msgId) n.text = next;
     }
+    noteThreadChange(key, { id: msgId, t: 'edit', text: next, edited: msg.edited });
     persistSocial();
     store.recordFeature('chat_edit');
     store.recordFeatureUser('chat_edit', me.clientId);
@@ -8938,6 +8987,28 @@ io.on('connection', (socket) => {
     if (statusHidden.get(me.clientId)) return; // appearing offline means not typing either
     const targetSocket = getSocketByClientId(toClientId);
     if (targetSocket) targetSocket.emit('friend-typing', { fromClientId: me.clientId });
+  });
+
+  // Device acknowledgement: these friend messages are on this device. Only
+  // then are they "delivered" for devices that announced caps: ['ack'].
+  socket.on('friend-message-received', ({ friendClientId, ids } = {}) => {
+    const me = profiles.get(socket.id);
+    friendClientId = validId(friendClientId);
+    if (!me || !friendClientId || !Array.isArray(ids) || isBlockedPair(me.clientId, friendClientId)) return;
+    const want = new Set(ids.slice(0, 200).map(cleanMsgId).filter(Boolean));
+    if (!want.size) return;
+    const done = markDelivered(friendClientId, me.clientId, want);
+    if (!done.length) return;
+    const s = getSocketByClientId(friendClientId);
+    if (s) s.emit('friend-message-delivered', { toClientId: me.clientId, ids: done });
+  });
+
+  // What was edited or unsent in my threads since `since` (a server time the
+  // client was last told), for chats it has cached but not open.
+  socket.on('get-friend-changes', ({ since } = {}) => {
+    const me = profiles.get(socket.id);
+    if (!me || typeof since !== 'number') return;
+    socket.emit('friend-changes', { ts: Date.now(), changes: changesSince(me.clientId, since) });
   });
 
   socket.on('get-friend-chat', ({ friendClientId, limit, before, beforeId } = {}) => {
@@ -9517,6 +9588,14 @@ function sweepEphemeralState() {
   for (const cid of lastSeen.keys()) {
     if (friends.has(cid) || chatHistory.has(cid)) continue;
     lastSeen.delete(cid);
+    socialChanged = true;
+  }
+  // Change markers expire with age; an emptied thread keeps its unsend markers
+  // until then, so they are not tied to the thread still holding messages.
+  for (const [key, list] of threadChanges) {
+    const fresh = list.filter((c) => c.at > now - THREAD_CHANGES_TTL_MS);
+    if (fresh.length === list.length) continue;
+    if (fresh.length) threadChanges.set(key, fresh); else threadChanges.delete(key);
     socialChanged = true;
   }
   // A clear marker outlives its purpose once the thread itself is gone.

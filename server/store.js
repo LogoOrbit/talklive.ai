@@ -3845,6 +3845,7 @@ function assignSocial(social) {
   data.social = {
     friends: social.friends || {},
     friendChats: social.friendChats || {},
+    threadChanges: social.threadChanges || {},
     blocks: social.blocks || {},
     chatHistory: social.chatHistory || {},
     // Pending requests and the in-app inbox (unread messages, call-back asks)
