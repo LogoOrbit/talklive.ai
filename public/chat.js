@@ -655,6 +655,8 @@
       // This page is text only: it must not be rung or force-paired for a
       // voice call-back, which it has no way to answer.
       surface: 'chat',
+      // This page confirms receipt of friend messages itself.
+      caps: ['ack'],
       // Places this person when their IP address cannot (VPNs and the like).
       timezone: (function () { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined; } catch (_) { return undefined; } })(),
       // ...but it can ring for a direct call and answer it by moving to the
@@ -3260,6 +3262,7 @@
     if (!data || data.friendClientId !== activeFriendChatId) return;
     if (data.gate) { dmGateOverrides[data.friendClientId] = data.gate; applyFriendChatGate(); }
     if (data.hasMore !== undefined) friendMore = { hasMore: !!data.hasMore, loading: false };
+    ackFriendMessages(data.friendClientId, (data.messages || []).filter(function (m) { return m.from === data.friendClientId; }).map(function (m) { return m.id; }));
     if (data.older) {
       // An older page: build it above what is already on screen, and keep the
       // reader where they were.
@@ -3329,7 +3332,23 @@
     renderFriends();
     renderHistory();
   });
+  // Tell the server which friend messages are on this device ("delivered").
+  var ackedFriendIds = {};
+  function ackFriendMessages(friendClientId, ids) {
+    var fresh = (ids || []).filter(function (id) { return id && !ackedFriendIds[id]; });
+    if (!fresh.length || !friendClientId) return;
+    fresh.forEach(function (id) { ackedFriendIds[id] = true; });
+    socket.emit('friend-message-received', { friendClientId: friendClientId, ids: fresh.slice(0, 200) });
+  }
+  socket.on('state-sync', function (d) {
+    var by = {};
+    ((d && d.notifications) || []).forEach(function (n) {
+      if (n && n.type === 'message' && n.fromClientId && n.msgId) (by[n.fromClientId] = by[n.fromClientId] || []).push(n.msgId);
+    });
+    Object.keys(by).forEach(function (from) { ackFriendMessages(from, by[from]); });
+  });
   socket.on('friend-message', function (data) {
+    if (data && data.fromClientId) ackFriendMessages(data.fromClientId, [data.id]);
     if (!data || (data.fromClientId === activeFriendChatId && onScreen(data.id))) return;
     noteLastMessage(data.fromClientId, { id: data.id, mine: false, text: data.text || '', gif: !!data.gif, ts: data.ts });
     if (typingFrom[data.fromClientId]) setTyping(data.fromClientId, false);
@@ -3466,6 +3485,7 @@
   socket.on('register-result', function (res) {
     if (!res || res.ok !== false) {
       identityRetries = 0;
+      ackedFriendIds = {};
       if (document.visibilityState === 'hidden') reportVisibility();
       // Whatever happened while the socket was down - new messages, an unsend,
       // an edit, a receipt - is in the stored thread, not in this page. Fetch

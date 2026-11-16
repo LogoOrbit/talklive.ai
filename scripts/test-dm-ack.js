@@ -33,7 +33,6 @@ function once(sock, ev, ms = 4000, pred = () => true) {
     sock.on(ev, on);
   });
 }
-const arrives = (sock, ev, ms = 800, pred) => once(sock, ev, ms, pred).then(() => true, () => false);
 
 // The signed identity token each clientId was issued, sent back on every
 // later register exactly as a browser does - an identity that owns anything
