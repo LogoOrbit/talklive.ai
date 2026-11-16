@@ -292,20 +292,35 @@ function report(res, thr) {
 }
 
 // Lowest confidence at which validation answers are right at least `target`
-// of the time, searched on a grid. If the target is never reached, says so
-// (the caller must then decide, openly) instead of quietly returning the end of the grid.
-function thresholdFor(res, target, min, max, step) {
+// of the time, searched on a grid.
+// If the target is never reached (validation labels are not perfect: a few
+// speakers are labelled with the other sex than they sound), say so and fall
+// back, openly, to the grid points that keep at least `minShare` of the rows
+// (so a handful of lucky rows in the far tail cannot decide it) and whose
+// accuracy is within 0.1 point of the best on the grid. Accuracy is flat
+// across that range, because the remaining errors are confident ones, so
+// raising the bar buys nothing there: "confirm" takes the lowest such point
+// (least users left unconfirmed), "mismatch" the highest (the most careful
+// point that is still measured on plenty of rows).
+function thresholdFor(res, target, min, max, step, minShare, preferHigh) {
+  const grid = [];
   for (let t = min; t <= max + 1e-9; t += step) {
     const kept = res.filter((e) => e.conf >= t - 1e-9);
-    if (kept.length && kept.filter((e) => e.ok).length / kept.length >= target) return { value: Math.round(t * 1000) / 1000, reached: true };
+    if (!kept.length) continue;
+    grid.push({ t: Math.round(t * 10000) / 10000, share: kept.length / res.length, acc: kept.filter((e) => e.ok).length / kept.length });
   }
-  return { value: max, reached: false };
+  const hit = grid.find((g) => g.acc >= target);
+  if (hit) return { value: hit.t, reached: true, accuracy: pct(hit.acc), share: pct(hit.share) };
+  const top = Math.max(...grid.filter((g) => g.share >= minShare).map((g) => g.acc));
+  const near = grid.filter((g) => g.share >= minShare && g.acc >= top - 0.001);
+  const best = preferHigh ? near[near.length - 1] : near[0];
+  return { value: best.t, reached: false, accuracy: pct(best.acc), share: pct(best.share), bestPossible: pct(Math.max(...grid.map((g) => g.acc))) };
 }
 
 // --- Search, on validation only -------------------------------------------
 const GRID = QUICK
   ? { hidden: [0, 16], lr: [0.003, 0.001], l2: [1e-3] }
-  : { hidden: [0, 8, 16, 32], lr: [0.003, 0.001, 0.0003], l2: [1e-4, 1e-3, 1e-2] };
+  : { hidden: [0, 8, 16, 32], lr: [0.003, 0.001, 0.0003], l2: [1e-3, 1e-2, 3e-2, 1e-1] };
 const candidates = [];
 for (const hidden of GRID.hidden) {
   for (const lr of GRID.lr) {
@@ -340,9 +355,14 @@ const valDeviceRes = valRes.filter((e) => e.r.n >= MIN_FRAMES);
 // Thresholds from validation rows a device could send. Targets:
 //   confirm   accuracy at or above it is >= 99%   (grid 0.80 .. 0.97)
 //   mismatch  accuracy at or above it is >= 99.7% (grid 0.90 .. 0.995)
-const confirm = thresholdFor(valDeviceRes, 0.99, 0.8, 0.97, 0.005);
-const mismatch = thresholdFor(valDeviceRes, 0.997, 0.9, 0.995, 0.0025);
-console.log(`thresholds: confirm ${confirm.value} (reached ${confirm.reached}), mismatch ${mismatch.value} (reached ${mismatch.reached})`);
+const confirm = thresholdFor(valDeviceRes, 0.99, 0.8, 0.97, 0.005, 0.3, false);
+const mismatch = thresholdFor(valDeviceRes, 0.997, 0.9, 0.995, 0.0025, 0.5, true);
+console.log('validation (n >= 80): accuracy of everything at or above a confidence');
+for (const t of [0.8, 0.9, 0.93, 0.95, 0.96, 0.97, 0.98, 0.99, 0.995]) {
+  const kept = valDeviceRes.filter((e) => e.conf >= t);
+  console.log(`  >= ${t}: ${pct(kept.length / valDeviceRes.length)}% of rows, ${pct(acc(kept))}% right`);
+}
+console.log('thresholds on validation (n >= 80):', JSON.stringify({ confirm, mismatch }));
 const thresholds = { confirm: confirm.value, mismatch: mismatch.value };
 
 // Where do the validation errors sit? Errors concentrated in one corpus
@@ -393,6 +413,7 @@ const model = {
     validation: val,
     test,
     otherModelTestAccuracy: baselineTest,
+    thresholdSelection: { confirm, mismatch },
     search: candidates.map((c) => ({ hidden: c.hidden, lr: c.lr, l2: c.l2, epoch: c.epoch, valLoss: Math.round(c.loss * 10000) / 10000, valAccuracy: pct(c.accVal) })),
   },
 };
