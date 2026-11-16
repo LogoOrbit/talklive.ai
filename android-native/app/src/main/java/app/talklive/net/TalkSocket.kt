@@ -71,6 +71,9 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
     /** The site is in maintenance mode: the owner's message. */
     val maintenance: StateFlow<String?> = _maintenance
 
+    private val _contended = MutableStateFlow(false)
+    /** The search queue is busy right now (server `waiting.contended`). */
+    val contended: kotlinx.coroutines.flow.StateFlow<Boolean> = _contended
     private val _contactConsent = MutableStateFlow(false)
     /** Settings > Privacy > "Save contact info I share" (opt-in; off erases what was saved). */
     val contactConsent: StateFlow<Boolean> = _contactConsent
@@ -182,9 +185,12 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
         socket.on("waiting") { args ->
             val o = args.firstObject()
             val eta = o?.takeUnless { it.isNull("estimatedSeconds") }?.optInt("estimatedSeconds")
+            // The server says when the queue is busy; the app shows the "Plus members are matched first" line only then.
+            _contended.value = o?.optBoolean("contended") == true
             _events.tryEmit(ServerEvent.Waiting(eta))
         }
         socket.on("matched") { args ->
+            _contended.value = false
             val o = args.firstObject() ?: return@on
             _events.tryEmit(
                 ServerEvent.Matched(o.optBoolean("initiator"), Partner.from(o.optJSONObject("partner")), o.optBoolean("callback"), o.optString("mode", "talk")),

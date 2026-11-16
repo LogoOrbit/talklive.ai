@@ -127,6 +127,8 @@ fun CallScreen(
     onAutoConnect: (Boolean) -> Unit = {},
     bands: () -> FloatArray = { FloatArray(0) },
     premium: Boolean = false,
+    // One quiet line under the searching text ("Plus members are matched first"), only when the policy allows it.
+    searchLine: (@Composable () -> Unit)? = null,
     noiseSuppression: Boolean = true,
     onNoiseSuppression: (Boolean) -> Unit = {},
     onProblem: (String) -> Unit = {},
@@ -244,6 +246,7 @@ fun CallScreen(
                         SearchingTitle()
                         p.etaSeconds?.takeIf { it > 0 }?.let { Spacer(Modifier.height(8.dp)); Subtitle(stringResource(R.string.searching_eta, it)) }
                         if (premium) { Spacer(Modifier.height(10.dp)); PlusPriority() }
+                        else if (searchLine != null) { Spacer(Modifier.height(6.dp)); searchLine() }
                     }
                     is CallPhase.Connecting -> {
                         Title(stringResource(R.string.almost_there))

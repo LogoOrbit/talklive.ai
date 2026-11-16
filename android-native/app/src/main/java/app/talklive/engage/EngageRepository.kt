@@ -52,6 +52,8 @@ class EngageRepository(
 
     private val _premium = MutableStateFlow(Premium(false, null, false))
     val premium: StateFlow<Premium> = _premium
+    /** True while the server says the search queue is busy (waiting payload `contended`). */
+    val contended = socket.contended
 
     private val _referral = MutableStateFlow<Referral?>(null)
     val referral: StateFlow<Referral?> = _referral
@@ -139,6 +141,8 @@ class EngageRepository(
             _premium.value = Premium(
                 o.optBoolean("premium"), if (o.isNull("expiresAt")) null else o.optLong("expiresAt"), o.optBoolean("checkout"), o.optBoolean("play"),
                 look = look != null, lookFace = look?.optString("face")?.takeIf { it.isNotBlank() && it != "null" },
+                source = o.optString("source").takeIf { it.isNotBlank() && it != "null" }, renews = o.optBoolean("renews"),
+                state = o.optString("state").takeIf { it.isNotBlank() },
             )
         }
         socket.on("referral-status") { a ->

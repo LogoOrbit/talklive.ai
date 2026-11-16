@@ -42,6 +42,8 @@ import javax.inject.Singleton
 data class PlusPlan(
     val basePlanId: String, val price: String, val period: String, val offerToken: String, val trial: String?,
     val priceMicros: Long = 0, val currency: String = "",
+    /** An introductory price or free trial Play gives this person, with the regular price after it. */
+    val intro: PlusIntro? = null,
 )
 
 /** A one-time pass: Plus for [days] days, no renewal. */
@@ -76,6 +78,10 @@ class PlayBilling @Inject constructor(
     private val _message = MutableStateFlow<PlayMessage?>(null)
     val message: StateFlow<PlayMessage?> = _message
     fun clearMessage() { _message.value = null }
+
+    /** A purchase Google Play has not confirmed yet (slow payment methods): shown until it settles. */
+    private val _pending = MutableStateFlow(false)
+    val pending: StateFlow<Boolean> = _pending
 
     private val _busy = MutableStateFlow(false)
     val busy: StateFlow<Boolean> = _busy
@@ -117,8 +123,11 @@ class PlayBilling @Inject constructor(
                 val offer = offers.firstOrNull { it.offerId != null } ?: offers.first()
                 val phases = offer.pricingPhases.pricingPhaseList
                 val full = phases.lastOrNull() ?: return@mapNotNull null
-                val trial = phases.firstOrNull { it.priceAmountMicros == 0L }?.billingPeriod
-                PlusPlan(base, full.formattedPrice, full.billingPeriod, offer.offerToken, trial, full.priceAmountMicros, full.priceCurrencyCode)
+                val intro = PlusPricing.intro(phases.map {
+                    PlusPricing.Phase(it.formattedPrice, it.priceAmountMicros, it.billingPeriod, it.billingCycleCount,
+                        it.recurrenceMode == ProductDetails.RecurrenceMode.INFINITE_RECURRING)
+                })
+                PlusPlan(base, full.formattedPrice, full.billingPeriod, offer.offerToken, intro?.takeIf { it.free }?.period, full.priceAmountMicros, full.priceCurrencyCode, intro)
             }
             .sortedBy { periodDays(it.period) }
         // The one-time passes (in-app products), cheapest first.
@@ -145,7 +154,7 @@ class PlayBilling @Inject constructor(
             .setObfuscatedAccountId(accountId(identity.clientId))
             .build()
         val r = client.launchBillingFlow(activity, params)
-        if (r.responseCode != BillingClient.BillingResponseCode.OK) _message.value = PlayMessage.Failed
+        if (r.responseCode != BillingClient.BillingResponseCode.OK) launchFailed(r.responseCode)
     }
 
     /** Opens Google Play's purchase sheet for a one-time pass. */
@@ -156,19 +165,30 @@ class PlayBilling @Inject constructor(
             .setObfuscatedAccountId(accountId(identity.clientId))
             .build()
         val r = client.launchBillingFlow(activity, params)
-        if (r.responseCode != BillingClient.BillingResponseCode.OK) _message.value = PlayMessage.Failed
+        if (r.responseCode != BillingClient.BillingResponseCode.OK) launchFailed(r.responseCode)
+    }
+
+    private fun launchFailed(code: Int) {
+        if (code == BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED) { _message.value = PlayMessage.AlreadyOwned; restore(quiet = true); return }
+        if (code == BillingClient.BillingResponseCode.USER_CANCELED) return
+        _message.value = messageFor(code)
+        // The connection may have dropped under us: reconnect and reload prices for the next try.
+        if (code == BillingClient.BillingResponseCode.SERVICE_DISCONNECTED || code == BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE) refresh()
     }
 
     /** Sends every active Plus purchase on this Google account to the server. */
     fun restore(quiet: Boolean = false) = scope.launch {
         if (!connected()) { if (!quiet) _message.value = PlayMessage.Failed; return@launch }
-        val owned = runCatching {
+        val subs = runCatching {
             client.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.SUBS).build()).purchasesList
-        }.getOrDefault(emptyList()).filter { PRODUCT_ID in it.products && it.purchaseState == Purchase.PurchaseState.PURCHASED }
+        }.getOrDefault(emptyList())
+        val owned = subs.filter { PRODUCT_ID in it.products && it.purchaseState == Purchase.PurchaseState.PURCHASED }
         // Passes not yet used up (bought while the server could not be reached).
         val passes = runCatching {
             client.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build()).purchasesList
         }.getOrDefault(emptyList()).filter { p -> p.products.any { it in PASS_DAYS } && p.purchaseState == Purchase.PurchaseState.PURCHASED }
+        // Anything still pending is shown as such; it settles on a later check (this runs on every resume).
+        _pending.value = subs.any { it.purchaseState == Purchase.PurchaseState.PENDING }
         if (owned.isEmpty() && passes.isEmpty()) { if (!quiet) _message.value = PlayMessage.NothingToRestore; return@launch }
         owned.forEach { verify(it, quiet) }
         passes.forEach { verify(it, quiet) }
@@ -178,13 +198,14 @@ class PlayBilling @Inject constructor(
         when (result.responseCode) {
             BillingClient.BillingResponseCode.OK -> purchases.orEmpty().forEach { p ->
                 when (p.purchaseState) {
-                    Purchase.PurchaseState.PURCHASED -> scope.launch { verify(p, quiet = false) }
-                    Purchase.PurchaseState.PENDING -> _message.value = PlayMessage.Pending
+                    Purchase.PurchaseState.PURCHASED -> { _pending.value = false; scope.launch { verify(p, quiet = false) } }
+                    Purchase.PurchaseState.PENDING -> { _pending.value = true; _message.value = PlayMessage.Pending }
                 }
             }
-            BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> restore()
+            // Already has it on this Google account: say so, then bring it in.
+            BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> { _message.value = PlayMessage.AlreadyOwned; restore(quiet = true) }
             BillingClient.BillingResponseCode.USER_CANCELED -> Unit
-            else -> _message.value = PlayMessage.Failed
+            else -> _message.value = messageFor(result.responseCode)
         }
     }
 
@@ -231,6 +252,18 @@ class PlayBilling @Inject constructor(
     }
 
     companion object {
+        /** An honest message for a Google Play response code (see BillingClient.BillingResponseCode). */
+        fun messageFor(code: Int): PlayMessage = when (code) {
+            BillingClient.BillingResponseCode.BILLING_UNAVAILABLE,
+            BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
+            BillingClient.BillingResponseCode.SERVICE_DISCONNECTED,
+            BillingClient.BillingResponseCode.NETWORK_ERROR,
+            BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED -> PlayMessage.BillingUnavailable
+            BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> PlayMessage.AlreadyOwned
+            BillingClient.BillingResponseCode.ITEM_UNAVAILABLE -> PlayMessage.ItemUnavailable
+            else -> PlayMessage.Failed
+        }
+
         /**
          * One subscription product with two base plans, picked by their billing period:
          * `plus-monthly` (P1M) and `plus-yearly` (P1Y). The code sorts by period, so the
@@ -260,5 +293,11 @@ sealed interface PlayMessage {
     data object Later : PlayMessage
     data object Failed : PlayMessage
     data object NothingToRestore : PlayMessage
+    /** The same Google account already owns Plus. */
+    data object AlreadyOwned : PlayMessage
+    /** Google Play (or the network to it) cannot sell right now. */
+    data object BillingUnavailable : PlayMessage
+    /** The product is not on sale for this account or country. */
+    data object ItemUnavailable : PlayMessage
     data class Error(val text: String) : PlayMessage
 }

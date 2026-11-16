@@ -41,6 +41,12 @@ data class Premium(
     val active: Boolean, val expiresAt: Long?, val checkout: Boolean, val play: Boolean = false,
     /** The invite reward: the gold ring and one legendary face (picked once), not Plus. */
     val look: Boolean = false, val lookFace: String? = null,
+    /** Where Plus came from, as the server reports it: play (subscription), pass, granted, earlier. */
+    val source: String? = null,
+    /** A Google Play subscription that renews (not cancelled, not in grace). */
+    val renews: Boolean = false,
+    /** active, ending (cancelled), grace, expired or none. */
+    val state: String? = null,
 ) {
     /** Shows the gold ring: Plus, or the invite reward. */
     val ring: Boolean get() = active || look
