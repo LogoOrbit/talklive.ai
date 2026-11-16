@@ -336,15 +336,19 @@ class ServerE2ETest {
             if (i % 8 == 0) Thread.sleep(5_200)
         }
         check("b has them all live") { b.social.threads.value[aId]?.any { it.text == "m45" } == true }
-        // A fresh load opens on the newest page only.
-        b.social.loadThread(aId)
-        check("only the newest page") { b.social.threads.value[aId]?.let { it.size == 40 && it.last().text == "m45" } == true }
-        check("and says there is more") { aId in b.social.hasOlder.value }
-        b.social.loadOlder(aId)
+        // A phone that opens the chat cold (no thread held yet) gets the newest page only.
+        val cold = SocialRepository(b.socket, b.identity)
+        cold.loadThread(aId)
+        check("only the newest page") { cold.threads.value[aId]?.let { it.size == 40 && it.last().text == "m45" } == true }
+        check("and says there is more") { aId in cold.hasOlder.value }
+        cold.loadOlder(aId)
         check("older messages join in front, in order") {
-            b.social.threads.value[aId]?.let { l -> l.size == 45 && l.first().text == "first" && l.map { it.ts }.zipWithNext().all { (x, y) -> x <= y } } == true
+            cold.threads.value[aId]?.let { l -> l.size == 45 && l.first().text == "first" && l.map { it.ts }.zipWithNext().all { (x, y) -> x <= y } } == true
         }
-        check("and the history ends") { aId !in b.social.hasOlder.value }
+        check("and the history ends") { aId !in cold.hasOlder.value }
+        // A reload keeps what was live-loaded.
+        b.social.loadThread(aId)
+        check("a warm reload keeps the whole thread") { b.social.threads.value[aId]?.size == 45 }
     }
 
     @Test fun contact_consent_and_country_counts(): Unit = runBlocking {
