@@ -19,7 +19,7 @@ const CRITICAL = [
   'test-social', 'test-social-safety', 'test-social-delivery', 'test-dm-receipts', 'test-social-extras',
   'test-social-privacy', 'test-social-edit', 'test-friend-id', 'test-discovery',
   'test-chat-extras', 'test-chat-away', 'test-chat-guard', 'test-chat-spam',
-  'test-matchmaking', 'test-match-quality', 'test-malformed-packets', 'test-voice-notes', 'test-delete-account-purge',
+  'test-matchmaking', 'test-match-quality', 'test-sdp-tune', 'test-malformed-packets', 'test-voice-notes', 'test-delete-account-purge',
 ];
 const ALL = fs.readdirSync(DIR).filter((f) => /^test-.*\.js$/.test(f)).map((f) => f.slice(0, -3)).sort();
 const suites = process.argv.includes('--critical') ? CRITICAL : ALL;

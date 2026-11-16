@@ -1907,6 +1907,8 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         <!-- While searching with filters: stop the random fallback (or undo it). -->
         <p id="searchFilterSummary" class="tl-filter-summary tl-filter-summary-static hidden" aria-live="polite"></p>
         <button type="button" id="keepFiltersBtn" class="tl-keep-filters hidden" data-i18n="keepMyFilters">Keep my filters</button>
+        <!-- A Men/Women filter is never dropped automatically: this drops it for the current search only. -->
+        <button type="button" id="widenSearchBtn" class="tl-keep-filters hidden" data-i18n="matchWithAnyone">Match with anyone</button>
 
         <!-- Connection state, in the middle of the column with the lines it
              belongs to. It used to sit in a header row of its own in the top

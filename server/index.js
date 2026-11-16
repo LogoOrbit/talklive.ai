@@ -1182,6 +1182,12 @@ function warnIfNoRelay() {
 app.get('/ice-servers', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const iceServers = buildIceServers();
+  // When the soonest TURN credential in this answer stops working, so a client
+  // knows how long it may cache the list (older clients ignore it). Shared-secret
+  // credentials are minted for an hour; managed ones are shared server-side and
+  // may already be most of the way through theirs.
+  const expiries = [];
+  if ((process.env.TURN_URLS || '').trim() && process.env.TURN_SHARED_SECRET) expiries.push(Date.now() + 3600 * 1000);
   // A provider outage must degrade to STUN + any static TURN, never to an error
   // page: the browser treats a failed fetch as "keep the bare STUN fallback".
   let managed = [];
@@ -1191,9 +1197,12 @@ app.get('/ice-servers', async (req, res) => {
     console.warn('[turn] managed TURN lookup failed:', err.message);
   }
   const all = iceServers.concat(managed);
+  if (managed.length && providerCache && providerCache.expiresAt) expiries.push(providerCache.expiresAt);
   // Relay-only is only ever safe to ask for when a relay actually exists.
   const relayOnly = process.env.TURN_FORCE_RELAY === '1' && hasRelay(all);
-  res.json({ iceServers: all, iceTransportPolicy: relayOnly ? 'relay' : 'all' });
+  const out = { iceServers: all, iceTransportPolicy: relayOnly ? 'relay' : 'all' };
+  if (expiries.length) out.expiresAt = Math.min(...expiries);
+  res.json(out);
 });
 
 // sendFile bypasses the static middleware, so page shells served this way need
