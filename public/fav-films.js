@@ -234,7 +234,7 @@
     var slots = '';
     for (var i = 0; i < MAX; i++) {
       if (i >= myMax) {
-        slots += '<a class="tlf-pickbtn" href="/pricing" title="TalkLive Plus"><span class="tlf-empty" style="font-size:12px;border-color:rgba(245,196,81,.5);color:#f5c451">\uD83D\uDD12 Plus</span></a>';
+        slots += '<a class="tlf-pickbtn" data-plus="films" href="/pricing" title="TalkLive Plus"><span class="tlf-empty" style="font-size:12px;border-color:rgba(245,196,81,.5);color:#f5c451">\uD83D\uDD12 Plus</span></a>';
         continue;
       }
       slots += films[i] ? tile(films[i], true, i)
@@ -248,6 +248,9 @@
         save(box, sock, films);
         return;
       }
+      // A locked slot explains the one thing Plus adds here (3 films, not 1).
+      var locked = e.target.closest('[data-plus]');
+      if (locked && typeof showPremiumUpsell === 'function') { e.preventDefault(); showPremiumUpsell(tr('plusBFilms'), 'films'); return; }
       var slot = e.target.closest('[data-i]');
       if (!slot) return;
       var at = Math.min(Number(slot.dataset.i), films.length);

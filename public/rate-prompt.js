@@ -46,6 +46,8 @@
       b.onclick = function () {
         if (o[0] === 'x') return hide();
         socket.emit('rate-call', { t: d.t, v: o[0] });
+        // plus-moments.js treats a thumbs-up after a long call as a good moment.
+        try { window.dispatchEvent(new CustomEvent('tl-call-rated', { detail: o[0] })); } catch (_) { /* old browser */ }
         q.textContent = tr('rateThanks', 'Thanks for the feedback!');
         el.querySelectorAll('button').forEach(function (x) { x.remove(); });
         clearTimeout(timer);

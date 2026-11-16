@@ -85,6 +85,25 @@
 .app-banner p { margin: 0 0 12px; color: #e7eaf5; }
 .app-banner .cta { display: inline-block; width: auto; padding: 12px 22px; }
 .cta:active{transform:scale(.98);filter:brightness(.95)}
+.anchor{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;margin-top:8px;min-height:2.6em;font-size:.9rem;color:var(--muted)}
+.anchor s{text-decoration-thickness:1.5px}
+.anchor .save{font-weight:800;color:#8a5a00}
+:root[data-theme="dark"] .anchor .save,.anchor .save{color:#f2c14e}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]) .anchor .save{color:#8a5a00}}
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.skel{display:inline-block;min-width:4.5ch;border-radius:8px;background:rgba(127,127,127,.22)}
+@media (prefers-reduced-motion:no-preference){.skel{animation:sk 1.2s ease-in-out infinite alternate}}
+@keyframes sk{from{opacity:.55}to{opacity:1}}
+.pass .cost{text-align:end;min-width:5.5ch}.pass .cost s{display:block;font-size:.78rem;font-weight:600;color:var(--muted)}
+.pass .chip.save{margin-inline-start:6px}
+.plan li.lead{color:var(--muted);font-weight:700}
+.plan li.hit{outline:2px solid #f2c14e;outline-offset:2px;border-radius:8px}
+.plan li{align-items:center}
+.plan li.pro .i{opacity:1;color:#f2c14e}
+.plus-state{max-width:640px;margin:10px auto;padding:14px 16px;border-radius:16px;border:1px solid rgba(242,193,78,.55);background:rgba(242,193,78,.08);text-align:center}
+.plus-state b{display:block;font-size:1.05rem}.plus-state p{margin:4px 0 0;color:var(--muted);font-size:.92rem}
+.plus-state a{color:inherit;font-weight:800}
+.plus-state[hidden]{display:none}
 
 </style>
 <script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebPage","name":"TalkLive Pricing","url":"https://talklive.app/pricing","description":"Free voice and text matching, TalkLive Plus at $10 a month, and 1, 7 and 15-day passes.","mainEntity":{"@type":"Service","name":"TalkLive","url":"https://talklive.app/","brand":{"@type":"Brand","name":"TalkLive"},"offers":[{"@type":"Offer","name":"TalkLive Free","price":"0","priceCurrency":"USD","url":"https://talklive.app/","description":"Core random voice and text matching, with instant matching for everyone.","availability":"https://schema.org/InStock"},{"@type":"Offer","name":"TalkLive Plus (monthly)","price":"9.99","priceCurrency":"USD","url":"https://talklive.app/pricing","description":"Every filter, see who liked you, undo skip, skip the queue. Renews monthly, cancel any time."},{"@type":"Offer","name":"1-day pass","price":"1.99","priceCurrency":"USD","url":"https://talklive.app/pricing"},{"@type":"Offer","name":"7-day pass","price":"4.99","priceCurrency":"USD","url":"https://talklive.app/pricing"},{"@type":"Offer","name":"15-day pass","price":"6.99","priceCurrency":"USD","url":"https://talklive.app/pricing"}],"additionalType":"https://schema.org/WebApplication","serviceType":"Random voice and text chat","category":"CommunicationApplication","provider":{"@id":"https://talklive.app/#organization"},"areaServed":"Worldwide","availableChannel":{"@type":"ServiceChannel","serviceUrl":"https://talklive.app/"}}},{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://talklive.app/"},{"@type":"ListItem","position":2,"name":"Pricing","item":"https://talklive.app/pricing"}]}]</script>
@@ -108,7 +127,11 @@
     <p>Talking is free, forever. Want more? Get <strong>TalkLive Plus</strong> by the month or the year, or try it for a few days with a pass.</p>
   </section>
 
-  <div id="premiumActiveNote" class="status-note ok" hidden>You have TalkLive Plus. Everything is unlocked. Enjoy!</div>
+  <section id="plusState" class="plus-state" hidden aria-live="polite">
+    <b id="plusStateTitle"></b>
+    <p id="plusStateBody"></p>
+    <p id="plusStateManage" hidden><a href="https://play.google.com/store/account/subscriptions?sku=talklive_plus&amp;package=app.talklive" rel="noopener">Manage in Google Play</a></p>
+  </section>
 
   <section class="app-banner" aria-label="Where to buy Plus">
     <p><strong>Buying on the website is coming soon.</strong> For now, Plus is bought in the TalkLive Android app through Google Play, and it unlocks on the website when you sign in with the same account.</p>
@@ -124,35 +147,41 @@
       <ul>
         <li><span class="i" aria-hidden="true"></span>Unlimited voice calls &amp; text chats</li>
         <li><span class="i" aria-hidden="true"></span>Unlimited friends</li>
-        <li><span class="i" aria-hidden="true"></span>2 countries &amp; 2 interests in filters</li>
+        <li><span class="i" aria-hidden="true"></span>2 preferred &amp; 2 avoided countries</li>
+        <li><span class="i" aria-hidden="true"></span>2 interests for matching</li>
         <li><span class="i" aria-hidden="true"></span>Your last 3 people met</li>
+        <li><span class="i" aria-hidden="true"></span>1 favourite film on your profile</li>
         <li><span class="i" aria-hidden="true"></span>Streaks, passport &amp; daily questions</li>
+        <li><span class="i" aria-hidden="true"></span>5 animal &amp; 5 character avatars</li>
         <li><span class="i" aria-hidden="true"></span>Light &amp; Dark themes</li>
       </ul>
       <a class="cta ghost" href="/">Start talking free</a>
     </div>
 
     <div class="card plan plus">
-      <span class="ribbon">MOST POPULAR</span>
       <h2>TalkLive Plus</h2>
       <p class="tagline">The full TalkLive</p>
       <div class="term" role="group" aria-label="Billing period">
         <button type="button" id="termMonthly" aria-pressed="false">Monthly</button>
         <button type="button" id="termYearly" aria-pressed="true">Yearly <span class="chip" id="saveChip">Save 42%</span></button>
       </div>
-      <div class="price"><span id="priceMonthly">$5.83</span> <small>/ month</small></div>
-      <div class="per" id="plusPer">Billed yearly at $69.99. Cancel any time.</div>
-      <ul>
-        <li><span class="i" aria-hidden="true"></span><span><b>All filters</b>: men or women, any countries, more interests</span></li>
-        <li><span class="i" aria-hidden="true"></span><span><b>See who liked you</b> and call them back</span></li>
-        <li><span class="i" aria-hidden="true"></span><span><b>Undo skip</b>: bring someone back</span></li>
-        <li><span class="i" aria-hidden="true"></span><span><b>Skip the queue</b>: matched first</span></li>
-        <li><span class="i" aria-hidden="true"></span><span><b>A face that comes alive</b>: your avatar blinks, moves and shines</span></li>
-        <li><span class="i" aria-hidden="true"></span><span><b>Gold name, ring &amp; badge</b> everywhere you go</span></li>
-        <li><span class="i" aria-hidden="true"></span><span><b>Every avatar</b> and animated character scenes, only for Plus</span></li>
-        <li><span class="i" aria-hidden="true"></span><span><b>Everyone you met</b>, not just the last 3</span></li>
-        <li><span class="i" aria-hidden="true"></span><span><b>Streak freezes</b> and streak restore</span></li>
-        <li><span class="i" aria-hidden="true"></span><span><b>Ocean &amp; Sunset</b> themes</span></li>
+      <div class="price"><span id="priceMonthly" class="skel">&nbsp;</span> <small>/ month</small></div>
+      <div class="per" id="plusPer">Cancel any time in Google Play.</div>
+      <div class="anchor" id="plusAnchor" aria-live="polite"><s id="plusWas" hidden></s><span class="sr-only" id="plusWasSr"></span><span class="save" id="plusSave" hidden></span></div>
+      <ul id="plusPerks">
+        <li class="lead"><span class="i" aria-hidden="true"></span><span>Everything in Free, plus:</span></li>
+        <li class="pro" data-perk="gender"><span class="i" aria-hidden="true"></span><span><b>Gender filter</b>: Match with men or women</span></li>
+        <li class="pro" data-perk="countries"><span class="i" aria-hidden="true"></span><span><b>More countries</b>: Up to 50 preferred and 50 avoided</span></li>
+        <li class="pro" data-perk="interests"><span class="i" aria-hidden="true"></span><span><b>More interests</b>: Match on up to 10, not 2</span></li>
+        <li class="pro" data-perk="rematch"><span class="i" aria-hidden="true"></span><span><b>Priority matching</b>: Matched first when it is busy</span></li>
+        <li class="pro" data-perk="undo"><span class="i" aria-hidden="true"></span><span><b>Undo skip</b>: Bring back someone you skipped</span></li>
+        <li class="pro" data-perk="likes"><span class="i" aria-hidden="true"></span><span><b>See who liked you</b>: Names and countries, and call back</span></li>
+        <li class="pro" data-perk="history"><span class="i" aria-hidden="true"></span><span><b>Full history</b>: Everyone you met, not just the last 3</span></li>
+        <li class="pro" data-perk="streak"><span class="i" aria-hidden="true"></span><span><b>Streak saver</b>: 2 freezes a month and streak restore</span></li>
+        <li class="pro" data-perk="films"><span class="i" aria-hidden="true"></span><span><b>Top 3 films</b>: Show 3 favourite films, not 1</span></li>
+        <li class="pro" data-perk="avatars"><span class="i" aria-hidden="true"></span><span><b>Legendary avatars</b>: 8 only Plus can wear, and a living avatar</span></li>
+        <li class="pro" data-perk="alive"><span class="i" aria-hidden="true"></span><span><b>Gold look</b>: Gold name, ring and badge everywhere</span></li>
+        <li class="pro" data-perk="themes"><span class="i" aria-hidden="true"></span><span><b>Plus themes</b>: Ocean and Sunset</span></li>
       </ul>
       <button type="button" id="plusBtn" class="cta soon" disabled aria-disabled="true">Coming soon on the web</button>
       <a class="app-link" href="https://play.google.com/store/apps/details?id=app.talklive" rel="noopener" data-app-link>Get Plus now in the Android app</a>
@@ -162,26 +191,26 @@
       <h2>Passes</h2>
       <p class="tagline">All of Plus, for a few days</p>
       <div class="passes">
-        <div class="pass" data-pass="pass_1d" role="button" tabindex="0"><div class="days">1<small>day</small></div><div class="what"><b>Try it</b>Perfect for one evening</div><div class="cost" data-cost="pass_1d">$1.99</div></div>
-        <div class="pass is-picked" data-pass="pass_7d" role="button" tabindex="0"><div class="days">7<small>days</small></div><div class="what"><b>One week <span class="chip">POPULAR</span></b>A full week of Plus</div><div class="cost" data-cost="pass_7d">$4.99</div></div>
-        <div class="pass" data-pass="pass_15d" role="button" tabindex="0"><div class="days">15<small>days</small></div><div class="what"><b>Two weeks <span class="chip">BEST VALUE</span></b>Most days for the price</div><div class="cost" data-cost="pass_15d">$6.99</div></div>
+        <div class="pass" data-pass="pass_1d" role="button" tabindex="0"><div class="days">1<small>day</small></div><div class="what"><b>Try it</b>Perfect for one evening</div><div class="cost" data-cost="pass_1d"><span class="skel">&nbsp;</span></div></div>
+        <div class="pass is-picked" data-pass="pass_7d" role="button" tabindex="0"><div class="days">7<small>days</small></div><div class="what"><b>One week <span class="chip save" data-save="pass_7d" hidden></span></b>A full week of Plus</div><div class="cost" data-cost="pass_7d"><span class="skel">&nbsp;</span></div></div>
+        <div class="pass" data-pass="pass_15d" role="button" tabindex="0"><div class="days">15<small>days</small></div><div class="what"><b>Two weeks <span class="chip save" data-save="pass_15d" hidden></span></b>Fifteen days of Plus</div><div class="cost" data-cost="pass_15d"><span class="skel">&nbsp;</span></div></div>
       </div>
       <button type="button" id="passBtn" class="cta soon" disabled aria-disabled="true">Coming soon on the web</button>
       <a class="app-link" href="https://play.google.com/store/apps/details?id=app.talklive" rel="noopener" data-app-link>Get a pass in the Android app</a>
-      <p class="small-note">Pay once. Nothing renews.</p>
+      <p class="small-note">Pay once. Nothing renews. Saving is against buying the same days as 1-day passes.</p>
     </div>
   </section>
 
   <section class="how">
     <div><b>Easy to pay</b><span>In the Android app, pay with your Google Play account.</span></div>
     <div><b>No surprises</b><span>Passes end on their own. Plus renews until you cancel.</span></div>
-    <div><b>Or earn it free</b><span>Invite 3 friends who sign up with your link and get 1 hour of Plus.</span></div>
+    <div><b>Or earn the gold look</b><span>Invite 3 friends who sign up with your link and get the gold ring and one legendary avatar for a while.</span></div>
   </section>
 
   <section class="faq">
     <h2>Questions</h2>
     <h3>What is the difference between Plus and a pass?</h3>
-    <p>They unlock exactly the same things. Plus is $9.99 a month in the US ($69.99 a year, 12 months for the price of 7) and less in many countries, and renews until you cancel. A pass is a one-time payment for 1, 7 or 15 days and then simply ends.</p>
+    <p>They unlock exactly the same things. Plus is billed monthly or yearly, in your own currency, and renews until you cancel. The yearly plan costs less than twelve months at the monthly price; the saving is shown above. A pass is a one-time payment for 1, 7 or 15 days and then simply ends. Prices are set per country by Google Play.</p>
     <h3>How do I buy?</h3>
     <p>Open the TalkLive Android app, tap Plus and choose a plan or a pass. You pay through Google Play. Your Plus works on the website too when you sign in with the same account.</p>
     <h3>How do I cancel Plus?</h3>
@@ -234,21 +263,31 @@
 
   var plusBtn = document.getElementById('plusBtn');
   var passBtn = document.getElementById('passBtn');
-  var activeNote = document.getElementById('premiumActiveNote');
-  // Prices for the visitor's country.
+  var plusBtn = document.getElementById('plusBtn');
+  // Prices for the visitor's country. Nothing is worked out here: the server
+  // sends each amount, its label and any honest "compare at" figure.
   var picked = 'pass_7d';
-  // The Plus plan on show: yearly by default, as it costs 42% less a month.
   var term = 'yearly';
   var plus = {
-    monthly: { big: '$9.99', per: 'Renews monthly. Cancel any time.' },
-    yearly: { big: '$5.83', per: 'Billed yearly at $69.99. Cancel any time.' }
+    monthly: { big: '', per: 'Renews monthly. Cancel any time in Google Play.', was: null },
+    yearly: { big: '', per: 'Cancel any time in Google Play.', was: null, total: '' }
   };
   var termBtns = { monthly: document.getElementById('termMonthly'), yearly: document.getElementById('termYearly') };
+  var wasEl = document.getElementById('plusWas');
+  var wasSr = document.getElementById('plusWasSr');
+  var saveEl = document.getElementById('plusSave');
   function showTerm(t) {
     term = t;
     Object.keys(termBtns).forEach(function (k) { termBtns[k].setAttribute('aria-pressed', k === t ? 'true' : 'false'); });
-    document.getElementById('priceMonthly').textContent = plus[t].big;
+    var pe = document.getElementById('priceMonthly');
+    if (plus[t].big) { pe.textContent = plus[t].big; pe.className = ''; }
     document.getElementById('plusPer').textContent = plus[t].per;
+    var c = plus[t].was;
+    wasEl.hidden = saveEl.hidden = !c;
+    wasEl.textContent = c ? c.label : '';
+    wasEl.setAttribute('aria-hidden', 'true');
+    wasSr.textContent = c ? 'was ' + c.label : '';
+    saveEl.textContent = c ? 'Save ' + c.savePercent + '% ' + c.basisLabel : '';
   }
   termBtns.monthly.addEventListener('click', function () { showTerm('monthly'); });
   termBtns.yearly.addEventListener('click', function () { showTerm('yearly'); });
@@ -261,17 +300,30 @@
     el.addEventListener('click', function () { pick(el.getAttribute('data-pass')); });
     el.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(el.getAttribute('data-pass')); } });
   });
+  // The benefit that sent the visitor here (?perk=gender) is outlined.
+  var perk = (location.search.match(/[?&]perk=([a-z]+)/) || [])[1];
+  if (perk) { var hitEl = document.querySelector('#plusPerks [data-perk="' + perk + '"]'); if (hitEl) hitEl.classList.add('hit'); }
   fetch('/pricing.json').then(function (r) { return r.json(); }).then(function (p) {
     if (!p || !p.monthly) return;
-    plus.monthly = { big: p.monthly.label, per: 'Renews monthly. Cancel any time.' };
+    plus.monthly = { big: p.monthly.label, per: 'Renews monthly. Cancel any time in Google Play.', was: null };
     if (p.yearly) {
-      plus.yearly = { big: p.yearly.perMonthLabel, per: 'Billed yearly at ' + p.yearly.label + '. Cancel any time.' };
-      if (p.yearly.savePercent > 0) document.getElementById('saveChip').textContent = 'Save ' + p.yearly.savePercent + '%';
+      plus.yearly = { big: p.yearly.perMonthLabel, per: 'Billed yearly at ' + p.yearly.label + '. Cancel any time in Google Play.', was: p.yearly.compareAt || null };
+      var chip = document.getElementById('saveChip');
+      if (p.yearly.compareAt) chip.textContent = 'Save ' + p.yearly.compareAt.savePercent + '%'; else chip.hidden = true;
     }
     showTerm(term);
     (p.passes || []).forEach(function (it) {
       var cost = document.querySelector('[data-cost="' + it.id + '"]');
-      if (cost) cost.textContent = it.label;
+      if (cost) {
+        cost.textContent = it.label;
+        if (it.compareAt) {
+          var s = document.createElement('s'); s.setAttribute('aria-hidden', 'true'); s.textContent = it.compareAt.label;
+          var sr = document.createElement('span'); sr.className = 'sr-only'; sr.textContent = 'was ' + it.compareAt.label + ' ' + it.compareAt.basisLabel;
+          cost.insertBefore(s, cost.firstChild); cost.appendChild(sr);
+        }
+      }
+      var chip = document.querySelector('[data-save="' + it.id + '"]');
+      if (chip && it.compareAt) { chip.hidden = false; chip.textContent = 'Save ' + it.compareAt.savePercent + '%'; chip.title = it.compareAt.basisLabel; }
     });
   }).catch(function () {});
   // The website does not sell Plus yet; the buttons are disabled and the Play links count as the click.
@@ -279,19 +331,38 @@
     a.addEventListener('click', function () { track('premium_app_download_click'); });
   });
 
-  function markActive(expiresAt) {
-    activeNote.hidden = false;
-    plusBtn.textContent = 'Plus is active';
-    plusBtn.setAttribute('aria-disabled', 'true');
-    if (expiresAt) {
-      var when = new Date(expiresAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-      activeNote.textContent = 'TalkLive Plus is active until ' + when + '. Everything is unlocked.';
-    }
+  // The true state of Plus on this profile, as the server reports it.
+  function when(ms) { return new Date(ms).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }); }
+  function showState(d) {
+    var box = document.getElementById('plusState');
+    var title = document.getElementById('plusStateTitle');
+    var body = document.getElementById('plusStateBody');
+    var manage = document.getElementById('plusStateManage');
+    if (d.premium) {
+      var until = d.expiresAt ? when(d.expiresAt) : '';
+      title.textContent = until ? 'TalkLive Plus until ' + until : 'TalkLive Plus is active';
+      var text = {
+        play: d.state === 'grace' ? 'Google Play could not take your last payment. Plus continues while it retries; check your payment method in Google Play.'
+          : d.renews ? 'Google Play subscription. It renews on ' + until + ' unless you cancel in Google Play.'
+          : 'Google Play subscription, cancelled. You keep Plus until ' + until + ' and it will not renew.',
+        pass: 'A pass bought in the app. It ends on ' + until + ' and does not renew.',
+        earlier: 'From an earlier purchase. It ends on ' + until + ' and does not renew.',
+        granted: until ? 'Plus given to your account by TalkLive. It ends on ' + until + '.' : 'Plus given to your account by TalkLive. It does not end.'
+      }[d.source] || '';
+      body.textContent = text;
+      manage.hidden = d.source !== 'play';
+      plusBtn.textContent = 'Plus is active';
+      plusBtn.setAttribute('aria-disabled', 'true');
+    } else if (d.state === 'expired' && d.expiresAt) {
+      title.textContent = 'Your Plus ended on ' + when(d.expiresAt);
+      body.textContent = 'You can get it again in the Android app.';
+      manage.hidden = true;
+    } else return;
+    box.hidden = false;
   }
-
-  fetch('/premium-status?clientId=' + encodeURIComponent(getClientId()))
+  fetch('/premium-status?clientId=' + encodeURIComponent(getClientId()) + '&identityToken=' + encodeURIComponent(localStorage.getItem('talklive_identity_token') || ''))
     .then(function (r) { return r.json(); })
-    .then(function (d) { if (d && d.premium) markActive(d.expiresAt); })
+    .then(function (d) { if (d) showState(d); })
     .catch(function () {});
 
 })();

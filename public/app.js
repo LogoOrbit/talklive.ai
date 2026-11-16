@@ -1271,7 +1271,7 @@ function addInterestFromInput() {
   // Free: 2 interest tags (the server keeps only that many); Plus: up to 10.
   const interestCap = isPremiumUser ? 10 : (freeLimits.interests || 2);
   if (!selectedInterests.has(value) && selectedInterests.size >= interestCap) {
-    if (!isPremiumUser) showPremiumUpsell(t('premiumInterestLimit', { n: interestCap }));
+    if (!isPremiumUser) showPremiumUpsell(t('premiumInterestLimit', { n: interestCap }), 'interests');
     return;
   }
   selectedInterests.add(value);
@@ -2712,15 +2712,27 @@ function renderSettingsProfileRow() {
 // bought in the Android app through Google Play (the same prices as /pricing);
 // the button here opens the pricing page that explains it.
 const SHOP_PASSES = [
-  { id: 'd1', days: 1, price: '$1.99', tagKey: 'passTagEntry' },
-  { id: 'd7', days: 7, price: '$4.99', tagKey: 'passTagPopular' },
-  { id: 'd15', days: 15, price: '$6.99', tagKey: 'passTagMax' },
+  { id: 'd1', days: 1, price: '' },
+  { id: 'd7', days: 7, price: '' },
+  { id: 'd15', days: 15, price: '' },
 ];
 let selectedPassId = 'd7';
 
+// Plus prices for the visitor's country (server/pricing.js), fetched once. The
+// server computes the struck-through "compare at" amounts; nothing is worked
+// out here.
+let plusPricing = null;
+function loadPlusPricing() {
+  if (!plusPricing) plusPricing = fetch('/pricing.json').then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  return plusPricing;
+}
+// A struck-through price with a spoken "was ...", so it does not rely on the line alone.
+function wasHtml(label) {
+  return `<s aria-hidden="true">${escapeHtml(label)}</s><span class="sr-only">${escapeHtml(t('plusWas', { price: label }))}</span>`;
+}
+
 function renderPasses() {
   const wrap = document.getElementById('passTiers');
-  const buy = document.getElementById('passBuyBtn');
   if (!wrap) return;
   wrap.innerHTML = '';
   SHOP_PASSES.forEach((p) => {
@@ -2733,10 +2745,10 @@ function renderPasses() {
     tier.innerHTML = `
       <span class="pass-radio" aria-hidden="true"></span>
       <span class="pass-row-main">
-        <span class="pass-row-title">${escapeHtml(t('passName', { days: p.days }))}<em class="pass-badge">${escapeHtml(t(p.tagKey))}</em></span>
+        <span class="pass-row-title">${escapeHtml(t('passName', { days: p.days }))}${p.save ? `<em class="pass-badge">${escapeHtml(t('plusSaveDays', { n: p.save }))}</em>` : ''}</span>
         <span class="pass-row-sub">${escapeHtml(t('passAllPlus'))}</span>
       </span>
-      <span class="pass-row-price"><strong>${escapeHtml(p.price)}</strong></span>
+      <span class="pass-row-price"><strong class="${p.price ? '' : 'tl-skel'}">${p.price ? escapeHtml(p.price) : '&nbsp;'}</strong>${p.was ? wasHtml(p.was) : ''}</span>
     `;
     tier.addEventListener('click', () => {
       selectedPassId = p.id;
@@ -2744,14 +2756,10 @@ function renderPasses() {
     });
     wrap.appendChild(tier);
   });
-  if (buy) {
-    const p = SHOP_PASSES.find((x) => x.id === selectedPassId);
-    buy.textContent = t('passBuy', { days: p.days, price: p.price });
-  }
 }
 
-// The website cannot sell Plus yet (Android app only); the pricing page shows prices
-// and the Play link, so every buy button just goes there.
+// The website cannot sell Plus (it is bought in the Android app); the pricing
+// page shows prices and the Play link, so every "get Plus" button goes there.
 function plusGo() {
   [shopModal, document.getElementById('premiumUpsellModal')].forEach((m) => m && closeModal(m));
   location.href = '/pricing';
@@ -2761,29 +2769,58 @@ let shopPriced = false;
 function openShop() {
   renderPasses();
   openModal(shopModal);
-  // Prices for the visitor's country (server/pricing.js), fetched once.
   if (shopPriced) return;
   shopPriced = true;
-  fetch('/pricing.json').then((r) => r.json()).then((p) => {
-    (p.passes || []).forEach((it, i) => { if (SHOP_PASSES[i]) SHOP_PASSES[i].price = it.label; });
+  loadPlusPricing().then((p) => {
+    if (!p) { shopPriced = false; plusPricing = null; return; }
+    (p.passes || []).forEach((it, i) => {
+      if (!SHOP_PASSES[i]) return;
+      SHOP_PASSES[i].price = it.label;
+      SHOP_PASSES[i].was = it.compareAt ? it.compareAt.label : '';
+      SHOP_PASSES[i].save = it.compareAt ? it.compareAt.savePercent : 0;
+    });
     renderPasses();
-  }).catch(() => {});
+  });
 }
 
 if (settingsShopRow) settingsShopRow.addEventListener('click', openShop);
 {
-  const buy = document.getElementById('passBuyBtn');
-  if (buy) {
-    buy.disabled = false;
-    buy.addEventListener('click', () => { trackGrowthEvent('premium_upsell_click'); plusGo(); });
-  }
+  const link = document.getElementById('shopAppLink');
+  if (link) link.addEventListener('click', () => trackGrowthEvent('premium_upsell_click'));
 }
 if (closeShopBtn) closeShopBtn.addEventListener('click', () => closeModal(shopModal));
 
 // --- Billing ---------------------------------------------------------------
+const PLAY_MANAGE_URL = 'https://play.google.com/store/account/subscriptions?sku=talklive_plus&package=app.talklive';
 function renderBilling() {
   if (!billingEmailValue) return;
   billingEmailValue.textContent = accountEmail || t('billingEmailNone');
+  // The true state of Plus on this profile, as the server reports it.
+  const val = document.getElementById('billingPlusValue');
+  const hint = document.getElementById('billingPlusHint');
+  const manage = document.getElementById('billingManageLink');
+  if (!val || !hint) return;
+  const date = (ms) => new Date(ms).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+  const info = premiumInfoState;
+  let v = t('billingPlusNone');
+  let h = t('billingPlusNoneHint');
+  let showManage = false;
+  if (isPremiumUser) {
+    v = premiumUntil ? t('billingPlusUntil', { date: date(premiumUntil) }) : t('billingPlusActive');
+    const d = premiumUntil ? date(premiumUntil) : '';
+    if (info.source === 'play') {
+      h = t(info.state === 'grace' ? 'billingHintGrace' : info.renews ? 'billingHintRenews' : 'billingHintEnding', { date: d });
+      showManage = true;
+    } else if (info.source === 'pass') h = t('billingHintPass', { date: d });
+    else if (info.source === 'earlier') h = t('billingHintEarlier', { date: d });
+    else h = premiumUntil ? t('billingHintGranted', { date: d }) : t('billingHintGrantedForever');
+  } else if (info.state === 'expired' && info.until) {
+    v = t('billingPlusExpired');
+    h = t('billingPlusExpiredHint', { date: date(info.until) });
+  }
+  val.textContent = v;
+  hint.textContent = h;
+  if (manage) { manage.hidden = !showManage; manage.href = PLAY_MANAGE_URL; }
 }
 
 function openBilling() {
@@ -3662,7 +3699,7 @@ function onMyProfileAction(e) {
   if (act === 'passport' && E && E.openPassport) { E.openPassport(); return; }
   if (act === 'likes' && E && E.openLikes) { E.openLikes(); return; }
   if (act === 'invite') { showSharePrompt(); return; }
-  if (act === 'plus') { leaveMyProfileFor('settings'); if (isPremiumUser) openBilling(); else showPremiumUpsell(); return; }
+  if (act === 'plus') { leaveMyProfileFor('settings'); if (isPremiumUser) openBilling(); else showPremiumUpsell('', 'general'); return; }
   if (act === 'logout') { logoutBtn.click(); return; }
   if (act === 'more') { leaveMyProfileFor('settings'); openAppSettings('profile'); return; }
   if (act === 'login' || act === 'signup') { leaveMyProfileFor('auth'); openAuthPage(act); }
@@ -9957,113 +9994,6 @@ document.querySelectorAll('[data-opens]').forEach((el) => {
   });
 });
 
-// The rail's green CTA is the hero's voice card, said again at the point where
-// someone has just finished reading who is online.
-// --- "Notify me" -------------------------------------------------------------
-// Premium and match passes are announced, not on sale, so the only honest
-// button on either card is one that does something today. This one asks for
-// push permission through the flow that already exists (pwa.js owns the
-// service worker, the VAPID key and the /push/subscribe call), and records the
-// interest either way - a browser that refuses notifications still told us
-// somebody wanted this.
-//
-// It never claims more than it did: the button says "we will tell you" only
-// once a subscription actually exists.
-function markNotified(btn, key) {
-  btn.classList.add('is-notified');
-  btn.disabled = true;
-  const label = btn.querySelector('span');
-  if (label) label.textContent = t(key);
-}
-
-// "Notify me" opens an email sign-up: the address joins the same double
-// opt-in list as the footer form (POST /subscribe), tagged with what the person
-// is waiting for, so the owner can email them when it launches. A browser
-// notification is still offered as the alternative.
-const notifyModal = document.getElementById('notifyModal');
-const notifyForm = document.getElementById('notifyForm');
-const notifyEmailInput = document.getElementById('notifyEmailInput');
-const notifyStatus = document.getElementById('notifyStatus');
-const notifySubmitBtn = document.getElementById('notifySubmitBtn');
-const NOTIFY_KEY = 'talklive_notify_email';
-let notifyBtn = null;
-
-function notifySignedUp(what) {
-  try { return !!JSON.parse(localStorage.getItem(NOTIFY_KEY) || '{}')[what]; } catch (_) { return false; }
-}
-function rememberNotify(what) {
-  try {
-    const m = JSON.parse(localStorage.getItem(NOTIFY_KEY) || '{}');
-    m[what] = Date.now();
-    localStorage.setItem(NOTIFY_KEY, JSON.stringify(m));
-  } catch (_) { /* storage blocked */ }
-}
-function setNotifyStatus(text, kind) {
-  notifyStatus.textContent = text || '';
-  notifyStatus.classList.toggle('is-error', kind === 'error');
-  notifyStatus.classList.toggle('is-ok', kind === 'ok');
-}
-
-document.querySelectorAll('[data-notify]').forEach((btn) => {
-  if (notifySignedUp(btn.dataset.notify)) markNotified(btn, 'notifyEmailDone');
-  btn.addEventListener('click', () => {
-    trackGrowthEvent('premium_notify_click');
-    vibrate(15);
-    notifyBtn = btn;
-    setNotifyStatus('');
-    notifySubmitBtn.disabled = false;
-    if (!notifyEmailInput.value) notifyEmailInput.value = accountEmail || '';
-    openModal(notifyModal);
-  });
-});
-
-notifyForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const email = notifyEmailInput.value.trim();
-  if (!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(email)) {
-    setNotifyStatus(t('notifyEmailInvalid'), 'error');
-    notifyEmailInput.focus();
-    return;
-  }
-  const what = (notifyBtn && notifyBtn.dataset.notify) || 'premium';
-  notifySubmitBtn.disabled = true;
-  setNotifyStatus(t('notifySending'));
-  try {
-    const r = await fetch('/subscribe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, website: document.getElementById('notifyHp').value, source: `notify:${what}` }),
-    });
-    const d = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(d.error || t('notifyEmailError'));
-    trackGrowthEvent('premium_notify_email');
-    rememberNotify(what);
-    document.querySelectorAll(`[data-notify="${what}"]`).forEach((b) => markNotified(b, 'notifyEmailDone'));
-    setNotifyStatus(t('notifyEmailSent'), 'ok');
-  } catch (err) {
-    notifySubmitBtn.disabled = false;
-    setNotifyStatus((!(err instanceof TypeError) && err.message) || t('notifyEmailError'), 'error');
-  }
-});
-
-// The old one-tap path: ask for push permission through pwa.js.
-document.getElementById('notifyPushBtn').addEventListener('click', async () => {
-  closeModal(notifyModal);
-  const btn = notifyBtn;
-  const pwa = window.TalkLivePWA;
-  if (!pwa || typeof pwa.askForPush !== 'function' || !('Notification' in window)) {
-    if (btn) markNotified(btn, 'notifyNoted');
-    showToast(t('notifyNotedToast'), 'success');
-    return;
-  }
-  try { await pwa.askForPush(); } catch (_) { /* denied or unavailable */ }
-  const granted = Notification.permission === 'granted';
-  if (btn) markNotified(btn, granted ? 'notifyDone' : 'notifyNoted');
-  showToast(t(granted ? 'notifyDoneToast' : 'notifyNotedToast'), 'success');
-});
-document.getElementById('notifyCloseBtn').addEventListener('click', () => closeModal(notifyModal));
-notifyModal.addEventListener('click', (e) => { if (e.target === notifyModal) closeModal(notifyModal); });
-
 // --- Header search ----------------------------------------------------------
 // "Search people, countries or interests" has to mean something concrete on an
 // app with no public directory. It searches what this user can actually act
@@ -11606,6 +11536,7 @@ refreshNetStatus();
 // (who upgrade via /pricing) get everything unlocked. The server enforces
 // all limits - this state only drives the UI.
 let isPremiumUser = false;
+let premiumInfoState = { source: null, renews: false, state: 'none', until: null };
 let freeLimits = { countries: 2, interests: 2 };
 
 // Now that the free limits and the premium flag exist, the filters panel can
@@ -11617,8 +11548,10 @@ updateFiltersBadge();
 renderFilterPresets();
 { const hs = document.getElementById('homeFilterSummary'); if (hs) hs.addEventListener('click', () => { const b = document.getElementById('filtersBtn'); if (b) b.click(); }); }
 
-socket.on('premium-status', ({ premium, limits, expiresAt } = {}) => {
+socket.on('premium-status', ({ premium, limits, expiresAt, source, renews, state } = {}) => {
   isPremiumUser = !!premium;
+  premiumInfoState = { source: source || null, renews: !!renews, state: state || (premium ? 'active' : 'none'), until: expiresAt || null };
+  if (billingModal && !billingModal.classList.contains('hidden')) renderBilling();
   renderFilterSummary();
   premiumUntil = premium ? expiresAt || null : null;
   if (limits) {
@@ -11669,24 +11602,81 @@ function updatePremiumUi() {
 }
 updatePremiumUi();
 
-// The Plus dialog: the limit hit and what Plus adds (the perk reached for is lit).
+// Plus upgrade moments (public/plus-moments.js) load once the page is idle:
+// nothing in them is needed to talk, and the dialog below works without them.
+window.addEventListener('load', () => setTimeout(() => {
+  const s = document.createElement('script');
+  s.src = '/plus-moments.js?v=1';
+  s.async = true;
+  document.head.appendChild(s);
+}, 3000), { once: true });
+
+// The Plus dialog: the limit hit and what Plus adds. The feature just reached
+// for is lit and listed first; the rest follow in one fixed order, the same as
+// the pricing page and the Android app.
 const premiumUpsellModal = document.getElementById('premiumUpsellModal');
-const UPSELL_TITLES = { gender: 'upsellGenderTitle', likes: 'upsellLikesTitle', undo: 'upsellUndoTitle', themes: 'upsellThemesTitle' };
+const UPSELL_TITLES = {
+  gender: 'upsellGenderTitle', countries: 'upsellCountriesTitle', likes: 'upsellLikesTitle', undo: 'upsellUndoTitle', themes: 'upsellThemesTitle',
+  interests: 'plusTitleInterests', rematch: 'plusTitleRematch', history: 'plusTitleHistory', streak: 'plusTitleStreak',
+  films: 'plusTitleFilms', avatars: 'plusTitleAvatars', alive: 'plusTitleAlive',
+};
+let upsellPerk = null;
+// Closed some other way than the buttons (Escape, a back gesture): still a dismissal.
+function flushUpsellDismiss() {
+  if (upsellPerk && premiumUpsellModal.classList.contains('hidden') && window.PlusMoments) window.PlusMoments.restrictDismissed(upsellPerk);
+  upsellPerk = null;
+}
+function closeUpsell() {
+  closeModal(premiumUpsellModal);
+  flushUpsellDismiss();
+}
+// What Plus costs here: the yearly plan with its real saving (computed by the server).
+function showUpsellPrice() {
+  const now = document.getElementById('puPriceNow');
+  const was = document.getElementById('puPriceWas');
+  const save = document.getElementById('puPriceSave');
+  loadPlusPricing().then((p) => {
+    if (!p || !p.yearly) return;
+    const y = p.yearly;
+    now.textContent = t('plusYearNow', { total: y.label, perMonth: y.perMonthLabel });
+    const c = y.compareAt;
+    was.hidden = save.hidden = !c;
+    if (c) {
+      was.innerHTML = wasHtml(c.label);
+      save.textContent = t('plusSaveYear', { n: c.savePercent });
+    }
+  });
+}
 function showPremiumUpsell(message, perk = 'countries') {
-  document.getElementById('puTitle').textContent = t(UPSELL_TITLES[perk] || 'upsellCountriesTitle');
-  document.getElementById('puReason').textContent = message;
-  premiumUpsellModal.querySelectorAll('[data-perk]').forEach((li) => li.classList.toggle('is-hit', li.dataset.perk === perk));
-  document.getElementById('puNotifyLabel').textContent = t('upsellGetPlus');
-  document.getElementById('puPlansLink').classList.remove('hidden');
+  flushUpsellDismiss();
+  // A moment already dismissed this session is not shown again; the person still hears why it did nothing.
+  if (window.PlusMoments && !window.PlusMoments.allowRestrict(perk)) { showToast(message, 'plus'); return; }
+  document.getElementById('puTitle').textContent = t(UPSELL_TITLES[perk] || 'plusUpsellTitle');
+  const reason = document.getElementById('puReason');
+  reason.textContent = message || '';
+  reason.hidden = !message;
+  const list = document.getElementById('puPerks');
+  const lis = [...list.querySelectorAll('[data-perk]')];
+  if (!list.dataset.order) list.dataset.order = lis.map((li) => li.dataset.perk).join(',');
+  const order = list.dataset.order.split(',');
+  lis.sort((x, y) => order.indexOf(x.dataset.perk) - order.indexOf(y.dataset.perk));
+  const hit = lis.find((li) => li.dataset.perk === perk);
+  if (hit) { lis.splice(lis.indexOf(hit), 1); lis.unshift(hit); }
+  lis.forEach((li) => { li.classList.toggle('is-hit', li === hit); list.appendChild(li); });
+  upsellPerk = perk;
   trackGrowthEvent('premium_upsell_view');
+  if (window.PlusMoments) window.PlusMoments.restrictShown(perk);
+  showUpsellPrice();
   openModal(premiumUpsellModal);
 }
 document.getElementById('puNotifyBtn').addEventListener('click', () => {
   trackGrowthEvent('premium_upsell_click');
+  if (window.PlusMoments) window.PlusMoments.restrictTapped();
+  upsellPerk = null;
   plusGo();
 });
-document.getElementById('puCloseBtn').addEventListener('click', () => closeModal(premiumUpsellModal));
-premiumUpsellModal.addEventListener('click', (e) => { if (e.target === premiumUpsellModal) closeModal(premiumUpsellModal); });
+document.getElementById('puCloseBtn').addEventListener('click', closeUpsell);
+premiumUpsellModal.addEventListener('click', (e) => { if (e.target === premiumUpsellModal) closeUpsell(); });
 
 // Gender preference is premium-only. Intercept taps on Male/Female in the
 // capture phase so the pill never flips for free users.

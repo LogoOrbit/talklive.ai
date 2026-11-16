@@ -3292,9 +3292,20 @@ summary.tl-filter-legend::-webkit-details-marker { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .pu-box, .pu-gem { animation: none; }
 }
-#premiumUpsellModal .pu-perks { gap: 6px; }
+#premiumUpsellModal .pu-box { max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; }
+#premiumUpsellModal .pu-perks { gap: 6px; margin: 16px 0 4px; }
 #premiumUpsellModal .pu-perks li { padding: 8px 12px; font-size: 13.5px; }
 .pu-free.hidden { display: none; }
+/* What Plus costs: the real yearly price, its honest anchor and saving. Space is held while it loads. */
+.pu-price { margin: 0 0 12px; min-height: 3.1em; font-size: 14px; font-weight: 700; line-height: 1.35; }
+.pu-price s, .pass-row-price s { color: var(--muted); font-weight: 600; text-decoration-thickness: 1.5px; }
+.pu-save { display: block; margin-top: 2px; font-size: 12.5px; font-weight: 800; color: var(--accent-2); }
+.pu-price [hidden], .pu-reason[hidden] { display: none; }
+.tl-skel { display: inline-block; min-width: 4.5ch; border-radius: 6px; background: color-mix(in srgb, var(--text) 10%, transparent); }
+.pass-row-price { min-width: 5.5ch; }
+.pass-buy-link { display: block; text-align: center; text-decoration: none; }
+@media (prefers-reduced-motion: no-preference) { .tl-skel { animation: tl-skel 1.2s ease-in-out infinite alternate; } }
+@keyframes tl-skel { from { opacity: .5; } to { opacity: 1; } }
 
 /* ===========================================================================
  * ENGAGE (engage.js): streak, passport, likes, today's question
