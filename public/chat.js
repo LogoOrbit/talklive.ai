@@ -1513,7 +1513,7 @@
     if (!settingsPanelLoading) {
       settingsPanelLoading = [];
       var s = document.createElement('script');
-      s.src = '/settings-panel.js?v=fef14af34b';
+      s.src = '/settings-panel.js?v=a45fc78ea2';
       s.async = true;
       s.onload = function () {
         window.TalkLiveSettingsPanel.ready.then(function () {
@@ -2995,7 +2995,7 @@
     if (!filmsLoading) {
       filmsLoading = new Promise(function (resolve, reject) {
         var s = document.createElement('script');
-        s.src = '/fav-films.js?v=5206e035f2';
+        s.src = '/fav-films.js?v=92f32405ab';
         s.async = true;
         s.onload = resolve;
         s.onerror = function () { filmsLoading = null; reject(); };
@@ -3564,7 +3564,7 @@
     function show() { if (window.TalkLiveRate) window.TalkLiveRate.show(socket, d); }
     if (window.TalkLiveRate) return show();
     var s = document.createElement('script');
-    s.src = '/rate-prompt.js?v=860ca7b0d8';
+    s.src = '/rate-prompt.js?v=8708a89e43';
     s.onload = show;
     document.head.appendChild(s);
   });

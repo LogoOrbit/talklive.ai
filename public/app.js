@@ -812,8 +812,8 @@ function loadScriptOnce(src) {
 function loadVoiceGender() {
   if (window.VoiceGender && window.VoiceFeatures) return Promise.resolve();
   if (!voiceGenderLoad) {
-    voiceGenderLoad = loadScriptOnce('voice-features.js?v=0000000000')
-      .then(() => loadScriptOnce('voice-gender.js?v=2ae95509f9'))
+    voiceGenderLoad = loadScriptOnce('voice-features.js?v=88137958e0')
+      .then(() => loadScriptOnce('voice-gender.js?v=1d9534eefd'))
       .catch((err) => { voiceGenderLoad = null; throw err; });
   }
   return voiceGenderLoad;
@@ -1818,13 +1818,13 @@ function closeQuickSettings() {
 // page over its size budget); it is fetched once the page is idle, or on the
 // first tap of the gear if that comes sooner.
 // It also brings settings.css, which the screen waits for (html.tl-set-css).
-var SETTINGS_PANEL_SRC = '/settings-panel.js?v=fef14af34b';
+var SETTINGS_PANEL_SRC = '/settings-panel.js?v=a45fc78ea2';
 // Top 3 films on profiles (fav-films.js), loaded when a profile first opens.
 var filmsLoading = null;
 function withFilms(cb) {
   filmsLoading = filmsLoading || new Promise((ok, fail) => {
     const s = document.createElement('script');
-    s.src = '/fav-films.js?v=5206e035f2';
+    s.src = '/fav-films.js?v=92f32405ab';
     s.onload = ok;
     s.onerror = () => { filmsLoading = null; fail(); };
     document.head.appendChild(s);
@@ -11493,7 +11493,7 @@ socket.on('rate-prompt', (d) => {
   const show = () => window.TalkLiveRate && window.TalkLiveRate.show(socket, d);
   if (window.TalkLiveRate) return show();
   const s = document.createElement('script');
-  s.src = '/rate-prompt.js?v=860ca7b0d8';
+  s.src = '/rate-prompt.js?v=8708a89e43';
   s.onload = show;
   document.head.appendChild(s);
 });
@@ -11914,7 +11914,7 @@ updatePremiumUi();
 // nothing in them is needed to talk, and the dialog below works without them.
 window.addEventListener('load', () => setTimeout(() => {
   const s = document.createElement('script');
-  s.src = '/plus-moments.js?v=1';
+  s.src = '/plus-moments.js?v=c74ce7e23b';
   s.async = true;
   document.head.appendChild(s);
 }, 3000), { once: true });
@@ -12017,7 +12017,7 @@ socket.on('friend-online', ({ clientId, username, countryCode, country } = {}) =
 // a call, so it loads once the page is up and stays out of the first paint.
 window.addEventListener('load', () => {
   const s = document.createElement('script');
-  s.src = '/engage.js?v=3bf078e8ea';
+  s.src = '/engage.js?v=3f28bc4dd1';
   s.async = true;
   document.head.appendChild(s);
 });
