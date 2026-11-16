@@ -86,3 +86,20 @@ would not make "mismatch" safer, since the errors are the same speakers on every
 - Worse on some groups: men are called feminine more often than the reverse (92.9% vs 97.0%); Malay (ms) is
   77%; Marathi 93%. A low-pitched woman or high-pitched man will be called "unclear" or wrong.
 - Estimate, not proof: a single call is never enough to say "does not match", people can retry and appeal.
+
+## Experiment: weak groups (men, Malay), not shipped
+
+Tried on validation (device view, n >= 80), then scored once on test. All three use the same thresholds rule.
+
+| | Val women / men | Test women / men | ms test | Unseen-language test women / men | falseMismatch | confirmed |
+| --- | --- | --- | --- | --- | --- | --- |
+| Shipped (A) | 96.1 / 92.9 | 98.1 / 94.1 | 75.4% | 97.6 / 95.1 | 0.6% | 82.0% |
+| + 9 more FLEURS train languages (ms, th, fil, ko, ne, ha, cmn, te, de), no balancing (B) | 97.5 / 93.1 | 97.8 / 94.0 | 68.8% | 97.3 / 95.3 | 0.2% | 79.5% |
+| B + class-balance shift (`--balance`, C) | 94.7 / 94.8 | 95.9 / 96.6 | 84.4% | 94.9 / 97.2 | 0.2% | 59.0% |
+
+Which test is which: with ms_my and th_th train splits in training, their test recordings are "seen language,
+unseen recordings" (ms, th columns); the unseen-language test is ps, mr, it, yo, am, sd plus LibriSpeech.
+Result: B is better on validation but not on test for women, men or Malay (Malay test men are a few speakers who
+sound high-pitched; the model fits Malay train men at 99.5%), so it was not shipped. C equalises the sexes but
+costs women 2 points and confirmed share. The shipped model is unchanged. `fetch-data.sh` now has
+`TRAIN_EXTRA` for the added languages; `train.js` accepts them (and `--balance`) if you want to reproduce.

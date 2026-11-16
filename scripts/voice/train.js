@@ -23,13 +23,15 @@
 // sends fewer, so shorter summaries must not steer decisions about what a
 // device will see. The test group is scored once, at the end.
 //
+//   --balance  shift the decision point until women and men are equally often right on validation (off by default: it cost women accuracy)
 //   --quick   a small search grid (for trying changes; the shipped model uses the full grid)
 const fs = require('fs');
 const path = require('path');
 
 const args = process.argv.slice(2);
 const quickIdx = args.indexOf('--quick');
-const nbIdx = args.indexOf('--no-balance');
+const nbIdx = args.indexOf('--balance');
+const OPT_BALANCE = nbIdx >= 0;
 if (nbIdx >= 0) args.splice(nbIdx, 1);
 const QUICK = quickIdx >= 0;
 if (QUICK) args.splice(quickIdx, 1);
@@ -42,6 +44,9 @@ const OPTIONAL = [27, 28, 29, 30]; // formant medians: null when too few frames 
 // A device sends its first summary at 80 voiced frames (server/voice-check.js MIN_FRAMES).
 const MIN_FRAMES = 80;
 const TEST_LANGS = new Set(['ps_af', 'mr_in', 'it_it', 'ms_my', 'yo_ng', 'th_th', 'am_et', 'sd_in']);
+// ms_my and th_th also contribute their TRAIN split (weak group: Southeast Asia). Their test split is
+// then "seen language, unseen recordings"; the other six test languages stay unseen.
+const SEEN_LANGS = new Set(['ms_my', 'th_th']);
 
 function rng(seed) {
   let a = seed >>> 0;
@@ -78,7 +83,7 @@ function groupOf(set) {
   if (set === 'libri:dev-other') return 'val';
   if (set.startsWith('libri:test')) return 'test';
   const [, lang, split] = set.split(':');
-  if (TEST_LANGS.has(lang)) return split === 'test' ? 'test' : null;
+  if (TEST_LANGS.has(lang)) return split === 'test' ? 'test' : split === 'train' && SEEN_LANGS.has(lang) ? 'train' : null;
   if (split === 'train') return 'train';
   if (split === 'dev') {
     const mix = devMix[lang] || [0, 0];
@@ -234,7 +239,7 @@ function calibrate(p) {
 // logit, which also moves every confidence) until women and men are equally
 // often right on validation rows a device could send. Searched on validation
 // only; among equally balanced shifts the closest to 0 wins.
-const NO_BALANCE = process.argv.includes('--no-balance');
+const BALANCE = OPT_BALANCE;
 function balanceShift(p, cal) {
   let best = { gap: Infinity, d: 0 };
   for (let d = -2; d <= 2.0001; d += 0.02) {
@@ -366,7 +371,7 @@ if (bestNet) console.log(`best network: ${bestNet.hidden} hidden, lr ${bestNet.l
 console.log(`shipping: ${useNet ? 'network' : 'logistic regression'}`);
 
 const chosen = pick.fit.p;
-const balance = NO_BALANCE ? 0 : balanceShift(pick.fit.p, pick.cal);
+const balance = !BALANCE ? 0 : balanceShift(pick.fit.p, pick.cal);
 const cal = { scale: pick.cal.scale, shift: Math.round((pick.cal.shift + balance) * 10000) / 10000 };
 console.log(`class-balance shift on the logit: ${balance} (Platt shift ${pick.cal.shift} -> ${cal.shift})`);
 const valRes = score(chosen, cal, groups.val);
@@ -402,7 +407,12 @@ const thresholds = { confirm: confirm.value, mismatch: mismatch.value };
 }
 
 const val = report(valRes, thresholds);
-const test = report(score(chosen, cal, groups.test), thresholds);
+const testRes = score(chosen, cal, groups.test);
+const test = report(testRes, thresholds);
+// Honest split: unseen languages (+ LibriSpeech) vs. seen-language test recordings.
+const isSeen = (e) => { const m = /^fleurs:([^:]+):test$/.exec(e.r.set); return !!m && SEEN_LANGS.has(m[1]); };
+test.unseenLanguages = report(testRes.filter((e) => !isSeen(e)), thresholds).deviceLength;
+test.seenLanguageUnseenRecordings = breakdown(testRes.filter(isSeen).filter((e) => e.r.n >= MIN_FRAMES));
 const baselineTest = other ? breakdown(score(other.fit.p, other.cal, groups.test)).accuracy : null;
 
 const round = (v) => Math.round(v * 100000) / 100000;
@@ -414,9 +424,9 @@ const model = {
   trainedAt: new Date().toISOString().slice(0, 10),
   kind,
   data: {
-    train: 'Google FLEURS train splits (16 languages, balanced sample) + LibriSpeech dev-clean; each recording also as two degraded copies (noise, filtering, narrow-band)',
+    train: 'Google FLEURS train splits (25 languages, balanced sample) + LibriSpeech dev-clean; each recording also as two degraded copies (noise, filtering, narrow-band)',
     validation: 'FLEURS dev splits with both genders (24 languages) + LibriSpeech dev-other',
-    test: 'FLEURS test splits of 8 languages never trained on (ps, mr, it, ms, yo, th, am, sd) + LibriSpeech test-clean and test-other',
+    test: 'FLEURS test splits of 6 unseen languages (ps, mr, it, yo, am, sd) + ms, th test recordings (those two languages also in train: seen language, unseen recordings) + LibriSpeech test-clean and test-other',
     counts: Object.fromEntries(Object.entries(groups).map(([g, list]) => [g, list.length])),
   },
   training: { hidden: pick.hidden, learningRate: pick.lr, l2: pick.l2, bestEpoch: pick.epoch, seed: SEED },
