@@ -27,10 +27,13 @@ OSLR=https://www.openslr.org/resources/12
 # FLEURS languages whose dev split is used (validation, and training for
 # languages that have no train sample below).
 DEV="en_us ur_pk hi_in bn_in pa_in ta_in te_in ar_eg fa_ir tr_tr id_id fil_ph vi_vn es_419 pt_br fr_fr de_de ru_ru sw_ke ha_ng cmn_hans_cn ja_jp ko_kr ne_np"
-# Languages kept completely apart for the final test (test split only).
+# Languages kept completely apart for the final test (test split only). ms_my and th_th are also
+# in TRAIN_EXTRA (train split only): their test split is then "seen language, unseen recordings".
 HELD="ps_af mr_in it_it ms_my yo_ng th_th am_et sd_in"
 # Languages whose (large) train split is sampled, balanced by gender.
 TRAIN="ur_pk hi_in bn_in pa_in ta_in ar_eg fa_ir tr_tr id_id vi_vn es_419 pt_br fr_fr ru_ru sw_ke en_us"
+# Added for weak groups (Southeast Asia: Malay, Filipino, Thai; and languages with many men in train):
+TRAIN_EXTRA="ms_my th_th fil_ph ko_kr ne_np ha_ng cmn_hans_cn te_in de_de"
 PER_GENDER=260
 TRIES=5
 
@@ -106,5 +109,5 @@ get_train() { # lang
 
 for l in $DEV; do get_split "$l" dev; done
 for l in $HELD; do get_split "$l" test; done
-for l in $TRAIN; do get_train "$l"; done
+for l in $TRAIN $TRAIN_EXTRA; do get_train "$l"; done
 echo FETCH-FINISHED
