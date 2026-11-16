@@ -901,6 +901,22 @@
   "signupCodeLabel": "6-значный код",
   "signupVerifyBtn": "Подтвердить и создать аккаунт",
   "signupChangeEmail": "Изменить email",
-  "authEmailRequired": "Введите email. Мы отправим код, чтобы подтвердить, что это вы."
+  "authEmailRequired": "Введите email. Мы отправим код, чтобы подтвердить, что это вы.",
+  "banTitle": "Ваш аккаунт заблокирован",
+  "banUntil": "До {date}",
+  "banPermanent": "Эта блокировка бессрочная.",
+  "banReason": "Причина: {reason}",
+  "banAppealTitle": "Апелляция",
+  "banAppealHint": "Если это ошибка, расскажите, что произошло.",
+  "banAppealSend": "Отправить апелляцию",
+  "banAppealSent": "Апелляция отправлена. Команда TalkLive ответит здесь.",
+  "banAppealWaiting": "Ваша апелляция ждёт ответа.",
+  "banAppealReply": "Ответ команды TalkLive",
+  "banAppealShort": "Напишите не менее 10 символов.",
+  "banAppealFail": "Не удалось отправить апелляцию. Попробуйте ещё раз.",
+  "banAppealLimit": "Вы использовали все апелляции.",
+  "banDelete": "Удалить аккаунт",
+  "banDeleteBody": "Аккаунт будет удалён навсегда. Введите пароль (или DELETE, если входите через Google).",
+  "banSignOut": "Выйти"
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ru");

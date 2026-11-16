@@ -68,9 +68,17 @@ class AuthRepository(
             sentNickname = nick
         }
         scope.launch {
-            socket.events.collect { if (it == ServerEvent.Registered) resume() }
+            socket.events.collect {
+                if (it == ServerEvent.Registered) resume()
+                // A banned profile is never "registered", so the saved session is
+                // sent here: the server then knows the account (to delete it).
+                if (it == ServerEvent.Banned && !bannedResumed) { bannedResumed = true; resume() }
+            }
         }
+        scope.launch { socket.connected.collect { if (!it) bannedResumed = false } }
     }
+
+    @Volatile private var bannedResumed = false
 
     /** Re-register only when the name people see would change (no loop with resume). */
     private fun syncNickname() {

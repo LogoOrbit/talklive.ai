@@ -901,6 +901,22 @@
   "signupCodeLabel": "Código de 6 dígitos",
   "signupVerifyBtn": "Verificar e criar conta",
   "signupChangeEmail": "Alterar e-mail",
-  "authEmailRequired": "Digite seu e-mail. Enviamos um código para confirmar que é você."
+  "authEmailRequired": "Digite seu e-mail. Enviamos um código para confirmar que é você.",
+  "banTitle": "Sua conta foi banida",
+  "banUntil": "Até {date}",
+  "banPermanent": "Este banimento é permanente.",
+  "banReason": "Motivo: {reason}",
+  "banAppealTitle": "Recorrer",
+  "banAppealHint": "Se acha que foi um engano, conte o que aconteceu.",
+  "banAppealSend": "Enviar recurso",
+  "banAppealSent": "Recurso enviado. A equipe do TalkLive responderá aqui.",
+  "banAppealWaiting": "Seu recurso aguarda resposta.",
+  "banAppealReply": "Resposta da equipe do TalkLive",
+  "banAppealShort": "Escreva pelo menos 10 caracteres.",
+  "banAppealFail": "Não foi possível enviar o recurso. Tente de novo.",
+  "banAppealLimit": "Você usou todos os recursos.",
+  "banDelete": "Excluir conta",
+  "banDeleteBody": "Isso exclui sua conta para sempre. Digite sua senha (ou DELETE se usa o Google).",
+  "banSignOut": "Sair"
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("pt");

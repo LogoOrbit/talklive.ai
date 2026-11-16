@@ -901,6 +901,22 @@
   "signupCodeLabel": "৬ সংখ্যার কোড",
   "signupVerifyBtn": "যাচাই করে অ্যাকাউন্ট তৈরি করুন",
   "signupChangeEmail": "ইমেল বদলান",
-  "authEmailRequired": "আপনার ইমেল লিখুন। নিশ্চিত করতে আমরা একটি কোড পাঠাব।"
+  "authEmailRequired": "আপনার ইমেল লিখুন। নিশ্চিত করতে আমরা একটি কোড পাঠাব।",
+  "banTitle": "আপনার অ্যাকাউন্ট নিষিদ্ধ করা হয়েছে",
+  "banUntil": "{date} পর্যন্ত",
+  "banPermanent": "এই নিষেধাজ্ঞা স্থায়ী।",
+  "banReason": "কারণ: {reason}",
+  "banAppealTitle": "আপিল",
+  "banAppealHint": "আপনি যদি মনে করেন এটি ভুল, কী হয়েছে আমাদের জানান।",
+  "banAppealSend": "আপিল পাঠান",
+  "banAppealSent": "আপিল পাঠানো হয়েছে। TalkLive টিম এখানে উত্তর দেবে।",
+  "banAppealWaiting": "আপনার আপিলের উত্তরের অপেক্ষায়।",
+  "banAppealReply": "TalkLive টিমের উত্তর",
+  "banAppealShort": "কমপক্ষে ১০টি অক্ষর লিখুন।",
+  "banAppealFail": "আপিল পাঠানো যায়নি। আবার চেষ্টা করুন।",
+  "banAppealLimit": "আপনি সব আপিল ব্যবহার করেছেন।",
+  "banDelete": "অ্যাকাউন্ট মুছুন",
+  "banDeleteBody": "এটি আপনার অ্যাকাউন্ট চিরতরে মুছে দেবে। পাসওয়ার্ড দিন (Google ব্যবহার করলে DELETE লিখুন)।",
+  "banSignOut": "সাইন আউট"
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("bn");

@@ -901,6 +901,22 @@
   "signupCodeLabel": "6 位验证码",
   "signupVerifyBtn": "验证并创建账号",
   "signupChangeEmail": "更改邮箱",
-  "authEmailRequired": "请输入邮箱。我们会发送验证码确认是你本人。"
+  "authEmailRequired": "请输入邮箱。我们会发送验证码确认是你本人。",
+  "banTitle": "你的账号已被封禁",
+  "banUntil": "截至 {date}",
+  "banPermanent": "此封禁为永久封禁。",
+  "banReason": "原因:{reason}",
+  "banAppealTitle": "申诉",
+  "banAppealHint": "如果你认为这是误判,请告诉我们发生了什么。",
+  "banAppealSend": "提交申诉",
+  "banAppealSent": "申诉已提交。TalkLive 团队会在这里回复。",
+  "banAppealWaiting": "你的申诉正在等待回复。",
+  "banAppealReply": "TalkLive 团队的回复",
+  "banAppealShort": "请至少输入 10 个字符。",
+  "banAppealFail": "申诉未能提交,请重试。",
+  "banAppealLimit": "你的申诉次数已用完。",
+  "banDelete": "删除账号",
+  "banDeleteBody": "这将永久删除你的账号。请输入密码(使用 Google 登录请输入 DELETE)。",
+  "banSignOut": "退出登录"
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("zh");

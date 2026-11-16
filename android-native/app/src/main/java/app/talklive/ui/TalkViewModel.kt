@@ -2,6 +2,7 @@ package app.talklive.ui
 
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import androidx.lifecycle.ViewModel
@@ -57,6 +58,10 @@ class TalkViewModel @Inject constructor(
         .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, prefs.getInt("visitors", -1).takeIf { it >= 0 })
     val warnings = socket.warnings
     val maintenance = socket.maintenance
+    val banned = socket.banned
+    suspend fun sendBanAppeal(text: String) = socket.banAppeal(text)
+    suspend fun deleteBannedAccount(secret: String) = auth.deleteAccount(secret)
+    fun signOutBanned() { viewModelScope.launch { auth.signOut() } }
     fun acknowledgeWarning(id: String) = socket.acknowledgeWarning(id)
 
     init {

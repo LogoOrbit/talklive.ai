@@ -1244,6 +1244,7 @@ function navBadge(id){
   if(id==='support'&&counts.supportWaiting)return `<span class="badge">${counts.supportWaiting}</span>`;
   if(id==='reports'&&counts.unhandledReports)return `<span class="badge">${counts.unhandledReports}</span>`;
   if(id==='automod'&&counts.autoReview)return `<span class="badge">${counts.autoReview}</span>`;
+  if(id==='bans'&&counts.banAppeals)return `<span class="badge">${counts.banAppeals}</span>`;
   if(id==='voice'&&counts.voiceAppeals)return `<span class="badge">${counts.voiceAppeals}</span>`;
   if(id==='errors'&&counts.errors)return `<span class="badge" style="background:var(--serious)">${counts.errors}</span>`;
   return '';
@@ -2833,7 +2834,37 @@ async function viewBans(){
   <td>${esc(b.reason)}</td><td class="muted">${b.clientId?'profile':''}${b.account?' · account <b>'+esc(b.account)+'</b>':''}${b.deviceBound?' · device':''}${b.ip?' · network':''}${(b.evasions&&b.evasions.length)?`<br><span class="pill warn">Tried again as ${b.evasions.map(e=>esc(String(e.clientId).slice(0,10))+' ('+esc(e.via)+(e.count>1?' x'+e.count:'')+')').join(', ')}</span>`:''}</td><td>${fmtTs(b.createdAt)}</td><td>${fmtTs(b.expiresAt)}${st==='active'?`<br><span class="muted">${until(b.expiresAt)}</span>`:''}</td>
   <td>${st==='lifted'?'<span class="pill info">Lifted</span>':st==='active'?'<span class="pill crit">Active</span>':'<span class="pill good">Expired</span>'}</td>
   <td>${st==='active'?`<div class="rowbtns"><button onclick="unban('${jsq(b.id)}')">Lift ban</button></div>`:''}</td></tr>`;}).join('')||`<tr><td colspan="7" class="muted">${banFilter==='active'?'No active bans right now.':'No bans on record.'}</td></tr>`}</table></div>`;
+  const apBans=r.bans.filter(b=>(b.appeals||[]).length);
+  apBans.sort((x,y)=>(y.appeals.some(a=>!a.reply)-x.appeals.some(a=>!a.reply))||(y.appeals[y.appeals.length-1].ts-x.appeals[x.appeals.length-1].ts));
+  if(apBans.length){
+    const rows=apBans.map(b=>{const st=state(b);return `<div class="fmsg" style="margin-bottom:10px"><div><b>${esc(b.username)}</b> <span class="muted">${b.account?'account '+esc(b.account)+' · ':''}${st==='active'?'ban active, '+until(b.expiresAt):st==='lifted'?'ban lifted':'ban expired'}</span></div>
+      <div class="muted" style="margin:2px 0 6px">Ban reason: ${esc(b.reason)}</div>
+      ${b.appeals.map(a=>`<div style="margin:6px 0"><span class="pill ${a.reply?'good':'warn'}">${a.reply?'Answered':'Needs reply'}</span> <span class="muted">${ago(a.ts)}</span><div class="txt">${esc(a.text)}</div>
+      ${a.reply?`<div class="fbreply"><div class="top"><span><b>Your reply</b> · ${a.seenAt?'seen '+ago(a.seenAt):'not seen yet'}</span><span>${ago(a.repliedAt)}</span></div><div class="txt">${esc(a.reply)}</div></div>`:(st==='active'?`<div class="rowbtns" style="margin-top:6px"><button data-apr="${esc(b.id)}|${esc(a.id)}">Reply</button></div>`:'')}</div>`).join('')}</div>`;}).join('');
+    const h=document.createElement('div');h.className='card anim';h.innerHTML=`<h2>Appeals <span class="sub">${r.bans.reduce((n,b)=>n+(b.appeals||[]).filter(a=>!a.reply).length,0)} waiting for your reply</span></h2>${rows}`;
+    $('#main').prepend(h);
+    document.querySelectorAll('[data-apr]').forEach(btn=>{btn.onclick=()=>{const[bid,aid]=btn.dataset.apr.split('|');replyAppeal(r.bans.find(x=>x.id===bid),aid);};});
+  }
   document.querySelectorAll('[data-bf]').forEach(b=>b.onclick=()=>{banFilter=b.dataset.bf;load();});
+}
+function replyAppeal(b,aid){
+  const a=b&&(b.appeals||[]).find(x=>x.id===aid);if(!a)return;
+  modal(`Appeal from ${esc(b.username||'user')}`,
+    `<div class="muted" style="margin-bottom:6px">Ban reason: ${esc(b.reason)}</div><div class="fmsg" style="margin-bottom:12px"><div class="txt">${esc(a.text)}</div></div>
+     <label>Your reply</label><textarea id="apMsg" rows="5" maxlength="1000"></textarea>
+     <div class="muted" style="font-size:.78rem;margin-top:8px">Shown on their banned screen now if they are online, otherwise the next time they sign in. They can appeal again after a reply (3 per ban).</div>
+     <div class="rowbtns" style="margin-top:16px"><button data-act="reply" style="padding:9px 16px">Reply</button><button data-act="lift" style="padding:9px 16px">Reply + lift ban</button><button data-act="keep" style="padding:9px 16px">Reply + keep ban</button><button id="apCancel" style="padding:9px 16px">Cancel</button></div>`,
+    (sheet)=>{
+      const msg=sheet.querySelector('#apMsg');msg.focus();
+      sheet.querySelector('#apCancel').onclick=closeModal;
+      sheet.querySelectorAll('[data-act]').forEach(btn=>{btn.onclick=async()=>{
+        const text=msg.value.trim();
+        if(text.length<2){toast('Write the reply','It cannot be empty.','warn');msg.focus();return;}
+        sheet.querySelectorAll('button').forEach(x=>x.disabled=true);
+        try{await post('bans/'+encodeURIComponent(b.id)+'/appeals/'+encodeURIComponent(aid)+'/reply',{message:text,action:btn.dataset.act});closeModal();toast('Reply sent',btn.dataset.act==='lift'?'The ban is lifted.':'They will see it on their banned screen.','good');load();}
+        catch(e){sheet.querySelectorAll('button').forEach(x=>x.disabled=false);toast('Could not send reply',e.message,'bad');}
+      };});
+    },{mid:true});
 }
 window.unban=async(id)=>{try{await post('unban',{banId:id});toast('Ban lifted','The user can connect again.','good');load();}catch(e){toast('Could not lift ban',e.message,'bad');}};
 

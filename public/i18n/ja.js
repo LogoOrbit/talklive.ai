@@ -901,6 +901,22 @@
   "signupCodeLabel": "6桁のコード",
   "signupVerifyBtn": "確認してアカウント作成",
   "signupChangeEmail": "メールを変更",
-  "authEmailRequired": "メールアドレスを入力してください。本人確認のコードを送ります。"
+  "authEmailRequired": "メールアドレスを入力してください。本人確認のコードを送ります。",
+  "banTitle": "アカウントは停止されています",
+  "banUntil": "{date}まで",
+  "banPermanent": "この停止は無期限です。",
+  "banReason": "理由: {reason}",
+  "banAppealTitle": "異議申し立て",
+  "banAppealHint": "誤りだと思う場合は、何があったか教えてください。",
+  "banAppealSend": "送信",
+  "banAppealSent": "送信しました。TalkLiveチームがここで返信します。",
+  "banAppealWaiting": "返信をお待ちください。",
+  "banAppealReply": "TalkLiveチームからの返信",
+  "banAppealShort": "10文字以上入力してください。",
+  "banAppealFail": "送信できませんでした。もう一度お試しください。",
+  "banAppealLimit": "異議申し立ての回数の上限に達しました。",
+  "banDelete": "アカウントを削除",
+  "banDeleteBody": "アカウントを完全に削除します。パスワードを入力してください(Googleの場合はDELETE)。",
+  "banSignOut": "ログアウト"
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ja");

@@ -901,6 +901,22 @@
   "signupCodeLabel": "6 haneli kod",
   "signupVerifyBtn": "Doğrula ve hesap oluştur",
   "signupChangeEmail": "E-postayı değiştir",
-  "authEmailRequired": "E-postanı gir. Sen olduğunu doğrulamak için bir kod göndeririz."
+  "authEmailRequired": "E-postanı gir. Sen olduğunu doğrulamak için bir kod göndeririz.",
+  "banTitle": "Hesabın yasaklandı",
+  "banUntil": "{date} tarihine kadar",
+  "banPermanent": "Bu yasak kalıcıdır.",
+  "banReason": "Neden: {reason}",
+  "banAppealTitle": "İtiraz",
+  "banAppealHint": "Bunun bir hata olduğunu düşünüyorsan ne olduğunu anlat.",
+  "banAppealSend": "İtiraz gönder",
+  "banAppealSent": "İtiraz gönderildi. TalkLive ekibi burada yanıt verecek.",
+  "banAppealWaiting": "İtirazın yanıt bekliyor.",
+  "banAppealReply": "TalkLive ekibinden yanıt",
+  "banAppealShort": "En az 10 karakter yaz.",
+  "banAppealFail": "İtiraz gönderilemedi. Tekrar dene.",
+  "banAppealLimit": "Tüm itiraz haklarını kullandın.",
+  "banDelete": "Hesabı sil",
+  "banDeleteBody": "Bu, hesabını kalıcı olarak siler. Şifreni gir (Google kullanıyorsan DELETE yaz).",
+  "banSignOut": "Çıkış yap"
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("tr");

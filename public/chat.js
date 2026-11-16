@@ -3752,8 +3752,21 @@
   // (The input is re-enabled at the top of the 'matched' handler above, where
   // it happens before the focus call rather than after it.)
 
+  var bannedLoad = null;
   socket.on('banned', function (data) {
-    stage.innerHTML = '<div class="chat-blocked-full"><h1>' + escapeHtml(t('bannedTitle')) + '</h1><p>' + escapeHtml(t('bannedBody')) + '</p></div>';
+    if (!bannedLoad) {
+      bannedLoad = new Promise(function (resolve) {
+        var s = document.createElement('script');
+        s.src = '/banned-screen.js?v=2139b0c69b';
+        s.onload = resolve;
+        s.onerror = function () {
+          bannedLoad = null;
+          stage.innerHTML = '<div class="chat-blocked-full"><h1>' + escapeHtml(t('bannedTitle')) + '</h1><p>' + escapeHtml(t('bannedBody')) + '</p></div>';
+        };
+        document.head.appendChild(s);
+      });
+    }
+    bannedLoad.then(function () { if (window.TalkLiveBanned) window.TalkLiveBanned.show(socket, data); });
   });
   socket.on('siteModes', function (m) { if (window.tlSiteModes) window.tlSiteModes(m); });
   socket.on('search-refused', function (data) {

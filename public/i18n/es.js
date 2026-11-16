@@ -901,6 +901,22 @@
   "signupCodeLabel": "Código de 6 dígitos",
   "signupVerifyBtn": "Verificar y crear cuenta",
   "signupChangeEmail": "Cambiar correo",
-  "authEmailRequired": "Escribe tu correo. Te enviamos un código para confirmar que eres tú."
+  "authEmailRequired": "Escribe tu correo. Te enviamos un código para confirmar que eres tú.",
+  "banTitle": "Tu cuenta está suspendida",
+  "banUntil": "Hasta el {date}",
+  "banPermanent": "Esta suspensión es permanente.",
+  "banReason": "Motivo: {reason}",
+  "banAppealTitle": "Apelar",
+  "banAppealHint": "Si crees que es un error, cuéntanos qué pasó.",
+  "banAppealSend": "Enviar apelación",
+  "banAppealSent": "Apelación enviada. El equipo de TalkLive responderá aquí.",
+  "banAppealWaiting": "Tu apelación espera respuesta.",
+  "banAppealReply": "Respuesta del equipo de TalkLive",
+  "banAppealShort": "Escribe al menos 10 caracteres.",
+  "banAppealFail": "No se pudo enviar tu apelación. Inténtalo de nuevo.",
+  "banAppealLimit": "Has usado todas tus apelaciones.",
+  "banDelete": "Eliminar cuenta",
+  "banDeleteBody": "Esto elimina tu cuenta para siempre. Escribe tu contraseña (o DELETE si usas Google).",
+  "banSignOut": "Cerrar sesión"
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("es");
