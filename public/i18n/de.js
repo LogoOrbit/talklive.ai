@@ -901,6 +901,22 @@
   "signupCodeLabel": "6-stelliger Code",
   "signupVerifyBtn": "Bestätigen & Konto erstellen",
   "signupChangeEmail": "E-Mail ändern",
-  "authEmailRequired": "Gib deine E-Mail ein. Wir schicken einen Code, um zu bestätigen, dass du es bist."
+  "authEmailRequired": "Gib deine E-Mail ein. Wir schicken einen Code, um zu bestätigen, dass du es bist.",
+  "banTitle": "Dein Konto ist gesperrt",
+  "banUntil": "Bis {date}",
+  "banPermanent": "Diese Sperre ist dauerhaft.",
+  "banReason": "Grund: {reason}",
+  "banAppealTitle": "Einspruch",
+  "banAppealHint": "Wenn du das für einen Fehler hältst, schreib uns, was passiert ist.",
+  "banAppealSend": "Einspruch senden",
+  "banAppealSent": "Einspruch gesendet. Das TalkLive-Team antwortet hier.",
+  "banAppealWaiting": "Dein Einspruch wartet auf eine Antwort.",
+  "banAppealReply": "Antwort vom TalkLive-Team",
+  "banAppealShort": "Bitte schreib mindestens 10 Zeichen.",
+  "banAppealFail": "Einspruch konnte nicht gesendet werden. Bitte versuche es erneut.",
+  "banAppealLimit": "Du hast alle Einsprüche verbraucht.",
+  "banDelete": "Konto löschen",
+  "banDeleteBody": "Das löscht dein Konto endgültig. Gib dein Passwort ein (oder DELETE, wenn du Google nutzt).",
+  "banSignOut": "Abmelden"
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("de");

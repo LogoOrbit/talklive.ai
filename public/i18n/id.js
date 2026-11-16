@@ -901,6 +901,22 @@
   "signupCodeLabel": "Kode 6 digit",
   "signupVerifyBtn": "Verifikasi & buat akun",
   "signupChangeEmail": "Ganti email",
-  "authEmailRequired": "Masukkan emailmu. Kami kirim kode untuk memastikan ini kamu."
+  "authEmailRequired": "Masukkan emailmu. Kami kirim kode untuk memastikan ini kamu.",
+  "banTitle": "Akunmu diblokir",
+  "banUntil": "Sampai {date}",
+  "banPermanent": "Pemblokiran ini permanen.",
+  "banReason": "Alasan: {reason}",
+  "banAppealTitle": "Banding",
+  "banAppealHint": "Jika menurutmu ini keliru, ceritakan apa yang terjadi.",
+  "banAppealSend": "Kirim banding",
+  "banAppealSent": "Banding terkirim. Tim TalkLive akan membalas di sini.",
+  "banAppealWaiting": "Bandingmu menunggu balasan.",
+  "banAppealReply": "Balasan dari tim TalkLive",
+  "banAppealShort": "Tulis minimal 10 karakter.",
+  "banAppealFail": "Banding tidak terkirim. Coba lagi.",
+  "banAppealLimit": "Kamu sudah memakai semua kesempatan banding.",
+  "banDelete": "Hapus akun",
+  "banDeleteBody": "Ini menghapus akunmu selamanya. Masukkan kata sandi (atau DELETE jika memakai Google).",
+  "banSignOut": "Keluar"
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("id");

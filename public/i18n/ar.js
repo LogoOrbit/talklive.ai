@@ -901,6 +901,22 @@
   "signupCodeLabel": "رمز من 6 أرقام",
   "signupVerifyBtn": "تحقّق وأنشئ الحساب",
   "signupChangeEmail": "تغيير البريد",
-  "authEmailRequired": "أدخل بريدك الإلكتروني. نرسل إليه رمزًا لنتأكد أنه أنت."
+  "authEmailRequired": "أدخل بريدك الإلكتروني. نرسل إليه رمزًا لنتأكد أنه أنت.",
+  "banTitle": "حسابك محظور",
+  "banUntil": "حتى {date}",
+  "banPermanent": "هذا الحظر دائم.",
+  "banReason": "السبب: {reason}",
+  "banAppealTitle": "اعتراض",
+  "banAppealHint": "إذا كنت تعتقد أن هذا خطأ، أخبرنا بما حدث.",
+  "banAppealSend": "إرسال الاعتراض",
+  "banAppealSent": "تم إرسال اعتراضك. سيرد فريق TalkLive هنا.",
+  "banAppealWaiting": "اعتراضك ينتظر الرد.",
+  "banAppealReply": "رد من فريق TalkLive",
+  "banAppealShort": "اكتب 10 أحرف على الأقل.",
+  "banAppealFail": "تعذر إرسال اعتراضك. حاول مرة أخرى.",
+  "banAppealLimit": "لقد استخدمت كل اعتراضاتك.",
+  "banDelete": "حذف الحساب",
+  "banDeleteBody": "سيؤدي هذا إلى حذف حسابك نهائيًا. أدخل كلمة المرور (أو DELETE إذا كنت تستخدم Google).",
+  "banSignOut": "تسجيل الخروج"
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ar");

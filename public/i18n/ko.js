@@ -901,6 +901,22 @@
   "signupCodeLabel": "6자리 코드",
   "signupVerifyBtn": "인증하고 계정 만들기",
   "signupChangeEmail": "이메일 변경",
-  "authEmailRequired": "이메일을 입력하세요. 본인 확인 코드를 보내드려요."
+  "authEmailRequired": "이메일을 입력하세요. 본인 확인 코드를 보내드려요.",
+  "banTitle": "계정이 정지되었습니다",
+  "banUntil": "{date}까지",
+  "banPermanent": "이 정지는 영구적입니다.",
+  "banReason": "사유: {reason}",
+  "banAppealTitle": "이의 신청",
+  "banAppealHint": "실수라고 생각하시면 무슨 일이 있었는지 알려 주세요.",
+  "banAppealSend": "이의 신청 보내기",
+  "banAppealSent": "이의 신청을 보냈습니다. TalkLive 팀이 여기에 답변합니다.",
+  "banAppealWaiting": "이의 신청의 답변을 기다리는 중입니다.",
+  "banAppealReply": "TalkLive 팀의 답변",
+  "banAppealShort": "10자 이상 입력해 주세요.",
+  "banAppealFail": "이의 신청을 보내지 못했습니다. 다시 시도해 주세요.",
+  "banAppealLimit": "이의 신청 횟수를 모두 사용했습니다.",
+  "banDelete": "계정 삭제",
+  "banDeleteBody": "계정이 영구적으로 삭제됩니다. 비밀번호를 입력하세요(Google 사용 시 DELETE).",
+  "banSignOut": "로그아웃"
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("ko");

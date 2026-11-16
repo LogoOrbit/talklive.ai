@@ -233,6 +233,22 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "chatLinkBlocked": "Links to other websites can't be sent here - it keeps everyone safe from scams. Social profiles and usernames are fine.",
     "bannedTitle": "Access paused",
     "bannedBody": "Your access has been temporarily suspended. Please try again later.",
+    "banTitle": "Your account is banned",
+    "banUntil": "Until {date}",
+    "banPermanent": "This ban is permanent.",
+    "banReason": "Reason: {reason}",
+    "banAppealTitle": "Appeal",
+    "banAppealHint": "If you think this is a mistake, tell us what happened.",
+    "banAppealSend": "Send appeal",
+    "banAppealSent": "Appeal sent. The TalkLive team will reply here.",
+    "banAppealWaiting": "Your appeal is waiting for a reply.",
+    "banAppealReply": "Reply from the TalkLive team",
+    "banAppealShort": "Please write at least 10 characters.",
+    "banAppealFail": "Could not send your appeal. Please try again.",
+    "banAppealLimit": "You have used all your appeals.",
+    "banDelete": "Delete account",
+    "banDeleteBody": "This deletes your account for good. Enter your password (or DELETE if you use Google).",
+    "banSignOut": "Sign out",
     "maintenanceTitle": "Back in a moment",
     "maintenanceBody": "TalkLive is under quick maintenance. Please check back shortly.",
     "goHome": "TalkLive home",
@@ -1109,7 +1125,7 @@ function applyI18n() {
 // Non-English dictionaries load on demand from /i18n/<lang>.js. Until the file
 // arrives t() falls back to English, then the UI re-translates once it lands.
 // Keep in step with the preload snippet in the <head> of index.html/chat.html.
-const I18N_VERSION = '20261106passes';
+const I18N_VERSION = '20261116ban';
 const i18nLoading = {};
 window.__i18nLangLoaded = function (lang) {
   delete i18nLoading[lang];

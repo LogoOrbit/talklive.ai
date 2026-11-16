@@ -11051,20 +11051,25 @@ socket.on('reaction', (reaction) => {
   showReactionFloat(reaction);
 });
 
+// Banned: nothing else works. The full-screen view (appeal, delete account,
+// sign out) loads on demand; the server keeps this socket in a banned state.
+let bannedLoad = null;
 socket.on('banned', (info) => {
-  if (info && info.until) {
-    const mins = Math.max(1, Math.round((info.until - Date.now()) / 60000));
-    const human = mins >= 1440 ? `${Math.round(mins / 1440)} day(s)` : mins >= 60 ? `${Math.round(mins / 60)} hour(s)` : `${mins} minute(s)`;
-    showError(`${t('errBanned')} (${human} remaining)`);
-    socket.io.reconnection(false); // banned: stop auto-reconnect attempts
-  } else {
-    showError(t('errBanned'));
-  }
   if (localStream) {
     localStream.getTracks().forEach((t) => t.stop());
     localStream = null;
   }
   resetUI();
+  if (!bannedLoad) {
+    bannedLoad = new Promise((resolve) => {
+      const s = document.createElement('script');
+      s.src = '/banned-screen.js?v=b625f90090';
+      s.onload = resolve;
+      s.onerror = () => { bannedLoad = null; showError(t('errBanned')); };
+      document.head.appendChild(s);
+    });
+  }
+  bannedLoad.then(() => window.TalkLiveBanned && window.TalkLiveBanned.show(socket, info));
 });
 
 // Owner site modes (dashboard Settings): the announcement strip, and searches

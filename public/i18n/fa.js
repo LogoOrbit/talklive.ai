@@ -901,6 +901,22 @@
   "signupCodeLabel": "کد ۶ رقمی",
   "signupVerifyBtn": "تأیید و ساخت حساب",
   "signupChangeEmail": "تغییر ایمیل",
-  "authEmailRequired": "ایمیلت را وارد کن. یک کد می‌فرستیم تا مطمئن شویم خودت هستی."
+  "authEmailRequired": "ایمیلت را وارد کن. یک کد می‌فرستیم تا مطمئن شویم خودت هستی.",
+  "banTitle": "حساب شما مسدود شده است",
+  "banUntil": "تا {date}",
+  "banPermanent": "این مسدودیت دائمی است.",
+  "banReason": "دلیل: {reason}",
+  "banAppealTitle": "اعتراض",
+  "banAppealHint": "اگر فکر می‌کنید اشتباه شده، بگویید چه اتفاقی افتاده.",
+  "banAppealSend": "ارسال اعتراض",
+  "banAppealSent": "اعتراض ارسال شد. تیم TalkLive اینجا پاسخ می‌دهد.",
+  "banAppealWaiting": "اعتراض شما منتظر پاسخ است.",
+  "banAppealReply": "پاسخ تیم TalkLive",
+  "banAppealShort": "حداقل ۱۰ نویسه بنویسید.",
+  "banAppealFail": "اعتراض ارسال نشد. دوباره تلاش کنید.",
+  "banAppealLimit": "همه اعتراض‌های شما استفاده شده است.",
+  "banDelete": "حذف حساب",
+  "banDeleteBody": "این کار حساب شما را برای همیشه حذف می‌کند. رمز عبور را وارد کنید (یا اگر از Google استفاده می‌کنید DELETE).",
+  "banSignOut": "خروج"
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("fa");

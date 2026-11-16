@@ -901,6 +901,22 @@
   "signupCodeLabel": "6 अंकों का कोड",
   "signupVerifyBtn": "पुष्टि करें और खाता बनाएँ",
   "signupChangeEmail": "ईमेल बदलें",
-  "authEmailRequired": "अपना ईमेल डालें। पुष्टि के लिए हम कोड भेजेंगे।"
+  "authEmailRequired": "अपना ईमेल डालें। पुष्टि के लिए हम कोड भेजेंगे।",
+  "banTitle": "आपका अकाउंट बैन है",
+  "banUntil": "{date} तक",
+  "banPermanent": "यह बैन स्थायी है।",
+  "banReason": "कारण: {reason}",
+  "banAppealTitle": "अपील",
+  "banAppealHint": "अगर आपको लगता है कि यह गलती है, तो बताइए क्या हुआ।",
+  "banAppealSend": "अपील भेजें",
+  "banAppealSent": "अपील भेज दी गई। TalkLive टीम यहीं जवाब देगी।",
+  "banAppealWaiting": "आपकी अपील जवाब का इंतज़ार कर रही है।",
+  "banAppealReply": "TalkLive टीम का जवाब",
+  "banAppealShort": "कम से कम 10 अक्षर लिखें।",
+  "banAppealFail": "अपील नहीं भेजी जा सकी। फिर कोशिश करें।",
+  "banAppealLimit": "आप सभी अपील इस्तेमाल कर चुके हैं।",
+  "banDelete": "अकाउंट हटाएं",
+  "banDeleteBody": "इससे आपका अकाउंट हमेशा के लिए हट जाएगा। पासवर्ड डालें (Google इस्तेमाल करते हैं तो DELETE)।",
+  "banSignOut": "साइन आउट"
 };
 if (window.__i18nLangLoaded) window.__i18nLangLoaded("hi");
