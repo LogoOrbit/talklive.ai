@@ -35,5 +35,16 @@ ok('yearly ends like the monthly: .99 stays .99, 9 stays 9', pricing.yearlyPrice
 ok('Japan yearly is Play\'s 11200', pricing.forCountry('JP').yearly.amount === 11200);
 ok('save percent is sane everywhere', Object.keys(table.countries).every((c) => { const v = pricing.forCountry(c).yearly.savePercent; return v >= 30 && v <= 50; }));
 
+// Honest anchors: struck-through figures are computed from real prices, only when truly higher.
+ok('US yearly anchor is 12 x 9.99 = 119.88 and matches the saving', us.yearly.compareAt && us.yearly.compareAt.amount === 119.88 && us.yearly.compareAt.savePercent === us.yearly.savePercent && us.yearly.compareAt.label === '$119.88', us.yearly);
+ok('US 7-day pass anchor is seven 1-day passes', us.passes[1].compareAt && Math.abs(us.passes[1].compareAt.amount - 13.93) < 1e-9 && us.passes[1].compareAt.savePercent === 64 && us.passes[1].compareAt.basisLabel === 'vs 1-day passes', us.passes[1]);
+ok('1-day pass and monthly have no anchor', us.passes[0].compareAt === undefined && us.monthly.compareAt === undefined);
+const anchors = [];
+for (const c of Object.keys(table.countries)) { const p = pricing.forCountry(c); anchors.push(p.yearly, p.passes[1], p.passes[2]); }
+ok('an anchor is only ever present when it is higher than the price', anchors.every((x) => !x.compareAt || (x.compareAt.amount > x.amount && x.compareAt.savePercent >= 1 && x.compareAt.savePercent <= 99)));
+ok('yearly anchor equals twelve monthly prices exactly', Object.keys(table.countries).every((c) => { const p = pricing.forCountry(c); return !p.yearly.compareAt || Math.abs(p.yearly.compareAt.amount - p.monthly.amount * 12) < 1e-6; }));
+ok('pass anchors equal the 1-day price times the days', Object.keys(table.countries).every((c) => { const p = pricing.forCountry(c); return [[1, 7], [2, 15]].every(([i, d]) => !p.passes[i].compareAt || Math.abs(p.passes[i].compareAt.amount - p.passes[0].amount * d) < 1e-6); }));
+ok('a market where the 7-day pass costs a month still never claims a false saving', (() => { const p = pricing.forCountry('AR'); return !p.passes[1].compareAt || p.passes[1].compareAt.amount > p.passes[1].amount; })());
+ok('zero-decimal anchor has no decimals', (() => { const a = pricing.forCountry('JP').yearly.compareAt; return !!a && a.amount === 19200 && !/[.,]\d{1,2}$/.test(a.label); })(), pricing.forCountry('JP').yearly);
 console.log(failed ? `\n${failed} failed` : '\nall passed');
 process.exit(failed ? 1 : 0);

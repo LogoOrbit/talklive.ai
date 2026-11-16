@@ -1058,23 +1058,17 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
         <!-- Desktop only: the rail has room under the nav that a phone does
              not, and this is the one thing worth putting in it. -->
-        <!-- Premium is announced, not on sale. So the card sells nothing: it
-             says what is coming, lists what it will do, and its button is the
-             one thing that works today - a reminder for when it does. The
-             price link is still there for anyone who wants the detail. -->
+        <!-- Plus is on sale in the Android app; this card says what it adds and links to the prices. -->
         <div class="tl-nav-promo">
           <span class="tl-nav-promo-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.5 8.5 7 11l5-5.5 5 5.5 3.5-2.5-1.6 9.2a1 1 0 0 1-1 .8H6.1a1 1 0 0 1-1-.8z"/></svg>
           </span>
-          <strong data-i18n="growthPremiumTitle">Premium plan</strong>
-          <small data-i18n="navPremiumSub">More control. Better matches. A safer experience.</small>
+          <strong data-i18n="plusCardTitle">TalkLive Plus</strong>
+          <small data-i18n="plusNavSub">Matched first, more filters, undo skip and more.</small>
           <ul class="tl-soon-list">
-            <li data-i18n="premiumPerkGender">Gender &amp; country filters</li>
+            <li data-i18n="plusBGender">Match with men or women</li>
+            <li data-i18n="plusBPriority">Matched first when it is busy</li>
           </ul>
-          <button type="button" class="tl-notify-btn tl-nav-promo-cta" data-notify="premium">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 16V11a6 6 0 1 0-12 0v5l-1.6 2.4h15.2z"/><path d="M10 20.2a2.2 2.2 0 0 0 4 0"/></svg>
-            <span data-i18n="notifyMe">Notify me</span>
-          </button>
           <a class="tl-nav-promo-link" href="/pricing?utm_source=app" data-i18n="navPremiumCta">See Premium plans</a>
         </div>
       </nav>
@@ -1180,7 +1174,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           <div class="setup-growth" data-i18n-aria="growthAria" aria-label="TalkLive membership and sharing">
             <a class="setup-growth-card setup-growth-premium" href="/pricing?utm_source=app">
               <span class="setup-growth-icon" aria-hidden="true"><i class="ti ti-gem" aria-hidden="true"></i></span>
-              <span><strong data-i18n="growthPremiumTitle">Premium plan</strong><small data-i18n="growthPremiumSub">All filters and instant rematching</small></span>
+              <span><strong data-i18n="plusCardTitle">TalkLive Plus</strong><small data-i18n="plusCardSub">Filters, priority matching, undo skip</small></span>
             </a>
             <button type="button" id="shareTalkLiveBtn" class="setup-growth-card setup-growth-share">
               <span class="setup-growth-icon" aria-hidden="true">↗</span>
@@ -1497,20 +1491,23 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               <p class="pass-foot"><a href="/pricing" data-i18n="shopPlusLine">Or TalkLive Plus, by the month</a></p>
             </section>
             <section class="pass-panel" aria-labelledby="passIncTitle">
-              <div role="heading" aria-level="3" class="ui-h3" id="passIncTitle" data-i18n="passIncluded">Included with every pass</div>
+              <div role="heading" aria-level="3" class="ui-h3" id="passIncTitle" data-i18n="passIncludedPlus">A pass has all of Plus</div>
               <ul class="pass-perks">
-                <li><strong data-i18n="passPerkGender">Gender filter</strong><span data-i18n="passPerkGenderSub">Choose who you want to match with.</span></li>
-                <li><strong data-i18n="passPerkPriority">Queue priority</strong><span data-i18n="passPerkPrioritySub">A queue boost when traffic is active.</span></li>
-                <li><strong data-i18n="passPerkWindow">Full access</strong><span data-i18n="passPerkWindowSub">Every perk stays on until your pass ends.</span></li>
+                <li><strong data-i18n="plusBGender">Match with men or women</strong></li>
+                <li><strong data-i18n="plusBCountries">Up to 50 preferred and 50 avoided countries</strong></li>
+                <li><strong data-i18n="plusBInterests">Match on up to 10 interests, not 2</strong></li>
+                <li><strong data-i18n="plusBPriority">Matched first when it is busy</strong></li>
+                <li><strong data-i18n="plusBUndo">Undo a skip</strong></li>
+                <li><strong data-i18n="plusBLikes">See who liked you</strong></li>
+                <li><strong data-i18n="plusBHistory">Everyone you met, not just the last 3</strong></li>
+                <li><strong data-i18n="plusBStreak">Streak freezes and streak restore</strong></li>
+                <li><strong data-i18n="plusBFilms">Show 3 favourite films, not 1</strong></li>
+                <li><strong data-i18n="plusBAvatars">8 legendary avatars and a living avatar</strong></li>
+                <li><strong data-i18n="plusBRing">Gold name, ring and badge</strong></li>
+                <li><strong data-i18n="plusBThemes">Ocean and Sunset themes</strong></li>
               </ul>
             </section>
-            <div class="tl-soon-cta">
-              <button type="button" class="tl-notify-btn" data-notify="shop">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 16V11a6 6 0 1 0-12 0v5l-1.6 2.4h15.2z"/><path d="M10 20.2a2.2 2.2 0 0 0 4 0"/></svg>
-                <span data-i18n="notifyMe">Notify me</span>
-              </button>
-              <p class="tl-soon-foot" data-i18n="notifyShopFoot">Be the first to know when it goes live.</p>
-            </div>
+            <a class="pass-buy pass-buy-link" id="shopAppLink" href="https://play.google.com/store/apps/details?id=app.talklive" rel="noopener" data-i18n="plusGetInApp2">Get it in the Android app</a>
             <p class="shop-fine">
               <a href="/terms" data-i18n="termsOfService">Terms of Service</a> ·
               <a href="/privacy" data-i18n="privacyPolicy">Privacy Policy</a> ·
@@ -1533,7 +1530,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               <div class="billing-item">
                 <p class="billing-kicker" data-i18n="billingEmailKicker">BILLING EMAIL</p>
                 <p class="billing-value" id="billingEmailValue" data-i18n="billingEmailNone">No email linked yet</p>
-                <p class="billing-hint" data-i18n="billingEmailHint">Link an email to your account and receipts will have somewhere to go once passes exist.</p>
+                <p class="billing-hint" data-i18n="billingEmailHint2">Receipts for Plus come from Google Play. This is the email on your TalkLive account.</p>
               </div>
               <div class="billing-item">
                 <p class="billing-kicker" data-i18n="billingCardsKicker">SAVED PAYMENT METHODS</p>
@@ -1541,9 +1538,10 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                 <p class="billing-hint" data-i18n="billingCardsHint">Plus is bought in the TalkLive Android app through Google Play. Card details are never stored on TalkLive servers.</p>
               </div>
               <div class="billing-item">
-                <p class="billing-kicker" data-i18n="billingBoostKicker">CURRENT PASS</p>
-                <p class="billing-value" data-i18n="billingBoostValue">No active pass</p>
-                <p class="billing-hint" data-i18n="billingBoostHint">Every feature is free. You have not been charged for anything.</p>
+                <p class="billing-kicker" data-i18n="billingPlusKicker">TALKLIVE PLUS</p>
+                <p class="billing-value" id="billingPlusValue" data-i18n="billingPlusNone">No active Plus</p>
+                <p class="billing-hint" id="billingPlusHint" data-i18n="billingPlusNoneHint">Plus and passes are bought in the TalkLive Android app, with Google Play.</p>
+                <p class="billing-hint"><a id="billingManageLink" href="#" rel="noopener" hidden data-i18n="billingManage">Manage in Google Play</a></p>
               </div>
               <div class="billing-item">
                 <p class="billing-kicker" data-i18n="billingSupportKicker">BILLING SUPPORT</p>
@@ -1552,7 +1550,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               </div>
             </div>
             <p class="billing-footer">
-              <span data-i18n="billingFooter">Passes are not on sale. Read the full terms in</span>
+              <span data-i18n="billingFooter2">Plus is sold only in the Android app. Read the full terms in</span>
               <a href="/terms" data-i18n="termsOfService">Terms of Service</a>.
             </p>
           </div>
@@ -1608,49 +1606,30 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h12l3 6-9 12L3 9z"/><path d="M3 9h18M9 3l3 18 3-18"/></svg>
             </span>
           </div>
-                    <div role="heading" aria-level="2" class="pu-title" id="puTitle">Want more countries?</div>
+                    <div role="heading" aria-level="2" class="pu-title" id="puTitle">TalkLive Plus</div>
           <p class="pu-reason" id="puReason"></p>
-          <ul class="pu-perks">
-            <li data-perk="countries"><span class="pu-ico" aria-hidden="true"><i class="ti ti-globe" aria-hidden="true"></i></span><span data-i18n="upsellPerkCountries">Unlimited countries &amp; regions</span></li>
-            <li data-perk="gender"><span class="pu-ico" aria-hidden="true"><i class="ti ti-chat" aria-hidden="true"></i></span><span data-i18n="upsellPerkGender">Match with men or women</span></li>
-            <li data-perk="likes"><span class="pu-ico" aria-hidden="true"><i class="ti ti-heart" aria-hidden="true"></i></span><span data-i18n="upsellPerkLikes">See who liked you</span></li>
-            <li data-perk="undo"><span class="pu-ico" aria-hidden="true"><i class="ti ti-undo" aria-hidden="true"></i></span><span data-i18n="upsellPerkUndo">Undo a skip</span></li>
-            <li data-perk="themes"><span class="pu-ico" aria-hidden="true"><i class="ti ti-brush" aria-hidden="true"></i></span><span data-i18n="upsellPerkThemes">Ocean and Sunset themes</span></li>
-            <li data-perk="rematch"><span class="pu-ico" aria-hidden="true"><i class="ti ti-bolt" aria-hidden="true"></i></span><span data-i18n="upsellPerkRematch">Instant rematch: skip the queue</span></li>
-            <li data-perk="alive"><span class="pu-ico" aria-hidden="true"><i class="ti ti-spark" aria-hidden="true"></i></span><span>A living avatar, gold name &amp; ring</span></li>
-            <li data-perk="avatars"><span class="pu-ico" aria-hidden="true"><i class="ti ti-crown" aria-hidden="true"></i></span><span>Every avatar, with animated character scenes</span></li>
-            <li data-perk="history"><span class="pu-ico" aria-hidden="true"><i class="ti ti-clock" aria-hidden="true"></i></span><span>Everyone you met</span></li>
-            <li data-perk="streak"><span class="pu-ico" aria-hidden="true"><i class="ti ti-snow" aria-hidden="true"></i></span><span>Streak freezes &amp; restore</span></li>
-          </ul>
+          
+          <p class="pu-price" id="puPrice" aria-live="polite"><span class="pu-price-now" id="puPriceNow">&nbsp;</span> <s class="pu-price-was" id="puPriceWas" hidden></s> <span class="pu-save" id="puPriceSave" hidden></span></p>
           <button type="button" id="puNotifyBtn" class="pu-cta">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 16V11a6 6 0 1 0-12 0v5l-1.6 2.4h15.2z"/><path d="M10 20.2a2.2 2.2 0 0 0 4 0"/></svg>
-            <span id="puNotifyLabel" data-i18n="upsellGetPlus">Get Plus</span>
+            <span id="puNotifyLabel" data-i18n="plusGetInApp">See plans</span>
           </button>
+          <ul class="pu-perks" id="puPerks">
+            <li data-perk="gender"><span class="pu-ico" aria-hidden="true"><i class="ti ti-people" aria-hidden="true"></i></span><span data-i18n="plusBGender">Match with men or women</span></li>
+            <li data-perk="countries"><span class="pu-ico" aria-hidden="true"><i class="ti ti-globe" aria-hidden="true"></i></span><span data-i18n="plusBCountries">Up to 50 preferred and 50 avoided countries</span></li>
+            <li data-perk="interests"><span class="pu-ico" aria-hidden="true"><i class="ti ti-book" aria-hidden="true"></i></span><span data-i18n="plusBInterests">Match on up to 10 interests, not 2</span></li>
+            <li data-perk="rematch"><span class="pu-ico" aria-hidden="true"><i class="ti ti-bolt" aria-hidden="true"></i></span><span data-i18n="plusBPriority">Matched first when it is busy</span></li>
+            <li data-perk="undo"><span class="pu-ico" aria-hidden="true"><i class="ti ti-undo" aria-hidden="true"></i></span><span data-i18n="plusBUndo">Undo a skip</span></li>
+            <li data-perk="likes"><span class="pu-ico" aria-hidden="true"><i class="ti ti-heart" aria-hidden="true"></i></span><span data-i18n="plusBLikes">See who liked you</span></li>
+            <li data-perk="history"><span class="pu-ico" aria-hidden="true"><i class="ti ti-clock" aria-hidden="true"></i></span><span data-i18n="plusBHistory">Everyone you met, not just the last 3</span></li>
+            <li data-perk="streak"><span class="pu-ico" aria-hidden="true"><i class="ti ti-flame" aria-hidden="true"></i></span><span data-i18n="plusBStreak">Streak freezes and streak restore</span></li>
+            <li data-perk="films"><span class="pu-ico" aria-hidden="true"><i class="ti ti-headset" aria-hidden="true"></i></span><span data-i18n="plusBFilms">Show 3 favourite films, not 1</span></li>
+            <li data-perk="avatars"><span class="pu-ico" aria-hidden="true"><i class="ti ti-crown" aria-hidden="true"></i></span><span data-i18n="plusBAvatars">8 legendary avatars and a living avatar</span></li>
+            <li data-perk="alive"><span class="pu-ico" aria-hidden="true"><i class="ti ti-gem" aria-hidden="true"></i></span><span data-i18n="plusBRing">Gold name, ring and badge</span></li>
+            <li data-perk="themes"><span class="pu-ico" aria-hidden="true"><i class="ti ti-brush" aria-hidden="true"></i></span><span data-i18n="plusBThemes">Ocean and Sunset themes</span></li>
+          </ul>
           <a id="puPlansLink" class="pu-link" href="/pricing?utm_source=app" data-i18n="upsellSeePlans">See what's included</a>
-          <p class="pu-free" id="puFree" data-i18n="upsellFree">Everything you use today stays free.</p>
-        </div>
-      </div>
-
-      <!-- "Notify me": email sign-up for the launch of Premium / the shop -->
-      <div id="notifyModal" class="modal-overlay hidden">
-        <div class="modal-box modal-box-narrow" role="dialog" aria-modal="true" aria-labelledby="notifyModalTitle">
-          <div class="modal-header">
-            <div role="heading" aria-level="2" class="ui-h2" id="notifyModalTitle" data-i18n="notifyEmailTitle">Get notified at launch</div>
-            <button type="button" id="notifyCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
-          </div>
-          <div class="modal-body">
-            <form id="notifyForm" novalidate>
-              <p class="consent-modal-text" data-i18n="notifyEmailHint">Leave your email and we will tell you the moment it goes live.</p>
-              <input type="email" id="notifyEmailInput" class="search-input" maxlength="254" data-i18n-placeholder="notifyEmailPlaceholder" placeholder="you@example.com" autocomplete="email" inputmode="email" required />
-              <input type="text" id="notifyHp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="notify-hp" />
-              <p id="notifyStatus" class="notify-status" aria-live="polite"></p>
-              <div class="confirm-actions rename-actions">
-                <button type="button" id="notifyPushBtn" class="btn btn-secondary" data-i18n="notifyPushInstead">Browser alert</button>
-                <button type="submit" id="notifySubmitBtn" class="btn btn-save" data-i18n="notifySubmit">Notify me</button>
-              </div>
-              <p class="notify-fine" data-i18n="notifyEmailFine">No spam. One email to confirm, then only launch news. Unsubscribe anytime.</p>
-            </form>
-          </div>
+          <p class="pu-free" id="puFree" data-i18n="plusFreeStays">Calls, text chats and friends stay free and unlimited.</p>
+          <p class="pu-free" id="puBuyNote" data-i18n="plusBuyInApp">Plus is bought in the TalkLive Android app with Google Play, and works here when you sign in.</p>
         </div>
       </div>
 

@@ -78,9 +78,16 @@ function summarise(sub) {
  * Turns a summarised subscription into a premium decision:
  *   { action: 'grant', until } | { action: 'revoke' } | { action: 'ignore', reason }
  */
+// Google keeps access running during the grace period while it retries the
+// card, and the expiry time it reports can already be in the past then. Keep
+// the member in for a few days from now; the next check (or the ON_HOLD /
+// EXPIRED notification) ends it. Needs a real Play account to confirm.
+const GRACE_FALLBACK_MS = 3 * 24 * 60 * 60 * 1000;
+
 function decide(s, now = Date.now()) {
   if (!s) return { action: 'ignore', reason: 'no subscription' };
-  if (ENTITLED.has(s.state) && s.expiryMs > now) return { action: 'grant', until: s.expiryMs };
+  if (ENTITLED.has(s.state) && s.expiryMs > now) return { action: 'grant', until: s.expiryMs, state: s.state };
+  if (s.state === 'SUBSCRIPTION_STATE_IN_GRACE_PERIOD') return { action: 'grant', until: now + GRACE_FALLBACK_MS, state: s.state };
   if (ENDED.has(s.state) || (ENTITLED.has(s.state) && s.expiryMs <= now)) return { action: 'revoke' };
   return { action: 'ignore', reason: `state ${s.state || 'unknown'}` };
 }
@@ -105,9 +112,12 @@ function nextPremium(existing, decision, token, now = Date.now()) {
   const active = !!existing && !existing.revokedAt && (!existing.expiresAt || existing.expiresAt > now);
   if (active && !existing.expiresAt) return { op: 'set', info: { lastEvent: 'play:active', playToken: tokenHash } };
   let expiresAt = decision.until;
-  // A longer grant from somewhere else (Stripe, referral) is kept.
-  if (active && existing.source !== 'play') expiresAt = Math.max(expiresAt, existing.expiresAt);
-  return { op: 'set', info: { lastEvent: 'play:active', expiresAt, source: 'play', playToken: tokenHash } };
+  let source = 'play';
+  // A longer grant from somewhere else (earlier Stripe, a pass) is kept, with
+  // its own source: a later subscription refund must not take pass days away.
+  if (active && existing.source !== 'play' && existing.expiresAt > expiresAt) { expiresAt = existing.expiresAt; source = existing.source || 'play'; }
+  // playState lets the pages say "renews on" or "ends on" (cancelled, grace).
+  return { op: 'set', info: { lastEvent: 'play:active', expiresAt, source, playToken: tokenHash, playState: decision.state || null } };
 }
 
 // One-time passes: Plus for a fixed number of days, no renewal. Product IDs
@@ -215,6 +225,20 @@ function createPlayBilling({
   };
 }
 
+/**
+ * A subscription bought while signed out belongs to the guest profile that was
+ * on the phone. Signing in swaps that profile for the account's, so the same
+ * Google account's purchase token would be refused for the new profile. It may
+ * move once, and only: from a guest profile (not an account) to a signed-in
+ * account, with Google confirming the purchase was made by that guest profile.
+ * Anything else stays refused, so a token cannot be replayed onto a second profile.
+ */
+function canMovePurchase({ ownerId, requesterId, ownerIsAccount, requesterIsAccount, subAccountId }) {
+  return !!ownerId && !!requesterId && ownerId !== requesterId
+    && !ownerIsAccount && !!requesterIsAccount
+    && !!subAccountId && subAccountId === accountIdFor(ownerId);
+}
+
 /** Parses a Pub/Sub push body carrying a Real-time Developer Notification. */
 function parseRtdn(body) {
   try {
@@ -229,4 +253,4 @@ function parseRtdn(body) {
   }
 }
 
-module.exports = { createPlayBilling, summarise, summariseProduct, nextPassPremium, PASS_DAYS, decide, nextPremium, accountIdFor, validToken, parseRtdn, ENTITLED, ENDED };
+module.exports = { canMovePurchase, GRACE_FALLBACK_MS, createPlayBilling, summarise, summariseProduct, nextPassPremium, PASS_DAYS, decide, nextPremium, accountIdFor, validToken, parseRtdn, ENTITLED, ENDED };

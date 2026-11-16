@@ -1952,6 +1952,11 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, deviceIdOfClie
       ['Chat Support opened', 'support_chat', null],
       ['Chat Support promo tapped', 'support_promo_click', null],
       ["What's new opened", 'whats_new_open', null],
+      // Plus upgrade moments: web, then the Android app (server/plus-moments.js).
+      ...require('./plus-moments').MOMENTS.flatMap((m) => ['view', 'dismiss', 'tap'].flatMap((a) => [
+        [`Plus moment, ${require('./plus-moments').LABELS[m]}: ${a} (web)`, `plus_${m}_${a}`, null],
+        [`Plus moment, ${require('./plus-moments').LABELS[m]}: ${a} (app)`, `plus_app_${m}_${a}`, null],
+      ])),
     ].map(([label, key, ppl]) => {
       let all = 0, week = 0, first = null;
       const series = [];

@@ -39,6 +39,7 @@ class EngageViewModel @Inject constructor(private val repo: EngageRepository, pr
     fun setVoiceCheck(on: Boolean) = mic.setEnabled(on)
     val engage = repo.engage
     val premium = repo.premium
+    val contended = repo.contended
     val referral = repo.referral
     val films = repo.films
     val filters = repo.filters

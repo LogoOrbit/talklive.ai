@@ -88,8 +88,8 @@ fun HomeScreen(
     autoConnect: Boolean = true,
     onAutoConnect: (Boolean) -> Unit = {},
     ring: Boolean = false,
-    // A small, dismissible card after a good call: the per-day price to show, or null for none.
-    plusCard: String? = null,
+    // A small, dismissible Plus card (someone liked you, a good call, the 1-day pass), or null for none.
+    plusCard: app.talklive.ui.engage.PlusCardUi? = null,
     onPlusCard: () -> Unit = {},
     onPlusCardClose: () -> Unit = {},
 ) {
@@ -167,15 +167,7 @@ fun HomeScreen(
         else HowItWorks(mode == app.talklive.call.CallMode.Chat)
         if (plusCard != null && !premium) {
             Spacer(Modifier.height(14.dp))
-            Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
-                Row(Modifier.padding(start = 16.dp, top = 4.dp, bottom = 4.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.home_plus_card, plusCard), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
-                    androidx.compose.material3.TextButton(onClick = onPlusCard) { Text(stringResource(R.string.nudge_see_plus)) }
-                    IconButton(onClick = onPlusCardClose) {
-                        Icon(androidx.compose.material.icons.Icons.Rounded.Close, stringResource(R.string.home_plus_card_close), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
+            app.talklive.ui.engage.PlusMomentCard(plusCard, onTap = onPlusCard, onDismiss = onPlusCardClose)
         }
         Spacer(Modifier.height(22.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {

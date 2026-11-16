@@ -130,6 +130,8 @@ fun CallScreen(
     premium: Boolean = false,
     /** "Match with anyone": drop the Men/Women filter for this search. */
     onWidenSearch: () -> Unit = {},
+    // One quiet line under the searching text ("Plus members are matched first"), only when the policy allows it.
+    searchLine: (@Composable () -> Unit)? = null,
     noiseSuppression: Boolean = true,
     onNoiseSuppression: (Boolean) -> Unit = {},
     onProblem: (String) -> Unit = {},
@@ -255,6 +257,7 @@ fun CallScreen(
                             TextButton(onClick = onWidenSearch) { Text(stringResource(R.string.match_with_anyone)) }
                         }
                         if (premium) { Spacer(Modifier.height(10.dp)); PlusPriority() }
+                        else if (searchLine != null) { Spacer(Modifier.height(6.dp)); searchLine() }
                     }
                     is CallPhase.Connecting -> {
                         Title(stringResource(R.string.almost_there))

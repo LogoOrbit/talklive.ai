@@ -96,7 +96,6 @@
     plusFreezesFree: "Plus gives you 2 streak freezes a month.",
     plusFrozen: "{n}-day streak kept by a Plus freeze",
     plusMember: "Plus member",
-    plusPriceHint: "Plus is {price} a month, about {perDay} a day.",
     plusTrialTitle: "A day of Plus, on us",
     plusTrialBody: "Thanks for being part of TalkLive. For the next 24 hours you have a gold name, legendary avatars, every filter, your full history and more. Enjoy!",
     plusTrialOk: "Let's go",
@@ -104,8 +103,6 @@
     likesMore: "and {n} more",
     likesSeeWho: "See who liked you",
     historyLocked: "{n} more people you met. See them all with Plus.",
-    nudgeCall: "Great call! With Plus you never lose anyone you met.",
-    nudgeHeart: "You both tapped ❤️! Plus keeps everyone you meet in your history.",
     engageMutual: "It's mutual! You both liked this call. Tap to add them as a friend.",
     engageUndoThem: "They came back! Your last chat is back on.",
   };
@@ -356,35 +353,8 @@
     return t('engageAgoDay', { n: Math.round(h / 24) });
   }
 
-  // The local Plus price, from /pricing.json once: "Plus is $9.99 a month, about $0.33 a day."
-  var pricingCache = null; var pricingReq = null;
-  function loadPricing() {
-    if (pricingCache) return Promise.resolve(pricingCache);
-    if (!pricingReq) {
-      pricingReq = fetch('/pricing.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
-        if (j && j.monthly && j.monthly.amount > 0 && j.currency) pricingCache = j; else pricingReq = null;
-        return pricingCache;
-      }).catch(function () { pricingReq = null; return null; });
-    }
-    return pricingReq;
-  }
-  function priceHint() {
-    var p = pricingCache;
-    if (!p) return '';
-    try {
-      var perDay = new Intl.NumberFormat(undefined, { style: 'currency', currency: p.currency }).format(p.monthly.amount / 30);
-      return t('plusPriceHint', { price: p.monthly.label, perDay: perDay });
-    } catch (_) { return ''; }
-  }
-  // The Plus dialog with the price added to its reason line, once the price is known.
-  function plusUpsell(message, perk) {
-    showPremiumUpsell(message + (priceHint() ? ' ' + priceHint() : ''), perk);
-    if (pricingCache) return;
-    loadPricing().then(function () {
-      var line = priceHint(); var r = document.getElementById('puReason');
-      if (line && r && r.textContent === message) r.textContent = message + ' ' + line;
-    });
-  }
+  // The Plus dialog shows its own price (app.js showUpsellPrice).
+  function plusUpsell(message, perk) { showPremiumUpsell(message, perk); }
 
   function openLikes() {
     if (likes.locked) {
@@ -400,10 +370,7 @@
           return '<li><span class="tl-likes-who"><b><span class="tl-blur-av">?</span>' + esc(t('likesFrom', { where: c ? flag(c) + ' ' + countryName(c) : '🌍' })) + '</b></span>🔒</li>';
         }).join('') + '</ul>'
         + (likes.count > shown.length ? '<p class="pu-reason">' + esc(t('likesMore', { n: likes.count - shown.length })) + '</p>' : '')
-        + '<button type="button" class="pu-cta tl-see-who">' + esc(t('likesSeeWho')) + '</button>'
-        + '<p class="pu-reason tl-price-hint" style="display:none"></p>');
-      var hintEl = tm.querySelector('.tl-price-hint');
-      loadPricing().then(function () { var line = priceHint(); if (line && hintEl) { hintEl.textContent = line; hintEl.style.display = ''; } });
+        + '<button type="button" class="pu-cta tl-see-who">' + esc(t('likesSeeWho')) + '</button>');
       var go = tm.querySelector('.tl-see-who');
       if (go) go.addEventListener('click', function () { closeModal(tm); plusUpsell(t('engageLikesReason', { n: likes.count }), 'likes'); });
       return;
@@ -631,27 +598,6 @@
   }
   markFaces();
   socket.on('premium-status', function () { setTimeout(function () { markFaces(); lockedHistory(); }, 0); });
-
-  // A gentle Plus hint after a call that clearly went well (10+ minutes, or
-  // both tapped the heart): at most once a day, quiet for 3 days if ignored.
-  var callStart = 0; var hearted = false;
-  socket.on('matched', function () { callStart = Date.now(); hearted = false; });
-  socket.on('mutual-heart', function () { hearted = true; });
-  socket.on('partner-left', function () { afterCall(); });
-  window.addEventListener('tl-call-ended', afterCall);
-  function afterCall() {
-    if (!callStart || isPremiumUser) { callStart = 0; return; }
-    var secs = (Date.now() - callStart) / 1000; var h = hearted;
-    callStart = 0;
-    var now = Date.now();
-    if (now - (read('tl_nudge_at', 0) || 0) < 864e5 || now < (read('tl_nudge_snooze', 0) || 0)) return;
-    if (secs < 600 && !h) return;
-    write('tl_nudge_at', now);
-    write('tl_nudge_snooze', now + 3 * 864e5);
-    setTimeout(function () {
-      showToast(t(h ? 'nudgeHeart' : 'nudgeCall'), 'success', function () { write('tl_nudge_snooze', 0); plusUpsell(t(h ? 'nudgeHeart' : 'nudgeCall'), 'history'); });
-    }, 1500);
-  }
 
   // ---- Friends: clear status, usual hours, online bell -----------------------
   var friendsById = {};

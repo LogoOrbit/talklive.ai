@@ -58,6 +58,20 @@ function perMonth(yearly, currency) {
   return ZERO_DECIMAL.has(currency) || m >= 100 ? Math.round(m) : Math.round(m * 100) / 100;
 }
 
+// An honest "compare at" figure: what the same thing costs when bought the
+// smaller way. Shown only when it is really higher than the price (some
+// markets price a 7-day pass the same as a month, and then there is nothing
+// true to strike through). Amounts are computed here so no page does price maths.
+//  - yearly: twelve months at the monthly price
+//  - 7 and 15 day passes: the same days bought as 1-day passes
+//  - 1-day pass and monthly: no anchor, they are the base prices
+function compareAt(amount, base, currency, label, basis) {
+  if (!(base > amount)) return null;
+  const savePercent = Math.round(100 - (amount * 100) / base);
+  if (savePercent < 1) return null;
+  return { amount: base, label: format(base, currency), basis, basisLabel: label, savePercent };
+}
+
 // Everything a page needs to show prices for one country.
 function forCountry(country) {
   const [currency, monthly, d1, d7, d15, , yearlyFromTable] = row(country);
@@ -72,8 +86,13 @@ function forCountry(country) {
       ...item('yearly', yearly, 365),
       perMonthLabel: format(perMonth(yearly, currency), currency),
       savePercent: Math.round(100 - (yearly * 100) / (monthly * 12)),
+      compareAt: compareAt(yearly, monthly * 12, currency, 'vs 12 months at the monthly price', '12x_monthly'),
     },
-    passes: [item('pass_1d', d1, 1), item('pass_7d', d7, 7), item('pass_15d', d15, 15)],
+    passes: [
+      item('pass_1d', d1, 1),
+      { ...item('pass_7d', d7, 7), compareAt: compareAt(d7, d1 * 7, currency, 'vs 1-day passes', '1d_passes') },
+      { ...item('pass_15d', d15, 15), compareAt: compareAt(d15, d1 * 15, currency, 'vs 1-day passes', '1d_passes') },
+    ],
   };
 }
 

@@ -208,9 +208,45 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     var showPlus by remember { mutableStateOf<String?>(null) }
     // Why it was opened: the Plus page leads with a line for that (a locked filter, a lost streak).
     var plusWhy by remember { mutableStateOf(app.talklive.ui.engage.PlusWhy()) }
-    fun openPlus(from: String, why: app.talklive.ui.engage.PlusWhy = app.talklive.ui.engage.PlusWhy()) { plusWhy = why; showPlus = from }
-    // The small card on Home after a good call: the monthly price per day, or null when none is showing.
-    var plusCard by remember { mutableStateOf<String?>(null) }
+    // The upgrade-moment policy (engage/PlusMoments.kt): one set of rules for every Plus prompt.
+    val momentsVm: app.talklive.ui.engage.PlusMomentsViewModel = hiltViewModel()
+    val moments = momentsVm.store
+    val plusScope = androidx.compose.runtime.rememberCoroutineScope()
+    val inCallNow = state.phase is CallPhase.Connecting || state.phase is CallPhase.Connected
+    // A restriction (a locked filter, a limit) opens Plus at once; the same one is not repeated in a session after a dismissal.
+    fun openPlus(from: String, why: app.talklive.ui.engage.PlusWhy = app.talklive.ui.engage.PlusWhy()) {
+        if (why.reason != app.talklive.ui.engage.PlusReason.Generic) {
+            val d = moments.decide(app.talklive.engage.PlusMoment.Restrict, app.talklive.engage.MomentContext(premium = premium.active, inCall = inCallNow, key = why.reason.name))
+            if (!d.ok) {
+                // Still say why nothing happened, as a line and not a screen.
+                plusScope.launch { snackbar.say(context.getString(app.talklive.ui.engage.plusWhyTitle(why))) }
+                return
+            }
+        }
+        plusWhy = why; showPlus = from
+    }
+    // The soft card on Home (someone liked you, a good call, the 1-day pass), or null when none is showing.
+    var plusCard by remember { mutableStateOf<app.talklive.ui.engage.PlusCardUi?>(null) }
+    var goodCall by remember { mutableStateOf(false) }
+    val likesNow = engageVm.likes
+    fun offerCard() {
+        if (premium.active || plusCard != null || inCallNow) return
+        val m = moments.best({ app.talklive.engage.MomentContext(premium = premium.active, inCall = inCallNow, goodCall = goodCall, likedCount = if (likesNow?.locked == true) likesNow.count else 0) },
+            listOf(app.talklive.engage.PlusMoment.Good, app.talklive.engage.PlusMoment.Liked, app.talklive.engage.PlusMoment.Pass)) ?: return
+        val card = when (m) {
+            app.talklive.engage.PlusMoment.Liked -> app.talklive.ui.engage.PlusCardUi(m, context.resources.getQuantityString(R.plurals.plus_moment_liked, likesNow?.count ?: 1, likesNow?.count ?: 1), context.getString(R.string.plus_moment_liked_cta))
+            app.talklive.engage.PlusMoment.Good -> app.talklive.ui.engage.PlusCardUi(m, context.getString(R.string.plus_moment_good), context.getString(R.string.plus_moment_good_cta))
+            else -> app.talklive.ui.engage.PlusCardUi(m, context.getString(R.string.plus_moment_pass, app.talklive.billing.LocalPrice.pass(context, "pass_1d", 1, 2.0).price), context.getString(R.string.plus_moment_pass_cta))
+        }
+        moments.onShown(m)
+        plusCard = card
+    }
+    // A new session starts when the app comes back after 30 minutes away.
+    LaunchedEffect(Unit) { moments.touch() }
+    androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) { moments.touch() }
+    // People who liked you: the real count, free members only, evaluated once it is known.
+    LaunchedEffect(premium.active, tab) { if (!premium.active && tab == MainTab.Talk) engageVm.loadLikes() }
+    LaunchedEffect(likesNow?.count, goodCall, premium.active) { if (tab == MainTab.Talk && state.phase is CallPhase.Idle) offerCard() }
     // Tapped "Get TalkLive Plus" on the first-launch intro: open Plus once home.
     LaunchedEffect(Unit) {
         val ui = context.getSharedPreferences("ui", android.content.Context.MODE_PRIVATE)
@@ -220,10 +256,8 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
             openPlus("home")
         }
     }
-    // Plus is only ever suggested gently, at most once a day, never mid-call
-    // and never at launch: after a call that clearly went well (10+ minutes,
-    // or both tapped the heart), and a guest's 3rd good call suggests an
-    // account (accounts get a free Plus day from the server).
+    // After a call: count it, and if it went well (a mutual heart, or ten minutes) offer a soft card on Home
+    // when the policy allows. A guest's 3rd good call still suggests an account (not Plus), once.
     var liveSince by remember { mutableStateOf<Long?>(null) }
     var hearted by remember { mutableStateOf(false) }
     LaunchedEffect(state.mutualHeart) { if (state.mutualHeart) hearted = true }
@@ -235,32 +269,34 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         val wasHearted = hearted; hearted = false
         val prefs = context.getSharedPreferences("ui", android.content.Context.MODE_PRIVATE)
         val seconds = (System.currentTimeMillis() - since) / 1000
+        moments.finishedCall(seconds)
         if (seconds >= 60) prefs.edit().putInt("good_calls", prefs.getInt("good_calls", 0) + 1).apply()
         if (premium.active) return@LaunchedEffect
-        val now = System.currentTimeMillis()
-        val quiet = now - prefs.getLong("plus_nudge_at", 0) < 24 * 3600_000L || now < prefs.getLong("plus_nudge_snooze", 0)
-        if (quiet) return@LaunchedEffect
         kotlinx.coroutines.delay(1500) // let the call screen close first
-        // A call of 3+ minutes that did not already earn the snackbar below: a small card on Home,
-        // at most once every 3 days (never a dialog, never over the call).
-        val snackNext = (account == null && prefs.getInt("good_calls", 0) >= 3 && !prefs.getBoolean("trial_hint", false)) || seconds >= 600 || wasHearted
-        if (!snackNext && seconds >= 180 && now - prefs.getLong("plus_card_at", 0) >= 3 * 24 * 3600_000L) {
-            prefs.edit().putLong("plus_card_at", now).putLong("plus_nudge_at", now).apply()
-            val (amount, cur) = app.talklive.billing.LocalPrice.amount(context, 10.0)
-            plusCard = app.talklive.billing.LocalPrice.perDay(amount, 30, cur)
-            return@LaunchedEffect
-        }
         if (account == null && prefs.getInt("good_calls", 0) >= 3 && !prefs.getBoolean("trial_hint", false)) {
-            prefs.edit().putBoolean("trial_hint", true).putLong("plus_nudge_at", now).apply()
+            prefs.edit().putBoolean("trial_hint", true).apply()
             if (snackbar.say(context.getString(R.string.nudge_trial_guest), context.getString(R.string.sign_in)) == androidx.compose.material3.SnackbarResult.ActionPerformed) onSignIn()
             return@LaunchedEffect
         }
-        if (seconds >= 600 || wasHearted) {
-            prefs.edit().putLong("plus_nudge_at", now).apply()
-            val r = snackbar.say(context.getString(if (wasHearted) R.string.nudge_after_heart else R.string.nudge_after_call), context.getString(R.string.nudge_see_plus))
-            if (r == androidx.compose.material3.SnackbarResult.ActionPerformed) openPlus("after_call")
-            // Closed without a look: stay quiet for 3 days.
-            else prefs.edit().putLong("plus_nudge_snooze", now + 3 * 24 * 3600_000L).apply()
+        // The app has no call rating, so a call of ten minutes or more stands in for "rated up".
+        goodCall = wasHearted || seconds >= 600
+        offerCard()
+    }
+    // While searching: after a real wait in a busy queue, one quiet true line (never a dialog).
+    val contended by engageVm.contended.collectAsStateWithLifecycle()
+    var searchLine by remember { mutableStateOf(false) }
+    LaunchedEffect(state.phase is CallPhase.Searching, premium.active) {
+        searchLine = false
+        if (state.phase !is CallPhase.Searching || premium.active) return@LaunchedEffect
+        var waited = 0
+        while (state.phase is CallPhase.Searching) {
+            kotlinx.coroutines.delay(1000)
+            waited++
+            if (moments.decide(app.talklive.engage.PlusMoment.Search, app.talklive.engage.MomentContext(premium = premium.active, inCall = inCallNow, waitedSec = waited, contended = contended)).ok) {
+                moments.onShown(app.talklive.engage.PlusMoment.Search)
+                searchLine = true
+                return@LaunchedEffect
+            }
         }
     }
     away?.let { list ->
@@ -552,8 +588,8 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                         ring = premium.ring,
                         onPlus = { openPlus("home") },
                         plusCard = plusCard,
-                        onPlusCard = { plusCard = null; openPlus("card") },
-                        onPlusCardClose = { plusCard = null },
+                        onPlusCard = { plusCard?.let { c -> moments.onTapped(c.moment); plusCard = null; openPlus(if (c.moment == app.talklive.engage.PlusMoment.Pass) "card_pass" else "card") } },
+                        onPlusCardClose = { plusCard?.let { c -> moments.onDismissed(c.moment) }; plusCard = null },
                         online = onlinePeople,
                         autoConnect = homeAutoConnect,
                         onAutoConnect = vm::setAutoConnect,
@@ -655,6 +691,12 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                     bands = { voiceBands },
                     premium = premium.active,
                     onWidenSearch = vm::widenSearch,
+                    searchLine = if (searchLine && !premium.active) ({
+                        app.talklive.ui.engage.PlusSearchLine(
+                            onTap = { moments.onTapped(app.talklive.engage.PlusMoment.Search); openPlus("search", app.talklive.ui.engage.PlusWhy(app.talklive.ui.engage.PlusReason.Priority)) },
+                            onDismiss = { searchLine = false; moments.onDismissed(app.talklive.engage.PlusMoment.Search) },
+                        )
+                    }) else null,
                     noiseSuppression = vm.noiseSuppression.collectAsStateWithLifecycle().value,
                     onNoiseSuppression = vm::setNoiseSuppression,
                     onProblem = { engageVm.sendFeedback("[call] $it", problem = true) },
@@ -798,7 +840,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
             onDismiss = { showPlus = null },
             onFreeOption = if (from == "filters") stringResource(R.string.plus_free_filters) to { showPlus = null; showFilters = true } else null,
             // Reached from a limit (locked filter, history, a free feature): lead with the 1-day pass.
-            passFirst = from in setOf("locked", "history", "filters", "undo", "likes", "streak"),
+            passFirst = from in setOf("locked", "history", "filters", "undo", "likes", "streak", "card_pass"),
             why = plusWhy,
         )
     }
