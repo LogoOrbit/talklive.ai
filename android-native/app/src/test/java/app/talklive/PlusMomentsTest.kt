@@ -176,13 +176,12 @@ class PlusMomentsTest {
     }
 
     @Test fun billingResponsesGetHonestMessages() {
-        val c = BillingClient.BillingResponseCode
-        assertEquals(app.talklive.billing.PlayMessage.BillingUnavailable, PlayBilling.messageFor(c.BILLING_UNAVAILABLE))
-        assertEquals(app.talklive.billing.PlayMessage.BillingUnavailable, PlayBilling.messageFor(c.SERVICE_DISCONNECTED))
-        assertEquals(app.talklive.billing.PlayMessage.BillingUnavailable, PlayBilling.messageFor(c.NETWORK_ERROR))
-        assertEquals(app.talklive.billing.PlayMessage.AlreadyOwned, PlayBilling.messageFor(c.ITEM_ALREADY_OWNED))
-        assertEquals(app.talklive.billing.PlayMessage.ItemUnavailable, PlayBilling.messageFor(c.ITEM_UNAVAILABLE))
-        assertEquals(app.talklive.billing.PlayMessage.Failed, PlayBilling.messageFor(c.DEVELOPER_ERROR))
-        assertEquals(app.talklive.billing.PlayMessage.Failed, PlayBilling.messageFor(c.ERROR))
+        assertEquals(app.talklive.billing.PlayMessage.BillingUnavailable, PlayBilling.messageFor(BillingClient.BillingResponseCode.BILLING_UNAVAILABLE))
+        assertEquals(app.talklive.billing.PlayMessage.BillingUnavailable, PlayBilling.messageFor(BillingClient.BillingResponseCode.SERVICE_DISCONNECTED))
+        assertEquals(app.talklive.billing.PlayMessage.BillingUnavailable, PlayBilling.messageFor(BillingClient.BillingResponseCode.NETWORK_ERROR))
+        assertEquals(app.talklive.billing.PlayMessage.AlreadyOwned, PlayBilling.messageFor(BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED))
+        assertEquals(app.talklive.billing.PlayMessage.ItemUnavailable, PlayBilling.messageFor(BillingClient.BillingResponseCode.ITEM_UNAVAILABLE))
+        assertEquals(app.talklive.billing.PlayMessage.Failed, PlayBilling.messageFor(BillingClient.BillingResponseCode.DEVELOPER_ERROR))
+        assertEquals(app.talklive.billing.PlayMessage.Failed, PlayBilling.messageFor(BillingClient.BillingResponseCode.ERROR))
     }
 }
