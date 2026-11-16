@@ -71,6 +71,10 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
     /** The site is in maintenance mode: the owner's message. */
     val maintenance: StateFlow<String?> = _maintenance
 
+    private val _banned = MutableStateFlow<BanInfo?>(null)
+    /** Set while this account, device or network is banned: the app shows only the banned screen. */
+    val banned: StateFlow<BanInfo?> = _banned
+
     private val _contended = MutableStateFlow(false)
     /** The search queue is busy right now (server `waiting.contended`). */
     val contended: kotlinx.coroutines.flow.StateFlow<Boolean> = _contended
@@ -214,7 +218,25 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
         socket.on("search-refused") { args ->
             _events.tryEmit(ServerEvent.SearchRefused(args.firstObject()?.optString("reason").orEmpty()))
         }
-        socket.on("banned") { _events.tryEmit(ServerEvent.Banned) }
+        socket.on("banned") { args ->
+            val o = args.firstObject()
+            val ap = o?.optJSONObject("appeal")
+            _banned.value = BanInfo(
+                until = o?.optLong("until") ?: 0L,
+                reason = o?.optString("reason").orEmpty(),
+                permanent = o?.optBoolean("permanent") ?: false,
+                state = ap?.optString("state") ?: "none",
+                appealText = ap?.optNullableString("text"),
+                reply = ap?.optNullableString("reply"),
+                canAppeal = o?.optBoolean("canAppeal") ?: false,
+            )
+            _events.tryEmit(ServerEvent.Banned)
+        }
+        // The owner lifted the ban (or it ran out): leave the screen and sign in to everything again.
+        socket.on("ban-lifted") {
+            _banned.value = null
+            register()
+        }
         socket.on("maintenance") { args -> _maintenance.value = args.firstObject()?.optString("message")?.ifBlank { "TalkLive is down for maintenance." } ?: "TalkLive is down for maintenance." }
         socket.on("owner-warning") { args ->
             val o = args.firstObject() ?: return@on
@@ -345,6 +367,17 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
             }
         }
     }.getOrDefault(emptyMap())
+
+    /** Sends an appeal from the banned screen; null when the server did not answer. */
+    suspend fun banAppeal(text: String): JSONObject? = runCatching {
+        withTimeout(10_000) {
+            suspendCancellableCoroutine<JSONObject> { cont ->
+                socket.emit("ban-appeal", JSONObject().put("text", text), io.socket.client.Ack { args ->
+                    if (cont.isActive) cont.resume(args.firstOrNull() as? JSONObject ?: JSONObject())
+                })
+            }
+        }
+    }.getOrNull()
 
     fun emit(event: String, payload: Any? = null) {
         // A reply or decline from a notification can arrive while asleep.

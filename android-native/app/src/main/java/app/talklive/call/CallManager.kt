@@ -42,7 +42,6 @@ sealed interface CallPhase {
 
 sealed interface CallNotice {
     data class PartnerLeft(val name: String, val dropped: Boolean) : CallNotice
-    data object Banned : CallNotice
     data class CallEnded(val name: String) : CallNotice
     data class Refused(val reason: String) : CallNotice
 }
@@ -512,7 +511,7 @@ class CallManager @Inject constructor(
                 icePrefetch?.cancel()
                 teardown()
                 audio.stop()
-                _state.update { CallState(notice = CallNotice.Banned) }
+                _state.update { CallState() }
             }
             // Back on the line (a reconnect after the background, or Start tapped
             // while reconnecting): the server lost the old search, so ask again.

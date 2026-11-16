@@ -146,6 +146,9 @@ fun TalkLiveRoot(vm: TalkViewModel = hiltViewModel()) {
         }
     }
     celebrate?.let { name -> app.talklive.ui.onboarding.SignedInWelcome(name, animal) { celebrate = null } }
+    // Banned: nothing of TalkLive is shown, only why, an appeal, Delete account and Sign out.
+    val banned by vm.banned.collectAsStateWithLifecycle()
+    banned?.let { BannedScreen(it, signedIn = account != null, vm = vm) }
 }
 
 @Composable
@@ -442,7 +445,6 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     val noticeText = state.notice?.let { n ->
         when (n) {
             is CallNotice.PartnerLeft -> stringResource(if (n.dropped) R.string.partner_dropped else R.string.partner_left, n.name)
-            CallNotice.Banned -> stringResource(R.string.banned)
             // The server's reason is a website i18n key; the ones the app has words for are mapped.
             is CallNotice.Refused -> if (n.reason == "searchTooFast") stringResource(R.string.search_too_fast) else n.reason
             is CallNotice.CallEnded -> stringResource(R.string.call_ended, n.name)

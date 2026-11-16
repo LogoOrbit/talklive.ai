@@ -83,5 +83,19 @@ sealed interface ServerEvent {
 internal fun JSONObject.optNullableString(key: String): String? =
     if (isNull(key)) null else optString(key).takeIf { it.isNotBlank() }
 
+/**
+ * The banned screen's data: how long, why and where an appeal stands. [state]
+ * is none, open or answered; [reply] is the owner's answer to the latest appeal.
+ */
+data class BanInfo(
+    val until: Long,
+    val reason: String,
+    val permanent: Boolean,
+    val state: String,
+    val appealText: String?,
+    val reply: String?,
+    val canAppeal: Boolean,
+)
+
 /** A moderator's warning; must be acknowledged before talking again. */
 data class OwnerWarning(val id: String, val reason: String, val message: String)
