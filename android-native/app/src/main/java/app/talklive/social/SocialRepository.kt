@@ -193,6 +193,23 @@ class SocialRepository @Inject constructor(
                 }
             }
         }
+        // Edits and unsends made while this phone was away, for every cached thread.
+        socket.on("friend-changes") { a ->
+            val o = a.firstOrNull() as? JSONObject ?: return@on
+            val arr = o.optJSONArray("changes") ?: return@on
+            scope.launch {
+                for (i in 0 until arr.length()) {
+                    val c = arr.optJSONObject(i) ?: continue
+                    val who = c.optString("friendClientId")
+                    val id = c.optString("id")
+                    if (who.isBlank() || id.isBlank() || !_threads.value.containsKey(who)) continue
+                    when (c.optString("type")) {
+                        "deleted" -> updateThread(who) { list -> list.filterNot { it.id == id } }
+                        "edited" -> updateThread(who) { list -> list.map { if (it.id == id) it.copy(text = c.optString("text"), edited = true) else it } }
+                    }
+                }
+            }
+        }
         socket.on("friend-message-deleted") { a ->
             val o = a.firstOrNull() as? JSONObject ?: return@on
             scope.launch { updateThread(o.optString("chatWith")) { list -> list.filterNot { it.id == o.optString("id") } } }
@@ -274,6 +291,10 @@ class SocialRepository @Inject constructor(
         scope.launch {
             socket.events.collect { e ->
                 if (e != ServerEvent.Registered) return@collect
+                ackedIds.clear()
+                val since = changesSince
+                changesSince = socket.serverNow
+                if (since > 0) socket.emit("get-friend-changes", JSONObject().put("since", since))
                 resendPending()
                 // Whatever arrived, was unsent or was edited while the connection
                 // was down is in the stored thread: fetch the open chat's newest
@@ -616,16 +637,19 @@ class SocialRepository @Inject constructor(
         _historyHidden.value = o.optInt("historyHidden")
         _muted.value = o.optJSONArray("muted").strings().toSet()
         val counts = mutableMapOf<String, Int>()
+        val waiting = mutableMapOf<String, MutableList<String>>()
         o.optJSONArray("notifications")?.let { arr ->
             for (i in 0 until arr.length()) {
                 val n = arr.optJSONObject(i) ?: continue
                 if (n.optString("type") == "message") {
                     val from = n.optString("fromClientId")
+                    n.optString("msgId").takeIf { it.isNotBlank() }?.let { waiting.getOrPut(from) { mutableListOf() }.add(it) }
                     if (from.isNotBlank() && from != openChat) counts[from] = (counts[from] ?: 0) + 1
                 }
             }
         }
         _unread.value = counts
+        waiting.forEach { (from, ids) -> ackReceived(from, ids) }
         _blocked.value = o.optJSONArray("blocked")?.let { arr ->
             (0 until arr.length()).mapNotNull { arr.optJSONObject(it) }.map {
                 BlockedPerson(it.optString("clientId"), it.optString("username").ifBlank { "Someone" }, it.optBoolean("wasFriend"))
@@ -643,9 +667,22 @@ class SocialRepository @Inject constructor(
         return ActivityItem(n.optString("id"), type, from, n.optString("username").ifBlank { "Someone" }, n.optLong("ts"))
     }
 
+    private val ackedIds = java.util.Collections.synchronizedSet(HashSet<String>())
+    @Volatile private var changesSince = 0L
+
+    /** Tells the server these friend messages are on this phone; only then do senders see "delivered". */
+    private fun ackReceived(from: String, ids: Collection<String>) {
+        if (from.isBlank()) return
+        if (ackedIds.size > 3000) ackedIds.clear()
+        val fresh = ids.filter { it.isNotBlank() && ackedIds.add(it) }.take(200)
+        if (fresh.isEmpty()) return
+        socket.emit("friend-message-received", JSONObject().put("friendClientId", from).put("ids", JSONArray(fresh)))
+    }
+
     private fun onIncomingMessage(o: JSONObject) {
         val from = o.optString("fromClientId")
         val msg = ChatMessage.from(o, identity.clientId).copy(mine = false)
+        ackReceived(from, listOf(msg.id))
         // A new message brings an archived chat back to the list.
         if (from in archived.value) privacy?.setArchived(from, false)
         updateThread(from) { list -> if (list.any { it.id == msg.id }) list else list + msg }
@@ -695,6 +732,7 @@ class SocialRepository @Inject constructor(
             _hasOlder.update { if (o.optBoolean("hasMore")) it + id else it - id }
         }
         loadingOlder.remove(id)
+        ackReceived(id, fromServer.filter { !it.mine }.map { it.id })
         if (o.optBoolean("older")) {
             // An older page goes in front of what is already loaded.
             updateThread(id) { local -> fromServer.filter { m -> local.none { it.id == m.id } } + local }
