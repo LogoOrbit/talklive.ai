@@ -5076,6 +5076,11 @@ function saveVoiceRec(profile, rec, before) {
 
 // "I am" changes, per profile, for voiceCheck.declare(): clientId -> { g, t, at }.
 const declaredGender = new Map();
+// Entries nobody has touched for two days can no longer hold anything back.
+setInterval(() => {
+  const cutoff = Date.now() - 2 * 24 * 60 * 60 * 1000;
+  for (const [id, e] of declaredGender) if ((e.at || 0) < cutoff) declaredGender.delete(id);
+}, 6 * 60 * 60 * 1000).unref();
 
 function genderPrefMet(seeker, candidate) {
   if (!seeker.prefGender || seeker.prefGender === 'any') return true;
@@ -5096,7 +5101,8 @@ function genderRankBonus(seeker, candidate) {
 function declaredAs(clientId, wanted) {
   if (!voiceOn()) return wanted;
   const out = voiceCheck.declare(declaredGender.get(clientId), wanted);
-  declaredGender.set(clientId, out.entry);
+  // `held` is read at registration to tell the person their change did not apply yet.
+  declaredGender.set(clientId, { ...out.entry, held: out.held });
   return out.gender;
 }
 
@@ -6634,7 +6640,8 @@ io.on('connection', (socket) => {
     // undo a choice made on another device.
     if (voiceOn()) {
       if (data.voiceCheck === true) setVoiceConsent(profiles.get(socket.id), true);
-      sendVoiceView(socket, profiles.get(socket.id), profiles.get(socket.id).genderHeld ? { genderHeld: true } : null);
+      const held = declaredGender.get(clientId);
+      sendVoiceView(socket, profiles.get(socket.id), held && held.held ? { genderHeld: true } : null);
     }
     {
       const p = profiles.get(socket.id);
