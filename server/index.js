@@ -3366,8 +3366,13 @@ const LINK_RE = new RegExp(
 // TalkLive's own site and email addresses are the one exception.
 const OWN_LINK_RE = /(?:https?:\/\/)?(?:www\.)?talklive\.app(?:\/[^\s]*)?|[a-z0-9._%+-]+@talklive\.app\b/gi;
 
+// The text is folded first (text-normalize.js: zero-width and bidi characters,
+// full-width and look-alike letters, "hxxp", "[dot]"), so a disguised address is
+// judged as the plain one it reads as, and a disguised social profile link is
+// allowed exactly like the plain one.
 function containsLink(text) {
-  return LINK_RE.test(stripSocialLinks(String(text || '').replace(OWN_LINK_RE, ' ')));
+  const t = textNorm.normalizeForChecks(text);
+  return LINK_RE.test(stripSocialLinks(t.replace(OWN_LINK_RE, ' '))) || textNorm.hasInternationalAddress(t);
 }
 
 // Clearly illegal / scam content is blocked in stranger chat (mirrors the
@@ -8095,15 +8100,12 @@ io.on('connection', (socket) => {
       reason, scope: 'friend', toClientId, id: parsed.id || null, text: parsed.text || '',
     });
     if (!ageGate('friends').ok || ageAssurance.isRestricted(toClientId)) return refuse('unreachable');
-    if (!canOpenThread(me.clientId, toClientId)) return refuse('unreachable');
-    // A blocked person is not told: every other refusal here is one a person who
-    // is not blocked can never get, so it would reveal the block. The message is
-    // acknowledged as sent and goes nowhere (it is not stored, and never reaches
-    // the blocker's thread, inbox or push).
-    if (isBlockedPair(me.clientId, toClientId)) {
-      return socket.emit('friend-message-sent', {
-        toClientId, text: parsed.text || '', ts: Date.now(), id: parsed.id || null, replyTo: parsed.replyTo || null, gif: parsed.gif || null, delivered: false, seen: false,
-      });
+    // Said out loud, as above. This refusal is shared with people who cannot be
+    // reached for other reasons (restricted, never met), so it does not name a
+    // block; hiding it completely (acknowledging and dropping the message) is a
+    // product decision left to the owner.
+    if (!canOpenThread(me.clientId, toClientId) || isBlockedPair(me.clientId, toClientId)) {
+      return refuse('unreachable');
     }
     // Friends can message each other any time - no call required. If the friend
     // is offline the message is still stored and a notification is queued, so it

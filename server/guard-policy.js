@@ -27,6 +27,7 @@
 // (insults and slurs, which can be friendly slang).
 
 const { stripSocialLinks } = require('../public/social-links.js');
+const { normalizeForChecks } = require('./text-normalize');
 
 const MONEY = [
   /\b(pay\s*pal|cash\s*app|venmo|zelle|upi|paytm|g\s*pay|google\s*pay|phone\s*pe|easy\s*paisa|jazz\s*cash|g\s*cash|bkash|western\s*union|money\s*gram|gift\s*cards?|amazon\s*card|steam\s*card|bitcoin|btc|usdt|binance|bank\s*(?:details|account|transfer))\b/i,
@@ -91,7 +92,7 @@ function detect(text) {
   const t = String(text || '');
   return {
     money: any(MONEY, t),
-    link: any(LINK, stripSocialLinks(t)),
+    link: any(LINK, stripSocialLinks(normalizeForChecks(t))),
     pics: any(PICS, t),
     harm: SUICIDE_BAIT.test(t) || THREAT.test(t),
     suicideBait: SUICIDE_BAIT.test(t),

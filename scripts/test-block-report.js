@@ -120,11 +120,12 @@ async function befriend(a, b, B) {
     ok('the refusal is the same one an unknown person gets', fr1.error === stranger.error && fr1.ok === stranger.ok, [fr1, stranger]);
     ok('nothing reached either inbox', !(sync(ann).friendRequests || []).some((r) => r.clientId === B) && !(sync(ben).friendRequests || []).some((r) => r.clientId === A));
 
-    // Direct messages: acknowledged to the blocked sender, delivered to nobody.
+    // Direct messages: refused with the generic reason, delivered to nobody.
     const got = arrives(ann, 'friend-message');
+    const refused = once(ben, 'chat-blocked').catch(() => null);
     ben.emit('friend-message', { toClientId: A, text: 'please talk to me', id: 'blk1' });
-    const sent = await once(ben, 'friend-message-sent').catch(() => null);
-    ok('the blocked sender is told "sent", not "unreachable"', !!sent && sent.text === 'please talk to me', sent);
+    const sent = await refused;
+    ok('the blocked sender gets the generic "unreachable" refusal (no block named)', !!sent && sent.reason === 'unreachable', sent);
     ok('Ann never receives it', !(await got));
     ann.emit('get-friend-chat', { friendClientId: B });
     await wait(300);

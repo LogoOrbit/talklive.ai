@@ -13,12 +13,15 @@ const fs = require('fs');
 const path = require('path');
 const { stripInvisible, normalizeForChecks, hasInternationalAddress } = require('../server/text-normalize');
 
+const { stripSocialLinks } = require('../public/social-links.js');
 const src = fs.readFileSync(path.join(__dirname, '..', 'server', 'index.js'), 'utf8');
 const a = src.indexOf('const LINK_RE');
 const b = src.indexOf('function containsLink');
+const textNorm = require('../server/text-normalize');
 // eslint-disable-next-line no-eval
 const containsLink = eval(`${src.slice(a, b)}${src.slice(b, src.indexOf('\n}\n', b) + 2)}; containsLink`);
-const blocked = (t) => containsLink(normalizeForChecks(t)) || hasInternationalAddress(t);
+// The real filter: it folds the text itself.
+const blocked = (t) => containsLink(t);
 
 let failed = 0;
 const ok = (name, cond, extra) => { if (!cond) failed++; console.log(cond ? 'PASS' : 'FAIL', name, cond || extra === undefined ? '' : JSON.stringify(extra)); };
@@ -50,6 +53,10 @@ const links = ['hxxp://evil[.]com/x', 'evil[dot]com', 'evil (dot) com', 'evil d0
   'visit gõõgle.com now', 'xn--80ak6aa92e.com', 'xn--e1afmkfd.xn--p1ai', 'пример.рф', 'пример.онлайн', 'сайт.сайт', '例子.中国', 'h t t p s : / / evil . com', 'bit.ly/3abc', 'tinyurl.com/x', '203.0.113.7/x', '‮google.com', 'free​gift​.com',
   'click here: hxxps://wallet-verify[.]xyz/claim'];
 for (const t of links) ok('still a link: ' + t, blocked(t));
+
+// Social profile links stay allowed when typed in disguise; look-alike hosts do not.
+for (const t of ['hxxps://instagram[.]com/john.doe', 'insta\u200Bgram.com/john.doe', '\uFF49\uFF4E\uFF53\uFF54\uFF41\uFF47\uFF52\uFF41\uFF4D.com/john.doe', 'wa[dot]me/923001234567', 't.me/some_name']) ok('social link allowed in disguise: ' + t, !blocked(t));
+for (const t of ['instagram.com.evil.ru', 'hxxp://instagram[.]com.evil[.]ru/x', 'l.instagram.com/?u=evil.com', 'facebook.com/l.php?u=evil.com', 'onlyfans[.]com/x']) ok('look-alike or redirect host still blocked: ' + t, blocked(t));
 
 // Ordinary sentences (several scripts) are never rewritten or flagged.
 const sentences = ['hello how are you', 'I am from Lahore. Com on, say something', 'its 10.30 now', 'version 2.0.1', 'dot the i and cross the t', 'I dot my i-s',
