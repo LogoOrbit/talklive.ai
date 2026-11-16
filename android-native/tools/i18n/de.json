@@ -339,7 +339,7 @@
 "f_needs_consent": "Die Person hat Sprachnachrichten nicht erlaubt",
 "f_friends_only": "Sprachnachrichten nur unter Freunden",
 "f_voice_rate": "Zu viele Sprachnachrichten, warte eine Minute",
-"f_link": "Links können nicht gesendet werden",
+"f_link": "Links zu anderen Websites können nicht gesendet werden",
 "f_unsafe": "Diese Nachricht ist nicht erlaubt",
 "f_rate": "Du sendest zu schnell",
 "f_accept_first": "Nimm zuerst die Freundschaftsanfrage an",

@@ -9,6 +9,7 @@ let Anthropic = null;
 try { Anthropic = require('@anthropic-ai/sdk'); Anthropic = Anthropic.default || Anthropic; } catch (_) { /* optional */ }
 
 const guardPolicy = require('./guard-policy');
+const { stripSocialLinks } = require('../public/social-links.js');
 const TAG_MODEL = process.env.AI_TAG_MODEL || process.env.AI_MODEL || 'claude-opus-5-5';
 
 // Patterns worth an operator's attention, cheapest and most specific first.
@@ -31,7 +32,9 @@ const FLAGS = RISK_RULES.map(([name]) => name);
 function riskFlags(text) {
   const s = String(text || '');
   const out = [];
-  for (const [name, re] of RISK_RULES) if (re.test(s)) out.push(name);
+  // Links to social profiles are allowed, so they are not a 'link'.
+  const noSocial = stripSocialLinks(s);
+  for (const [name, re] of RISK_RULES) if (re.test(name === 'link' ? noSocial : s)) out.push(name);
   // The site rules catch money requests and picture requests the short
   // keyword list misses ("send me 500 rs", "send your pic").
   const d = guardPolicy.detect(s);
@@ -96,8 +99,8 @@ const SYSTEM = `You tag voice messages for the moderation team of TalkLive, a vo
 Risk flags, only when the transcript actually supports them:
 - minor: the speaker says or implies they (or the listener) are under 18, or asks the other person's age in a way that suggests grooming.
 - sexual: sexual content or requests.
-- contact: moving the conversation off TalkLive (phone numbers, WhatsApp, Instagram, Snapchat, Telegram, Discord, usernames).
-- link: a website or URL.
+- contact: sharing or asking for phone numbers, WhatsApp, Instagram, Snapchat, Telegram, Discord or other usernames. This is allowed on TalkLive; the flag is only for the moderator's context.
+- link: a link to a website other than a social media profile.
 - money: requests for money, gift cards, crypto or investment pitches.
 - abuse: harassment, slurs, threats, self-harm encouragement.
 

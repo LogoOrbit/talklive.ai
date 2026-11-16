@@ -337,7 +337,7 @@
     <string name="f_needs_consent">Non ha consentito i messaggi vocali</string>
     <string name="f_friends_only">I messaggi vocali sono per gli amici</string>
     <string name="f_voice_rate">Troppi messaggi vocali, aspetta un minuto</string>
-    <string name="f_link">Non si possono inviare link</string>
+    <string name="f_link">I link ad altri siti web non possono essere inviati</string>
     <string name="f_unsafe">Questo messaggio non è consentito</string>
     <string name="f_rate">Stai inviando messaggi troppo in fretta</string>
     <string name="f_accept_first">Accetta prima la sua richiesta di amicizia</string>

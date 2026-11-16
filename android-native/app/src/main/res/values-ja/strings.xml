@@ -337,7 +337,7 @@
     <string name="f_needs_consent">相手がボイスメッセージを許可していません</string>
     <string name="f_friends_only">ボイスメッセージは友達のみです</string>
     <string name="f_voice_rate">ボイスメッセージが多すぎます。1分お待ちください</string>
-    <string name="f_link">リンクは送れません</string>
+    <string name="f_link">他のウェブサイトへのリンクは送れません</string>
     <string name="f_unsafe">このメッセージは送信できません</string>
     <string name="f_rate">送信が速すぎます</string>
     <string name="f_accept_first">先に友達申請を承認してください</string>

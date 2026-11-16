@@ -3,7 +3,9 @@
 //
 //   copy-paste   the same message (12+ characters) sent to 5+ different
 //                strangers within an hour. Only when it looks like spam
-//                (the model's spam score, a link, a contact handle or money talk)
+//                (the model's spam score, a link, a contact handle or money talk;
+//                two people swapping socials is fine, the same pitch sent to
+//                5+ strangers is an advert)
 //                does it count against them; a copy-pasted "hi how are you" is
 //                just shown.
 //   fast-skipped 15+ matches in a day where 80%+ of partners left within

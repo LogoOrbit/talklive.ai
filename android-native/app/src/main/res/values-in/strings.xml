@@ -317,7 +317,7 @@
     <string name="f_needs_consent">Dia belum mengizinkan pesan suara</string>
     <string name="f_friends_only">Pesan suara hanya untuk teman</string>
     <string name="f_voice_rate">Terlalu banyak pesan suara, tunggu semenit</string>
-    <string name="f_link">Tautan tidak bisa dikirim</string>
+    <string name="f_link">Tautan ke situs web lain tidak bisa dikirim</string>
     <string name="f_unsafe">Pesan ini tidak diizinkan</string>
     <string name="f_rate">Kamu mengirim pesan terlalu cepat</string>
     <string name="f_accept_first">Terima dulu permintaan pertemanannya</string>

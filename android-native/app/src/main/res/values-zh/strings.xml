@@ -337,7 +337,7 @@
     <string name="f_needs_consent">对方未允许语音消息</string>
     <string name="f_friends_only">语音消息仅限好友</string>
     <string name="f_voice_rate">语音消息太多，请等一分钟</string>
-    <string name="f_link">不能发送链接</string>
+    <string name="f_link">无法发送指向其他网站的链接</string>
     <string name="f_unsafe">此消息不被允许</string>
     <string name="f_rate">你发消息太快了</string>
     <string name="f_accept_first">请先接受对方的好友申请</string>

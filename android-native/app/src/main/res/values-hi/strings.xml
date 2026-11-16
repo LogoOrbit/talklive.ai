@@ -317,7 +317,7 @@
     <string name="f_needs_consent">उन्होंने वॉइस संदेशों की अनुमति नहीं दी</string>
     <string name="f_friends_only">वॉइस संदेश सिर्फ़ दोस्तों के लिए हैं</string>
     <string name="f_voice_rate">बहुत ज़्यादा वॉइस संदेश, एक मिनट रुकें</string>
-    <string name="f_link">लिंक नहीं भेजे जा सकते</string>
+    <string name="f_link">दूसरी वेबसाइटों के लिंक नहीं भेजे जा सकते</string>
     <string name="f_unsafe">इस संदेश की अनुमति नहीं है</string>
     <string name="f_rate">आप बहुत तेज़ी से संदेश भेज रहे हैं</string>
     <string name="f_accept_first">पहले उनकी फ़्रेंड रिक्वेस्ट स्वीकार करें</string>

@@ -337,7 +337,7 @@
     <string name="f_needs_consent">پیام صوتی را مجاز نکرده</string>
     <string name="f_friends_only">پیام صوتی فقط برای دوستان است</string>
     <string name="f_voice_rate">پیام صوتی زیاد است، یک دقیقه صبر کن</string>
-    <string name="f_link">نمی‌شود پیوند فرستاد</string>
+    <string name="f_link">پیوند به وب‌سایت‌های دیگر فرستاده نمی‌شود</string>
     <string name="f_unsafe">این پیام مجاز نیست</string>
     <string name="f_rate">خیلی سریع پیام می‌فرستی</string>
     <string name="f_accept_first">اول درخواست دوستی‌اش را بپذیر</string>

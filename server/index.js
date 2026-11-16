@@ -14,6 +14,7 @@ const { generateUsername } = require('./usernames');
 const { COUNTRIES } = require('../public/countries.js');
 // Same deal for what a display name may contain.
 const Nick = require('../public/nickname-rules.js');
+const { stripSocialLinks } = require('../public/social-links.js');
 // English fallbacks; the pages show their own translation of `errorKey`.
 const NICK_ERRORS = {
   nickEmpty: 'Display name cannot be empty.',
@@ -3219,8 +3220,10 @@ function pairKey(a, b) {
   return [a, b].sort().join('|');
 }
 
-// No links of any kind are allowed in chat - protocols, www-prefixed hosts,
-// bare domains with a TLD, or "example dot com" style obfuscation.
+// Links to other websites are not allowed in chat - protocols, www-prefixed
+// hosts, bare domains with a TLD, or "example dot com" style obfuscation.
+// Links to social and messaging profiles (Instagram, WhatsApp, Snapchat...)
+// are the exception: people may move to them (public/social-links.js).
 const LINK_RE = new RegExp(
   '(?:[a-z][a-z0-9+.-]*:\\/\\/)' // any protocol://
   + '|(?:\\bwww\\.)'
@@ -3240,7 +3243,7 @@ const LINK_RE = new RegExp(
 const OWN_LINK_RE = /(?:https?:\/\/)?(?:www\.)?talklive\.app(?:\/[^\s]*)?|[a-z0-9._%+-]+@talklive\.app\b/gi;
 
 function containsLink(text) {
-  return LINK_RE.test(String(text || '').replace(OWN_LINK_RE, ' '));
+  return LINK_RE.test(stripSocialLinks(String(text || '').replace(OWN_LINK_RE, ' ')));
 }
 
 // Clearly illegal / scam content is blocked in stranger chat (mirrors the

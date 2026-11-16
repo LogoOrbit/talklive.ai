@@ -319,7 +319,7 @@
 "f_needs_consent": "Les messages vocaux ne sont pas autorisés",
 "f_friends_only": "Les messages vocaux sont réservés aux amis",
 "f_voice_rate": "Trop de messages vocaux, attends une minute",
-"f_link": "Les liens ne peuvent pas être envoyés",
+"f_link": "Les liens vers d'autres sites web ne peuvent pas être envoyés",
 "f_unsafe": "Ce message n'est pas autorisé",
 "f_rate": "Tu envoies des messages trop vite",
 "f_accept_first": "Accepte d'abord sa demande d'ami",

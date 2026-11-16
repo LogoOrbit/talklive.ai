@@ -317,7 +317,7 @@
     <string name="f_needs_consent">A pessoa não permitiu mensagens de voz</string>
     <string name="f_friends_only">Mensagens de voz são só para amigos</string>
     <string name="f_voice_rate">Muitas mensagens de voz, espere um minuto</string>
-    <string name="f_link">Não é possível enviar links</string>
+    <string name="f_link">Links para outros sites não podem ser enviados</string>
     <string name="f_unsafe">Esta mensagem não é permitida</string>
     <string name="f_rate">Você está enviando mensagens rápido demais</string>
     <string name="f_accept_first">Aceite o pedido de amizade primeiro</string>

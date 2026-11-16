@@ -517,7 +517,9 @@ if (myAvatar) {
   try { localStorage.setItem('talklive_avatar', myAvatar); } catch (err) { /* storage blocked */ }
 }
 
-// --- No links of any kind in chat. Mirrors the server-side filter. ---
+// --- No links to other websites in chat. Mirrors the server-side filter.
+// Links to social profiles (Instagram, WhatsApp, Snapchat...) are allowed:
+// social-links.js takes them out before the check. ---
 const LINK_RE = new RegExp(
   '(?:[a-z][a-z0-9+.-]*:\\/\\/)'
   + '|(?:\\bwww\\.)'
@@ -528,7 +530,8 @@ const LINK_RE = new RegExp(
 // TalkLive's own site and email addresses are the one exception.
 const OWN_LINK_RE = /(?:https?:\/\/)?(?:www\.)?talklive\.app(?:\/[^\s]*)?|[a-z0-9._%+-]+@talklive\.app\b/gi;
 function messageHasLink(text) {
-  return LINK_RE.test(String(text || '').replace(OWN_LINK_RE, ' '));
+  const rest = String(text || '').replace(OWN_LINK_RE, ' ');
+  return LINK_RE.test(window.SocialLinks ? window.SocialLinks.stripSocialLinks(rest) : rest);
 }
 
 // --- Clearly unsafe / illegal solicitations. Mirrors the server's UNSAFE_RE so

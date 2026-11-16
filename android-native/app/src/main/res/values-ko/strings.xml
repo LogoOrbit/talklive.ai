@@ -337,7 +337,7 @@
     <string name="f_needs_consent">상대가 음성 메시지를 허용하지 않았어요</string>
     <string name="f_friends_only">음성 메시지는 친구끼리만 가능해요</string>
     <string name="f_voice_rate">음성 메시지가 너무 많아요. 1분 기다려 주세요</string>
-    <string name="f_link">링크는 보낼 수 없어요</string>
+    <string name="f_link">다른 웹사이트로 가는 링크는 보낼 수 없어요</string>
     <string name="f_unsafe">허용되지 않는 메시지예요</string>
     <string name="f_rate">메시지를 너무 빨리 보내고 있어요</string>
     <string name="f_accept_first">먼저 친구 요청을 수락하세요</string>

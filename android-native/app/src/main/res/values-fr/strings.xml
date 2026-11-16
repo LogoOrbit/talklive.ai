@@ -317,7 +317,7 @@
     <string name="f_needs_consent">Les messages vocaux ne sont pas autorisés</string>
     <string name="f_friends_only">Les messages vocaux sont réservés aux amis</string>
     <string name="f_voice_rate">Trop de messages vocaux, attends une minute</string>
-    <string name="f_link">Les liens ne peuvent pas être envoyés</string>
+    <string name="f_link">Les liens vers d\'autres sites web ne peuvent pas être envoyés</string>
     <string name="f_unsafe">Ce message n\'est pas autorisé</string>
     <string name="f_rate">Tu envoies des messages trop vite</string>
     <string name="f_accept_first">Accepte d\'abord sa demande d\'ami</string>

@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-11-15 — Sharing socials is allowed (web + Android)
+
+People can now share their social media accounts and move to other apps.
+- **Allowed:** handles ("my insta is @name"), asking for someone's Instagram,
+  Snapchat, TikTok and so on, moving to WhatsApp / Telegram / Snapchat /
+  Discord, phone numbers, and links to those sites' profiles (Instagram,
+  WhatsApp `wa.me`, Telegram `t.me`, Snapchat, TikTok, Facebook, X, Threads,
+  YouTube, LinkedIn, Discord, Reddit, Pinterest, Twitch and a few more). This
+  applies to stranger chat and to messages between friends, on the website and
+  in the Android app (the server decides, so the installed app changes at once).
+- **Still blocked:** links to any other website (phishing and scam risk),
+  OnlyFans, look-alike hosts and redirects dressed up as social links
+  (`instagram.com.evil.ru`, `l.instagram.com/?u=...`, `instagram.com@evil.com`),
+  money requests, and the same pitch copy-pasted to many strangers.
+- **No more warnings** from auto-mod for swapping socials or moving to another
+  app; the AI review prompt, dashboard text, Community Guidelines and Terms say
+  the same. Links to other websites keep their one-warning-per-12-hours rule.
+- One shared allowlist, `public/social-links.js`, is used by the server and both
+  web chats, so every place agrees on what counts as a social link.
+- Messages: the blocked-link text now says it is *other websites* that are
+  blocked; the "stay in touch" tip no longer steers people away from sharing and
+  reminds them to share only with people they trust (17 languages, web and app).
+- Tests: `test-link-filter`, `test-guard-policy`, new `test-social-sharing`
+  (real server, two chatters), and a real-browser check on `/chat`.
+
 ## 2026-11-11 — Speed, storage and reliability pass (web + Android 3.9.6)
 
 **Website and server**

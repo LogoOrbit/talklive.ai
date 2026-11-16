@@ -337,7 +337,7 @@
     <string name="f_needs_consent">Голосовые не разрешены собеседником</string>
     <string name="f_friends_only">Голосовые только для друзей</string>
     <string name="f_voice_rate">Слишком много голосовых, подождите минуту</string>
-    <string name="f_link">Ссылки отправлять нельзя</string>
+    <string name="f_link">Ссылки на другие сайты отправлять нельзя</string>
     <string name="f_unsafe">Это сообщение запрещено</string>
     <string name="f_rate">Вы отправляете сообщения слишком быстро</string>
     <string name="f_accept_first">Сначала примите заявку в друзья</string>

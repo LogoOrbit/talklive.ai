@@ -8,7 +8,9 @@
  *   - suicide baiting and threats: warning + urgent review; drugs: warning,
  *     review on the second
  *   - the rules run while the report ladder is off, and not in dry run
- *   - WhatsApp/IG swaps and phone numbers: a warning like links
+ *   - social media is allowed: handles, asking for them, moving to WhatsApp/IG/
+ *     Snapchat, phone numbers and links to those profiles are not warned;
+ *     links to other websites and OnlyFans still are
  *   - TalkGuard answers its queue by the rules and leaves insults/slurs
  */
 const { classify } = require('../server/guard-policy');
@@ -37,7 +39,9 @@ const expect = {
   'Can u send me ur pic': 'spam', 'send me 500 rs': 'spam', 'check my site cheapdeals.shop': 'spam',
   'selling weed dm': 'spam', 'kys': 'abuse', 'I will kill you': 'abuse',
   'I want to fuck you': 'sexual', 'I am horny': 'sexual',
-  'nigga wassup': null, 'bitch please lol': null, 'WhatsApp me': 'spam', 'call me 03001234567': 'spam', 'trust issues ig': 'fine',
+  'nigga wassup': null, 'bitch please lol': null, 'WhatsApp me': 'fine', 'call me 03001234567': 'fine', 'trust issues ig': 'fine',
+  'my insta is instagram.com/john.doe': 'fine', 'add my snap snapchat.com/add/jo': 'fine', 'whats your instagram': 'fine',
+  'check instagram.com/foo and cheapdeals.shop': 'spam', 'onlyfans.com/me': 'spam', 'instagram.com.evil.ru/x': 'spam',
   'Okay baby': 'fine', 'I want to kill myself': 'fine', 'Young brother': 'fine', 'Fuck no': 'skip',
 };
 for (const [t, want] of Object.entries(expect)) ok(`classify "${t}" -> ${want}`, classify(t) === want, classify(t));
@@ -72,7 +76,13 @@ ok('link: one warning per 12 hours', warnsFor('l').length === 1);
 say('p', 'x', 'send your pic');
 ok('picture request: warning', warnsFor('p').length === 1);
 say('w', 'x', 'add me on whatsapp');
-ok('WhatsApp swap: warning like links', warnsFor('w').length === 1 && /WhatsApp/.test(warnsFor('w')[0].message));
+say('w', 'y', 'my insta is @john.doe, snap: johnny22, call me 0300 1234567');
+say('w', 'z', 'here is my profile https://www.instagram.com/john.doe/ and wa.me/923001234567');
+say('w', 'x', 'whats your snapchat? lets move to telegram');
+ok('socials are allowed: handles, asking, moving apps, numbers, profile links', warnsFor('w').length === 0, warnsFor('w'));
+say('o', 'x', 'my page is cheapdeals.shop');
+say('o', 'y', 'onlyfans.com/me');
+ok('other websites and OnlyFans still get one warning', warnsFor('o').length === 1 && /other websites/.test(warnsFor('o')[0].message), warnsFor('o'));
 
 say('h', 'x', 'just kys');
 const h = am._state().people['c:h'];

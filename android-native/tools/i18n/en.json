@@ -342,7 +342,7 @@
 "f_needs_consent": "They have not allowed voice messages",
 "f_friends_only": "Voice messages are for friends",
 "f_voice_rate": "Too many voice messages, wait a minute",
-"f_link": "Links cannot be sent",
+"f_link": "Links to other websites cannot be sent",
 "f_unsafe": "This message is not allowed",
 "f_rate": "You are sending messages too fast",
 "f_accept_first": "Accept their friend request first",

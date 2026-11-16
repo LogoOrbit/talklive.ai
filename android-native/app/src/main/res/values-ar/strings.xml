@@ -317,7 +317,7 @@
     <string name="f_needs_consent">لم يسمح بالرسائل الصوتية</string>
     <string name="f_friends_only">الرسائل الصوتية للأصدقاء فقط</string>
     <string name="f_voice_rate">رسائل صوتية كثيرة، انتظر دقيقة</string>
-    <string name="f_link">لا يمكن إرسال الروابط</string>
+    <string name="f_link">لا يمكن إرسال روابط إلى مواقع أخرى</string>
     <string name="f_unsafe">هذه الرسالة غير مسموحة</string>
     <string name="f_rate">ترسل الرسائل بسرعة كبيرة</string>
     <string name="f_accept_first">اقبل طلب صداقته أولًا</string>

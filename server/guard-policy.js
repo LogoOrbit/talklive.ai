@@ -2,24 +2,31 @@
 //
 //   Allowed:      flirting and sexual chat between adults; swearing and rough
 //                 slang between friends.
-//   Not allowed:  asking for money, sending links (or "visit/follow my
-//                 profile"), moving people to WhatsApp/Instagram/Snapchat or
-//                 sharing phone numbers, asking for pictures or videos, telling someone to
-//                 kill themselves, real threats or murder talk, selling drugs
-//                 or any other illegal activity. Someone saying they feel
-//                 suicidal themselves is NOT a violation - they need help.
+//   Not allowed:  asking for money, links to other websites, "visit my
+//                 shop"-style promotion, asking for pictures or videos,
+//                 telling someone to kill themselves, real threats or murder
+//                 talk, selling drugs or any other illegal activity. Someone
+//                 saying they feel suicidal themselves is NOT a violation -
+//                 they need help.
+//   Allowed too:  sharing social media accounts and phone numbers, asking for
+//                 someone else's, moving to WhatsApp/Instagram/Snapchat/
+//                 Telegram, and links to those sites' profiles. That is how
+//                 a good conversation carries on. (Sending the same pitch to
+//                 many strangers is still spam: server/patterns.js.)
 //   Ban:          asking for money again and again, or copy-pasting a money
 //                 request to strangers.
 //   Always:       sexual talk with someone who says they are under 18 goes to
 //                 the owner (automod.js), whatever the rules above say.
 //
 // detect(text) says which rules a message breaks. classify(text) answers the
-// AI Guard's "Teach it" queue the way the owner would: 'spam' for money, links,
-// contact swaps, picture requests and drug/illegal selling, 'abuse' for suicide baiting and
+// AI Guard's "Teach it" queue the way the owner would: 'spam' for money, links
+// to other websites, picture requests and drug/illegal selling, 'abuse' for suicide baiting and
 // threats, 'sexual' for sexual chat
 // (allowed, but labelled so the minor check keeps working), 'fine' for false
 // alarms, 'skip' for plain swearing, or null to leave it for the owner
 // (insults and slurs, which can be friendly slang).
+
+const { stripSocialLinks } = require('../public/social-links.js');
 
 const MONEY = [
   /\b(pay\s*pal|cash\s*app|venmo|zelle|upi|paytm|g\s*pay|google\s*pay|phone\s*pe|easy\s*paisa|jazz\s*cash|g\s*cash|bkash|western\s*union|money\s*gram|gift\s*cards?|amazon\s*card|steam\s*card|bitcoin|btc|usdt|binance|bank\s*(?:details|account|transfer))\b/i,
@@ -46,10 +53,11 @@ const PICS = [
   /^\s*(?:pic|pics|nudes?|send\s+nudes|pic\s+(?:pls|plz|please))\s*[?!.]*\s*$/i,
 ];
 
+// Links to other websites. Links to social profiles are taken out first
+// (see public/social-links.js), so they never count as a link here.
 const LINK = [
   /(?:https?:\/\/|www\.)\S+/i,
   /\b(?!talklive\.)[a-z0-9-]{2,}\.(?:com|net|org|io|xyz|ru|link|gg|me|app|site|online|store|shop|live|tv|ly|to|cc)\b(?:\/\S*)?/i,
-  /\b(?:visit|follow|check\s*out|subscribe\s+to|add)\s+(?:me|my)\b.{0,30}\b(?:instagram|insta|ig|tiktok|youtube|yt|channel|profile|page|only\s*fans|onlyfans|account)\b/i,
   /\bonly\s*fans\b/i,
 ];
 
@@ -68,7 +76,10 @@ const ILLEGAL = [
 const SLUR = /\b(nigg(?:a|er|ers|as)?|faggots?)\b/i;
 // Insults: rude, but context decides (role-play, talking about a third person).
 const INSULT = /\b(fuck\s+(?:you|u|off|your\s+(?:mom|mum|mother|sister|family))|fuck\s+yourself|bitch\w*|dumbass|asshole|stfu|shut\s+up|whore|slut|retard\w*|motherfucker|loser|idiot)\b/i;
-// Moving people to another app, or sharing a phone number: warned like links.
+// Moving people to another app, or sharing a phone number or a handle. This is
+// allowed (see the top); it is still detected so the moderation tags and the
+// copy-paste check (server/patterns.js) can tell a pitch sent to many
+// strangers from two people swapping socials.
 const CONTACT = /\b(?:wh?ats?\s*app|wa\s*(?:number|no)|telegram|snap\s*chat|snap\s*id|discord|kik)\b|\b(?:your|ur|my|any|send)\s+(?:id|ig|insta|instagram|number|no|snap|whatsapp)\b|^\s*(?:ig|my\s+ig|ur\s+id|id)\s*[?!.]*\s*$|(?:^|[^\d$])\+?\d(?:[\s().-]?\d){9,13}(?!\d)/i;
 const SEXUAL = /\b(sex|sexy|sext\w*|dick\w*|cock|pussy|boobs?|tits?|horny|naked|nude|porn\w*|suck\w*|lick\w*|wet|cum\w*|balls|thighs?|doggy|finger\w*|naughty|dirty|blow\s*job|bj|orgasm|moan\w*|grop\w*|bend|kiss\w*|nipples?|clit|erect\w*|masturbat\w*)\b|\b(?:wanna|want\s+to|gonna|can\s+we|let'?s|i\s+will|i'?ll|to)\s+fuck\b|\bfuck\s+(?:me|her|him|hard|you\s+(?:hard|in))\b/i;
 const SEX_FUCK_YOU = /\b(?:will|wanna|want\s+to|gonna|let\s+me|i'?ll|can\s+i|to)\s+fuck\s+(?:you|u)\b/i;
@@ -80,7 +91,7 @@ function detect(text) {
   const t = String(text || '');
   return {
     money: any(MONEY, t),
-    link: any(LINK, t),
+    link: any(LINK, stripSocialLinks(t)),
     pics: any(PICS, t),
     harm: SUICIDE_BAIT.test(t) || THREAT.test(t),
     suicideBait: SUICIDE_BAIT.test(t),
@@ -97,7 +108,7 @@ function classify(text) {
   if (!t) return 'skip';
   const d = detect(t);
   if (d.harm) return 'abuse';
-  if (d.money || d.pics || d.link || d.contact || d.illegal) return 'spam';
+  if (d.money || d.pics || d.link || d.illegal) return 'spam';
   // Slurs and insults can be friendly slang: the owner decides.
   if (d.slur) return null;
   // "I will fuck you" is sexual chat, not an insult.

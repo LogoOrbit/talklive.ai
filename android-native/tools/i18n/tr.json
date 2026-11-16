@@ -339,7 +339,7 @@
 "f_needs_consent": "Sesli mesajlara izin vermedi",
 "f_friends_only": "Sesli mesajlar arkadaşlar içindir",
 "f_voice_rate": "Çok fazla sesli mesaj, bir dakika bekle",
-"f_link": "Bağlantı gönderilemez",
+"f_link": "Başka web sitelerine bağlantılar gönderilemez",
 "f_unsafe": "Bu mesaja izin verilmiyor",
 "f_rate": "Çok hızlı mesaj gönderiyorsun",
 "f_accept_first": "Önce arkadaşlık isteğini kabul et",

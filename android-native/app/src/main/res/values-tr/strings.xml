@@ -337,7 +337,7 @@
     <string name="f_needs_consent">Sesli mesajlara izin vermedi</string>
     <string name="f_friends_only">Sesli mesajlar arkadaşlar içindir</string>
     <string name="f_voice_rate">Çok fazla sesli mesaj, bir dakika bekle</string>
-    <string name="f_link">Bağlantı gönderilemez</string>
+    <string name="f_link">Başka web sitelerine bağlantılar gönderilemez</string>
     <string name="f_unsafe">Bu mesaja izin verilmiyor</string>
     <string name="f_rate">Çok hızlı mesaj gönderiyorsun</string>
     <string name="f_accept_first">Önce arkadaşlık isteğini kabul et</string>

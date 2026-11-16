@@ -28,9 +28,11 @@
 //   money    1st ask: warning. 2nd: final warning. 3rd within 24 hours: ban
 //            (7 days, then 30, then a year). A burst of lines in one chat is one
 //            ask. Copy-pasting a money request to 5+ strangers: ban at once.
-//   links    a warning (at most one per 12 hours) and half a strike. Asking
-//            to move to WhatsApp/Instagram/Snapchat or sharing a phone number
-//            is treated the same.
+//   links    a link to another website: a warning (at most one per 12
+//            hours) and half a strike. Social media is NOT a link: sharing
+//            or asking for Instagram/Snapchat/WhatsApp/Telegram accounts,
+//            phone numbers and links to those profiles is allowed, and
+//            moving to those apps is too.
 //   pictures asking for pictures or videos: the same as links.
 //   harm     telling someone to kill themselves, real threats or murder talk:
 //            a warning and straight to the owner's review queue.
@@ -63,14 +65,13 @@ const DEFAULT_SETTINGS = {
   strikeDays: 30, // a warning level fades after this long with no new events
   ai: true,
   keywordStrikes: true,
-  policy: true, // money / links / picture-request rules (see above)
+  policy: true, // money / link / picture-request rules (see above)
 };
 
 const POLICY_TEXT = {
   money1: 'Asking for money is not allowed on TalkLive. If you ask again you will get a final warning, and then a ban.',
   money2: 'Final warning: asking for money is not allowed on TalkLive. Ask again and your account will be banned.',
-  link: 'Sending links or promoting your profiles is not allowed on TalkLive. Please keep the conversation here.',
-  contact: 'Asking people to move to WhatsApp, Instagram, Snapchat or other apps, or sharing phone numbers, is not allowed on TalkLive. Please keep the conversation here.',
+  link: 'Sending links to other websites is not allowed on TalkLive. Sharing your social media accounts is fine.',
   pics: 'Asking people for pictures or videos is not allowed on TalkLive.',
   harm: 'Telling people to hurt or kill themselves, and threatening people, is not allowed on TalkLive. Your account has been sent for review.',
   illegal: 'Selling drugs or anything illegal is not allowed on TalkLive. Doing it again will send your account for review.',
@@ -90,7 +91,7 @@ const WARN_TEXT = {
 const SYSTEM = `You review user reports for TalkLive, an anonymous random voice and text chat site for adults.
 You get the reporter's stated reason and the recent chat between the two people. Decide whether the REPORTED person broke the rules.
 
-Rules: flirting and sexual chat between consenting adults are ALLOWED and are not a violation. Swearing and rough slang (including slurs used casually) between people who are clearly joking or friendly are ALLOWED. Someone saying they feel suicidal themselves is NOT a violation. Not allowed: harassment or bullying, hateful attacks on someone, telling someone to kill or hurt themselves, real threats or genuine talk of murdering someone, selling drugs or any other illegal activity, continuing sexual talk after the other person said no or clearly did not want it, any sexual talk involving anyone who says they are under 18, asking for money (or selling content), sending links or promoting profiles, asking for pictures or videos.
+Rules: flirting and sexual chat between consenting adults are ALLOWED and are not a violation. Swearing and rough slang (including slurs used casually) between people who are clearly joking or friendly are ALLOWED. Someone saying they feel suicidal themselves is NOT a violation. Not allowed: harassment or bullying, hateful attacks on someone, telling someone to kill or hurt themselves, real threats or genuine talk of murdering someone, selling drugs or any other illegal activity, continuing sexual talk after the other person said no or clearly did not want it, any sexual talk involving anyone who says they are under 18, asking for money (or selling content), sending links to other websites, advertising or promoting products, channels or services to strangers, asking for pictures or videos. Sharing or asking for social media accounts (Instagram, Snapchat, WhatsApp, Telegram, TikTok and similar), swapping phone numbers, and moving the conversation to another app are ALLOWED and are not a violation.
 
 verdict:
 - violation: the transcript clearly shows the REPORTED person breaking a rule.
@@ -418,7 +419,7 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
   function policyCheck({ from, to, text }) {
     if (!policyOn()) return;
     const d = guardPolicy.detect(text);
-    if (!d.money && !d.link && !d.pics && !d.contact && !d.harm && !d.illegal) return;
+    if (!d.money && !d.link && !d.pics && !d.harm && !d.illegal) return;
     const p = person(from.clientId, from.account, from);
     const pol = p.policy || (p.policy = { money: [], warned: {}, bans: 0 });
     const now = Date.now();
@@ -449,8 +450,8 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
       if (n >= 3) policyBan(p, `Asked for money ${n} times in 24 hours`, text);
       else policyWarn(p, n === 1 ? 'money1' : 'money2', 'Asked for money', text);
     } else {
-      const k = d.pics ? 'pics' : d.link ? 'link' : 'contact';
-      const what = { pics: 'Asked for pictures', link: 'Sent a link', contact: 'Asked to move to another app' }[k];
+      const k = d.pics ? 'pics' : 'link';
+      const what = { pics: 'Asked for pictures', link: 'Sent a link to another website' }[k];
       if (!pol.warned) pol.warned = {};
       if (pol.warned[k] > now - 12 * 3600000) return;
       pol.warned[k] = now;

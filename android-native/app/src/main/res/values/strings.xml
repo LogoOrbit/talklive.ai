@@ -347,7 +347,7 @@
     <string name="f_needs_consent">They have not allowed voice messages</string>
     <string name="f_friends_only">Voice messages are for friends</string>
     <string name="f_voice_rate">Too many voice messages, wait a minute</string>
-    <string name="f_link">Links cannot be sent</string>
+    <string name="f_link">Links to other websites cannot be sent</string>
     <string name="f_unsafe">This message is not allowed</string>
     <string name="f_rate">You are sending messages too fast</string>
     <string name="f_accept_first">Accept their friend request first</string>
