@@ -55,10 +55,11 @@ const until = async (fn, ms = 3000) => { const t = Date.now(); while (Date.now()
     await wait(800);
     ok('a foreign-id client is not matched with a real person', bot1.matched === 0 && real1.matched === 0, { bot: bot1.matched, real: real1.matched });
 
-    // ...but it still "works": it is matched with others like it, so it sees nothing to adapt to.
+    // Quarantined clients are never matched at all, not even with each other.
     const bot2 = await client('BOT2');
     bot2.sock.emit('find-partner', { mode: 'talk' });
-    ok('foreign-id clients are matched with each other', await until(() => bot1.matched === 1 && bot2.matched === 1));
+    await wait(800);
+    ok('foreign-id clients are not matched with each other', bot1.matched === 0 && bot2.matched === 0);
 
     // The real person waiting is matched as soon as another real person arrives.
     const real2 = await client('real2');
@@ -89,7 +90,8 @@ const until = async (fn, ms = 3000) => { const t = Date.now(); while (Date.now()
     ok('after that the dropper is quarantined from real people', dropper.matched === before && real3.matched === 0, { d: dropper.matched - before, r: real3.matched });
     const bot3 = await client('BOT3');
     bot3.sock.emit('find-partner', { mode: 'talk' });
-    ok('and shares a pool with the other quarantined clients', await until(() => dropper.matched === before + 1 && bot3.matched === 1));
+    await wait(800);
+    ok('and is not matched with other quarantined clients either', dropper.matched === before && bot3.matched === 0);
 
     // Someone on the receiving end of quick drops is not punished for them.
     real3.sock.emit('leave'); await wait(100);

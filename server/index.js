@@ -5023,20 +5023,25 @@ function noteMatchEnd(socketId, profile, ms) {
   const now = Date.now();
   const sock = io.sockets.sockets.get(socketId);
   const ip = profile.ip || (sock ? getClientIp(sock) : null);
-  // Metronome: a person never ends 8 matches within 0.8s of the same length.
-  const dk = 'c:' + profile.clientId;
-  const durs = matchDurs.get(dk) || [];
-  durs.push(ms);
-  while (durs.length > 8) durs.shift();
-  matchDurs.set(dk, durs);
-  if (durs.length === 8 && Math.max(...durs) - Math.min(...durs) < 800) {
-    const rec = quarantine.get(dk) || { until: 0, strikes: 0 };
-    rec.strikes = Math.min(rec.strikes + 1, 6);
-    rec.until = now + Math.min(QUARANTINE_MS * 2 ** (rec.strikes - 1), QUARANTINE_MAX_MS);
-    quarantine.set(dk, rec);
-    saveQuarantine(dk, { until: rec.until, strikes: rec.strikes });
-    matchDurs.delete(dk);
-    store.recordFeature('bot_quarantine');
+  // Metronome: scripts end every match at the same length (US text-chat bots,
+  // Nov 2026). A person never ends 5 matches within 0.6s of each other; an
+  // address that does it 6 times is a script rotating its client ids.
+  const sockM = io.sockets.sockets.get(socketId);
+  const ipM = profile.ip || (sockM ? getClientIp(sockM) : null);
+  for (const [dk, n] of [['c:' + profile.clientId, 5], ...(ipM ? [['i:' + ipM, 6]] : [])]) {
+    const durs = matchDurs.get(dk) || [];
+    durs.push(ms);
+    while (durs.length > n) durs.shift();
+    matchDurs.set(dk, durs);
+    if (durs.length === n && Math.max(...durs) - Math.min(...durs) < 600) {
+      const rec = quarantine.get(dk) || { until: 0, strikes: 0 };
+      rec.strikes = Math.min(rec.strikes + 1, 6);
+      rec.until = now + Math.min(QUARANTINE_MS * 2 ** (rec.strikes - 1), QUARANTINE_MAX_MS);
+      quarantine.set(dk, rec);
+      saveQuarantine(dk, { until: rec.until, strikes: rec.strikes });
+      matchDurs.delete(dk);
+      store.recordFeature('bot_quarantine');
+    }
   }
   if (matchDurs.size > 20000) matchDurs.clear();
   const keys = [['c:' + profile.clientId, QUICK_SAMPLE, QUICK_LIMIT]];
@@ -7273,6 +7278,8 @@ io.on('connection', (socket) => {
     }
     // Banned users can never connect to anyone until the ban is lifted.
     if (refuseBanned(socket, profile.clientId, null)) return;
+    // Quarantined scripts get no partner at all: they wait forever.
+    if (quarantined(profile, socket.id)) { store.recordFeature('bot_search'); return; }
     let mode = (opts && opts.mode === 'chat') ? 'chat' : 'talk';
     // Restricted profile (fix list 3.1, age-band signal): text-only. Only ever
     // set when the ageBandSignal flag is on and a signal reported an under-18
