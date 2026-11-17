@@ -24,7 +24,7 @@
     "test:referral": "node scripts/test-referral.js",
     "test:users": "node scripts/test-owner-users.js",
     "test:reset": "node scripts/test-password-reset.js",
-    "test:chat": "node scripts/test-chat-extras.js && node scripts/test-chat-away.js",
+    "test:chat": "node scripts/test-chat-extras.js && node scripts/test-chat-away.js && node scripts/test-away-resume.js",
     "test:matchmaking": "node scripts/test-matchmaking.js",
     "test:filters": "node scripts/test-filters.js",
     "test:perks": "node scripts/test-premium-perks.js",

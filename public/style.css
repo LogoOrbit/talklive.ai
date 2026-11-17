@@ -6461,3 +6461,48 @@ body .tt-story-body h3 { letter-spacing: -0.03em; }
   body .seo-inner h3 { margin-top: 40px; font-size: 19px; }
   body .hc-faq summary { font-size: 16px; padding: 18px 0; }
 }
+
+/* Presence under the call status: thin red while someone is offline. */
+.call-presence { margin: 8px auto 0; font-size: 13.5px; font-weight: 400; letter-spacing: 0.01em; line-height: 1.4; color: var(--danger); text-align: center; text-wrap: balance; }
+.call-presence.is-back { color: var(--green); }
+
+/* Google Play "coming soon" badge: the tour and the Plus box. */
+.tt-play { display: inline-flex; align-items: center; gap: 10px; padding: 8px 16px 8px 12px; border-radius: 10px; background: #000; color: #fff; border: 1px solid #5f6368; text-align: start; line-height: 1.1; }
+.tt-play-logo { width: 24px; height: 26px; flex: none; }
+.tt-play small { display: block; font-size: 10px; letter-spacing: .04em; text-transform: uppercase; }
+.tt-play b { display: block; font-size: 18px; font-weight: 600; }
+
+/* The Plus box: Plus comes with the Android app, so it says that and no more. */
+#premiumUpsellModal .pu-app { max-width: 380px; padding: 28px 24px 22px; text-align: center; }
+.pu-app .pu-play { margin: 4px auto 18px; }
+.pu-app .pu-title { font-size: 24px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.15; margin: 0 0 8px; }
+.pu-app .pu-reason { margin: 0 0 6px; font-size: 15px; color: color-mix(in srgb, var(--text) 76%, transparent); }
+.pu-app-line { margin: 0 0 22px; font-size: 15px; line-height: 1.55; color: color-mix(in srgb, var(--text) 76%, transparent); text-wrap: pretty; }
+.pu-app .pu-cta { width: 100%; }
+.pu-app .pu-free { margin: 14px 0 0; font-size: 12.5px; color: color-mix(in srgb, var(--text) 56%, transparent); }
+
+/* The sky moves: two cloud banks and two ridges drift at different speeds,
+   so it reads as depth. Transform-only on their own layers (no repaint), off
+   for reduced motion and on low-end devices. */
+.tl-hero-clouds {
+  position: absolute;
+  top: 18px;
+  left: 0;
+  width: calc(100% + 600px);
+  height: 140px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 140'%3E%3Cg fill='%23fff'%3E%3Cpath d='M40 96a26 26 0 0 1 24-26 34 34 0 0 1 64-10 24 24 0 0 1 34 22 18 18 0 0 1-4 36H58a18 18 0 0 1-18-22z'/%3E%3Cpath d='M330 62a18 18 0 0 1 17-18 24 24 0 0 1 45-7 17 17 0 0 1 24 15 13 13 0 0 1-3 25H343a13 13 0 0 1-13-15z' opacity='.7'/%3E%3Cpath d='M470 110a14 14 0 0 1 13-14 19 19 0 0 1 36-5 13 13 0 0 1 19 12 10 10 0 0 1-2 19H480a10 10 0 0 1-10-12z' opacity='.55'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 600px 140px repeat-x;
+  opacity: 0.12;
+  will-change: transform;
+  animation: tl-sky-drift 70s linear infinite;
+}
+[data-theme="light"] .tl-hero-clouds { opacity: 0.75; }
+.tl-hero-range { will-change: transform; }
+.tl-hero-sky .tl-hero-range-far, .tl-hero-sky .tl-hero-range-near { width: 200%; right: auto; }
+.tl-hero-range-far { animation: tl-ridge-drift 160s linear infinite; }
+.tl-hero-range-near { animation: tl-ridge-drift 95s linear infinite; }
+@keyframes tl-sky-drift { to { transform: translate3d(-600px, 0, 0); } }
+@keyframes tl-ridge-drift { to { transform: translate3d(-50%, 0, 0); } }
+@media (prefers-reduced-motion: reduce) {
+  .tl-hero-clouds, .tl-hero-range { animation: none; will-change: auto; }
+}
+html.perf-lite .tl-hero-clouds, html.perf-lite .tl-hero-range { animation: none; will-change: auto; }

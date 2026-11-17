@@ -5133,6 +5133,12 @@ const RESUME_GRACE_MS = 10000;
 // A pairing still in its first seconds is not worth holding the other person
 // for: they are on "Connecting..." and better off moving on.
 const RESUME_MIN_CALL_MS = 8000;
+// How long a dropped call or chat is held for its person to come back.
+const PARK_HOLD_MS = Number(process.env.PARK_HOLD_MS) || 60000;
+function parkedFor(oldId) {
+  for (const rec of parkedPairings.values()) if (rec.oldId === oldId) return rec;
+  return null;
+}
 const INVOLUNTARY_DROPS = new Set(['transport close', 'transport error', 'ping timeout']);
 const parkedPairings = new Map(); // clientId -> { oldId, partnerId, profile, timer }
 const parkedSockets = new Set(); // old socket ids whose pairing is parked
@@ -5142,12 +5148,20 @@ const RESUME_FIELDS = ['mode', 'matchedAt', 'pairId', 'mx', 'mPos', 'filterMatch
 function parkPairing(socketId, profile) {
   const partnerId = partners.get(socketId);
   if (!profile || !partnerId || partners.get(partnerId) !== socketId) return false;
-  if (!profile.matchedAt || Date.now() - profile.matchedAt < RESUME_MIN_CALL_MS) return false;
-  if (!io.sockets.sockets.get(partnerId)) return false;
+  // Someone who switched apps mid-chat is held however young the chat is.
+  const awayFor = profile.awayAt ? Date.now() - profile.awayAt : -1;
+  if (awayFor < 0 && (!profile.matchedAt || Date.now() - profile.matchedAt < RESUME_MIN_CALL_MS)) return false;
+  const partnerSocket = io.sockets.sockets.get(partnerId);
+  if (!partnerSocket) return false;
   const earlier = parkedPairings.get(profile.clientId);
   if (earlier) finishParked(profile.clientId, earlier);
-  const rec = { oldId: socketId, partnerId, profile };
-  rec.timer = setTimeout(() => finishParked(profile.clientId, rec), RESUME_GRACE_MS);
+  const rec = { oldId: socketId, partnerId, profile, pending: [] };
+  // A phone in the background loses its socket long before its person is
+  // gone: hold the pairing for the rest of the away window, or a minute.
+  const hold = awayFor >= 0 ? Math.max(RESUME_GRACE_MS, CHAT_AWAY_DROP_MS - awayFor) : PARK_HOLD_MS;
+  rec.timer = setTimeout(() => finishParked(profile.clientId, rec), hold);
+  // The other side sees "offline - they might come back" until then.
+  partnerSocket.emit('partner-away', { away: true, offline: true });
   rec.timer.unref?.();
   parkedPairings.set(profile.clientId, rec);
   parkedSockets.add(socketId);
@@ -5192,7 +5206,10 @@ function resumeParked(socket, clientId) {
   gameTracker.onPairEnd(rec.oldId, rec.partnerId);
   for (const k of RESUME_FIELDS) me[k] = rec.profile[k];
   socket.emit('call-resumed', { mode: me.mode || 'talk', pairId: me.pairId, partner: publicProfile(partnerProfile) });
+  // Messages the other side sent while this one was offline.
+  for (const m of rec.pending) socket.emit('chat-message', m);
   partnerSocket.emit('partner-resumed', { pairId: me.pairId });
+  partnerSocket.emit('partner-away', { away: false });
   store.recordFeature('call_resumed');
   return true;
 }
@@ -7195,6 +7212,8 @@ io.on('connection', (socket) => {
     socket.emit('register-result', { ok: true, now: Date.now() });
     // Back within the grace window of a dropped call: carry on with it.
     if (parkedPairings.has(clientId)) resumeParked(socket, clientId);
+    // Back too late: the page still shows the chat, so say it ended.
+    else if (typeof data.pairId === 'string' && data.pairId && !partners.has(socket.id)) socket.emit('partner-left', { reason: 'away' });
     refreshFriendSnapshots(clientId, profiles.get(socket.id));
     syncClientState(socket, clientId);
     deliverPendingTo(clientId);
@@ -8065,9 +8084,11 @@ io.on('connection', (socket) => {
     // The server's clock is the only one both sides agree on, so it stamps the
     // message rather than letting each browser date it by its own (often
     // wrong, sometimes wildly wrong) local time.
-    io.to(partnerId).emit('chat-message', {
-      text: msg.text, id: msg.id, replyTo: msg.replyTo, gif: msg.gif, ts: now,
-    });
+    const out = { text: msg.text, id: msg.id, replyTo: msg.replyTo, gif: msg.gif, ts: now };
+    // The other side is offline but held: keep it for when they are back.
+    const held = parkedSockets.has(partnerId) && parkedFor(partnerId);
+    if (held) { if (held.pending.length < 50) held.pending.push(out); return; }
+    io.to(partnerId).emit('chat-message', out);
   });
 
   // Reactions on a stranger message. Pure relay: the pair is live, both sides
@@ -8095,6 +8116,7 @@ io.on('connection', (socket) => {
     const partnerId = partners.get(socket.id);
     const me = profiles.get(socket.id);
     if (!partnerId || !me || me.mode !== 'chat') return;
+    me.awayAt = away ? Date.now() : 0;
     io.to(partnerId).emit('partner-away', { away: !!away });
     if (!away) return;
     chatAwayTimers.set(socket.id, setTimeout(() => {

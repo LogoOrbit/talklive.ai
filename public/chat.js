@@ -649,9 +649,12 @@
   // ---------------------------------------------------------------------------
   // takeover: this tab is the one the user is looking at, so the server should
   // move the identity here even if another tab still answers for it.
+  var pairIdNow = null;
   function register(takeover) {
     socket.emit('register', {
       takeover: !!takeover,
+      // Mid-chat: lets the server hand the chat back, or say it ended.
+      pairId: partnerHere && pairIdNow ? pairIdNow : undefined,
       // This page is text only: it must not be rung or force-paired for a
       // voice call-back, which it has no way to answer.
       surface: 'chat',
@@ -1134,24 +1137,40 @@
     if (socket.connected) socket.emit('app-visibility', { hidden: document.visibilityState === 'hidden' });
   }
   document.addEventListener('visibilitychange', reportVisibility);
-  window.addEventListener('pagehide', function () {
+  window.addEventListener('pagehide', function (e) {
+    // A page kept in the back/forward cache may come back; the server holds it.
+    if (e && e.persisted) return;
     if (partnerHere || searching) socket.emit('leave');
   });
 
+  // Presence lines: "offline - they might come back" in thin red while the
+  // other side (or this one) is gone, then "back online" in green.
   var awayLine = null;
+  var selfLine = null;
+  function presence(line, key, name, back) {
+    if (!line || !line.parentNode) line = addMessage(' ', 'system system-presence');
+    line.textContent = t(key, { name: name });
+    line.classList.toggle('is-back', !!back);
+    msgs.scrollTop = msgs.scrollHeight;
+    return line;
+  }
   socket.on('partner-away', function (data) {
     if (!partnerHere) return;
     var name = (currentPartner && currentPartner.username) || t('stranger');
     if (data && data.away) {
       typingEl.classList.add('hidden');
-      if (!awayLine || !awayLine.parentNode) awayLine = addMessage(' ', 'system system-warn');
-      awayLine.textContent = t('chatPartnerAway', { name: name });
-      msgs.scrollTop = msgs.scrollHeight;
+      awayLine = presence(awayLine, 'chatPartnerAway', name, false);
     } else if (awayLine) {
-      awayLine.textContent = t('chatPartnerBack', { name: name });
-      awayLine.className = 'msg system';
+      presence(awayLine, 'chatPartnerBack', name, true);
       awayLine = null;
     }
+  });
+  socket.on('disconnect', function () {
+    if (partnerHere) selfLine = presence(selfLine, 'chatYouOffline', '', false);
+  });
+  socket.on('call-resumed', function (data) {
+    if (data && typeof data.pairId === 'string') pairIdNow = data.pairId;
+    if (selfLine) { presence(selfLine, 'chatYouBack', '', true); selfLine = null; }
   });
 
   composer.addEventListener('submit', function (e) {
@@ -3599,6 +3618,7 @@
 
   socket.on('matched', function (data) {
     if (data.mode && data.mode !== 'chat') return; // safety: ignore stray voice matches
+    pairIdNow = typeof data.pairId === 'string' ? data.pairId : null;
     searchAcked = true;
     sendAdsConversion();
     currentPartner = data.partner;
@@ -3735,8 +3755,10 @@
     var reason = info && info.reason;
     var name = (info && info.username) || (currentPartner && currentPartner.username) || t('stranger');
     partnerHere = false;
+    pairIdNow = null;
     hideIcebreakers();
     awayLine = null;
+    selfLine = null;
     // Surface the drop on an open board (grey it out) instead of yanking it away.
     if (games) { if (games.isPlaying() || games.isNegotiating()) games.partnerLeft(); else games.reset(); }
     typingEl.classList.add('hidden');

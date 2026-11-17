@@ -8890,6 +8890,7 @@ function teardownPeer() {
 // Full reset back to the Tap-to-Talk landing (used after a ban / abandoned
 // callback, and whenever the user has no live call to return to).
 function resetUI() {
+  if (typeof showPresence === 'function') showPresence(null);
   teardownPeer();
   hidePeerGone();
   isSearching = false;
@@ -11531,8 +11532,35 @@ socket.on('signal', (data) => {
 // Our socket dropped mid-call and came back within the server's grace window:
 // the pairing is ours again, on the new socket. The media may never have
 // noticed; if it did, re-gather now that signalling works again.
+// Presence under the call status: thin red while someone is offline, green
+// for a moment once they are back.
+let presenceEl = null;
+let presenceTimer = null;
+function showPresence(key, back) {
+  clearTimeout(presenceTimer);
+  if (!key) { if (presenceEl) presenceEl.remove(); presenceEl = null; return; }
+  if (!presenceEl) {
+    presenceEl = document.createElement('p');
+    presenceEl.className = 'call-presence';
+    presenceEl.setAttribute('role', 'status');
+    subText.insertAdjacentElement('afterend', presenceEl);
+  }
+  const name = (currentPartner && currentPartner.username) || t('stranger');
+  presenceEl.textContent = t(key, { name });
+  presenceEl.classList.toggle('is-back', !!back);
+  if (back) presenceTimer = setTimeout(() => showPresence(null), 3500);
+}
+socket.on('partner-away', ({ away } = {}) => {
+  if (callState !== 'connected' && callState !== 'reconnecting') return;
+  if (away) showPresence('chatPartnerAway');
+  else if (presenceEl && !presenceEl.classList.contains('is-back')) showPresence('chatPartnerBack', true);
+});
+socket.on('disconnect', () => {
+  if (callState === 'connected' || callState === 'reconnecting') showPresence('chatYouOffline');
+});
 socket.on('call-resumed', ({ pairId } = {}) => {
   if (typeof pairId === 'string') currentPairId = pairId;
+  if (presenceEl) showPresence('chatYouBack', true);
   if (pc && !iceIsUp(pc)) { lastIceRestartAt = 0; attemptIceRestart(pc); }
 });
 // The other side's socket dropped and came back: same, from this end.
@@ -11581,6 +11609,7 @@ socket.on('rate-prompt', (d) => {
   document.head.appendChild(s);
 });
 socket.on('partner-left', (info) => {
+  showPresence(null);
   // Their connection dropped rather than them leaving: say so, by name, and
   // leave the door open instead of declaring the call over.
   const dropped = !!(info && info.reason === 'disconnected') && mediaConnected;
@@ -11702,7 +11731,9 @@ socket.on('connect', () => {
   if (isSearching) setConnection('orange', 'connReconnecting');
   // Re-register on every (re)connect so the server always has a live socket
   // for this clientId, and so friends/notifications resync after being offline.
-  if (lastRegisterPayload) socket.emit('register', lastRegisterPayload);
+  // Mid-call it also lets the server hand the call back, or say it ended.
+  const inCall = callState === 'connected' || callState === 'reconnecting';
+  if (lastRegisterPayload) socket.emit('register', { ...lastRegisterPayload, pairId: inCall && currentPairId ? currentPairId : undefined });
   // Silently re-authenticate with the durable session token so the account
   // survives page reloads, dropped sockets and server deploys.
   if (sessionToken) socket.emit('resume-session', { token: sessionToken });
@@ -12021,23 +12052,6 @@ function closeUpsell() {
   closeModal(premiumUpsellModal);
   flushUpsellDismiss();
 }
-// What Plus costs here: the yearly plan with its real saving (computed by the server).
-function showUpsellPrice() {
-  const now = document.getElementById('puPriceNow');
-  const was = document.getElementById('puPriceWas');
-  const save = document.getElementById('puPriceSave');
-  loadPlusPricing().then((p) => {
-    if (!p || !p.yearly) return;
-    const y = p.yearly;
-    now.textContent = t('plusYearNow', { total: y.label, perMonth: y.perMonthLabel });
-    const c = y.compareAt;
-    was.hidden = save.hidden = !c;
-    if (c) {
-      was.innerHTML = wasHtml(c.label);
-      save.textContent = t('plusSaveYear', { n: c.savePercent });
-    }
-  });
-}
 function showPremiumUpsell(message, perk = 'countries') {
   flushUpsellDismiss();
   // A moment already dismissed this session is not shown again; the person still hears why it did nothing.
@@ -12046,25 +12060,18 @@ function showPremiumUpsell(message, perk = 'countries') {
   const reason = document.getElementById('puReason');
   reason.textContent = message || '';
   reason.hidden = !message;
-  const list = document.getElementById('puPerks');
-  const lis = [...list.querySelectorAll('[data-perk]')];
-  if (!list.dataset.order) list.dataset.order = lis.map((li) => li.dataset.perk).join(',');
-  const order = list.dataset.order.split(',');
-  lis.sort((x, y) => order.indexOf(x.dataset.perk) - order.indexOf(y.dataset.perk));
-  const hit = lis.find((li) => li.dataset.perk === perk);
-  if (hit) { lis.splice(lis.indexOf(hit), 1); lis.unshift(hit); }
-  lis.forEach((li) => { li.classList.toggle('is-hit', li === hit); list.appendChild(li); });
   upsellPerk = perk;
   trackGrowthEvent('premium_upsell_view');
   if (window.PlusMoments) window.PlusMoments.restrictShown(perk);
-  showUpsellPrice();
   openModal(premiumUpsellModal);
 }
+// Plus is sold in the Android app, which is not on Google Play yet: the box
+// says so and closes.
 document.getElementById('puNotifyBtn').addEventListener('click', () => {
   trackGrowthEvent('premium_upsell_click');
   if (window.PlusMoments) window.PlusMoments.restrictTapped();
   upsellPerk = null;
-  plusGo();
+  closeModal(premiumUpsellModal);
 });
 document.getElementById('puCloseBtn').addEventListener('click', closeUpsell);
 premiumUpsellModal.addEventListener('click', (e) => { if (e.target === premiumUpsellModal) closeUpsell(); });

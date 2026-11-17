@@ -54,7 +54,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=153fc85b70" crossorigin />
-<link rel="stylesheet" href="style.css?v=f20a0c59b4" />
+<link rel="stylesheet" href="style.css?v=14da44f51a" />
 <link rel="stylesheet" href="chat-extras.css?v=4b7b6398b3" />
 <link rel="stylesheet" href="games.css?v=2dd354f960" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
@@ -1093,10 +1093,9 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
              sunset without a second file. -->
         <div class="tl-hero-sky" aria-hidden="true">
           <span class="tl-hero-glow"></span>
-          <svg class="tl-hero-range" viewBox="0 0 1200 260" preserveAspectRatio="none" focusable="false">
-            <path class="tl-hero-far" d="M0 176 118 116 214 164 318 92 430 158 530 108 648 170 764 104 880 156 986 110 1096 162 1200 122V260H0z"/>
-            <path class="tl-hero-near" d="M0 214 96 160 190 206 300 146 404 200 512 152 628 210 740 158 852 204 960 162 1072 208 1200 168V260H0z"/>
-          </svg>
+          <span class="tl-hero-clouds"></span>
+          <svg class="tl-hero-range tl-hero-range-far" viewBox="0 0 2400 260" preserveAspectRatio="none" focusable="false"><path class="tl-hero-far" d="M0 176 118 116 214 164 318 92 430 158 530 108 648 170 764 104 880 156 986 110 1096 162 1200 176 1318 116 1414 164 1518 92 1630 158 1730 108 1848 170 1964 104 2080 156 2186 110 2296 162 2400 176V260H0z"/></svg>
+          <svg class="tl-hero-range tl-hero-range-near" viewBox="0 0 2400 260" preserveAspectRatio="none" focusable="false"><path class="tl-hero-near" d="M0 214 96 160 190 206 300 146 404 200 512 152 628 210 740 158 852 204 960 162 1072 208 1200 214 1296 160 1390 206 1500 146 1604 200 1712 152 1828 210 1940 158 2052 204 2160 162 2272 208 2400 214V260H0z"/></svg>
         </div>
         <h1 class="setup-title" data-i18n="heroTitle">Talk to strangers by voice or text</h1>
         <p class="tl-hero-sub" data-i18n="heroSub">Real people. Genuine conversations. No sign-up required.</p>
@@ -1600,37 +1599,14 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
            what Premium adds (the perk you reached for is lit up), and - since
            Premium is not on sale yet - offers the launch alert, not a checkout. -->
       <div id="premiumUpsellModal" class="modal-overlay hidden">
-        <div class="pu-box" role="dialog" aria-modal="true" aria-labelledby="puTitle">
+        <div class="pu-box pu-app" role="dialog" aria-modal="true" aria-labelledby="puTitle">
           <button type="button" id="puCloseBtn" class="pu-close" data-i18n-aria="close" aria-label="Close">&times;</button>
-          <div class="pu-hero" aria-hidden="true">
-            <span class="pu-gem">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h12l3 6-9 12L3 9z"/><path d="M3 9h18M9 3l3 18 3-18"/></svg>
-            </span>
-          </div>
-                    <div role="heading" aria-level="2" class="pu-title" id="puTitle">TalkLive Plus</div>
+          <span class="tt-play pu-play"><svg class="tt-play-logo" viewBox="0 0 24 26" aria-hidden="true" focusable="false"><path fill="#00d7fe" d="M1.1.6C.8.9.6 1.4.6 2v22c0 .6.2 1.1.5 1.4l.1.1L13.5 13.2v-.3L1.2.5z"/><path fill="#ffce00" d="m17.6 17.3-4.1-4.1v-.3l4.1-4.1.1.1 4.9 2.8c1.4.8 1.4 2.1 0 2.9l-4.9 2.8z"/><path fill="#ff3a44" d="M17.7 17.3 13.5 13 1.1 25.4c.5.5 1.2.5 2.1.1l14.5-8.2"/><path fill="#00f076" d="M17.7 8.7 3.2.5C2.3 0 1.6.1 1.1.6L13.5 13z"/></svg><span><small data-i18n="puSoonOn">Coming soon on</small><b>Google Play</b></span></span>
+          <div role="heading" aria-level="2" class="pu-title" id="puTitle">TalkLive Plus</div>
           <p class="pu-reason" id="puReason"></p>
-          
-          <p class="pu-price" id="puPrice" aria-live="polite"><span class="pu-price-now" id="puPriceNow">&nbsp;</span> <s class="pu-price-was" id="puPriceWas" hidden></s> <span class="pu-save" id="puPriceSave" hidden></span></p>
-          <button type="button" id="puNotifyBtn" class="pu-cta">
-            <span id="puNotifyLabel" data-i18n="plusGetInApp">See plans</span>
-          </button>
-          <ul class="pu-perks" id="puPerks">
-            <li data-perk="gender"><span class="pu-ico" aria-hidden="true"><i class="ti ti-people" aria-hidden="true"></i></span><span data-i18n="plusBGender">Match with men or women</span></li>
-            <li data-perk="countries"><span class="pu-ico" aria-hidden="true"><i class="ti ti-globe" aria-hidden="true"></i></span><span data-i18n="plusBCountries">Up to 50 preferred and 50 avoided countries</span></li>
-            <li data-perk="interests"><span class="pu-ico" aria-hidden="true"><i class="ti ti-book" aria-hidden="true"></i></span><span data-i18n="plusBInterests">Match on up to 10 interests, not 2</span></li>
-            <li data-perk="rematch"><span class="pu-ico" aria-hidden="true"><i class="ti ti-bolt" aria-hidden="true"></i></span><span data-i18n="plusBPriority">Matched first when it is busy</span></li>
-            <li data-perk="undo"><span class="pu-ico" aria-hidden="true"><i class="ti ti-undo" aria-hidden="true"></i></span><span data-i18n="plusBUndo">Undo a skip</span></li>
-            <li data-perk="likes"><span class="pu-ico" aria-hidden="true"><i class="ti ti-heart" aria-hidden="true"></i></span><span data-i18n="plusBLikes">See who liked you</span></li>
-            <li data-perk="history"><span class="pu-ico" aria-hidden="true"><i class="ti ti-clock" aria-hidden="true"></i></span><span data-i18n="plusBHistory">Everyone you met, not just the last 3</span></li>
-            <li data-perk="streak"><span class="pu-ico" aria-hidden="true"><i class="ti ti-flame" aria-hidden="true"></i></span><span data-i18n="plusBStreak">Streak freezes and streak restore</span></li>
-            <li data-perk="films"><span class="pu-ico" aria-hidden="true"><i class="ti ti-headset" aria-hidden="true"></i></span><span data-i18n="plusBFilms">Show 3 favourite films, not 1</span></li>
-            <li data-perk="avatars"><span class="pu-ico" aria-hidden="true"><i class="ti ti-crown" aria-hidden="true"></i></span><span data-i18n="plusBAvatars">8 legendary avatars and a living avatar</span></li>
-            <li data-perk="alive"><span class="pu-ico" aria-hidden="true"><i class="ti ti-gem" aria-hidden="true"></i></span><span data-i18n="plusBRing">Gold name, ring and badge</span></li>
-            <li data-perk="themes"><span class="pu-ico" aria-hidden="true"><i class="ti ti-brush" aria-hidden="true"></i></span><span data-i18n="plusBThemes">Ocean and Sunset themes</span></li>
-          </ul>
-          <a id="puPlansLink" class="pu-link" href="/pricing?utm_source=app" data-i18n="upsellSeePlans">See what's included</a>
-          <p class="pu-free" id="puFree" data-i18n="plusFreeStays">Calls, text chats and friends stay free and unlimited.</p>
-          <p class="pu-free" id="puBuyNote" data-i18n="plusBuyInApp">Plus is bought in the TalkLive Android app with Google Play, and works here when you sign in.</p>
+          <p class="pu-app-line" data-i18n="puAppLine">Get TalkLive Plus in the TalkLive Android app on Google Play. The app is coming soon.</p>
+          <button type="button" id="puNotifyBtn" class="pu-cta" data-i18n="puGotIt">Got it</button>
+          <p class="pu-free" data-i18n="plusFreeStays">Calls, text chats and friends stay free and unlimited.</p>
         </div>
       </div>
 
@@ -2148,8 +2124,8 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        stage in the middle column, so it starts right below the hero instead of
        below the (taller) activity rail. Its stylesheet loads without blocking first paint (all of this is below
        the fold); the inline script at the end drives the stepper. -->
-  <link rel="preload" href="/home-tour.css?v=3226f0b36c" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-  <noscript><link rel="stylesheet" href="/home-tour.css?v=3226f0b36c" /></noscript>
+  <link rel="preload" href="/home-tour.css?v=bc432500bb" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="/home-tour.css?v=bc432500bb" /></noscript>
   <section id="tour" class="tt" aria-labelledby="ttTitle">
     <div class="tt-in">
       <div class="tt-app tt-rv">
@@ -2573,7 +2549,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        browser finish parsing and paint the page first. -->
   <script defer src="/vendor/socket.io.min.js?v=7bcff1b4f1"></script>
   <script defer src="countries.js?v=30bcd7f146"></script>
-  <script defer src="i18n.js?v=3738722142"></script>
+  <script defer src="i18n.js?v=13218829c3"></script>
   <script defer src="chat-time.js?v=9d4e50bcf7"></script>
   <script defer src="animals.js?v=e934300459"></script>
   <script defer src="characters.js?v=7df196acd3"></script>
@@ -2585,7 +2561,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="games.js?v=192e9d4f2d"></script>
   <script defer src="nickname-rules.js?v=077c943b4d"></script>
   <script defer src="social-links.js?v=a4e5c724ac"></script>
-  <script defer src="app.js?v=634db20a89"></script>
+  <script defer src="app.js?v=8e19c8d107"></script>
 
 <!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

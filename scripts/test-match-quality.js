@@ -392,7 +392,7 @@ async function e2eTests() {
   unitTests();
   simulationTests();
   const srv = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
-    env: { ...process.env, PORT: String(PORT), DATA_DIR, DATABASE_URL: '', NODE_ENV: 'development', MATCH_INVARIANTS: '1', IDENTITY_SECRET, PREMIUM_CLIENT_IDS: 'c_q_plus1,c_q_heart1,c_q_undo1', GIPHY_API_KEY: '' },
+    env: { ...process.env, PORT: String(PORT), DATA_DIR, DATABASE_URL: '', NODE_ENV: 'development', MATCH_INVARIANTS: '1', PARK_HOLD_MS: '10000', IDENTITY_SECRET, PREMIUM_CLIENT_IDS: 'c_q_plus1,c_q_heart1,c_q_undo1', GIPHY_API_KEY: '' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   const logs = [];

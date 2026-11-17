@@ -1525,3 +1525,7 @@ summary:active {
   .composer-field { min-height: 46px; }
   .composer .send-btn { width: 44px; height: 44px; }
 }
+
+/* Presence lines: thin red while someone is offline, green once back. */
+.msg.system.system-presence { color: var(--danger); font-weight: 400; font-size: 13px; letter-spacing: 0.01em; }
+.msg.system.system-presence.is-back { color: var(--green); }
