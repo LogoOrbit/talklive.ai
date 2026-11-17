@@ -6305,3 +6305,159 @@ html.perf-lite .side-panel { box-shadow: none; }
 .hc-faq summary { cursor: pointer; font-weight: 700; color: var(--text); padding: 12px 0; }
 .hc-faq details p { margin: 0 0 14px; }
 .hc-about + .seo-section { padding-top: 0; border-top: 0; }
+
+/* ===========================================================================
+ * TYPE SYSTEM - the home page
+ *    One family (Plus Jakarta Sans, variable 400-800) set with intent: a
+ *    four-step scale, tracking that tightens as size grows, line-heights that
+ *    loosen as it shrinks, and three ink levels instead of a dozen greys.
+ *    Display 800 / -0.04em / 1.02   Heading 800 / -0.035em / 1.08
+ *    Title 750 / -0.018em / 1.25    Body 400-500 / 0 / 1.7, 66ch measure
+ *    Labels are the only thing set in capitals, and they are tracked open.
+ * ======================================================================== */
+:root {
+  --tl-ink: var(--text);
+  --tl-ink-2: color-mix(in srgb, var(--text) 76%, transparent);
+  --tl-ink-3: color-mix(in srgb, var(--text) 58%, transparent);
+}
+
+/* Hero. */
+body .setup-panel .setup-title {
+  font-weight: 800;
+  letter-spacing: -0.042em;
+  line-height: 1.02;
+  font-kerning: normal;
+}
+body .setup-panel .tl-hero-sub { color: var(--tl-ink-2); letter-spacing: -0.003em; }
+body .setup-panel .tap-choice-divider { letter-spacing: 0.16em; font-size: 11px; font-weight: 800; }
+body .tl-engage-q small { letter-spacing: 0.12em; }
+body .tl-engage-q { font-size: 15px; letter-spacing: -0.006em; }
+body .setup-panel .animal-picker-title { font-size: 21px; font-weight: 800; letter-spacing: -0.025em; line-height: 1.2; }
+body .setup-panel .animal-picker-hint { color: var(--tl-ink-3); text-wrap: pretty; }
+body .topbar.nav, body .tl-rail, body .tl-nav { font-variant-numeric: tabular-nums; }
+
+/* Long-form sections below the app: at a glance, the SEO block, the tour. */
+body .seo-section { padding: 80px 20px 96px; }
+body .seo-inner {
+  max-width: 720px;
+  font-size: 16.5px;
+  line-height: 1.7;
+  color: var(--tl-ink-2);
+  hanging-punctuation: first;
+}
+body .seo-inner p, body .seo-inner li { text-wrap: pretty; }
+body .seo-inner h2, body .seo-inner .ui-h2 {
+  margin: 0 0 22px;
+  font-family: var(--font-display);
+  font-size: clamp(30px, 4.8vw, 44px);
+  font-weight: 800;
+  letter-spacing: -0.036em;
+  line-height: 1.08;
+  text-wrap: balance;
+  color: var(--tl-ink);
+}
+body .seo-inner h2 + p { font-size: 18.5px; line-height: 1.6; color: color-mix(in srgb, var(--text) 84%, transparent); letter-spacing: -0.008em; }
+body .seo-inner h3, body .seo-inner .ui-h3 {
+  margin: 48px 0 12px;
+  font-size: 20px;
+  font-weight: 750;
+  letter-spacing: -0.018em;
+  line-height: 1.25;
+  color: var(--tl-ink);
+}
+body .seo-inner h2 + h3 { margin-top: 30px; }
+body .seo-inner p { margin: 0 0 16px; }
+body .seo-inner strong { color: var(--tl-ink); font-weight: 700; }
+
+/* Lists: a short accent rule for bullets, tabular numerals for steps. */
+body .seo-inner .seo-list { list-style: none; padding: 0; margin: 0 0 16px; counter-reset: tl-li; }
+body .seo-inner .seo-list li { position: relative; margin: 0; padding: 7px 0 7px 26px; }
+body .seo-inner ul.seo-list li::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 2px;
+  top: calc(7px + 0.85em);
+  width: 10px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent-2);
+}
+body .seo-inner ol.seo-list li { counter-increment: tl-li; padding-inline-start: 40px; }
+body .seo-inner ol.seo-list li::before {
+  content: counter(tl-li, decimal-leading-zero);
+  position: absolute;
+  inset-inline-start: 0;
+  top: 7px;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.7rem;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-2);
+}
+[dir="rtl"] body .seo-inner .seo-list li { padding-inline-start: 26px; padding-left: 0; }
+[dir="rtl"] body .seo-inner ol.seo-list li { padding-inline-start: 40px; }
+
+/* Links inside running text read as links, not as a different font. */
+body .seo-inner p a, body .seo-inner li a {
+  color: var(--accent-2);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, var(--accent-2) 45%, transparent);
+  transition: text-decoration-color 0.15s ease;
+}
+body .seo-inner p a:hover, body .seo-inner li a:hover { text-decoration-color: currentColor; }
+
+/* Chips. */
+body .seo-inner .seo-links { gap: 8px; margin: 6px 0 8px; }
+body .seo-inner .seo-links a { font-size: 14px; font-weight: 600; letter-spacing: -0.006em; line-height: 1.2; }
+
+/* Questions: a plus that turns into a cross, no browser triangle. */
+body .hc-faq { margin-top: 6px; }
+body .hc-faq summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.014em;
+  line-height: 1.35;
+  transition: color 0.15s ease;
+}
+body .hc-faq summary::-webkit-details-marker { display: none; }
+body .hc-faq summary::after {
+  content: "";
+  flex: none;
+  width: 14px;
+  height: 14px;
+  background:
+    linear-gradient(currentColor, currentColor) center / 14px 1.5px no-repeat,
+    linear-gradient(currentColor, currentColor) center / 1.5px 14px no-repeat;
+  opacity: 0.55;
+  transition: transform 0.25s var(--tl-ease), opacity 0.15s ease;
+}
+body .hc-faq details[open] summary::after { transform: rotate(45deg); opacity: 0.9; }
+body .hc-faq summary:hover { color: var(--accent-2); }
+body .hc-faq details p { margin: -4px 0 22px; padding-inline-end: 34px; }
+
+/* The tour shares the scale. */
+body .tt .tt-h2 { font-weight: 800; letter-spacing: -0.036em; line-height: 1.06; }
+body .tt .tt-lede { font-size: 17.5px; line-height: 1.6; color: var(--tl-ink-2); text-wrap: pretty; }
+body .tt-perks b { letter-spacing: -0.012em; }
+body .tt-perks span, body .tt-note { color: var(--tl-ink-3); }
+body .tt-guide b { letter-spacing: -0.012em; line-height: 1.3; }
+body .tt-story-body h3 { letter-spacing: -0.03em; }
+
+@media (max-width: 599px) {
+  body .setup-panel .setup-title { font-size: clamp(34px, 9.6vw, 44px); }
+  body .setup-panel .tl-hero-sub { font-size: 16.5px; }
+  body .seo-section { padding: 64px 20px 80px; }
+  body .seo-inner { font-size: 16px; }
+  body .seo-inner h2 + p { font-size: 17.5px; }
+  body .seo-inner h3 { margin-top: 40px; font-size: 19px; }
+  body .hc-faq summary { font-size: 16px; padding: 18px 0; }
+}
