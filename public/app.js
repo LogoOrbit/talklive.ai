@@ -5392,6 +5392,15 @@ let friendsSynced = false;
 setTimeout(() => { if (!friendsSynced) renderFriendsList(); }, 5000);
 
 socket.on('state-sync', ({ friends: friendList, friendRequests: requestList, sentRequests: sentList, notifications: notifList, chatHistory: historyList, blocked, muted } = {}) => {
+  // Unread friend messages the server sent as notifications are on this device.
+  const waiting = new Map();
+  (notifList || []).forEach((n) => {
+    if (n && n.type === 'message' && n.fromClientId && n.msgId) {
+      if (!waiting.has(n.fromClientId)) waiting.set(n.fromClientId, []);
+      waiting.get(n.fromClientId).push(n.msgId);
+    }
+  });
+  waiting.forEach((ids, from) => ackFriendMessages(from, ids));
   friendsSynced = true;
   mutedIds = new Set(Array.isArray(muted) ? muted : []);
   friendsData = friendList || [];
@@ -6239,8 +6248,7 @@ function editFriendMessage(id, text) {
   return true;
 }
 
-socket.on('friend-message-edited', ({ chatWith, id, text, edited, refused } = {}) => {
-  if (!chatWith || !id || typeof text !== 'string') return;
+function applyFriendEdited(chatWith, id, text, edited) {
   const cache = friendChatCache.get(chatWith);
   const m = cache && cache.find((x) => x.id === id);
   if (m) {
@@ -6249,16 +6257,20 @@ socket.on('friend-message-edited', ({ chatWith, id, text, edited, refused } = {}
   }
   const row = friendsData.find((f) => f.clientId === chatWith) || serverHistory.find((h) => h.clientId === chatWith);
   if (row && row.last && row.last.id === id) noteLastMessage(chatWith, { ...row.last, text });
+  if (activeFriendChatId === chatWith) renderFriendChatMessages();
+  renderFriendsList();
+  renderHistory();
+}
+socket.on('friend-message-edited', ({ chatWith, id, text, edited, refused } = {}) => {
+  if (!chatWith || !id || typeof text !== 'string') return;
+  applyFriendEdited(chatWith, id, text, edited);
   if (refused && activeFriendChatId === chatWith) {
     const why = { link: 'errNoLinks', unsafe: 'errUnsafeMessage', 'too-old': 'editTooOld', rate: 'editRate' }[refused];
     if (why) friendChatSystemNote(t(why));
   }
-  if (activeFriendChatId === chatWith) renderFriendChatMessages();
-  renderFriendsList();
-  renderHistory();
 });
 
-socket.on('friend-message-deleted', ({ chatWith, id } = {}) => {
+function applyFriendDeleted(chatWith, id) {
   const cache = friendChatCache.get(chatWith);
   if (cache) {
     friendChatCache.set(chatWith, cache.filter((m) => m.id !== id));
@@ -6272,7 +6284,8 @@ socket.on('friend-message-deleted', ({ chatWith, id } = {}) => {
   if (activeFriendChatId === chatWith) renderFriendChatMessages();
   renderFriendsList();
   renderHistory();
-});
+}
+socket.on('friend-message-deleted', ({ chatWith, id } = {}) => applyFriendDeleted(chatWith, id));
 
 // --- Voice messages (friends only, by mutual consent) ------------------------
 // Off for every friendship until one friend asks and the other agrees; both
@@ -6606,9 +6619,34 @@ friendChatMessages.addEventListener('click', (e) => {
   else retryFriendMessage(retry.dataset.retryId);
 });
 
+// Tell the server which friend messages are on this device; only then do
+// senders see "delivered". Re-sent after a reconnect (the server ignores repeats).
+const ackedFriendIds = new Set();
+function ackFriendMessages(friendClientId, ids) {
+  const fresh = (ids || []).filter((id) => id && !ackedFriendIds.has(id));
+  if (!fresh.length || !friendClientId) return;
+  if (ackedFriendIds.size > 3000) ackedFriendIds.clear();
+  fresh.forEach((id) => ackedFriendIds.add(id));
+  socket.emit('friend-message-received', { friendClientId, ids: fresh.slice(0, 200) });
+}
+// Server time of the last register-result / friend-changes: what "since" means.
+let friendChangesSince = 0;
+
+// Edits and unsends made while this page was away, for every cached thread.
+socket.on('friend-changes', ({ ts, changes } = {}) => {
+  if (typeof ts === 'number') friendChangesSince = Math.max(friendChangesSince, ts);
+  (changes || []).forEach((c) => {
+    if (c.type === 'deleted') applyFriendDeleted(c.friendClientId, c.id);
+    else if (c.type === 'edited' && typeof c.text === 'string') applyFriendEdited(c.friendClientId, c.id, c.text, c.edited);
+  });
+});
+
 // Re-registered after a drop: anything still unacknowledged goes again.
-socket.on('register-result', ({ ok } = {}) => {
+socket.on('register-result', ({ ok, now } = {}) => {
   if (ok === false) return;
+  ackedFriendIds.clear();
+  if (friendChangesSince) socket.emit('get-friend-changes', { since: friendChangesSince });
+  if (typeof now === 'number') friendChangesSince = now;
   // Whatever happened while the socket was down - new messages, an unsend, an
   // edit, a receipt - is in the stored thread, not in this page. Fetch the
   // open chat's newest page again so it catches up without being reopened.
@@ -6705,6 +6743,7 @@ socket.on('friend-message', ({ fromClientId, text, ts, id, replyTo, gif, voice }
   cache.push({ from: fromClientId, text, ts, id, replyTo, gif, voice });
   friendChatCache.set(fromClientId, cache);
   noteLastMessage(fromClientId, { id, mine: false, text: text || '', gif: !!gif, voice: !!voice, ts });
+  ackFriendMessages(fromClientId, [id]);
   // The message is what they were typing.
   if (typingFrom.has(fromClientId)) setTyping(fromClientId, false);
   else renderFriendsList();
@@ -6774,6 +6813,7 @@ socket.on('friend-chat-history', ({ friendClientId, messages, gate, voice, hasMo
     if (activeFriendChatId === friendClientId) renderFriendChatMessages({ keepPlace: true });
     return;
   }
+  ackFriendMessages(friendClientId, stored.filter((m) => m.from === friendClientId).map((m) => m.id));
   const have = new Set(stored.map((m) => m.id));
   const waiting = held.filter((m) => (m.pending || m.failed) && !have.has(m.id));
   stored.forEach((m) => { if (friendOutbox.has(m.id)) settleFriendMessage(m.id); });
@@ -7137,6 +7177,8 @@ function registerClient(payload) {
     // Interface language: a soft matchmaking hint so people who chose the
     // same language tend to meet first. Never a filter.
     lang: (typeof I18N_STATE !== 'undefined' && I18N_STATE.lang) || undefined,
+    // Tells the server this page confirms receipt of friend messages itself.
+    caps: ['ack'],
   };
   lastRegisterPayload = { ...payload, freshSession: false };
   socket.emit('register', { ...payload, freshSession: freshAppSession });

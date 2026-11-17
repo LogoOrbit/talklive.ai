@@ -55,7 +55,8 @@ const SCAN = () => {
 
 (async () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tl-ui-'));
-  const port = 6500 + Math.floor(Math.random() * 400);
+  // 7000-7399: clear of the ports browsers refuse to open (6665-6669 are IRC).
+  const port = 7000 + Math.floor(Math.random() * 400);
   const srv = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], { env: { ...process.env, PORT: String(port), DATA_DIR: dataDir, DATABASE_URL: '', NODE_ENV: 'development' }, stdio: 'ignore' });
   const base = `http://localhost:${port}`;
   for (let i = 0; i < 60; i++) { try { await fetch(base + '/healthz'); break; } catch (_) { await new Promise((r) => setTimeout(r, 250)); } }
