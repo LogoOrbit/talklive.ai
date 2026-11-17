@@ -13,6 +13,9 @@
   // WebSocket first, as on the call page: the default opens a long-poll and
   // upgrades, which is two or three extra round trips before "connected".
   var socket = io({ transports: ['websocket', 'polling'] });
+  window.tlSocket = socket;
+  // Bot check script: fetched only if the server asks for it.
+  socket.on('captcha-required', () => { if (window.tlCaptcha) return window.tlCaptcha(); const s = document.createElement('script'); s.src = '/captcha.js?v=61e543dea4'; s.onload = () => window.tlCaptcha(); document.head.appendChild(s); });
 
   // Forward uncaught errors on this page to the owner dashboard. /chat is a
   // separate sub-app from the main one, and until this was added it reported

@@ -143,7 +143,7 @@ const CSP = [
   // Google sign-in, analytics and Google Ads conversion measurement origins
   // are allowlisted explicitly. Script execution on the page is restricted to
   // the named script-src hosts.
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com"
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://challenges.cloudflare.com"
     + ' https://www.googletagmanager.com'
     + ' https://*.gstatic.com'
     + ' https://www.google.com'
@@ -445,6 +445,24 @@ app.use((req, res, next) => {
 });
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+// Bot check (Cloudflare Turnstile): before a guest's first search the page
+// shows a short challenge. Off until both keys are set. Accounts older than a
+// week and Plus members are never asked; a pass lasts 7 days per device id.
+const TURNSTILE_SITE_KEY = process.env.TURNSTILE_SITE_KEY || '';
+const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET || '';
+const TURNSTILE_ON = !!(TURNSTILE_SITE_KEY && TURNSTILE_SECRET);
+const TURNSTILE_VERIFY_URL = process.env.TURNSTILE_VERIFY_URL || 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+const CAPTCHA_PASS_MS = 7 * 24 * 60 * 60 * 1000;
+const captchaPassed = new Map(); // clientId -> expiry
+async function verifyTurnstile(token, ip) {
+  try {
+    const body = new URLSearchParams({ secret: TURNSTILE_SECRET, response: String(token).slice(0, 2048) });
+    if (ip) body.set('remoteip', ip);
+    const r = await fetch(TURNSTILE_VERIFY_URL, { method: 'POST', body, signal: AbortSignal.timeout(8000) });
+    const j = await r.json();
+    return !!(j && j.success);
+  } catch (_) { return false; }
+}
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 // --- Premium (TalkLive Plus) -------------------------------------------------
@@ -917,7 +935,7 @@ app.get('/config.js', (req, res) => {
   // an hour (and serve it stale for a day while revalidating) instead of
   // re-fetching it on the critical path of every single page view.
   res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
-  res.send(`window.GOOGLE_CLIENT_ID = ${JSON.stringify(GOOGLE_CLIENT_ID)};\nwindow.TL_FLAGS = ${JSON.stringify(flags.clientFlags())};`);
+  res.send(`window.GOOGLE_CLIENT_ID = ${JSON.stringify(GOOGLE_CLIENT_ID)};\nwindow.TURNSTILE_SITE_KEY = ${JSON.stringify(TURNSTILE_ON ? TURNSTILE_SITE_KEY : '')};\nwindow.TL_FLAGS = ${JSON.stringify(flags.clientFlags())};`);
 });
 
 // Small same-origin conversion endpoint. Only a fixed vocabulary is accepted,
@@ -7286,6 +7304,16 @@ io.on('connection', (socket) => {
     return false;
   };
 
+  socket.on('captcha-token', async (token) => {
+    const profile = profiles.get(socket.id);
+    if (!profile || !TURNSTILE_ON || typeof token !== 'string' || !token) return;
+    if (!socialRateOk('captcha', profile.clientId, 10, 600000)) return;
+    const ok = await verifyTurnstile(token, getClientIp(socket));
+    if (ok) captchaPassed.set(profile.clientId, Date.now() + CAPTCHA_PASS_MS);
+    if (captchaPassed.size > 50000) captchaPassed.clear();
+    socket.emit(ok ? 'captcha-ok' : 'captcha-failed');
+  });
+
   socket.on('find-partner', (opts = {}) => {
     const profile = profiles.get(socket.id);
     if (!profile) {
@@ -7299,6 +7327,11 @@ io.on('connection', (socket) => {
     }
     // Banned users can never connect to anyone until the ban is lifted.
     if (refuseBanned(socket, profile.clientId, null)) return;
+    if (TURNSTILE_ON && !(captchaPassed.get(profile.clientId) > Date.now())
+      && !establishedAccount(socket.id) && !isPremium(profile.clientId)) {
+      socket.emit('captcha-required');
+      return;
+    }
     // Quarantined scripts get no partner at all: they wait forever.
     if (quarantined(profile, socket.id)) { store.recordFeature('bot_search'); return; }
     let mode = (opts && opts.mode === 'chat') ? 'chat' : 'talk';

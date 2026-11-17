@@ -13,6 +13,9 @@ const socket = io({
   reconnectionDelay: 800,
   reconnectionDelayMax: 5000,
 });
+window.tlSocket = socket;
+// Bot check script: fetched only if the server asks for it.
+socket.on('captcha-required', () => { if (window.tlCaptcha) return window.tlCaptcha(); const s = document.createElement('script'); s.src = '/captcha.js?v=61e543dea4'; s.onload = () => window.tlCaptcha(); document.head.appendChild(s); });
 
 // --- DOM refs ---
 const orb = document.getElementById('orb');
