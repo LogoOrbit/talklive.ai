@@ -1699,33 +1699,23 @@ function updateScrollLock() {
   syncNavTabs();
 }
 
-// The tab bar points at whatever is open: Friends, History, Filters and More
-// are panels over the page, and the bar used to keep saying "Home" under all
-// of them. Read from the DOM, like the lock above, so it cannot drift.
-const NAV_TABS = [
-  ['friendsBtn', 'friendsDropdown'],
-  ['historyBtn', 'historyPanel'],
-  ['filtersBtn', 'filtersPanel'],
-  ['navMoreBtn', 'navDrawer', 'settingsPanel'],
-];
+// The tab bar points at whatever is open (read from the DOM, like the lock).
+const NAV_TABS = [['friendsBtn', 'friendsDropdown'], ['historyBtn', 'historyPanel'], ['filtersBtn', 'filtersPanel'], ['navMoreBtn', 'navDrawer', 'settingsPanel']];
 function syncNavTabs() {
-  let anyTab = false;
-  const mark = (btn, on, value) => {
-    if (!btn) return;
-    btn.classList.toggle('is-current', on);
-    if (on) btn.setAttribute('aria-current', value);
-    else btn.removeAttribute('aria-current');
+  const mark = (id, on, v) => {
+    const b = document.getElementById(id);
+    if (!b) return;
+    b.classList.toggle('is-current', on);
+    if (on) b.setAttribute('aria-current', v); else b.removeAttribute('aria-current');
   };
-  for (const [btnId, ...panelIds] of NAV_TABS) {
-    const on = panelIds.some((id) => {
-      const panel = document.getElementById(id);
-      return !!panel && panel.classList.contains('open');
-    });
-    if (on) anyTab = true;
-    mark(document.getElementById(btnId), on, 'true');
+  let any = false;
+  for (const [b, ...ps] of NAV_TABS) {
+    const on = ps.some((p) => { const e = document.getElementById(p); return e && e.classList.contains('open'); });
+    any = any || on;
+    mark(b, on, 'true');
   }
   const home = document.getElementById('setupPanel');
-  mark(document.getElementById('navHomeBtn'), !anyTab && !!home && !home.classList.contains('hidden'), 'page');
+  mark('navHomeBtn', !any && !!home && !home.classList.contains('hidden'), 'page');
 }
 
 function closeHistoryPanel() {
@@ -10147,9 +10137,8 @@ function setNavDrawerOpen(open) {
   if (open && closeNavDrawerBtn) closeNavDrawerBtn.focus();
 }
 
-// One tap moves between tabs: whatever other panel is open closes first, so
-// the bar behaves like a tab bar and not like five separate toggles. Capture
-// phase, so this runs before the tapped button's own handler opens its panel.
+// One tap moves between tabs: other open panels close first (capture phase,
+// so this runs before the tapped button's own handler opens its panel).
 const tlNavEl = document.querySelector('.tl-nav');
 if (tlNavEl) {
   tlNavEl.addEventListener('click', (e) => {

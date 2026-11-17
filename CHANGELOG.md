@@ -16,6 +16,8 @@
   text field stays centred so the keyboard does not cover it. All dialogs fade
   and rise in; reduced-motion turns this off.
 - The Filters header sat 14px lower than the other panels' headers; fixed.
+- Home page JS budget raised 254 -> 255 KB gzipped for the tab-bar logic
+  (about 0.3 KB).
 - Removed 222 CSS rules that no page or script uses (`style.css`, `chat.css`,
   `games.css`). Home CSS went from 98.8 to 96.3 KB gzipped with the new styles
   included. Computed styles were compared before and after across 64 app

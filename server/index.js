@@ -4996,6 +4996,7 @@ const IP_SAMPLE = 40;
 const IP_LIMIT = 37;
 const QUARANTINE_MS = 60 * 60 * 1000;
 const QUARANTINE_MAX_MS = 24 * 60 * 60 * 1000;
+const matchDurs = new Map(); // 'c:<clientId>' -> last match lengths (ms)
 const matchEnds = new Map(); // 'c:<clientId>' | 'i:<ip>' -> [quick?]
 const quarantine = new Map(); // same keys -> { until, strikes }
 function foreignClientId(clientId) {
@@ -5022,6 +5023,22 @@ function noteMatchEnd(socketId, profile, ms) {
   const now = Date.now();
   const sock = io.sockets.sockets.get(socketId);
   const ip = profile.ip || (sock ? getClientIp(sock) : null);
+  // Metronome: a person never ends 8 matches within 0.8s of the same length.
+  const dk = 'c:' + profile.clientId;
+  const durs = matchDurs.get(dk) || [];
+  durs.push(ms);
+  while (durs.length > 8) durs.shift();
+  matchDurs.set(dk, durs);
+  if (durs.length === 8 && Math.max(...durs) - Math.min(...durs) < 800) {
+    const rec = quarantine.get(dk) || { until: 0, strikes: 0 };
+    rec.strikes = Math.min(rec.strikes + 1, 6);
+    rec.until = now + Math.min(QUARANTINE_MS * 2 ** (rec.strikes - 1), QUARANTINE_MAX_MS);
+    quarantine.set(dk, rec);
+    saveQuarantine(dk, { until: rec.until, strikes: rec.strikes });
+    matchDurs.delete(dk);
+    store.recordFeature('bot_quarantine');
+  }
+  if (matchDurs.size > 20000) matchDurs.clear();
   const keys = [['c:' + profile.clientId, QUICK_SAMPLE, QUICK_LIMIT]];
   if (ip) keys.push(['i:' + ip, IP_SAMPLE, IP_LIMIT]);
   for (const [key, sample, limit] of keys) {
