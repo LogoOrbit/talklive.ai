@@ -2144,64 +2144,36 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         </div>
       </aside>
 </main>
-  <!-- Home tour: a five-step tutorial and the feature showcase, under the
+  <!-- Home tour: the Android app showcase and reading links, under the
        stage in the middle column, so it starts right below the hero instead of
        below the (taller) activity rail. Its stylesheet loads without blocking first paint (all of this is below
        the fold); the inline script at the end drives the stepper. -->
-  <link rel="preload" href="/home-tour.css?v=504d6eee28" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-  <noscript><link rel="stylesheet" href="/home-tour.css?v=504d6eee28" /></noscript>
+  <link rel="preload" href="/home-tour.css?v=8ce276045b" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="/home-tour.css?v=8ce276045b" /></noscript>
   <section id="tour" class="tt" aria-labelledby="ttTitle">
     <div class="tt-in">
-      <header class="tt-head tt-rv">
-        <h2 class="tt-h2" id="ttTitle">How to use TalkLive <span class="tt-grad">in 5 steps</span></h2>
-        <p class="tt-lede">From opening the page to your first hello takes under a minute. No download, no account.</p>
-      </header>
-
-      <div class="tt-tut">
-        <ol class="tt-steps" id="ttSteps">
-          <li class="tt-step is-on"><button type="button" aria-controls="ttStage"><strong>Your avatar</strong><span>It is your identity on TalkLive - no name, no photo. The other person sees your animal and its personality.</span><b class="tt-bar"><i></i></b></button></li>
-          <li class="tt-step"><button type="button" aria-controls="ttStage"><strong>Tap to Talk or Tap to Chat</strong><span>Talk starts a live voice call with your mic on. Chat starts a text conversation with no mic at all.</span><b class="tt-bar"><i></i></b></button></li>
-          <li class="tt-step"><button type="button" aria-controls="ttStage"><strong>Agree to the house rules</strong><span>TalkLive is 18+ only. Confirm once, be respectful, and keep every conversation consensual.</span><b class="tt-bar"><i></i></b></button></li>
-          <li class="tt-step"><button type="button" aria-controls="ttStage"><strong>Say hello</strong><span>You are matched with a real person in seconds. You see their avatar, their local time and a live call timer.</span><b class="tt-bar"><i></i></b></button></li>
-          <li class="tt-step"><button type="button" aria-controls="ttStage"><strong>Add a friend, or move on</strong><span>Enjoyed it? Tap Add friend to talk again later. Not a fit? Hang up - auto next finds someone new.</span><b class="tt-bar"><i></i></b></button></li>
-        </ol>
-        <div class="tt-stage tt-rv" id="ttStage" aria-live="polite">
-          <figure class="is-on"><picture><source type="image/avif" srcset="/images/home-tour/step-1-animal-480.avif?v=c950492a2a 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" /><img src="/images/home-tour/step-1-animal-480.webp?v=59a23fec4a" srcset="/images/home-tour/step-1-animal-480.webp?v=59a23fec4a 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" width="1000" height="1000" alt="TalkLive home screen with the Fox avatar selected" loading="lazy" decoding="async" /></picture></figure>
-          <figure><picture><source type="image/avif" srcset="/images/home-tour/step-2-start-480.avif?v=e44bd0614b 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" /><img src="/images/home-tour/step-2-start-480.webp?v=cb713a0b32" srcset="/images/home-tour/step-2-start-480.webp?v=cb713a0b32 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" width="1000" height="1000" alt="Tap to Talk and Tap to Chat buttons highlighted" loading="lazy" decoding="async" /></picture></figure>
-          <figure><picture><source type="image/avif" srcset="/images/home-tour/step-3-rules-480.avif?v=8313b324e5 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" /><img src="/images/home-tour/step-3-rules-480.webp?v=1cf012ce68" srcset="/images/home-tour/step-3-rules-480.webp?v=1cf012ce68 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" width="1000" height="1000" alt="The 18+ agreement and the house rules screens" loading="lazy" decoding="async" /></picture></figure>
-          <figure><picture><source type="image/avif" srcset="/images/home-tour/step-4-connected-480.avif?v=d6e34d8bce 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" /><img src="/images/home-tour/step-4-connected-480.webp?v=3e7f3365cd" srcset="/images/home-tour/step-4-connected-480.webp?v=3e7f3365cd 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" width="1000" height="1000" alt="A connected TalkLive voice call showing the other person's avatar" loading="lazy" decoding="async" /></picture></figure>
-          <figure><picture><source type="image/avif" srcset="/images/home-tour/step-5-next-480.avif?v=0491661a9f 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" /><img src="/images/home-tour/step-5-next-480.webp?v=1cc0eb559f" srcset="/images/home-tour/step-5-next-480.webp?v=1cc0eb559f 480w" sizes="(max-width: 900px) min(520px, calc(100vw - 32px)), 560px" width="1000" height="1000" alt="Add friend button and the auto next toggle during a call" loading="lazy" decoding="async" /></picture></figure>
-        </div>
-      </div>
-
-      <div class="tt-feats">
-        <header class="tt-head tt-rv">
-          <h2 class="tt-h2">More than a <span class="tt-grad">random call</span></h2>
+      <div class="tt-app tt-rv">
+        <header class="tt-head">
+          <span class="tt-soon"><i aria-hidden="true"></i> Coming soon to Google Play</span>
+          <h2 class="tt-h2" id="ttTitle">TalkLive is coming to <span class="tt-grad">Android</span></h2>
+          <p class="tt-lede">Everything you love here, built for your phone: live voice calls, voice notes, your spirit animal and friends who stay. Faster, smoother, always in your pocket.</p>
         </header>
-        <article class="tt-feat tt-rv">
-          <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-chat-in-call-640.avif?v=9b29504dcf 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-chat-in-call-640.webp?v=46eaeb5a5e" srcset="/images/home-tour/feat-chat-in-call-640.webp?v=46eaeb5a5e 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="Text messages sent during a live TalkLive voice call" loading="lazy" decoding="async" /></picture></div>
-          <div><span class="tt-ico" aria-hidden="true"><i class="ti ti-chat" aria-hidden="true"></i></span><h3>Talk and text at the same time</h3><p>Open the chat during any call to share a word you cannot pronounce, a link or an emoji. Send quick reactions without interrupting.</p><div class="tt-tags"><span>In-call chat</span><span>👍 😊 ❤️ reactions</span><span>Their local time</span></div></div>
-        </article>
-        <article class="tt-feat tt-rv">
-          <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-games-640.avif?v=fbd906c0a3 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-games-640.webp?v=4818da7e5e" srcset="/images/home-tour/feat-games-640.webp?v=4818da7e5e 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="Tic Tac Toe being played during a TalkLive call" loading="lazy" decoding="async" /></picture></div>
-          <div><span class="tt-ico" aria-hidden="true"><i class="ti ti-game" aria-hidden="true"></i></span><h3>Play games while you talk</h3><p>Silence is easier with something to do. Challenge the other person to a game without leaving the call.</p><div class="tt-tags"><span>Tic Tac Toe</span><span>Dots &amp; Boxes</span></div></div>
-        </article>
-        <article class="tt-feat tt-rv">
-          <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-text-chat-640.avif?v=1ce81f65f6 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-text-chat-640.webp?v=006f0995d5" srcset="/images/home-tour/feat-text-chat-640.webp?v=006f0995d5 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="A TalkLive text chat used for English practice" loading="lazy" decoding="async" /></picture></div>
-          <div><span class="tt-ico" aria-hidden="true">⌨️</span><h3>Text chat, no mic needed</h3><p>For late nights, shared rooms and shy days. Text chat is light enough for any phone and slow networks - and great for language practice.</p><div class="tt-tags"><span>No microphone</span><span>Next in one tap</span><span>17 languages</span></div></div>
-        </article>
-        <article class="tt-feat tt-rv">
-          <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-friends-640.avif?v=6aba461986 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-friends-640.webp?v=7a5db03fc1" srcset="/images/home-tour/feat-friends-640.webp?v=7a5db03fc1 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="An incoming friend request and the Friends panel" loading="lazy" decoding="async" /></picture></div>
-          <div><span class="tt-ico" aria-hidden="true"><i class="ti ti-people" aria-hidden="true"></i></span><h3>Keep the people you click with</h3><p>Add a friend mid-call and call or message them later, without ever swapping phone numbers. Share your Friend ID to be found.</p><div class="tt-tags"><span>Friend requests</span><span>Friend ID</span><span>Call back</span></div></div>
-        </article>
-        <article class="tt-feat tt-rv">
-          <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-filters-640.avif?v=36fb6d7df3 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-filters-640.webp?v=7673025034" srcset="/images/home-tour/feat-filters-640.webp?v=7673025034 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="Match filters and call history panels" loading="lazy" decoding="async" /></picture></div>
-          <div><span class="tt-ico" aria-hidden="true"><i class="ti ti-globe" aria-hidden="true"></i></span><h3>Filters and call history</h3><p>Choose countries you would like to meet, or never meet, and find recent conversations in your call history. A planned Premium plan adds gender filters.</p><div class="tt-tags"><span>Country filters</span><span>Call history</span><span>Premium soon</span></div></div>
-        </article>
-        <article class="tt-feat tt-rv">
-          <div class="tt-feat-img"><picture><source type="image/avif" srcset="/images/home-tour/feat-safety-640.avif?v=31d681d7d4 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/home-tour/feat-safety-640.webp?v=cd1d8ae90a" srcset="/images/home-tour/feat-safety-640.webp?v=cd1d8ae90a 640w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1200" height="900" alt="Report and mute controls and the TalkLive house rules" loading="lazy" decoding="async" /></picture></div>
-          <div><span class="tt-ico" aria-hidden="true"><i class="ti ti-shield" aria-hidden="true"></i></span><h3>Built for safe conversations</h3><p>Mute, hang up or report in one tap. Automatic safety checks run during calls, calls are never recorded by TalkLive, and the whole service is 18+. <a href="/safety">Safety center</a></p><div class="tt-tags"><span>Report &amp; block</span><span>Not recorded</span><span>18+ only</span></div></div>
-        </article>
+        <div class="tt-shots" role="list" aria-label="TalkLive Android app screenshots">
+          <figure class="tt-shot"><picture><source type="image/avif" srcset="/images/android-app/01-meet-someone-new-300.avif?v=16ac4d7a53 300w, /images/android-app/01-meet-someone-new-600.avif?v=36ad80b380 600w" sizes="(max-width: 520px) 62vw, 240px" /><img src="/images/android-app/01-meet-someone-new-300.webp?v=591180f1fa" srcset="/images/android-app/01-meet-someone-new-300.webp?v=591180f1fa 300w, /images/android-app/01-meet-someone-new-600.webp?v=d7dcf0b92e 600w" sizes="(max-width: 520px) 62vw, 240px" width="1080" height="1920" alt="TalkLive Android app: Meet someone new - One tap connects you with people around the world" loading="lazy" decoding="async" /></picture></figure>
+          <figure class="tt-shot"><picture><source type="image/avif" srcset="/images/android-app/02-hear-a-real-voice-300.avif?v=c7f9c4f154 300w, /images/android-app/02-hear-a-real-voice-600.avif?v=1edbfb6ab3 600w" sizes="(max-width: 520px) 62vw, 240px" /><img src="/images/android-app/02-hear-a-real-voice-300.webp?v=6af1ea65e3" srcset="/images/android-app/02-hear-a-real-voice-300.webp?v=6af1ea65e3 300w, /images/android-app/02-hear-a-real-voice-600.webp?v=dea8b9dbbb 600w" sizes="(max-width: 520px) 62vw, 240px" width="1080" height="1920" alt="TalkLive Android app: Hear a real voice - Live voice calls, no camera" loading="lazy" decoding="async" /></picture></figure>
+          <figure class="tt-shot"><picture><source type="image/avif" srcset="/images/android-app/03-prefer-typing-300.avif?v=57d781b437 300w, /images/android-app/03-prefer-typing-600.avif?v=489aab862a 600w" sizes="(max-width: 520px) 62vw, 240px" /><img src="/images/android-app/03-prefer-typing-300.webp?v=5061d84b56" srcset="/images/android-app/03-prefer-typing-300.webp?v=5061d84b56 300w, /images/android-app/03-prefer-typing-600.webp?v=604bb11096 600w" sizes="(max-width: 520px) 62vw, 240px" width="1080" height="1920" alt="TalkLive Android app: Prefer typing? - Text chat with no mic at all" loading="lazy" decoding="async" /></picture></figure>
+          <figure class="tt-shot"><picture><source type="image/avif" srcset="/images/android-app/04-keep-the-good-ones-300.avif?v=42da50e2a8 300w, /images/android-app/04-keep-the-good-ones-600.avif?v=c86d05832b 600w" sizes="(max-width: 520px) 62vw, 240px" /><img src="/images/android-app/04-keep-the-good-ones-300.webp?v=8b746808a4" srcset="/images/android-app/04-keep-the-good-ones-300.webp?v=8b746808a4 300w, /images/android-app/04-keep-the-good-ones-600.webp?v=4161c5dbc4 600w" sizes="(max-width: 520px) 62vw, 240px" width="1080" height="1920" alt="TalkLive Android app: Keep the good ones - Friends you can call back" loading="lazy" decoding="async" /></picture></figure>
+          <figure class="tt-shot"><picture><source type="image/avif" srcset="/images/android-app/05-messages-that-feel-alive-300.avif?v=d5b018dd78 300w, /images/android-app/05-messages-that-feel-alive-600.avif?v=75375401cb 600w" sizes="(max-width: 520px) 62vw, 240px" /><img src="/images/android-app/05-messages-that-feel-alive-300.webp?v=a3884520ff" srcset="/images/android-app/05-messages-that-feel-alive-300.webp?v=a3884520ff 300w, /images/android-app/05-messages-that-feel-alive-600.webp?v=ace16e0993 600w" sizes="(max-width: 520px) 62vw, 240px" width="1080" height="1920" alt="TalkLive Android app: Messages that feel alive - Voice notes, reactions and GIFs" loading="lazy" decoding="async" /></picture></figure>
+          <figure class="tt-shot"><picture><source type="image/avif" srcset="/images/android-app/06-break-the-ice-300.avif?v=449a654a6c 300w, /images/android-app/06-break-the-ice-600.avif?v=ecb0fbcb10 600w" sizes="(max-width: 520px) 62vw, 240px" /><img src="/images/android-app/06-break-the-ice-300.webp?v=621624faf9" srcset="/images/android-app/06-break-the-ice-300.webp?v=621624faf9 300w, /images/android-app/06-break-the-ice-600.webp?v=e619e27a7b 600w" sizes="(max-width: 520px) 62vw, 240px" width="1080" height="1920" alt="TalkLive Android app: Break the ice - Icebreakers and games" loading="lazy" decoding="async" /></picture></figure>
+          <figure class="tt-shot"><picture><source type="image/avif" srcset="/images/android-app/07-be-anyone-300.avif?v=03802e9a17 300w, /images/android-app/07-be-anyone-600.avif?v=2f22292e0e 600w" sizes="(max-width: 520px) 62vw, 240px" /><img src="/images/android-app/07-be-anyone-300.webp?v=58191b079a" srcset="/images/android-app/07-be-anyone-300.webp?v=58191b079a 300w, /images/android-app/07-be-anyone-600.webp?v=1c23f868a7 600w" sizes="(max-width: 520px) 62vw, 240px" width="1080" height="1920" alt="TalkLive Android app: Be anyone - A spirit animal, no photo" loading="lazy" decoding="async" /></picture></figure>
+          <figure class="tt-shot"><picture><source type="image/avif" srcset="/images/android-app/08-go-further-with-plus-300.avif?v=620bca94d5 300w, /images/android-app/08-go-further-with-plus-600.avif?v=1977757a9a 600w" sizes="(max-width: 520px) 62vw, 240px" /><img src="/images/android-app/08-go-further-with-plus-300.webp?v=beceeece63" srcset="/images/android-app/08-go-further-with-plus-300.webp?v=beceeece63 300w, /images/android-app/08-go-further-with-plus-600.webp?v=da63a3d8cb 600w" sizes="(max-width: 520px) 62vw, 240px" width="1080" height="1920" alt="TalkLive Android app: Go further with Plus - Filters and more" loading="lazy" decoding="async" /></picture></figure>
+        </div>
+        <ul class="tt-perks">
+          <li><b>Calls that keep going</b><span>Talk with the screen off</span></li>
+          <li><b>Never miss a friend</b><span>Instant call and message alerts</span></li>
+          <li><b>Same account</b><span>Friends and Plus carry over</span></li>
+        </ul>
+        <p class="tt-note">Until then, everything works right here in your browser.</p>
       </div>
 
       <a class="tt-story tt-rv" href="/what-is-talklive">
@@ -2228,29 +2200,12 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
     if (lite) root.classList.add('tt-lite');
     if (!('IntersectionObserver' in window)) return;
     root.classList.add('js-tt');
-    var steps = root.querySelectorAll('.tt-step'), figs = root.querySelectorAll('#ttStage figure');
-    var cur = 0, started = false, timer = null, auto = !lite && !matchMedia('(prefers-reduced-motion: reduce)').matches, DUR = 6000;
-    function show(i) {
-      cur = (i + steps.length) % steps.length;
-      for (var k = 0; k < steps.length; k++) {
-        steps[k].classList.toggle('is-on', k === cur); figs[k].classList.toggle('is-on', k === cur);
-        figs[k].classList.toggle('is-next', k === (cur + 1) % steps.length);
-        steps[k].querySelector('button').setAttribute('aria-current', k === cur ? 'step' : 'false');
-        if (started) { var bar = steps[k].querySelector('.tt-bar i'); bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = ''; }
-      }
-    }
-    function play() { stop(); if (!auto) return; steps[cur].classList.add('is-auto'); timer = setTimeout(function () { show(cur + 1); play(); }, DUR); }
-    function stop() { clearTimeout(timer); for (var k = 0; k < steps.length; k++) steps[k].classList.remove('is-auto'); }
-    steps.forEach(function (s, i) { s.querySelector('button').addEventListener('click', function () { auto = false; stop(); show(i); }); });
-    show(0); started = true;
     var io = new IntersectionObserver(function (es) {
       es.forEach(function (e) {
-        if (e.target.id === 'ttStage') { if (e.isIntersecting) { e.target.classList.add('in'); play(); } else stop(); }
-        else if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
       });
     }, { rootMargin: '0px 0px -8% 0px', threshold: 0.12 });
     root.querySelectorAll('.tt-rv').forEach(function (el) { io.observe(el); });
-    io.observe(document.getElementById('ttStage'));
     document.getElementById('ttTalk').addEventListener('click', function () {
       var b = document.getElementById('startBtn'); scrollTo({ top: 0, behavior: 'smooth' }); if (b) setTimeout(function () { b.click(); }, 350);
     });

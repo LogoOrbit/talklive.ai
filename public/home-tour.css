@@ -13,46 +13,26 @@
 .tt-head { text-align: center; margin-bottom: 40px; }
 .tt-head .tt-lede { margin: 0 auto; }
 
-/* Tutorial: step list + stage. */
-.tt-tut { display: grid; grid-template-columns: 1fr 1.05fr; gap: 48px; align-items: center; }
-.tt-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; counter-reset: tt; }
-.tt-step { counter-increment: tt; border: 1px solid var(--line); border-radius: 18px; background: color-mix(in srgb, var(--bg-2) 70%, transparent); transition: border-color .25s, background .25s, box-shadow .25s; }
-.tt-step button { all: unset; box-sizing: border-box; cursor: pointer; display: grid; grid-template-columns: 44px 1fr; gap: 4px 16px; width: 100%; padding: 18px 20px; border-radius: 18px; }
-.tt-step button:focus-visible { outline: 2px solid var(--tt-sky); outline-offset: 2px; }
-.tt-step button::before { content: "0" counter(tt); grid-row: span 2; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; font-weight: 800; font-size: 15px; color: var(--text); background: color-mix(in srgb, var(--text) 8%, transparent); transition: background .25s, color .25s; }
-.tt-step strong { color: var(--text); font-size: 17.5px; font-weight: 700; align-self: center; }
-.tt-step span { font-size: 15px; line-height: 1.55; }
-.tt-step.is-on { border-color: color-mix(in srgb, var(--tt-sky) 55%, transparent); box-shadow: 0 18px 50px -24px color-mix(in srgb, var(--tt-vio) 70%, transparent); }
-.tt-step.is-on button::before { color: #fff; background: var(--tt-vio); }
-.tt-bar { grid-column: 2; height: 3px; margin-top: 10px; border-radius: 3px; background: var(--line); overflow: hidden; display: none; }
-.tt-step.is-on .tt-bar { display: block; }
-.tt-bar i { display: block; height: 100%; width: 0; background: var(--text); }
-.tt-step.is-on.is-auto .tt-bar i { animation: tt-fill var(--tt-dur, 6s) linear forwards; }
-@keyframes tt-fill { to { width: 100%; } }
-.js-tt .tt-step:not(.is-on) span { display: none; }
-.tt-stage { position: relative; aspect-ratio: 1; border-radius: 26px; overflow: hidden; border: 1px solid var(--line); background: #0e1324; box-shadow: 0 40px 100px -40px rgba(42,111,232, .55); }
-.tt-stage figure { margin: 0; position: absolute; inset: 0; transition: opacity .5s ease, transform .6s cubic-bezier(.2, .7, .2, 1); }
-.js-tt .tt-stage figure { opacity: 0; transform: scale(1.03); }
-.js-tt .tt-stage figure.is-on { opacity: 1; transform: none; }
-.tt-stage figure + figure { display: none; }
-.js-tt .tt-stage figure + figure { display: block; }
-/* Only the step on screen and the one after it are in the layout, so the
-   other screenshots are not downloaded until the tour reaches them. */
-.js-tt .tt-stage figure:not(.is-on):not(.is-next) { display: none; }
-/* Data saver or a 2G connection: the tour is text only. */
-.tt-lite .tt-stage, .tt-lite .tt-feat-img, .tt-lite .tt-story picture { display: none; }
-
-/* Features: alternating rows. */
-.tt-feats { margin-top: 110px; }
-.tt-feat { display: grid; grid-template-columns: 1.15fr 1fr; gap: 56px; align-items: center; padding: 44px 0; }
-.tt-feat:nth-child(even) .tt-feat-img { order: 2; }
-.tt-feat-img { border-radius: 22px; overflow: hidden; border: 1px solid var(--line); background: #0e1324; box-shadow: 0 30px 80px -36px rgba(0, 0, 0, .8); transition: transform .5s cubic-bezier(.2, .7, .2, 1); }
-.tt-feat-img:hover { transform: translateY(-5px); }
-.tt-ico { display: inline-grid; place-items: center; width: 46px; height: 46px; border-radius: 14px; font-size: 22px; background: color-mix(in srgb, var(--tt-vio) 18%, transparent); border: 1px solid color-mix(in srgb, var(--tt-vio) 35%, transparent); }
-.tt-feat h3 { color: var(--text); font-size: clamp(24px, 3vw, 32px); text-wrap: balance; line-height: 1.15; font-weight: 800; margin: 16px 0 12px; }
-.tt-feat p { font-size: 16.5px; line-height: 1.7; margin: 0 0 14px; }
-.tt-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
-.tt-tags span { padding: 7px 13px; border-radius: 999px; font-size: 13.5px; font-weight: 600; color: var(--text); background: color-mix(in srgb, var(--text) 6%, transparent); border: 1px solid var(--line); }
+/* Android app showcase: a swipeable row of phone screenshots. */
+.tt-soon { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; font-size: 13px; font-weight: 800; letter-spacing: .02em; color: var(--text);
+  background: color-mix(in srgb, var(--green, #22c55e) 14%, transparent); border: 1px solid color-mix(in srgb, var(--green, #22c55e) 40%, transparent); }
+.tt-soon i { width: 8px; height: 8px; border-radius: 50%; background: var(--green, #22c55e); box-shadow: 0 0 0 0 color-mix(in srgb, var(--green, #22c55e) 60%, transparent); animation: tt-ping 1.8s ease-out infinite; }
+@keyframes tt-ping { to { box-shadow: 0 0 0 10px transparent; } }
+.tt-app .tt-grad { background: linear-gradient(90deg, var(--tt-sky), #8b5cf6); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.tt-shots { display: flex; gap: 18px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 20px; padding: 10px 20px 26px; margin: 0 -20px;
+  -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; scrollbar-width: none;
+  mask-image: linear-gradient(90deg, transparent, #000 20px, #000 calc(100% - 20px), transparent); }
+.tt-shots::-webkit-scrollbar { display: none; }
+.tt-shot { flex: 0 0 240px; margin: 0; scroll-snap-align: center; aspect-ratio: 9 / 16; border-radius: 26px; overflow: hidden; background: #0e1324;
+  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent); box-shadow: 0 30px 70px -34px rgba(42, 111, 232, .65); transition: transform .4s cubic-bezier(.2, .7, .2, 1); }
+.tt-shot:hover { transform: translateY(-6px); }
+.tt-shot img { height: 100%; object-fit: cover; }
+.tt-perks { list-style: none; margin: 26px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.tt-perks li { display: grid; gap: 4px; padding: 16px 18px; border-radius: 16px; border: 1px solid var(--line); background: color-mix(in srgb, var(--bg-2) 70%, transparent); }
+.tt-perks b { color: var(--text); font-size: 15.5px; }
+.tt-perks span { font-size: 14px; }
+.tt-note { text-align: center; margin: 22px 0 0; font-size: 14.5px; }
+.tt-lite .tt-shots { display: none; }
 
 /* Story card + guides. */
 .tt-story { display: grid; grid-template-columns: 1.2fr 1fr; align-items: center; gap: 0; margin: 90px 0 0; border-radius: 26px; overflow: hidden; border: 1px solid var(--line); text-decoration: none; color: inherit;
@@ -84,11 +64,6 @@
    shares the screen with both rails. */
 @media (max-width: 900px) { .tt { padding-top: 56px; } }
 @container tt (max-width: 900px) {
-  .tt-tut { grid-template-columns: 1fr; gap: 22px; }
-  .tt-stage { order: -1; max-width: 520px; width: 100%; margin: 0 auto; }
-  .tt-feats { margin-top: 70px; }
-  .tt-feat { grid-template-columns: 1fr; gap: 22px; padding: 30px 0; }
-  .tt-feat:nth-child(even) .tt-feat-img { order: 0; }
   .tt-story { grid-template-columns: 1fr; margin-top: 60px; }
   .tt-story-body { padding: 26px 22px 30px; }
   .tt-guides { grid-template-columns: 1fr 1fr; }
@@ -96,10 +71,11 @@
 @media (max-width: 520px) { .tt { padding-left: 16px; padding-right: 16px; } }
 @container tt (max-width: 520px) {
   .tt-guides { grid-template-columns: 1fr; }
-  .tt-step button { padding: 14px 16px; gap: 2px 14px; }
+  .tt-shot { flex-basis: 62vw; max-width: 280px; }
+  .tt-perks { grid-template-columns: 1fr; }
   .tt-btn { width: 100%; justify-content: center; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .tt *, .js-tt .tt-rv, .js-tt .tt-stage figure { transition: none !important; animation: none !important; }
+  .tt *, .js-tt .tt-rv { transition: none !important; animation: none !important; }
   .js-tt .tt-rv { opacity: 1; transform: none; }
 }
