@@ -4528,6 +4528,7 @@ function onlineCount() {
   for (const [id, s] of io.of('/').sockets) {
     if (s.data.bot) continue;
     const p = profiles.get(id);
+    if (p && quarantined(p, id)) continue; // scripts are not people
     if (p) people.add(p.clientId);
     else unregistered++;
   }
@@ -4621,6 +4622,7 @@ function onlinePeopleList() {
     if (busy.has(p.clientId)) continue;                // mid-call
     if (statusHidden.get(p.clientId)) continue;        // "appear offline"
     if (isBotSocket(socketId)) continue;               // crawler
+    if (quarantined(p, socketId)) continue;            // flagged script
     const waiting = waitingSet.has(socketId);
     const existing = byClient.get(p.clientId);
     if (existing) { if (waiting) existing.waiting = true; continue; }

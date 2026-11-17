@@ -750,7 +750,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "autoConnectNote": "Auto-connect keeps finding you someone new as soon as a call ends.",
     "railAria": "Your activity",
     "railOnlineNow": "Online Now",
-    "railOnlineFoot": "Tap anyone to look for a match in their country.",
+    "railOnlineFoot": "Online now. Start a call or chat to meet someone.",
     "railNoOne": "Nobody in the queue right now. Start a call and you will be the first.",
     "railFindIn": "Looking for someone in {country}…",
     "railNoMatch": "Nobody online matches that right now.",

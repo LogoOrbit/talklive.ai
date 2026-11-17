@@ -10702,8 +10702,7 @@ function renderRailOnline() {
   }
   railOnlineList.innerHTML = '';
   people.slice(0, 8).forEach((person) => {
-    const row = document.createElement('button');
-    row.type = 'button';
+    const row = document.createElement('div');
     row.className = 'tl-rail-row tl-rail-person';
     row.dataset.country = person.countryCode || '';
     row.dataset.countryName = person.country || '';
@@ -10734,23 +10733,12 @@ function renderRailOnline() {
         <strong>${getFlagImg(person.countryCode)} ${escapeHtml(person.username)}</strong>
         <small>${escapeHtml(meta)}</small>
       </span>
-      <span class="tl-rail-row-go" aria-hidden="true">
-        ${person.waiting
-          ? '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>'
-          : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>'}
-      </span>
     `;
     railOnlineList.appendChild(row);
   });
 }
 
-if (railOnlineList) {
-  railOnlineList.addEventListener('click', (e) => {
-    const row = e.target.closest('.tl-rail-person');
-    if (!row || !row.dataset.country) return;
-    searchCountry(row.dataset.country, row.dataset.countryName);
-  });
-}
+// Rows are display only: nothing on the site sets a filter but the person.
 
 // First paint. Every list is empty on a fresh visit, and an empty card that
 // says nothing reads as a card that failed to load - so they are rendered once

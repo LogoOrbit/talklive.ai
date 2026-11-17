@@ -75,3 +75,14 @@
   .tt *, .js-tt .tt-rv { transition: none !important; animation: none !important; }
   .js-tt .tt-rv { opacity: 1; transform: none; }
 }
+
+/* Arrows for the screenshot row (hidden on touch screens, which swipe). */
+.tt-shots-wrap { position: relative; }
+.tt-arrow { position: absolute; top: 50%; z-index: 2; transform: translateY(-60%); display: none; place-items: center; width: 44px; height: 44px; border-radius: 50%; cursor: pointer;
+  color: #fff; background: color-mix(in srgb, #0b0f1a 78%, transparent); border: 1px solid rgba(255,255,255,.22); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); transition: background .15s, transform .15s; }
+.tt-arrow:hover { background: var(--accent, #2a6fe8); }
+.tt-arrow:active { transform: translateY(-60%) scale(.94); }
+.tt-arrow svg { width: 22px; height: 22px; }
+.tt-prev { inset-inline-start: 6px; }
+.tt-next { inset-inline-end: 6px; }
+@media (hover: hover) and (pointer: fine) { .tt-arrow { display: grid; } }

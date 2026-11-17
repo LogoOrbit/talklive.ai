@@ -6506,3 +6506,22 @@ body .tt-story-body h3 { letter-spacing: -0.03em; }
   .tl-hero-clouds, .tl-hero-range { animation: none; will-change: auto; }
 }
 html.perf-lite .tl-hero-clouds, html.perf-lite .tl-hero-range { animation: none; will-change: auto; }
+
+/* On a phone, More is a panel like the other tabs: it rises over the page
+   with the tab bar still live underneath, instead of a drawer over the bar. */
+@media (max-width: 599px) {
+  body:has(.tl-nav) .tl-drawer {
+    inset: 0 0 calc(var(--tl-navbar) + env(safe-area-inset-bottom, 0px)) 0;
+    width: 100%;
+    z-index: 60;
+    border: 0;
+    box-shadow: none;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: var(--tl-s4);
+    animation: tl-more-in 0.3s var(--tl-ease, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  }
+  body:has(.tl-nav) .tl-drawer-overlay { display: none !important; }
+  body:has(.tl-drawer.open) .tl-nav { z-index: 61; }
+  body:has(.tl-nav) .tl-drawer-head { min-height: 60px; }
+}
+@keyframes tl-more-in { from { opacity: 0; transform: translateY(14px); } }
