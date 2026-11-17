@@ -54,13 +54,13 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=153fc85b70" crossorigin />
-<link rel="stylesheet" href="style.css?v=23f6911f6e" />
+<link rel="stylesheet" href="style.css?v=2f6868a89b" />
 <link rel="stylesheet" href="chat-extras.css?v=4b7b6398b3" />
-<link rel="stylesheet" href="games.css?v=27142968d1" />
+<link rel="stylesheet" href="games.css?v=2dd354f960" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=fcb60814b4" />
+<link rel="stylesheet" href="ui.css?v=dd679b138c" />
 <link rel="stylesheet" href="auth.css?v=aae37ee102" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
@@ -2630,7 +2630,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="games.js?v=192e9d4f2d"></script>
   <script defer src="nickname-rules.js?v=077c943b4d"></script>
   <script defer src="social-links.js?v=a4e5c724ac"></script>
-  <script defer src="app.js?v=487dca54fc"></script>
+  <script defer src="app.js?v=ed5b40cdc6"></script>
 
 <!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

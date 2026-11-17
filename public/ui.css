@@ -43,6 +43,8 @@
   --tl-line: var(--line);
   --tl-line-strong: color-mix(in srgb, var(--text) 18%, transparent);
   --tl-shadow: 0 12px 34px rgba(0, 0, 0, 0.35);
+  /* One curve for everything that slides, rises or settles. */
+  --tl-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* ===========================================================================
@@ -368,6 +370,11 @@
 .tl-panel > .side-body.tl-panel-body {
   padding-bottom: calc(var(--tl-s4) + env(safe-area-inset-bottom, 0px));
 }
+
+/* Filters still carried the old shell's top padding, which pushed its header
+   14px below every other panel's and let the column squeeze it shorter. */
+#filtersPanel.tl-panel { padding-top: 0; }
+.tl-panel > .tl-panel-head { flex: 0 0 auto; }
 
 /* A closed panel is parked off-screen with transform, so its drop shadow still
    paints - a dark vertical band down the edge of every page, on every theme.
@@ -2111,7 +2118,7 @@ summary.tl-filter-legend::-webkit-details-marker { display: none; }
   box-shadow: var(--tl-shadow);
   overflow-y: auto;
   overscroll-behavior: contain;
-  animation: tl-drawer-in 180ms ease-out both;
+  animation: tl-drawer-in 300ms var(--tl-ease) both;
 }
 .tl-drawer.hidden { display: none; }
 @keyframes tl-drawer-in {
@@ -3366,7 +3373,8 @@ summary.tl-filter-legend::-webkit-details-marker { display: none; }
   gap: 2px;
   padding: 10px 14px;
   border-radius: 14px;
-  border: 1px dashed var(--tl-line-strong);
+  border: 1px solid var(--tl-line);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
   font-size: 14px;
   font-weight: 600;
   text-align: start;
@@ -3557,3 +3565,109 @@ button.tl-filter-summary { cursor: pointer; }
 button.tl-filter-summary:hover { background: color-mix(in srgb, var(--accent) 20%, transparent); }
 button.tl-filter-summary:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
 .tl-filter-summary.hidden { display: none; }
+
+/* ===========================================================================
+ * PHONE POLISH
+ *    The phone is where most people meet this app, and three things made it
+ *    feel like a website there: panels that stopped short of the edge, a tab
+ *    bar that did not follow them, and a home column whose blocks each had a
+ *    different width. This section owns those, plus the motion they share.
+ * ======================================================================== */
+
+/* --- Dialogs arrive instead of appearing. -------------------------------- */
+@keyframes tl-fade-in { from { opacity: 0; } }
+@keyframes tl-rise-in { from { opacity: 0; transform: translateY(18px) scale(0.98); } }
+@keyframes tl-sheet-in { from { transform: translateY(100%); } }
+@keyframes tl-tab-pop { from { transform: scale(0.7); opacity: 0.4; } }
+.modal-overlay:not(.hidden) { animation: tl-fade-in 0.2s ease-out both; }
+.modal-overlay:not(.hidden) > .modal-box,
+.modal-overlay:not(.hidden) > .pu-box { animation: tl-rise-in 0.32s var(--tl-ease) both; }
+.tl-drawer-overlay:not(.hidden) { animation: tl-fade-in 0.2s ease-out both; }
+
+@media (max-width: 599px) {
+  /* --- Panels are screens. ------------------------------------------------
+     Friends, History, Filters and Settings used to slide in 51px short of the
+     left edge, leaving a strip of blurred home page beside them. On a phone
+     they take the whole width and change like tabs: a short rise and fade,
+     with the tab bar live underneath so one tap moves between them. */
+  body:has(.tl-nav) .side-panel.tl-panel {
+    width: 100%;
+    max-width: none;
+    border-inline: 0;
+    box-shadow: none;
+    transition: opacity 0.14s ease, transform 0.3s var(--tl-ease), visibility 0.3s;
+  }
+  body:has(.tl-nav) .side-panel.tl-panel:not(.open) {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  /* Moving from one panel to another: the old one waits a beat, so the new
+     one covers it and the home page never flashes through between them. */
+  body:has(.side-panel.tl-panel.open) .side-panel.tl-panel:not(.open) { transition-delay: 0.12s; }
+  body:has(.side-panel.tl-panel.open) .tl-nav { z-index: 61; }
+  .tl-panel-head { padding-top: calc(var(--tl-s3) + env(safe-area-inset-top, 0px)); }
+
+  /* --- The tab bar. -------------------------------------------------------
+     The selected pill pops in, and every tab answers the finger. */
+  .tl-nav {
+    border-top-color: color-mix(in srgb, var(--text) 9%, transparent);
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.22);
+  }
+  .tl-nav-item { touch-action: manipulation; transition: color 0.16s ease; }
+  .tl-nav-icon { transition: background-color 0.2s ease, color 0.16s ease, transform 0.16s var(--tl-ease); }
+  .tl-nav-item:active .tl-nav-icon { transform: scale(0.88); }
+  /* A tapped tab keeps :hover on a touch screen until the next tap elsewhere,
+     so it stayed lit after its panel had closed. */
+  .tl-nav-item:not(.is-current):hover { color: color-mix(in srgb, var(--text) 62%, transparent); }
+  .tl-nav-item.is-current .tl-nav-icon {
+    background: color-mix(in srgb, var(--accent) 30%, transparent);
+    color: color-mix(in srgb, var(--accent) 45%, var(--text));
+    animation: tl-tab-pop 0.28s var(--tl-ease);
+  }
+
+  /* --- Home: one column, one width. ---------------------------------------
+     The two actions were 296px wide, the question 253, the avatars 358 and
+     the cards under them 340. Everything now runs gutter to gutter. */
+  .setup-panel .tap-to-talk { align-items: stretch; }
+  .setup-panel .tl-filter-summary { align-self: center; }
+  .setup-panel .tl-action { min-height: 92px; border-radius: 24px; }
+  .setup-panel .tap-choice-divider { margin-block: -2px; }
+  .setup-panel .tl-engage { margin-top: var(--tl-s5); }
+  .setup-panel .setup-growth { width: 100%; max-width: none; }
+  .tl-engage-banner,
+  .tl-engage-q,
+  .setup-growth-card { border-radius: 16px; }
+  .tl-engage-banner { padding: 12px 14px; }
+  .tl-engage-q { padding: 12px 16px; }
+  .tl-engage-banner,
+  .setup-growth-card,
+  .tl-engage-tile { transition: transform 0.16s var(--tl-ease), background-color 0.16s ease, border-color 0.16s ease; }
+  .tl-engage-banner:active,
+  .setup-growth-card:active,
+  .tl-engage-tile:active { transform: scale(0.98); }
+
+  /* --- Dialogs with nothing to type are sheets. ---------------------------
+     Anchored to the bottom edge, where the thumb is. A dialog with a text
+     field stays centred, so the keyboard never covers what is being typed. */
+  .modal-overlay:not(:has(textarea, input:not([type="checkbox"], [type="radio"], [type="hidden"]))) {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .modal-overlay:not(:has(textarea, input:not([type="checkbox"], [type="radio"], [type="hidden"]))) > .modal-box {
+    max-width: none;
+    max-height: calc(100dvh - 40px - env(safe-area-inset-top, 0px));
+    border-radius: 24px 24px 0 0;
+    border-bottom: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    animation: tl-sheet-in 0.36s var(--tl-ease) both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay:not(.hidden),
+  .modal-overlay:not(.hidden) > .modal-box,
+  .modal-overlay:not(.hidden) > .pu-box,
+  .tl-drawer-overlay:not(.hidden),
+  .tl-nav-item.is-current .tl-nav-icon { animation: none !important; }
+  body:has(.tl-nav) .side-panel.tl-panel { transition: none; }
+}

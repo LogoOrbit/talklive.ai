@@ -189,7 +189,7 @@ body.panel-open .game-overlay {
      screen readers; it flips on at once when opening and off only after the
      slide-out finishes. */
   visibility: hidden;
-  transition: transform 0.25s ease, visibility 0.25s;
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.32s;
   box-shadow: 20px 0 40px rgba(0,0,0,0.3);
 }
 
@@ -259,10 +259,6 @@ body.panel-open .game-overlay {
   border: 1px solid rgba(46, 212, 122, 0.4);
 }
 
-.online-label {
-  color: var(--text);
-}
-
 .online-count {
   color: #2ed47a;
   font-weight: 800;
@@ -270,38 +266,6 @@ body.panel-open .game-overlay {
 
 /* Flat, quiet header buttons: no heavy shadows or bright fills - they read as
    part of the header, only lighting up on hover/press. */
-.icon-btn {
-  width: 58px;
-  height: 58px;
-  border-radius: 16px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text);
-  font-size: 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0.85;
-  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease, transform 0.15s ease;
-}
-
-.icon-btn:hover {
-  background: rgba(255,255,255,0.08);
-  border-color: rgba(255,255,255,0.1);
-  opacity: 1;
-}
-
-.icon-btn:active {
-  transform: scale(0.94);
-  background: rgba(255,255,255,0.14);
-}
-
-.avatar-initial {
-  font-weight: 700;
-  font-size: 14px;
-  color: #2ed47a;
-}
 
 /* Account row inside the left Settings panel */
 .settings-account-row {
@@ -335,11 +299,6 @@ body.panel-open .game-overlay {
   overflow: hidden;
 }
 
-.settings-account-avatar .topbar-svg-icon {
-  width: 20px;
-  height: 20px;
-}
-
 .settings-account-row.logged-in .settings-account-avatar {
   border: 2px solid #2ed47a;
   box-shadow: 0 0 10px rgba(46, 212, 122, 0.6);
@@ -358,17 +317,8 @@ body.panel-open .game-overlay {
   flex-shrink: 0;
 }
 
-.topbar-svg-icon {
-  width: 32px;
-  height: 32px;
-}
-
 /* Keep the small chevron/avatar glyphs inside the Settings panel at their
    intended size - the bigger topbar icon size is only for tappable buttons. */
-.settings-account-avatar .topbar-svg-icon {
-  width: 20px;
-  height: 20px;
-}
 
 .friends-btn {
   position: relative;
@@ -386,118 +336,14 @@ body.panel-open .game-overlay {
 }
 
 /* --- Live network status pill (green Online / red Offline) --- */
-.net-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 700;
-  padding: 7px 14px;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
-}
-
-.net-status .net-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.net-status.is-online {
-  color: #2ed47a;
-  background: rgba(46, 212, 122, 0.1);
-  border-color: rgba(46, 212, 122, 0.4);
-}
-
-.net-status.is-online .net-dot {
-  background: #2ed47a;
-  box-shadow: 0 0 8px #2ed47a;
-  animation: dotPulse 1.6s ease-in-out infinite;
-}
-
-.net-status.is-offline {
-  color: #ff5470;
-  background: rgba(255, 84, 112, 0.12);
-  border-color: rgba(255, 84, 112, 0.45);
-}
-
-.net-status.is-offline .net-dot {
-  background: #ff5470;
-  box-shadow: 0 0 8px #ff5470;
-  animation: dotPulse 1s ease-in-out infinite;
-}
 
 /* --- Big chat button, top-right corner --- */
-.chat-fab {
-  position: relative;
-  width: 48px;
-  height: 48px;
-  border-radius: 16px;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  background: linear-gradient(var(--accent),var(--accent));
-  box-shadow: 0 6px 18px rgba(42,111,232, 0.4);
-  transition: transform 0.15s ease, box-shadow 0.2s ease;
-}
-
-.chat-fab:hover {
-  box-shadow: 0 8px 24px rgba(42,111,232, 0.6);
-}
-
-.chat-fab:active {
-  transform: scale(0.94);
-}
-
-.chat-fab-icon {
-  width: 26px;
-  height: 26px;
-}
 
 /* Language picker moved into the Settings panel: fill its row. */
 .settings-lang-wrap { width: 100%; }
 .settings-lang-wrap .lang-select { max-width: none; width: 100%; }
 
 /* Live people-count indicator (right): pulsing dot + group icon + number. */
-.people-count {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 12px;
-  border-radius: 999px;
-  background: rgba(46, 212, 122, 0.1);
-  border: 1px solid rgba(46, 212, 122, 0.35);
-}
-
-.people-live-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #2ed47a;
-  box-shadow: 0 0 8px #2ed47a;
-  flex-shrink: 0;
-  animation: dotPulse 1.6s ease-in-out infinite;
-}
-
-.people-icon {
-  width: 18px;
-  height: 18px;
-  color: #2ed47a;
-  flex-shrink: 0;
-}
-
-.people-count-num {
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
-}
 
 .stage {
   flex: 1;
@@ -727,46 +573,6 @@ body.panel-open .game-overlay {
 
 /* Left-weighted scrim so the overlaid text stays readable over the darker side
    of the scene, away from the man's face. */
-.video-banner__scrim {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  background: linear-gradient(
-    90deg,
-    rgba(8, 11, 22, 0.82) 0%,
-    rgba(8, 11, 22, 0.45) 42%,
-    rgba(8, 11, 22, 0.06) 72%,
-    rgba(8, 11, 22, 0) 100%
-  );
-}
-
-.video-banner__content {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 4px;
-  padding: 0 clamp(14px, 5%, 26px);
-  text-align: left;
-  pointer-events: none;
-}
-.video-banner__title {
-  max-width: 64%;
-  font-size: clamp(15px, 4.6vw, 22px);
-  font-weight: 700;
-  line-height: 1.15;
-  color: #fff;
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
-}
-.video-banner__subtitle {
-  max-width: 62%;
-  font-size: clamp(11px, 3vw, 13.5px);
-  line-height: 1.3;
-  color: rgba(228, 233, 255, 0.9);
-  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.65);
-}
 
 @media (prefers-reduced-motion: reduce) {
   .video-banner__video { transition: none; }
@@ -778,13 +584,6 @@ body.panel-open .game-overlay {
 
 /* Short viewports: the whole call screen shrinks rather than the call
    controls giving up height. */
-@media (max-height: 760px) {
-  
-  /* Restated: this rule and the fixed-size one above have equal specificity, so
-     without it the later one would win here and under-reserve by 90px. */
-  
-}
-
 /* Short viewports: keep the banner compact so it stays on-screen without
    scrolling, in step with the other call-screen shrink rules. */
 @media (max-height: 740px) {
@@ -798,11 +597,6 @@ body.panel-open .game-overlay {
    for text beside the scene, so the overlaid title/subtitle look cramped and
    the left-weighted scrim leaves the image looking half-lit. Drop the caption
    and scrim here so the looping scene reads as one clean, calm image. */
-@media (max-width: 600px) {
-  .video-banner__content,
-  .video-banner__scrim { display: none; }
-}
-
 /* Conversation guide - friendly tips, scrollable, below the call area. */
 /* --- Page notes -----------------------------------------------------------
  *
@@ -1002,24 +796,6 @@ body.panel-open .game-overlay {
   box-shadow: 0 0 20px rgba(46, 212, 122, 0.65);
 }
 
-.btn-icon {
-  background: rgba(255,255,255,0.08);
-  width: 50px;
-  height: 50px;
-  padding: 0;
-  border-radius: 50%;
-  font-size: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-.btn-icon-lg {
-  width: 64px;
-  height: 64px;
-}
-
 .simple-icon {
   width: 22px;
   height: 22px;
@@ -1028,18 +804,6 @@ body.panel-open .game-overlay {
 .simple-icon-lg {
   width: 32px;
   height: 32px;
-}
-
-.simple-icon-text {
-  font-size: 24px;
-  font-weight: 700;
-  line-height: 1;
-  color: white;
-}
-
-.btn-icon-danger {
-  background: rgba(255, 84, 112, 0.15);
-  color: var(--danger);
 }
 
 /* Mic: grey icon, red diagonal slash overlay when muted */
@@ -1055,14 +819,6 @@ body.panel-open .game-overlay {
 
 .mute-slash.hidden {
   display: none;
-}
-
-.btn-icon.added {
-  background: rgba(46, 212, 122, 0.25) !important;
-}
-
-.btn-icon.muted {
-  background: rgba(255, 84, 112, 0.2);
 }
 
 .hidden { display: none !important; }
@@ -1241,34 +997,6 @@ body.panel-open .game-overlay {
 
 /* Mobile responsiveness */
 @media (max-width: 600px) {
-  .people-count {
-    padding: 5px 8px;
-    gap: 4px;
-  }
-
-  .people-count-num { font-size: 14px; }
-
-  .chat-fab {
-    width: 46px;
-    height: 46px;
-    border-radius: 14px;
-  }
-
-  .chat-fab-icon {
-    width: 24px;
-    height: 24px;
-  }
-
-  .icon-btn {
-    width: 54px;
-    height: 54px;
-    border-radius: 15px;
-  }
-
-  .topbar-svg-icon {
-    width: 30px;
-    height: 30px;
-  }
 
   .online {
     font-size: 14px;
@@ -1290,20 +1018,6 @@ body.panel-open .game-overlay {
 
   .modal-body {
     padding: 16px;
-  }
-
-  .tap-orb {
-    width: 142px;
-    height: 142px;
-  }
-
-  .tap-orb .phone-icon {
-    width: 36px;
-    height: 36px;
-  }
-
-  .tap-orb-label {
-    font-size: 14px;
   }
 
   .orb-wrap {
@@ -1347,36 +1061,12 @@ body.panel-open .game-overlay {
     font-size: 13px;
   }
 
-  .btn-icon {
-    width: 50px;
-    height: 50px;
-  }
-
-  .btn-icon-lg {
-    width: 58px;
-    height: 58px;
-  }
-
-  .chat-panel {
-    height: 260px;
-  }
-
   .country-search-wrap {
     min-width: 120px;
   }
 }
 
-@media (max-width: 480px) {
-  /* Dot and number carry the meaning; the group glyph is the decoration. */
-  .people-count .people-icon { display: none; }
-  .people-count { padding: 5px 9px; }
-}
-
 /* Genuinely tiny screens. Everything gets tighter; nothing disappears. */
-@media (max-width: 359px) {
-  .people-count { padding: 4px 7px; }
-}
-
 @media (max-width: 360px) {
   .controls {
     gap: 6px;
@@ -1423,29 +1113,6 @@ body.panel-open .game-overlay {
   gap: 18px;
 }
 
-.tap-orb {
-  position: relative;
-  overflow: hidden;
-  width: 190px;
-  height: 190px;
-  border-radius: 50%;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  transition: transform 0.15s ease, box-shadow 0.2s ease;
-  animation: tapBreathe 3s ease-in-out infinite;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  /* Tap to Chat is an <a>, so without this its label came out underlined
-     while the identical Tap to Talk button's label did not. */
-  text-decoration: none;
-  color: inherit;
-}
-
 /* Ripple that expands from the tap point for instant press feedback. */
 .tap-ripple {
   position: absolute;
@@ -1470,42 +1137,9 @@ body.panel-open .game-overlay {
 
 /* Connecting state: freeze the breathing, dim the label, and spin a ring so the
    user sees work happening and further taps are visibly inert. */
-.tap-orb.is-connecting {
-  animation: none;
-  cursor: progress;
-  pointer-events: none;
-}
-.tap-orb.is-connecting .phone-icon,
-.tap-orb.is-connecting .tap-orb-label {
-  opacity: 0.55;
-}
-.tap-orb.is-connecting::after {
-  content: "";
-  position: absolute;
-  inset: 14px;
-  border-radius: 50%;
-  border: 4px solid rgba(255, 255, 255, 0.25);
-  border-top-color: #fff;
-  animation: tapSpin 0.85s linear infinite;
-}
+
 @keyframes tapSpin {
   to { transform: rotate(360deg); }
-}
-
-.call-btn-green {
-  background: radial-gradient(circle at 35% 30%, #4ade80, #16a34a 75%);
-  box-shadow:
-    inset 0 2px 14px rgba(255, 255, 255, 0.3),
-    0 0 34px rgba(34, 197, 94, 0.6),
-    0 0 84px rgba(22, 163, 74, 0.45);
-  animation: tapBreathe 3s ease-in-out infinite, glowGreen 3s ease-in-out infinite;
-}
-
-.call-btn-green:hover {
-  box-shadow:
-    inset 0 2px 14px rgba(255, 255, 255, 0.34),
-    0 0 46px rgba(34, 197, 94, 0.85),
-    0 0 110px rgba(22, 163, 74, 0.6);
 }
 
 /* The halo swells with the breathe animation instead of sitting flat, so the
@@ -1526,28 +1160,10 @@ body.panel-open .game-overlay {
   }
 }
 
-.tap-orb:active {
-  transform: scale(0.96);
-}
-
 .phone-icon {
   width: 44px;
   height: 44px;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
-}
-
-.phone-icon-rotated {
-  transform: rotate(135deg);
-}
-
-.tap-orb-label {
-  font-size: 17px;
-  font-weight: 700;
-  color: white;
-  letter-spacing: 0.2px;
-  /* The orb faces are bright again, so the label carries its own shadow to
-     stay legible against the light top-left of the gradient. */
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
 }
 
 @keyframes tapBreathe {
@@ -1559,13 +1175,6 @@ body.panel-open .game-overlay {
    Two irresistible orbs side by side. Both breathe (transform-only, so it
    stays on the compositor even on weak phones), out of phase with each other
    so the hero always has gentle life in it. */
-.tap-choice-heading {
-  margin: 0 0 4px;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--muted, #9aa3b8);
-  letter-spacing: 0.2px;
-}
 
 .tap-choice-row {
   display: flex;
@@ -1580,12 +1189,6 @@ body.panel-open .game-overlay {
   flex-direction: column;
   align-items: center;
   gap: 12px;
-}
-
-.tap-choice-caption {
-  font-size: 12.5px;
-  color: var(--muted, #9aa3b8);
-  letter-spacing: 0.2px;
 }
 
 .tap-choice-divider {
@@ -1606,35 +1209,13 @@ body.panel-open .game-overlay {
 }
 
 /* Slightly smaller orbs than the old single one so the pair fits phones. */
-.tap-choice .tap-orb {
-  width: 158px;
-  height: 158px;
-}
+
 .tap-choice .phone-icon {
   width: 38px;
   height: 38px;
 }
-.tap-choice .tap-orb-label {
-  font-size: 15.5px;
-}
 
 /* The chat orb breathes on the opposite phase of the talk orb. */
-.chat-btn-blue {
-  background: radial-gradient(circle at 35% 30%, #7cb3ff, #2f66f4 75%);
-  box-shadow:
-    inset 0 2px 14px rgba(255, 255, 255, 0.3),
-    0 0 34px rgba(63, 118, 244, 0.55),
-    0 0 84px rgba(37, 99, 235, 0.42);
-  animation: tapBreathe 3s ease-in-out infinite, glowBlue 3s ease-in-out infinite;
-  animation-delay: 1.5s;
-}
-
-.chat-btn-blue:hover {
-  box-shadow:
-    inset 0 2px 14px rgba(255, 255, 255, 0.34),
-    0 0 46px rgba(63, 118, 244, 0.8),
-    0 0 110px rgba(37, 99, 235, 0.56);
-}
 
 @keyframes glowBlue {
   0%, 100% {
@@ -1653,28 +1234,11 @@ body.panel-open .game-overlay {
 
 @media (max-width: 400px) {
   .tap-choice-row { gap: 10px; }
-  .tap-choice .tap-orb { width: 134px; height: 134px; }
   .tap-choice .phone-icon { width: 32px; height: 32px; }
-  .tap-choice .tap-orb-label { font-size: 13.5px; }
   .tap-choice-divider { width: 28px; height: 28px; font-size: 11px; }
 }
 
 /* Primary call actions: Next and Hang Up, equal visual weight, Next slightly larger */
-.primary-controls {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 28px;
-  margin: 24px 0 8px;
-}
-
-.call-btn-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
 
 .call-btn {
   width: 84px;
@@ -1698,59 +1262,12 @@ body.panel-open .game-overlay {
   transform: none;
 }
 
-.call-btn-red {
-  background: radial-gradient(circle at 35% 30%, #ff7a8a, #e21f3e 75%);
-  box-shadow: 0 4px 16px rgba(226, 31, 62, 0.35);
-}
-
-.call-btn-red:hover {
-  box-shadow: 0 4px 20px rgba(226, 31, 62, 0.5);
-}
-
-.call-btn-next {
-  background: radial-gradient(circle at 35% 30%, #ffcf5c, #ff9500 75%);
-  box-shadow: 0 4px 16px rgba(255, 149, 0, 0.3);
-}
-
-.call-btn-next:hover {
-  box-shadow: 0 4px 20px rgba(255, 149, 0, 0.45);
-}
-
 .call-btn .phone-icon {
   width: 30px;
   height: 30px;
 }
 
-.skip-icon {
-  width: 32px;
-  height: 32px;
-}
-
-.call-btn-label {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--danger);
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
-}
-
-.call-btn-label-next {
-  color: #ff9500;
-  font-variant-numeric: tabular-nums;
-  min-width: 34px;
-  display: inline-block;
-}
-
-.secondary-controls {
-  margin-top: 4px;
-}
-
 /* Call timer */
-.call-timer {
-  font-variant-numeric: tabular-nums;
-  color: var(--text);
-  font-weight: 700;
-}
 
 /* Shared interest callout */
 .shared-interest-note {
@@ -1828,10 +1345,6 @@ body.panel-open .game-overlay {
   0% { transform: translateY(0) scale(0.6); opacity: 0; }
   15% { transform: translateY(-20px) scale(1); opacity: 1; }
   100% { transform: translateY(-220px) scale(1.1); opacity: 0; }
-}
-
-.btn-text {
-  margin-left: 2px;
 }
 
 .consent-line {
@@ -2172,33 +1685,6 @@ body.panel-open .game-overlay {
   text-align: left;
 }
 
-.pill-row {
-  margin-bottom: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.pill-row:last-child {
-  margin-bottom: 0;
-}
-
-.pill-label {
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.pill-label-strong {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.pill-label .hint {
-  font-size: 11px;
-  opacity: 0.7;
-}
-
 .pill-group {
   display: flex;
   flex-wrap: wrap;
@@ -2522,17 +2008,6 @@ body.panel-open .game-overlay {
 }
 
 /* Chat panel */
-.chat-panel {
-  width: 100%;
-  max-width: 420px;
-  margin: 18px auto 0;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 16px;
-  display: flex;
-  flex-direction: column;
-  height: 280px;
-}
 
 .chat-messages {
   flex: 1;
@@ -2812,15 +2287,6 @@ body.panel-open .game-overlay {
    action - the sign-in box is the first thing a new user meets, so it is kept
    deliberately plain: consistent field rhythm, left-aligned labels, and no
    decoration competing with the button they are meant to press. */
-.account-tabs {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 18px;
-  padding: 4px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.08);
-}
 
 .account-tab {
   flex: 1;
@@ -2871,48 +2337,13 @@ body.panel-open .game-overlay {
 
 /* A hint about one field reads as part of that field: left-aligned under it,
    tucked in tight, and not centred like the panel-level notes. */
-.account-hint-field {
-  text-align: left;
-  margin: -8px 0 4px 16px;
-}
 
 /* The standing note about accounts closes the panel, so it is separated from
    the form rather than stacked straight onto it. */
-.account-hint-footer {
-  margin-top: 18px;
-  padding-top: 14px;
-  border-top: 1px solid rgba(255,255,255,0.07);
-}
-
-[data-theme="light"] .account-hint-footer {
-  border-top-color: rgba(20, 30, 70, 0.1);
-}
-
-[data-theme="light"] .account-tabs {
-  background: rgba(20, 30, 70, 0.05);
-  border-color: rgba(20, 30, 70, 0.1);
-}
 
 /* "or" divider between the password form and the Google button. The rules on
    either side are drawn with a flexed pseudo-element each, so the divider fits
    any width without a fixed line length. */
-.account-or {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 14px 0 12px;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--muted);
-}
-.account-or::before,
-.account-or::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border, rgba(255, 255, 255, .14));
-}
 
 /* Google's real button, shown as itself.
 
@@ -3061,12 +2492,6 @@ body.panel-open .game-overlay {
   cursor: pointer;
 }
 
-.account-section-title {
-  font-size: 13px;
-  color: var(--accent-2);
-  margin: 4px 0 10px;
-}
-
 .account-label {
   display: block;
   font-size: 12px;
@@ -3083,33 +2508,6 @@ body.panel-open .game-overlay {
    reachable and never navigates away from the modal. Styled explicitly down to
    the border and background: a bare <button> inherits the platform's grey
    chrome, which looks like a broken control next to these inputs. */
-.account-link {
-  display: block;
-  width: 100%;
-  margin-top: 12px;
-  padding: 9px 0;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--accent-2);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  text-align: center;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.account-link:hover {
-  background: rgba(255,255,255,0.05);
-  color: var(--text);
-}
-
-.account-link:disabled {
-  color: var(--muted);
-  background: transparent;
-  cursor: default;
-}
 
 /* The step label above each field in the reset flow. */
 /* Labels above every credential field. The sign-up form is three identical
@@ -3117,29 +2515,11 @@ body.panel-open .game-overlay {
    how an email address ends up typed into the username box. Left-aligned,
    unlike the centred step labels in the forgot-password flow, so each one
    clearly belongs to the field beneath it. */
-.account-field-label {
-  display: block;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--muted);
-  margin: 2px 0 6px 14px;
-  text-align: left;
-}
 
 /* The field an error is actually about. */
 .account-input.is-invalid {
   border-color: var(--danger);
   outline: 1px solid var(--danger);
-}
-
-.account-step-label {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  margin: 0 0 10px;
-  text-align: center;
-  line-height: 1.5;
 }
 
 /* The 6-digit reset code: wide spacing so a code read off a phone is easy to
@@ -3164,13 +2544,6 @@ body.panel-open .game-overlay {
   margin-top: 12px;
 }
 
-.history-empty {
-  font-size: 13px;
-  color: var(--muted);
-  text-align: center;
-  padding: 20px 0;
-}
-
 .history-item {
   display: flex;
   align-items: center;
@@ -3187,11 +2560,6 @@ body.panel-open .game-overlay {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.history-item-duration {
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
 }
 
 .history-item-right {
@@ -3232,70 +2600,16 @@ body.panel-open .game-overlay {
 }
 
 /* Notification bell badge */
-.notif-wrap {
-  position: relative;
-}
-
-.notif-btn {
-  position: relative;
-}
 
 /* Dropdown anchored under the bell icon, instead of a centered floating modal */
-.notif-dropdown {
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
-  width: 320px;
-  max-width: min(90vw, 360px);
-  max-height: 70vh;
-  overflow-y: auto;
-  background: var(--bg-2);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-  z-index: 100;
-}
-
-.notif-dropdown.hidden {
-  display: none;
-}
 
 /* Smooth pop-in for every toolbar dropdown (history / friends / requests) so
    the menus spring open from under their icon instead of snapping in place. */
-.notif-dropdown:not(.hidden) {
-  transform-origin: top right;
-  animation: dropdownIn 0.2s cubic-bezier(.2,.85,.25,1);
-}
+
 @keyframes dropdownIn {
   from { opacity: 0; transform: translateY(-8px) scale(0.96); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
-@media (prefers-reduced-motion: reduce) {
-  .notif-dropdown:not(.hidden) { animation: none; }
-}
-
-.notif-dropdown .modal-header {
-  padding: 14px 16px;
-}
-
-.notif-dropdown .modal-body {
-  padding: 14px 16px;
-}
-
-@media (max-width: 480px) {
-  .notif-dropdown {
-    /* Anchored under its button by app.js (sets style.top), so it works
-       whether the sticky header is at the top of the page or mid-scroll. */
-    position: fixed;
-    top: 120px;
-    right: 10px;
-    left: 10px;
-    width: auto;
-    max-width: none;
-    max-height: min(70vh, calc(100dvh - 140px));
-  }
-}
-
 .notif-badge {
   position: absolute;
   top: -4px;
@@ -3319,11 +2633,6 @@ body.panel-open .game-overlay {
 }
 
 /* Friends modal tabs */
-.friends-tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-}
 
 .friends-tab {
   flex: 1;
@@ -3408,18 +2717,6 @@ body.panel-open .game-overlay {
   cursor: pointer;
 }
 
-.friend-online-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #4a5068;
-  flex-shrink: 0;
-}
-
-.friend-online-dot.online {
-  background: #2ed47a;
-}
-
 /* Plain-text online/offline status shown next to a friend's name. */
 .friend-status-text {
   font-size: 11px;
@@ -3435,31 +2732,6 @@ body.panel-open .game-overlay {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.friend-badge {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 999px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.friend-badge.temp {
-  background: rgba(255, 184, 77, 0.15);
-  color: #ffb84d;
-}
-
-.friend-badge.account {
-  background: rgba(46, 212, 122, 0.15);
-  color: #2ed47a;
-}
-
-.friend-item-actions {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
 }
 
 .btn-chip {
@@ -3510,14 +2782,6 @@ body.panel-open .game-overlay {
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 12px;
   padding: 12px 14px;
-}
-
-.notif-clickable {
-  cursor: pointer;
-}
-
-.notif-clickable:hover {
-  background: rgba(255,255,255,0.07);
 }
 
 .notif-item-icon {
@@ -3654,11 +2918,6 @@ body.panel-open .game-overlay {
     margin-bottom: 10px;
   }
 
-  .primary-controls {
-    margin: 12px 0 6px;
-    gap: 20px;
-  }
-
   .call-btn {
     width: 72px;
     height: 72px;
@@ -3678,10 +2937,6 @@ body.panel-open .game-overlay {
     width: 38px;
     height: 38px;
     font-size: 17px;
-  }
-
-  .secondary-controls {
-    margin-top: 2px;
   }
 
 }
@@ -3807,22 +3062,6 @@ body.panel-open .game-overlay {
 /* Visible text labels under the in-call icon buttons (mute/chat/add
    friend/report), so their meaning doesn't depend on decoding an icon.
    Each label hides together with its (JS-toggled) button. */
-.ctl-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.ctl-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
-}
-
-.ctl-wrap > .btn.hidden + .ctl-label {
-  display: none;
-}
 
 /* Add button next to the interest input - on many mobile keyboards there is
    no obvious Enter key, so typing-then-Enter alone was a dead end. */
@@ -3830,12 +3069,6 @@ body.panel-open .game-overlay {
   display: flex;
   gap: 8px;
   align-items: center;
-}
-
-.interest-add-btn {
-  padding: 8px 16px;
-  font-size: 13px;
-  flex-shrink: 0;
 }
 
 /* Bigger tap targets for small controls (WCAG target-size). */
@@ -3867,10 +3100,6 @@ body.panel-open .game-overlay {
 
 /* RTL (Arabic/Urdu): re-anchor the notifications dropdown under the bell,
    which sits mirrored on the other side of the topbar. */
-[dir="rtl"] .notif-dropdown {
-  right: auto;
-  left: 0;
-}
 
 [dir="rtl"] .side-panel {
   left: auto;
@@ -4234,16 +3463,6 @@ body.panel-open .game-overlay {
 }
 
 /* Toggle switches (App Settings) */
-.toggle-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  font-size: 14px;
-  padding: 6px 0;
-  cursor: pointer;
-  user-select: none;
-}
 
 .switch {
   position: relative;
@@ -4304,15 +3523,6 @@ body.panel-open .game-overlay {
   gap: 4px;
 }
 
-.side-section-title {
-  margin: 0 0 6px;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: var(--muted);
-}
-
 .theme-dot-dark { background: #0b0f1a; border: 1px solid rgba(255,255,255,0.4); }
 .theme-dot-light { background: #f4f6fb; }
 .theme-dot-ocean { background: #00b4d8; }
@@ -4365,37 +3575,12 @@ body.panel-open .game-overlay {
 }
 
 /* Temporary username editor + permanent User ID at the top of Settings */
-.temp-name-block {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 12px 14px 14px;
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 12px;
-  background: rgba(255,255,255,0.02);
-}
-.temp-name-block > .pill-label {
-  font-weight: 700;
-  color: var(--text);
-}
-.temp-name-row {
-  display: flex;
-  gap: 8px;
-  align-items: stretch;
-}
-.temp-name-row .search-input { flex: 1; min-width: 0; }
-.temp-name-save { white-space: nowrap; flex: 0 0 auto; }
+
 /* One-tap expanding settings categories (accordion) */
 .settings-accordion {
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-.acc-item {
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 12px;
-  overflow: hidden;
-  background: rgba(255,255,255,0.02);
 }
 .acc-header {
   width: 100%;
@@ -4414,30 +3599,7 @@ body.panel-open .game-overlay {
   -webkit-tap-highlight-color: transparent;
 }
 .acc-header:hover { background: rgba(255,255,255,0.03); }
-.acc-chevron {
-  width: 18px;
-  height: 18px;
-  flex: 0 0 auto;
-  color: var(--muted);
-  transition: transform 0.25s ease;
-}
-.acc-item.open .acc-chevron { transform: rotate(180deg); }
 /* Smooth 0fr→1fr height animation with no fixed max-height guesswork */
-.acc-body {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 0.28s ease;
-}
-.acc-item.open .acc-body { grid-template-rows: 1fr; }
-.acc-body-inner {
-  overflow: hidden;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 0 14px;
-}
-.acc-item.open .acc-body-inner { padding: 2px 14px 14px; }
 
 /* Help & About: a quiet two-column grid of small links instead of a stack of
    full-width buttons - same tap targets, half the visual noise. */
@@ -4471,13 +3633,6 @@ body.panel-open .game-overlay {
 [data-theme="light"] .settings-link:hover { background: rgba(20, 30, 70, 0.1); }
 
 /* Sign in / Register at the bottom of the left side panel */
-.side-panel-auth {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding-top: 14px;
-  border-top: 1px solid rgba(255,255,255,0.08);
-}
 
 .side-auth-btn {
   width: 100%;
@@ -4485,10 +3640,6 @@ body.panel-open .game-overlay {
 
 /* Friends dropdown rows: avatar (tap → profile), dot + flag + name (tap →
    chat), small green call button on the right */
-.friends-wrap,
-.history-wrap {
-  position: relative;
-}
 
 .friends-dropdown .friend-item {
   flex-wrap: wrap;
@@ -4657,29 +3808,6 @@ body.panel-open .game-overlay {
 }
 
 /* Avatar picker (Account Settings) */
-.avatar-cat-tabs {
-  display: flex;
-  gap: 8px;
-  margin: 8px 0 10px;
-}
-
-.avatar-cat {
-  flex: 1;
-  padding: 8px;
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.1);
-  background: rgba(255,255,255,0.04);
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.avatar-cat.selected {
-  background: rgba(42,111,232, 0.18);
-  border-color: var(--accent);
-  color: var(--text);
-}
 
 /* A grid of tiles, not a row of circles. The Animals tab put a name beside
    each face inside a 56px round button laid out as a row, so twenty names ran
@@ -4787,18 +3915,10 @@ body.panel-open .game-overlay {
 }
 
 /* Header icon buttons stay flat/transparent in light theme too. */
-[data-theme="light"] .icon-btn {
-  background: transparent;
-  border-color: transparent;
-}
 
 [data-theme="light"] .icon-btn:hover,
 [data-theme="light"] .modal-close:hover {
   background: rgba(20, 30, 70, 0.1);
-}
-
-[data-theme="light"] .icon-btn:hover {
-  border-color: rgba(20, 30, 70, 0.12);
 }
 
 [data-theme="light"] .quality-bar {
@@ -4999,7 +4119,6 @@ body.panel-open .game-overlay {
 .stage.call-live .consent-line { display: none; }
 
 /* RTL: the chat sheet slides in from the left instead (mirrors side panels). */
-[dir="rtl"] .chat-fab { order: -1; }
 
 /* =============================================================
    Touch response: a light, quick press-in on every interactive control
@@ -5156,14 +4275,7 @@ a.premium-lock:hover { background: rgba(42,111,232, 0.22); }
 
 /* Each filter group is its own card, matching the Settings accordion look,
    so the panel reads as a short list of clear sections. */
-#filtersPanel .pill-row {
-  margin-bottom: 0;
-  padding: 9px 12px 10px;
-  gap: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.02);
-}
+
 #filtersPanel .side-panel-body { gap: 7px; }
 
 /* Compact the whole filter panel so every group - gender, both country lists
@@ -5179,66 +4291,13 @@ a.premium-lock:hover { background: rgba(42,111,232, 0.22); }
 /* Tighten the gap between header / body / footer (default 18px) so the three
    stack closer and the body has more room for the filter cards. */
 #filtersPanel { gap: 10px; padding-top: 14px; padding-bottom: 14px; }
-#filtersPanel .pill-label {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-}
-#filtersPanel .pill-label .hint {
-  font-weight: 400;
-  color: var(--muted);
-}
-[data-theme="light"] #filtersPanel .pill-row,
-[data-theme="light"] .acc-item,
-[data-theme="light"] .temp-name-block {
-  border-color: rgba(20, 30, 70, 0.12);
-  background: rgba(20, 30, 70, 0.04);
-}
 [data-theme="light"] .acc-header:hover { background: rgba(20, 30, 70, 0.06); }
 
 /* Compact, professional upgrade CTA (replaces the old yellow hint text). */
-.upgrade-cta-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  border: 1px solid rgba(42,111,232, 0.4);
-  border-radius: 12px;
-  padding: 10px 14px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--text);
-  background: linear-gradient(var(--accent),var(--accent));
-  cursor: pointer;
-  text-decoration: none;
-  transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease;
-}
-.upgrade-cta-btn:hover {
-  transform: translateY(-1px);
-  border-color: rgba(42,111,232, 0.7);
-  background: linear-gradient(var(--accent),var(--accent));
-}
-.upgrade-diamond {
-  font-size: 1rem;
-  line-height: 1;
-}
 
 /* Revenue and referral actions sit below Talk / Chat so they can grow the
    service without competing with the visitor's primary first action. */
-.setup-demo { margin: 28px auto 8px; text-align: center; }
-.setup-demo-title { margin: 0 0 12px; font-size: 1.05rem; font-weight: 700; }
-.setup-demo-frame {
-  position: relative; width: min(260px, 70vw); aspect-ratio: 9 / 16; margin: 0 auto;
-  border-radius: 24px; overflow: hidden; background: #0b0f1f;
-  border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 16px 50px rgba(0,0,0,0.45), 0 0 60px rgba(42,111,232,0.22);
-}
-.setup-demo-frame video { display: block; width: 100%; height: 100%; object-fit: cover; }
-.setup-demo-sound {
-  position: absolute; right: 10px; bottom: 10px; border: 0; border-radius: 999px; padding: 7px 12px;
-  font: inherit; font-size: 0.78rem; font-weight: 700; color: #fff; background: rgba(10,14,30,0.72); cursor: pointer;
-}
+
 .setup-growth {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -5415,17 +4474,7 @@ html.perf-lite .side-panel { box-shadow: none; }
   justify-content: flex-start;
   gap: 10px;
 }
-.tap-choice .tap-orb { margin: 0 auto; }
-.tap-choice-caption {
-  min-height: 32px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  text-align: center;
-  line-height: 1.25;
-}
 .tap-choice-divider { align-self: center; margin-bottom: 0; }
-.tap-choice-heading { margin-bottom: 8px; }
 @media (max-width: 520px) {
   .tap-choice { width: 158px; }
 }
@@ -5702,101 +4751,8 @@ html.perf-lite .side-panel { box-shadow: none; }
 }
 
 /* The sign-up card: what the new account is about to inherit. */
-.link-profile-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.link-profile-avatar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 52px;
-  height: 52px;
-  flex: 0 0 52px;
-  border-radius: 50%;
-  background: rgba(42,111,232, 0.2);
-  overflow: hidden;
-}
-
-.link-profile-card-text {
-  min-width: 0;
-  /* The account modal centers its text; this card is a profile summary and
-     reads as one only when it is left-aligned against the avatar. */
-  text-align: start;
-}
-
-.link-profile-kicker {
-  margin: 0;
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: var(--accent-2);
-}
-
-.link-profile-name {
-  margin: 2px 0 6px;
-  font-size: 16px;
-  font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.link-profile-body {
-  margin: 0;
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: var(--muted);
-}
-
-.link-profile-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.link-profile-chip {
-  padding: 4px 10px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
-  font-size: 11.5px;
-  color: var(--muted);
-}
 
 /* "Receive incoming calls", above the friends list it applies to. */
-.accept-calls-row {
-  margin-bottom: 12px;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.accept-calls-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.accept-calls-text strong {
-  font-size: 13.5px;
-  font-weight: 700;
-}
-
-.accept-calls-text small {
-  font-size: 11.5px;
-  color: var(--muted);
-}
 
 /* --- Settings rows: profile, Shop, Billing ---------------------------------
    Three tap targets at the top of Settings. Nothing they lead to can be
@@ -6216,10 +5172,6 @@ html.perf-lite .side-panel { box-shadow: none; }
 
 /* Empty states inside the side panels ran to the panel edge (and past it, on a
    narrow one). Give them the same gutter as everything else in the panel. */
-.side-panel .history-empty {
-  padding: 8px 14px;
-  line-height: 1.55;
-}
 
 /* --- "They dropped out" ----------------------------------------------------
    One card, used on the call screen and in a friend chat: a live red dot, who
@@ -6768,7 +5720,6 @@ html.perf-lite .side-panel { box-shadow: none; }
   outline-offset: 3px;
 }
 
-
 /* --- Public friend ID: yours, and add someone by theirs ------------------ */
 .friend-id-card {
   display: flex;
@@ -7090,34 +6041,10 @@ html.perf-lite .side-panel { box-shadow: none; }
 .tl-relation-chip:disabled { opacity: 0.5; cursor: default; }
 
 /* Friends filter: shown once the list is long enough to need one. */
-.tl-list-filter {
-  display: flex;
-  align-items: center;
-  gap: var(--tl-s2);
-  margin-bottom: var(--tl-s3);
-  padding: 0 var(--tl-s3);
-  min-height: 40px;
-  border: 1px solid var(--tl-line);
-  border-radius: var(--tl-r-pill);
-  background: color-mix(in srgb, var(--text) 4%, transparent);
-}
-.tl-list-filter.hidden { display: none; }
-.tl-list-filter svg { width: 16px; height: 16px; flex: none; color: var(--muted); }
-.tl-list-filter input {
-  flex: 1 1 auto;
-  min-width: 0;
-  border: 0;
-  background: none;
-  color: var(--text);
-  font: inherit;
-  font-size: 14px;
-}
-.tl-list-filter input:focus { outline: none; }
 
 /* People you've met, not yet added. */
 .tl-suggest { margin-top: var(--tl-s4); }
 .tl-suggest.hidden { display: none; }
-.tl-suggest-hint { font-size: 12.5px; margin-bottom: var(--tl-s2); }
 /* Quiet "×" at the end of a friend or people-you've-met row. */
 .tl-row-remove {
   flex: none;
@@ -7134,7 +6061,6 @@ html.perf-lite .side-panel { box-shadow: none; }
 }
 .tl-row-remove svg { width: 14px; height: 14px; }
 .tl-row-remove:hover { color: var(--text); background: color-mix(in srgb, var(--text) 8%, transparent); }
-.tl-suggest-list { display: flex; flex-direction: column; gap: var(--tl-s1); }
 .tl-suggest-item {
   display: flex;
   align-items: center;
@@ -7187,7 +6113,6 @@ html.perf-lite .side-panel { box-shadow: none; }
 }
 .tl-empty > .tl-empty-cta { margin-top: var(--tl-s3); }
 .tl-empty-cta { padding: 8px 18px; font-size: 13.5px; }
-#friendsList > .tl-empty-plain::before { content: none; }
 
 /* How you know someone, under their name on the profile. */
 .friend-profile-met {
@@ -7277,7 +6202,6 @@ html.perf-lite .side-panel { box-shadow: none; }
    in/out and the way to the rest of Settings > Profile. */
 .my-profile-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
 .my-profile-actions .btn { flex: 1 1 140px; padding: 12px 16px; }
-.my-profile-actions .my-profile-more { flex-basis: 100%; }
 
 /* My profile: the same layout as the app's Profile tab. */
 .my-profile .my-profile-card { padding: 8px 16px 20px; margin-bottom: 14px; border-radius: 24px; background: color-mix(in srgb, var(--text) 5%, transparent); gap: 2px; }

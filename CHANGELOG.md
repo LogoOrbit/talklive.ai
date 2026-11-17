@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-11-16 — Phone UI pass (web)
+
+- **Panels are full screens on a phone.** Friends, History, Filters and
+  Settings used to stop 51px short of the left edge. They now take the whole
+  width and change with a short rise and fade.
+- **The tab bar follows what is open.** It used to say "Home" under every
+  panel. Tapping a tab while another panel is open now switches straight to it
+  (one tap, not two). Settings counts as More.
+- **Home is one column.** The two actions, the support banner, Today's
+  question and the cards under the avatars were 296, 253 and 340px wide; they
+  now all run gutter to gutter. Today's question lost its dashed outline.
+- **Dialogs are bottom sheets on a phone** when they have nothing to type
+  (Before You Start, Shop, the avatar picker, confirmations). A dialog with a
+  text field stays centred so the keyboard does not cover it. All dialogs fade
+  and rise in; reduced-motion turns this off.
+- The Filters header sat 14px lower than the other panels' headers; fixed.
+- Removed 222 CSS rules that no page or script uses (`style.css`, `chat.css`,
+  `games.css`). Home CSS went from 98.8 to 96.3 KB gzipped with the new styles
+  included. Computed styles were compared before and after across 64 app
+  states (phone and desktop, dark and light): no differences.
+
 ## 2026-11-16 — Voice check v2, fairer matching, safety and messaging (web + server + Android 3.10.0 (129))
 
 **Voice check v2**
