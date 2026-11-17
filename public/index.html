@@ -811,12 +811,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               <input type="checkbox" id="prefVoiceChecked" />
               <span data-i18n="voiceCheckedOnly">Voice-checked only</span>
             </label>
-            <!-- What the gender filter matches on: one small link, the detail
-                 is a tap away rather than a paragraph in the way. -->
-            <p class="tl-filter-note" id="genderFilterNote">
-              <span class="sr-only" data-i18n="genderFilterNote">Matches people who picked that gender, voice-checked people first. The voice check is an estimate of how a voice sounds, not proof of anyone's gender.</span>
-              <a href="/privacy#gender" target="_blank" rel="noopener" data-i18n="genderFilterNoteLink">How this works</a>
-            </p>
           </section>
 
           <!-- 2. Speaks -->
@@ -824,7 +818,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             <label class="ui-h3 tl-filter-legend" for="prefLangSelect">
               <span data-i18n="speaks">Speaks</span>
             </label>
-            <p class="tl-filter-hint" data-i18n="speaksHint">Match with people who use TalkLive in this language.</p>
             <select id="prefLangSelect" class="tl-filter-input tl-filter-select"></select>
           </section>
 
@@ -837,7 +830,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               <span data-i18n="onlyFromTitle">Preferred countries</span>
               <span class="tl-filter-count" id="includeCountryCount"></span>
             </div>
-            <p class="tl-filter-hint" data-i18n="onlyFromHint">We match you with people from here first.</p>
             <div class="country-multiselect">
               <div class="country-search-wrap">
                 <input type="text" id="includeCountrySearch" class="tl-filter-input" data-i18n-placeholder="searchCountry" data-i18n-aria="onlyFromTitle" placeholder="Search country…" autocomplete="off" />
@@ -860,7 +852,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               <span class="tl-filter-count" id="excludeCountryCount"></span>
               <span class="tl-filter-caret" aria-hidden="true"></span>
             </summary>
-            <p class="tl-filter-hint" data-i18n="neverFromHint">We skip people from here.</p>
             <div class="country-multiselect">
               <div class="country-search-wrap">
                 <input type="text" id="excludeCountrySearch" class="tl-filter-input" data-i18n-placeholder="searchCountry" data-i18n-aria="neverFromTitle" placeholder="Search country…" autocomplete="off" />
@@ -875,9 +866,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           <section class="tl-filter-block">
             <div role="heading" aria-level="3" class="ui-h3 tl-filter-legend">
               <span data-i18n="interests">Interests</span>
-              <span class="tl-filter-optional" data-i18n="optional">(optional)</span>
             </div>
-            <p class="tl-filter-hint" data-i18n="interestsHint">We pair you with people who like the same things.</p>
             <div class="interests-picker">
               <div class="interest-input-wrap">
                 <input type="text" id="interestInput" class="tl-filter-input" data-i18n-placeholder="interestPlaceholder" data-i18n-aria="interests" placeholder="Type an interest…" name="tl-interest-nofill" autocomplete="one-time-code" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" maxlength="20" />
@@ -887,8 +876,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               <div id="interestTags" class="interest-tags tl-filter-chips"></div>
             </div>
           </section>
-
-          <p class="tl-filter-foot" data-i18n="filtersNote">No filters = fully random. If no one fits for a while, we match you with anyone so you never wait too long.</p>
 
         </div>
       </div>

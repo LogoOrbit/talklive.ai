@@ -1283,9 +1283,7 @@ function renderQuickPicks() {
       btn.type = 'button';
       btn.className = 'tl-quick-chip';
       btn.dataset.country = code;
-      const n = counts[code] || 0;
-      btn.innerHTML = `${getFlagImg(code, 15)} ${escapeHtml(getCountryName(code))}`
-        + (n ? ` <span class="tl-quick-count">${escapeHtml(t('onlineShort', { n }))}</span>` : '');
+      btn.innerHTML = `${getFlagImg(code, 15)} ${escapeHtml(getCountryName(code))}`;
       includeCountryQuickEl.appendChild(btn);
     });
   }
