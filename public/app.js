@@ -1848,7 +1848,7 @@ function closeQuickSettings() {
 // page over its size budget); it is fetched once the page is idle, or on the
 // first tap of the gear if that comes sooner.
 // It also brings settings.css, which the screen waits for (html.tl-set-css).
-var SETTINGS_PANEL_SRC = '/settings-panel.js?v=a45fc78ea2';
+var SETTINGS_PANEL_SRC = '/settings-panel.js?v=22c66f6906';
 // Top 3 films on profiles (fav-films.js), loaded when a profile first opens.
 var filmsLoading = null;
 function withFilms(cb) {
@@ -3515,7 +3515,7 @@ function accountUi() {
       css.href = '/account-ui.css?v=00ddfccc11';
       document.head.appendChild(css);
       const js = document.createElement('script');
-      js.src = '/account-ui.js?v=15ce527ab1';
+      js.src = '/account-ui.js?v=409f0ed008';
       js.onload = () => resolve(window.AccountUI);
       js.onerror = (e) => { accountUiP = null; reject(e); };
       document.head.appendChild(js);
@@ -12103,7 +12103,7 @@ socket.on('friend-online', ({ clientId, username, countryCode, country } = {}) =
 // a call, so it loads once the page is up and stays out of the first paint.
 window.addEventListener('load', () => {
   const s = document.createElement('script');
-  s.src = '/engage.js?v=c6a693be56';
+  s.src = '/engage.js?v=019d42df74';
   s.async = true;
   document.head.appendChild(s);
 });

@@ -492,13 +492,13 @@
 
   // Animals and movie characters in one row, as avatar ids.
   function allFaceIds() {
-    var a = Animals ? Animals.list.map(function (x) { return 'a:' + x.id; }) : [];
-    var c = Characters ? Characters.ids.map(function (id) { return 'c:' + id; }) : [];
+    var a = Animals && Animals.pickerIds ? Animals.pickerIds.map(function (id) { return 'a:' + id; }) : [];
+    var c = Characters && Characters.pickerIds ? Characters.pickerIds.concat(Characters.specialIds).map(function (id) { return 'c:' + id; }) : [];
     return a.concat(c);
   }
   function animalPreviewIds() {
-    var a = Animals ? Animals.list.map(function (x) { return 'a:' + x.id; }).slice(0, 4) : [];
-    var c = Characters ? Characters.ids.slice(0, ANIMAL_PREVIEW_COUNT - 4).map(function (id) { return 'c:' + id; }) : [];
+    var a = Animals && Animals.pickerIds ? Animals.pickerIds.slice(0, 4).map(function (id) { return 'a:' + id; }) : [];
+    var c = Characters && Characters.pickerIds ? Characters.pickerIds.slice(0, ANIMAL_PREVIEW_COUNT - 4).map(function (id) { return 'c:' + id; }) : [];
     var ids = a.concat(c);
     var mine = storedAvatar();
     if (mine && (animalOf(mine) || characterOf(mine)) && ids.indexOf(mine) === -1) ids[ids.length - 1] = mine;
@@ -511,9 +511,22 @@
     var s = t('premiumFaceLocked');
     return s === 'premiumFaceLocked' ? 'This avatar comes with TalkLive Plus. Five animals and five characters are free.' : s;
   }
+  // The three level faces are unlocked by points, never by Plus.
+  var myTier = 'none';
+  var TIER_RANK = { none: 0, silver: 1, gold: 2, diamond: 3 };
+  function specialOf(id) { var c = characterOf(id); return c && Characters.specials ? Characters.specials[c] || null : null; }
+  function specialOpen(id) { var tier = specialOf(id); return !tier || id === storedAvatar() || TIER_RANK[myTier] >= TIER_RANK[tier]; }
   function faceOk(id) {
+    if (specialOf(id)) return specialOpen(id);
     return Animals.isFree(id) || isPremiumUser || id === storedAvatar()
       || !!(faceLook && (!faceLook.face || faceLook.face === id));
+  }
+  function specialHint(id) {
+    var tier = specialOf(id) || '';
+    var k = 'tier_' + tier;
+    var name = t(k) === k ? tier.charAt(0).toUpperCase() + tier.slice(1) : t(k);
+    var msg = t('specialFaceLocked', { tier: name });
+    return msg === 'specialFaceLocked' ? 'Reach ' + name + ' in the app to unlock this avatar.' : msg;
   }
   function faceTile(id) {
     var mine = storedAvatar();
@@ -525,7 +538,10 @@
     btn.dataset.avatar = id;
     btn.setAttribute('role', 'radio');
     btn.setAttribute('aria-checked', mine === id ? 'true' : 'false');
-    if (!Animals.isFree(id)) {
+    if (specialOf(id)) {
+      btn.classList.add('tl-special-face');
+      if (!specialOpen(id)) { btn.classList.add('is-locked'); btn.dataset.lock = '\u{1F512}'; btn.title = specialHint(id); }
+    } else if (!Animals.isFree(id)) {
       btn.classList.add('tl-plus-face');
       btn.dataset.lock = faceOk(id) ? '\u{1F48E}' : '\u{1F512}';
     }
@@ -620,7 +636,7 @@
         renderAnimalPicker();
         return;
       }
-      if (!faceOk(option.dataset.avatar)) { flashSearchNote(faceLockedNote()); return; }
+      if (!faceOk(option.dataset.avatar)) { flashSearchNote(specialOf(option.dataset.avatar) ? specialHint(option.dataset.avatar) : faceLockedNote()); return; }
       setMyAvatarChoice(option.dataset.avatar);
     });
     renderAnimalPicker();
@@ -914,6 +930,7 @@
   socket.on('premium-status', function (data) {
     isPremiumUser = !!(data && data.premium);
     faceLook = data && data.look ? data.look : null;
+    followServerFace(data);
     renderAnimalPicker();
     document.documentElement.classList.toggle('tl-free', !isPremiumUser);
     clearTimeout(themeRevertTimer);
@@ -1426,6 +1443,7 @@
       else if (kind === 'turn') playBlip([660, 990], 0.11, 0.06);
       else if (kind === 'win') { playBlip([660, 990], 0.12, 0.06); setTimeout(function () { playBlip([880, 1320], 0.16, 0.06); }, 110); }
       else if (kind === 'lose') playBlip([420, 240], 0.22, 0.05);
+      else if (kind === 'draw') { playBlip([520, 520], 0.12, 0.05); setTimeout(function () { playBlip([520, 520], 0.16, 0.05); }, 150); }
       else if (kind === 'invite') playBlip([880, 1170], 0.1, 0.05);
     },
   }) : null;
@@ -1553,7 +1571,7 @@
     if (!settingsPanelLoading) {
       settingsPanelLoading = [];
       var s = document.createElement('script');
-      s.src = '/settings-panel.js?v=a45fc78ea2';
+      s.src = '/settings-panel.js?v=22c66f6906';
       s.async = true;
       s.onload = function () {
         window.TalkLiveSettingsPanel.ready.then(function () {
@@ -3058,6 +3076,32 @@
     if (profileBox) closeModal(profileBox);
     profileId = null;
   }
+  // Their cover behind the header and their top badge beside the name; both
+  // modules load only when a profile actually has one.
+  var lazyMods = {};
+  function lazyMod(name, src) {
+    if (!lazyMods[name]) {
+      lazyMods[name] = new Promise(function (ok, fail) {
+        var el = document.createElement('script');
+        el.src = src; el.onload = ok; el.onerror = function () { delete lazyMods[name]; fail(); };
+        document.head.appendChild(el);
+      });
+    }
+    return lazyMods[name];
+  }
+  function paintProfileExtras(box, p) {
+    var cover = box.querySelector('.ps-cover');
+    var nameEl = box.querySelector('.ps-name');
+    Array.prototype.forEach.call(nameEl.querySelectorAll('.tl-badge-chip'), function (n) { n.remove(); });
+    if (cover && (p.cover || window.TalkLiveCovers)) {
+      lazyMod('covers', '/covers.js?v=74e8325a84').then(function () { window.TalkLiveCovers.apply(cover, p.cover || null); }, function () {});
+    }
+    if (p.badges && (p.badges.top || (p.badges.earned && p.badges.earned.length))) {
+      lazyMod('badges', '/badges.js?v=3acf3c4282').then(function () {
+        if (!nameEl.querySelector('.tl-badge-chip')) nameEl.insertAdjacentHTML('beforeend', window.TalkLiveBadges.chip(p.badges, 18));
+      }, function () {});
+    }
+  }
   function openProfile(clientId) {
     if (!clientId) return;
     if (!profileBox) {
@@ -3066,7 +3110,7 @@
       profileBox.innerHTML =
         '<div class="modal-box profile-sheet" role="dialog" aria-modal="true" aria-labelledby="psName">' +
           '<div class="modal-header"><span></span><button type="button" class="modal-close" data-act="close">&times;</button></div>' +
-          '<div class="modal-body"><div class="ps-face"></div><h2 id="psName" class="ps-name"></h2>' +
+          '<div class="modal-body"><div class="ps-cover" aria-hidden="true"></div><div class="ps-face"></div><h2 id="psName" class="ps-name"></h2>' +
           '<p class="ps-id hidden"></p><p class="ps-real hidden"></p><p class="ps-status"></p><div class="ps-films" hidden></div>' +
           '<div class="ps-row ps-main"></div><div class="ps-row ps-manage"></div><div class="ps-row ps-safety"></div></div></div>';
       document.body.appendChild(profileBox);
@@ -3093,6 +3137,7 @@
     var live = isLivePartner(id);
     profileBox.querySelector('.ps-face').innerHTML = faceHtml(p, 72);
     profileBox.querySelector('.ps-name').innerHTML = getFlagImg(p.countryCode, 18) + ' ' + escapeHtml(friendLabel(p) || p.username || t('someone'));
+    paintProfileExtras(profileBox, p);
     // Their public ID, with a copy button.
     var idLine = profileBox.querySelector('.ps-id');
     idLine.classList.toggle('hidden', !p.friendId);
@@ -3559,7 +3604,24 @@
 
   socket.on('profile', function (p) {
     myProfile = { username: p.username, country: p.country, countryCode: p.countryCode };
+    // Level faces unlock by points; an older server has no such event and the faces stay locked.
+    try {
+      socket.emit('progress-get', function (r) { if (r && r.tier) { myTier = r.tier; renderAnimalPicker(); } });
+    } catch (e) { /* not supported */ }
+    followServerFace(p);
   });
+  socket.on('progress', function (r) { if (r && r.tier) { myTier = r.tier; renderAnimalPicker(); } });
+  // The server decides which face is worn (a Plus face is swapped for a free one
+  // when Plus ends); follow it.
+  function followServerFace(o) {
+    if (!o || typeof o.avatar !== 'string' || o.avatar === storedAvatar()) return;
+    if (!animalOf(o.avatar) && !characterOf(o.avatar)) return;
+    try { localStorage.setItem('talklive_avatar', o.avatar); } catch (e) { /* storage blocked */ }
+    myAnimal = animalOf(o.avatar);
+    if (Animals) Animals.store(myAnimal);
+    renderAnimalPicker();
+  }
+  socket.on('state-sync', followServerFace);
 
   // The capsule leaves its waiting state the moment a real number arrives, and
   // the number itself is re-animated on every change so the badge reads as

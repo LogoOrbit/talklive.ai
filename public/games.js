@@ -16,7 +16,7 @@
 //   partnerName: () => string,  // display name of the partner, or ''
 //   myName: () => string,       // my own display name, or ''
 //   vibrate, openModal, closeModal,   // the page's own helpers
-//   sound: (kind) => {},        // 'move' | 'turn' | 'win' | 'lose' | 'invite'
+//   sound: (kind) => {},        // 'move' | 'tap' | 'turn' | 'win' | 'lose' | 'draw' | 'invite'
 // }) -> { reset, partnerGone, partnerLeft, attemptClose, isOpen, isPlaying,
 //         isActive, open }
 (function () {
@@ -482,6 +482,7 @@
             tttOverAnnounced = true;
             if (tttState.winner === myPlayerIndex) { sound('win'); buzz([40, 60, 40, 60, 80]); }
             else if (tttState.winner !== 'draw') { sound('lose'); }
+            else sound('draw');
           }
         } else {
           const yourTurnKey = activeGame === 'dab' ? 'dabYourTurn' : 'tttYourTurn';

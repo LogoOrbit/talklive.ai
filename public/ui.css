@@ -3673,3 +3673,13 @@ button.tl-filter-summary:focus-visible { outline: 2px solid var(--accent-2); out
   .tl-nav-item.is-current .tl-nav-icon { animation: none !important; }
   body:has(.tl-nav) .side-panel.tl-panel { transition: none; }
 }
+
+/* Special faces (Silver, Gold, Diamond): locked until the level is reached. */
+.animal-option.tl-special-face,
+.avatar-option.tl-special-face { position: relative; box-shadow: inset 0 0 0 1.5px rgba(0, 212, 255, 0.55); }
+.animal-option.tl-special-face.selected,
+.avatar-option.tl-special-face.selected { box-shadow: none; }
+.animal-option.tl-special-face.is-locked > svg,
+.avatar-option.tl-special-face.is-locked .avatar-animal { filter: grayscale(0.85) brightness(0.8); }
+.animal-option.tl-special-face::after,
+.avatar-option.tl-special-face::after { content: attr(data-lock); position: absolute; top: 4px; right: 6px; font-size: 12px; }

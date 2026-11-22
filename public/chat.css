@@ -1535,3 +1535,8 @@ summary:active {
 @keyframes presencePulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.7); } }
 @media (prefers-reduced-motion: reduce) { .msg.system.system-presence:not(.is-back)::before { animation: none; } }
 .presence-leave { margin-inline-start: 10px; padding: 3px 12px; border: 1px solid var(--danger); border-radius: 99px; background: transparent; color: var(--danger); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+
+/* Their cover behind the profile sheet's header. */
+.profile-sheet .ps-cover { height: 84px; margin: -4px -20px 0; border-radius: 14px 14px 0 0; background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+.profile-sheet .ps-face { margin-top: -40px; position: relative; }
+.profile-sheet .ps-name { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }

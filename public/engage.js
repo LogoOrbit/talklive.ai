@@ -466,10 +466,12 @@
     window[name] = function () { var r = orig.apply(this, arguments); goldFriends(); if (name === 'renderHistory') lockedHistory(); return r; };
   });
 
-  // Only five animals and five characters are free (TalkLiveAnimals.FREE_FACES,
-  // mirrored by the server); every other face is Plus.
+  // Only three animals and three characters are free (TalkLiveAnimals.FREE_FACES,
+  // mirrored by the server); every other offered face is Plus, except the
+  // three special faces, which the level unlocks and app.js locks itself.
   var FACE_BTN = '.animal-option[data-avatar], .avatar-option[data-avatar]';
-  function isPlusFace(id) { return /^[ac]:/.test(id) && !window.TalkLiveAnimals.isFree(id); }
+  function isSpecialFace(id) { return /^c:(silver_knight|gold_phoenix|diamond_legend)$/.test(id); }
+  function isPlusFace(id) { return /^[ac]:/.test(id) && !isSpecialFace(id) && !window.TalkLiveAnimals.isFree(id); }
   // The invite reward unlocks one legendary face: the first one picked.
   var look = null;
   socket.on('premium-status', function (st) { look = st && st.look ? st.look : null; markFaces(); });

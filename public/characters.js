@@ -338,6 +338,128 @@
           + eyes() + line('M25.5 36c4 4 9 4 13 0', '#dc2626', 2) + c(32, 33.5, 3, '#ef4444');
       },
     },
+
+    // --- Special faces: unlocked by level (Silver, Gold, Diamond), never by Plus. ---
+    {
+      id: 'silver_knight', name: 'Silver Knight', special: 'silver',
+      art: function () {
+        return '<defs>'
+          + '<linearGradient id="tlsk-h" x1="0" x2="1"><stop offset="0" stop-color="#f8fafc"/><stop offset=".45" stop-color="#cbd5e1"/><stop offset="1" stop-color="#64748b"/></linearGradient>'
+          + '<linearGradient id="tlsk-b" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#e2e8f0"/><stop offset="1" stop-color="#7b8aa0"/></linearGradient>'
+          + '<radialGradient id="tlsk-g" cx=".5" cy=".4" r=".6"><stop offset="0" stop-color="#60a5fa" stop-opacity=".7"/><stop offset="1" stop-color="#60a5fa" stop-opacity="0"/></radialGradient>'
+          + '<clipPath id="tlsk-k"><circle cx="32" cy="32" r="32"/></clipPath></defs>'
+          + bg('#1b2d54') + c(32, 30, 30, 'url(#tlsk-g)')
+          + '<g clip-path="url(#tlsk-k)">'
+          // plume
+          + p('M35 13c3-9 14-11 18-5-4-1-8 0-10 3 5 0 8 3 9 7-6-3-11-3-14 0z', '#38bdf8')
+          + p('M37 13c3-5 9-7 13-6-4 1-7 3-8 6z', '#bae6fd', ' opacity=".7"')
+          // shoulders and chest plate
+          + p('M5 59c0-9 6-15 15-17l5-1 1 9c-5 2-8 5-9 10z', 'url(#tlsk-b)')
+          + p('M59 59c0-9-6-15-15-17l-5-1-1 9c5 2 8 5 9 10z', 'url(#tlsk-b)')
+          + p('M16 41c4-3 9-4 16-4s12 1 16 4c3 5 5 11 5 19a32 32 0 0 1-42 0c0-8 2-14 5-19z', 'url(#tlsk-b)')
+          + p('M23 44l9 15 9-15c-3 1-6 1-9 1s-6 0-9-1z', '#f1f5f9')
+          + line('M32 45v13', '#94a3b8', 1)
+          + c(32, 52, 2.6, '#1e3a8a') + c(32, 52, 1.6, '#38bdf8') + c(31.4, 51.3, .6, '#ffffff')
+          + line('M8 52l9-4M56 52l-9-4', '#ffffff', 1) 
+          + c(13, 47, 1.1, '#475569') + c(51, 47, 1.1, '#475569')
+          // gorget
+          + p('M22 41c3 3 6 4 10 4s7-1 10-4l1 5c-3 3-7 4-11 4s-8-1-11-4z', '#94a3b8')
+          // helmet
+          + p('M16 33c0-12 6-20 16-20s16 8 16 20v8c0 3-2 5-5 5H21c-3 0-5-2-5-5z', 'url(#tlsk-h)')
+          + p('M30.5 13h3v16h-3z', '#f1f5f9')
+          + line('M32 13.5v15', '#94a3b8', .9)
+          + p('M19 28h26v5.5c0 1-1 2-2 2h-5.5v-3h-11v3H21c-1 0-2-1-2-2z', '#0b1220')
+          + line('M23 31h6M35 31h6', '#7dd3fc', 1.6)
+          + line('M19.5 28.2h25', '#e2e8f0', 1)
+          + c(35, 40, .8, '#475569') + c(38, 40, .8, '#475569') + c(41, 40, .8, '#475569')
+          + c(23, 40, .8, '#475569') + c(26, 40, .8, '#475569') + c(29, 40, .8, '#475569')
+          + c(18.5, 22, 1, '#64748b') + c(45.5, 22, 1, '#64748b')
+          + line('M21 18c2-3 5-4 8-4.5', '#ffffff', 1.3)
+          + '<path class="tl-twk" d="M50 20l1.1 2.6 2.6 1.1-2.6 1.1L50 27.4l-1.1-2.6-2.6-1.1 2.6-1.1z" fill="#e0f2fe"/>'
+          + '<path class="tl-twk tl-twk2" d="M12 16l.8 1.9 1.9.8-1.9.8L12 21.4l-.8-1.9-1.9-.8 1.9-.8z" fill="#bae6fd"/></g>';
+      },
+    },
+    {
+      id: 'gold_phoenix', name: 'Gold Phoenix', special: 'gold',
+      art: function () {
+        function half() {
+          return p('M31 41C21 40 9 34 4 19c7 3 11 4.6 16 3.4-4-2.8-7-6-8.6-11 8 3.6 13 8 19.6 15z', '#f59e0b')
+            + p('M30 47C20 50 9 48 3 39c6 1 11 0 16-2.4z', '#fb923c')
+            + p('M30 37C23 34 15 29 11 21c6 2 11 4 17 9z', '#fde047', ' opacity=".85"')
+            + line('M29 40C21 38 12 33 7 23', '#b45309', 1);
+        }
+        function mirror(str) { return '<g transform="matrix(-1 0 0 1 64 0)">' + str + '</g>'; }
+        return '<defs>'
+          + '<linearGradient id="tlgp-h" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fef08a"/><stop offset=".6" stop-color="#fbbf24"/><stop offset="1" stop-color="#f97316"/></linearGradient>'
+          + '<radialGradient id="tlgp-g" cx=".5" cy=".45" r=".6"><stop offset="0" stop-color="#fbbf24" stop-opacity=".75"/><stop offset="1" stop-color="#fbbf24" stop-opacity="0"/></radialGradient>'
+          + '<clipPath id="tlgp-k"><circle cx="32" cy="32" r="32"/></clipPath></defs>'
+          + bg('#6b1f0e') + c(32, 32, 31, 'url(#tlgp-g)')
+          + '<g clip-path="url(#tlgp-k)">'
+          + half() + mirror(half())
+          // flame crest
+          + p('M32 2c4 6 3 10 0 13-3-3-4-7 0-13z', '#fde047')
+          + p('M25 6c4 4 4 9 2 13-4-3-5-8-2-13z', '#fb923c')
+          + p('M39 6c-4 4-4 9-2 13 4-3 5-8 2-13z', '#fb923c')
+          + p('M20 12c3 3 4 7 3 11-3-2-5-6-3-11zM44 12c-3 3-4 7-3 11 3-2 5-6 3-11z', '#ef4444')
+          // chest feathers
+          + p('M18 59c2-8 7-12 14-12s12 4 14 12a32 32 0 0 1-28 0z', '#ea580c')
+          + line('M22 56q4-4 6 0M28 58q4-4 8 0M36 56q4-4 6 0M26 52q3-3 6 0M32 53q3-3 6 0', '#fde047', 1.3)
+          // head
+          + p('M32 14c9 0 14 6 14 15 0 8-6 15-14 17-8-2-14-9-14-17 0-9 5-15 14-15z', 'url(#tlgp-h)')
+          + e(32, 35, 8.5, 7, '#fef3c7')
+          + p('M27.5 33.5h9L32 43z', '#ea580c')
+          + p('M28.6 34.4h6.8L32 38z', '#fb923c')
+          + line('M29.5 38.5h5', '#9a3412', 1)
+          + line('M20.5 23.5l7 3M43.5 23.5l-7 3', '#7c2d12', 2)
+          + c(25.5, 29.5, 2.6, '#7c1d12') + c(38.5, 29.5, 2.6, '#7c1d12')
+          + c(25.5, 29.5, 1.2, '#fde047') + c(38.5, 29.5, 1.2, '#fde047')
+          + c(26.3, 28.6, .8, '#ffffff') + c(39.3, 28.6, .8, '#ffffff')
+          + p('M18 32l-3 3 4 .5zM46 32l3 3-4 .5z', '#f59e0b')
+          + '<circle class="tl-twk" cx="9" cy="50" r="1.4" fill="#fde047"/><circle class="tl-twk tl-twk2" cx="55" cy="49" r="1.2" fill="#fef9c3"/><circle class="tl-twk" cx="13" cy="10" r="1" fill="#fff7ed"/></g>';
+      },
+    },
+    {
+      id: 'diamond_legend', name: 'Diamond Legend', special: 'diamond',
+      art: function () {
+        function spark(x, y, r, cls) {
+          return '<path class="' + cls + '" d="M' + x + ' ' + (y - r) + 'Q' + x + ' ' + y + ' ' + (x + r) + ' ' + y + 'Q' + x + ' ' + y + ' ' + x + ' ' + (y + r)
+            + 'Q' + x + ' ' + y + ' ' + (x - r) + ' ' + y + 'Q' + x + ' ' + y + ' ' + x + ' ' + (y - r) + 'z" fill="#e0f7ff"/>';
+        }
+        return '<defs>'
+          + '<linearGradient id="tldl-c" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#ecfeff"/><stop offset=".5" stop-color="#67e8f9"/><stop offset="1" stop-color="#3b82f6"/></linearGradient>'
+          + '<radialGradient id="tldl-g" cx=".5" cy=".4" r=".62"><stop offset="0" stop-color="#22d3ee" stop-opacity=".6"/><stop offset="1" stop-color="#22d3ee" stop-opacity="0"/></radialGradient>'
+          + '<clipPath id="tldl-k"><circle cx="32" cy="32" r="32"/></clipPath></defs>'
+          + bg('#0a1d4a') + c(32, 30, 31, 'url(#tldl-g)')
+          + '<g clip-path="url(#tldl-k)">'
+          + spark(8, 36, 4, 'tl-twk') + spark(57, 30, 3.4, 'tl-twk tl-twk2') + spark(54, 52, 2.6, 'tl-twk')
+          // ice collar and shoulders
+          + body('#1d4ed8')
+          + p('M14 56l4-11 8 5-3 10zM50 56l-4-11-8 5 3 10z', 'url(#tldl-c)')
+          + p('M21 44l11 14 11-14-5-2-6 5-6-5z', '#e0f2fe')
+          + line('M32 47v10M26.5 49l5.5 8M37.5 49l-5.5 8', '#7dd3fc', .9)
+          + c(32, 52.5, 2, '#ffffff') + c(32, 52.5, 1, '#22d3ee')
+          // face
+          + face('#f1d3b3')
+          + p('M26 36c2 1.8 4 2.6 6 2.6s4-.8 6-2.6c-1 3-3.6 4.4-6 4.4s-5-1.4-6-4.4z', '#e7b896', ' opacity=".55"')
+          + c(27.5, 31, 2, '#0e7490') + c(36.5, 31, 2, '#0e7490')
+          + c(27.5, 31, 1, INK) + c(36.5, 31, 1, INK)
+          + c(28.2, 30.2, .7, '#ffffff') + c(37.2, 30.2, .7, '#ffffff')
+          + line('M24.8 27.2l5-1M39.2 27.2l-5-1', '#475569', 1.2)
+          + line('M28.5 36.4c2 1.4 5 1.4 7 0', '#9f4a3a', 1.3)
+          // swept silver hair
+          + p('M19.5 30c-3-12 4-19 12.5-19s15.5 7 12.5 19c-1.5-5-4-8-8-9.4-3 2.8-9 5-17 9.4z', '#e2e8f0')
+          + line('M23.5 19c3-3 7-4.6 11-4.4', '#ffffff', 1.3)
+          // diamond crown
+          + p('M20 21l3-8 4.4 5.6L32 10l4.6 8.6L41 13l3 8c-4 2-8 3-12 3s-8-1-12-3z', 'url(#tldl-c)')
+          + line('M20 21c4 2 8 3 12 3s8-1 12-3', '#ffffff', .8)
+          + p('M32 3.5l4.6 5.4L32 16l-4.6-7.1z', '#ffffff')
+          + p('M27.4 8.9h9.2L32 16z', '#bae6fd')
+          + p('M32 3.5l-2.4 5.4h4.8z', '#f0fdff')
+          + line('M27.4 8.9L32 16l4.6-7.1M32 3.5v12.5', '#38bdf8', .6)
+          + c(23, 17.2, 1.3, '#22d3ee') + c(41, 17.2, 1.3, '#22d3ee')
+          + spark(32, 3.5, 2.4, 'tl-twk') + '</g>';
+      },
+    },
   ];
 
   var BY_ID = {};
@@ -354,6 +476,16 @@
     var host = document.createElement('div');
     host.setAttribute('aria-hidden', 'true');
     host.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+    // Special faces twinkle a little; the sparkles are plain elements, so the
+    // reduced-motion query switches them off.
+    if (!document.getElementById('tlTwkCss')) {
+      var st = document.createElement('style');
+      st.id = 'tlTwkCss';
+      st.textContent = '.tl-twk{animation:tlTwk 2.8s ease-in-out infinite;transform-box:fill-box;transform-origin:center}'
+        + '.tl-twk2{animation-delay:1.3s}@keyframes tlTwk{0%,100%{opacity:.35;transform:scale(.7)}50%{opacity:1;transform:scale(1.15)}}'
+        + '@media (prefers-reduced-motion:reduce){.tl-twk{animation:none;opacity:1}}';
+      document.head.appendChild(st);
+    }
     host.innerHTML = '<svg id="' + SPRITE_ID + '" xmlns="http://www.w3.org/2000/svg">' + symbols + '</svg>';
     (document.body || document.documentElement).appendChild(host);
     spriteInstalled = true;
@@ -392,8 +524,17 @@
       + '" style="width:' + size + 'px;height:' + size + 'px">' + (plus ? '<i class="tl-sc"></i>' : '') + icon(id, size) + '</span>';
   }
 
+  // What the pickers offer (spec section 1): three free, five Plus, then the
+  // three level-locked special faces. Every other character stays valid for
+  // whoever already wears it.
+  var PICKER_IDS = ['wizard', 'pirate', 'robot', 'detective', 'ninja', 'warrior', 'gamer', 'artist'];
+  var SPECIALS = { silver_knight: 'silver', gold_phoenix: 'gold', diamond_legend: 'diamond' };
+
   global.TalkLiveCharacters = {
     list: LIST,
+    pickerIds: PICKER_IDS,
+    specials: SPECIALS,
+    specialIds: Object.keys(SPECIALS),
     ids: LIST.map(function (ch) { return ch.id; }),
     has: function (id) { return !!BY_ID[id]; },
     installSprite: installSprite,
