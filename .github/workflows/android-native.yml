@@ -55,6 +55,19 @@ jobs:
         working-directory: android-native
         run: ./gradlew --no-daemon assembleDebug
 
+      # The real, optimised app (minified, phone chips only) as a test install:
+      # the size people actually download, signed with the test key so it
+      # installs next to the Play Store app.
+      - name: Build optimised test APK
+        working-directory: android-native
+        run: ./gradlew --no-daemon assembleRelease -PtestBuild -PabiSplit
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: talklive-optimised-test
+          path: android-native/app/build/outputs/apk/release/*-arm64-v8a-release*.apk
+          retention-days: 14
+
       # Play Store bundle, signed with the same upload key as the current app
       # (secrets ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD, as in
       # android.yml). Only on manual runs: Actions > Android native app > Run workflow.
