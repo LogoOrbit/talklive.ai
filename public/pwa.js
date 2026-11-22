@@ -77,8 +77,8 @@
     // Suppress Chrome's own mini-infobar so the prompt can be shown at a moment
     // the user is receptive rather than the moment the page loads.
     e.preventDefault();
+    // Kept for the menu: the install card is no longer shown on its own.
     deferredPrompt = e;
-    maybeShowInstallCard();
   });
 
   window.addEventListener('appinstalled', function () {

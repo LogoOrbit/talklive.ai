@@ -147,7 +147,7 @@ function head(page, wordCount) {
 ${preloads}
 <link rel="stylesheet" href="/journal.css?v=${S.CSS_VERSION}" />
 <style>${BASE_CSS}${c.css}${S.ctaVars(c.slug)}</style>
-<script defer src="/pwa.js?v=d5bc87601a"></script>
+<script defer src="/pwa.js?v=81ef3ba884"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>`;
 }

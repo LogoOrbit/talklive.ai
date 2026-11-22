@@ -1163,8 +1163,24 @@
     if (data && data.away) {
       typingEl.classList.add('hidden');
       awayLine = presence(awayLine, 'chatPartnerAway', name, false);
+      if (!awayLine.querySelector('.presence-leave')) {
+        var lv = document.createElement('button');
+        lv.type = 'button';
+        lv.className = 'presence-leave';
+        lv.textContent = t('chatPartnerLeave');
+        lv.addEventListener('click', function () {
+          // Leaving while they are away: same as skipping them.
+          clearNextConfirm();
+          clearMessages();
+          goSearch(false);
+          socket.emit('skip');
+        });
+        awayLine.appendChild(lv);
+      }
     } else if (awayLine) {
       presence(awayLine, 'chatPartnerBack', name, true);
+      var oldLv = awayLine.querySelector('.presence-leave');
+      if (oldLv) oldLv.remove();
       awayLine = null;
     }
   });
@@ -3602,14 +3618,7 @@
     feedbackReplyLoad.then(function () { if (window.TalkLiveFeedbackReply) window.TalkLiveFeedbackReply.show(socket, r); });
   });
 
-  socket.on('rate-prompt', function (d) {
-    function show() { if (window.TalkLiveRate) window.TalkLiveRate.show(socket, d); }
-    if (window.TalkLiveRate) return show();
-    var s = document.createElement('script');
-    s.src = '/rate-prompt.js?v=8708a89e43';
-    s.onload = show;
-    document.head.appendChild(s);
-  });
+  // (The automatic 'rate-prompt' card is disabled: no unsolicited popups.)
   // Google Ads conversion: a visitor actually connected to someone. Once per
   // page load, so a long session of chats counts as one converted visitor.
   var adsConversionSent = false;
@@ -3791,7 +3800,7 @@
       clearNextConfirm();
       goSearch(false, t('statusChatEnded'));
     } else {
-      addMessage(reason === 'disconnected' ? t('chatPartnerDropped', { name: name }) : t('chatStageLeft'), 'system system-warn');
+      addMessage(reason === 'disconnected' ? t('chatPartnerDropped', { name: name }) : t('chatPartnerLeftChat', { name: name }), 'system system-warn');
     }
   }
   // (The input is re-enabled at the top of the 'matched' handler above, where
