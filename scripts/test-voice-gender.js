@@ -587,13 +587,14 @@ check('view: what the person\'s own device is told', () => {
 
 check('empty: a record is kept only while it still says something', () => {
   assert.strictEqual(vc.empty(null, NOW), true);
-  assert.strictEqual(vc.empty({ on: false, s: [], r: [], d: [] }, NOW), true);
-  assert.strictEqual(vc.empty({ on: true, s: [], r: [], d: [] }, NOW), false);
-  assert.strictEqual(vc.empty({ on: false, s: [[1, NOW]], r: [], d: [] }, NOW), false);
-  assert.strictEqual(vc.empty({ on: false, s: [[1, NOW - 200 * DAY]], r: [], d: [] }, NOW), true);
-  assert.strictEqual(vc.empty({ on: false, s: [], r: [NOW - 1000], d: [] }, NOW), false);
-  assert.strictEqual(vc.empty({ on: false, s: [], r: [], d: [], manual: 'male' }, NOW), false);
-  assert.strictEqual(vc.empty({ on: false, s: [], r: [], d: [], appeal: { state: 'open' } }, NOW), false);
+  // On is the default, so a bare "on" says nothing and a bare "off" does.
+  assert.strictEqual(vc.empty({ on: true, s: [], r: [], d: [] }, NOW), true);
+  assert.strictEqual(vc.empty({ on: false, s: [], r: [], d: [] }, NOW), false);
+  assert.strictEqual(vc.empty({ on: true, s: [[1, NOW]], r: [], d: [] }, NOW), false);
+  assert.strictEqual(vc.empty({ on: true, s: [[1, NOW - 200 * DAY]], r: [], d: [] }, NOW), true);
+  assert.strictEqual(vc.empty({ on: true, s: [], r: [NOW - 1000], d: [] }, NOW), false);
+  assert.strictEqual(vc.empty({ on: true, s: [], r: [], d: [], manual: 'male' }, NOW), false);
+  assert.strictEqual(vc.empty({ on: true, s: [], r: [], d: [], appeal: { state: 'open' } }, NOW), false);
   assert.strictEqual(vc.empty(vc.addDispute(null, 'A', NOW), NOW), false);
   assert.strictEqual(vc.empty(vc.addDispute(null, 'A', NOW - 31 * DAY), NOW), true);
 });
