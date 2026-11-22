@@ -376,7 +376,7 @@ class SocialRepository @Inject constructor(
         socket.emit("rename-friend", JSONObject().put("friendClientId", clientId).put("nickname", nickname.trim()))
     }
 
-    /** Looks someone up by their friend ID (asad#1234 or G-4RT9KQ). */
+    /** Looks someone up by their friend ID (alex#1234 or G-4RT9KQ). */
     suspend fun find(friendId: String): Result<FoundUser> {
         val res = request("find-by-friend-id", JSONObject().put("friendId", friendId.trim()), "find-by-friend-id-result")
             ?: return Result.failure(Exception("No connection. Try again."))

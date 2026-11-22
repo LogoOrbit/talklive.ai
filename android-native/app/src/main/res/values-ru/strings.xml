@@ -145,7 +145,7 @@
     <string name="call">Позвонить</string>
     <string name="your_friend_id">Ваш ID</string>
     <string name="share_id_text">Поговори со мной в TalkLive! Мой ID: %1$s  https://talklive.app</string>
-    <string name="friend_id_hint">ID друга, например asad#1234</string>
+    <string name="friend_id_hint">ID друга, например alex#1234</string>
     <string name="find">Найти</string>
     <string name="pin">Закрепить</string>
     <string name="unpin">Открепить</string>

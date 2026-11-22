@@ -145,7 +145,7 @@
     <string name="call">Chiama</string>
     <string name="your_friend_id">Il tuo ID</string>
     <string name="share_id_text">Parla con me su TalkLive! Il mio ID amico è %1$s  https://talklive.app</string>
-    <string name="friend_id_hint">ID amico, tipo asad#1234</string>
+    <string name="friend_id_hint">ID amico, tipo alex#1234</string>
     <string name="find">Trova</string>
     <string name="pin">Fissa in alto</string>
     <string name="unpin">Sblocca</string>

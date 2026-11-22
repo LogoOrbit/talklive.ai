@@ -145,7 +145,7 @@
     <string name="call">Telepon</string>
     <string name="your_friend_id">ID-mu</string>
     <string name="share_id_text">Ngobrol denganku di TalkLive! ID temanku %1$s  https://talklive.app</string>
-    <string name="friend_id_hint">ID teman, misalnya asad#1234</string>
+    <string name="friend_id_hint">ID teman, misalnya alex#1234</string>
     <string name="find">Cari</string>
     <string name="pin">Sematkan di atas</string>
     <string name="unpin">Lepas sematan</string>

@@ -145,7 +145,7 @@
     <string name="call">اتصال</string>
     <string name="your_friend_id">معرّفك</string>
     <string name="share_id_text">تحدّث معي على TalkLive! معرّفي هو %1$s  https://talklive.app</string>
-    <string name="friend_id_hint">معرّف الصديق، مثل asad#1234</string>
+    <string name="friend_id_hint">معرّف الصديق، مثل alex#1234</string>
     <string name="find">بحث</string>
     <string name="pin">تثبيت في الأعلى</string>
     <string name="unpin">إلغاء التثبيت</string>

@@ -145,7 +145,7 @@
     <string name="call">Ara</string>
     <string name="your_friend_id">Kimliğin</string>
     <string name="share_id_text">Benimle TalkLive\'da konuş! Arkadaş kimliğim %1$s  https://talklive.app</string>
-    <string name="friend_id_hint">Arkadaş kimliği, örn. asad#1234</string>
+    <string name="friend_id_hint">Arkadaş kimliği, örn. alex#1234</string>
     <string name="find">Bul</string>
     <string name="pin">Üste sabitle</string>
     <string name="unpin">Sabitlemeyi kaldır</string>

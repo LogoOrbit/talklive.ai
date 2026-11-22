@@ -306,7 +306,7 @@ let shuttingDown = false;
 let changedWhileShuttingDown = false;
 // Public friend ID -> usernameLower. Rebuilt from the accounts on every load.
 let friendIdIndex = new Map();
-// Chosen account IDs ("asad#1234", lowercase) -> usernameLower, and the
+// Chosen account IDs ("alex#1234", lowercase) -> usernameLower, and the
 // profile (clientId) each account owns -> usernameLower, so anyone's public
 // ID can be shown next to them. Both derived from the accounts, never stored.
 let handleIndex = new Map();
@@ -2756,7 +2756,7 @@ function saveAccount(usernameLower, account) {
     // ensureAccountFriendId). Like clientId, never carried by the in-memory
     // accounts Map, so it is always kept from the previous record.
     friendId: previous.friendId || null,
-    // The chosen, editable public ID ("asad#1234") - see setAccountHandle.
+    // The chosen, editable public ID ("alex#1234") - see setAccountHandle.
     handle: previous.handle || null,
     createdAt: previous.createdAt || Date.now(),
     // Date of birth given at sign-up (YYYY-MM-DD).

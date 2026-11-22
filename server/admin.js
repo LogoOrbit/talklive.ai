@@ -1098,6 +1098,8 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
         return {
           key,
           ...a,
+          handle: cred.handle || null,
+          friendId: cred.friendId || null,
           clientId: cred.clientId || a.clientId || null,
           email: (g && g.email) || cred.email || a.email || null,
           google: g && {
@@ -1175,6 +1177,8 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
       rows.push({
         clientId,
         account: key,
+        handle: cred.handle || '',
+        friendId: cred.friendId || '',
         username: a.username || key,
         name: g.name || a.nickname || '',
         method: a.method || '',
@@ -2113,12 +2117,14 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
     const groups = [];
     const push = (kind, label, items) => { if (items.length) groups.push({ kind, label, items }); };
 
+    const credOf = (key) => (store.data.accounts || {})[key] || {};
     push('accounts', 'Accounts', Object.entries(store.data.accountsRegistry)
-      .filter(([key, a]) => hit(key, a.username, a.nickname, a.country, a.city, a.ip, a.email, a.fullName))
+      .filter(([key, a]) => hit(key, a.username, a.nickname, a.country, a.city, a.ip, a.email, a.fullName,
+        credOf(key).handle, credOf(key).friendId, credOf(key).email, credOf(key).clientId))
       .slice(0, 12)
       .map(([key, a]) => ({
         title: a.username || key,
-        sub: [a.fullName || a.nickname, a.email, a.country, a.method === 'google' ? 'Google' : 'Password'].filter(Boolean).join(' · '),
+        sub: [credOf(key).handle, a.fullName || a.nickname, a.email, a.country, a.method === 'google' ? 'Google' : 'Password'].filter(Boolean).join(' · '),
         ts: a.createdAt || null,
       })));
 

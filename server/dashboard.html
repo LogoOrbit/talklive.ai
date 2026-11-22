@@ -3130,7 +3130,7 @@ async function viewAccounts(){
   const active7=all.filter(a=>a.lastSeen&&now-a.lastSeen<7*DAY).length;
 
   const q=accQ.trim().toLowerCase();
-  let rows=q?all.filter(a=>[a.username,a.key,a.nickname,a.country,a.city,a.ip,a.email,
+  let rows=q?all.filter(a=>[a.username,a.key,a.handle,a.friendId,a.clientId,a.nickname,a.country,a.city,a.ip,a.email,
     a.google&&a.google.name,a.google&&a.google.hostedDomain,a.google&&a.google.id]
     .some(v=>String(v||'').toLowerCase().includes(q))):all.slice();
   rows.sort((a,b)=>{
@@ -3232,7 +3232,7 @@ async function viewUsers(){
   const all=r.rows||[];
   const sum=(k)=>all.reduce((a,x)=>a+(x[k]||0),0);
   const q=usrQ.trim().toLowerCase();
-  const rows=q?all.filter(x=>[x.username,x.name,x.email,x.account,x.country,x.city,x.clientId].some(v=>String(v||'').toLowerCase().includes(q))):all.slice();
+  const rows=q?all.filter(x=>[x.username,x.handle,x.friendId,x.name,x.email,x.account,x.country,x.city,x.clientId].some(v=>String(v||'').toLowerCase().includes(q))):all.slice();
   rows.sort((a,b)=>{
     const va=a[usrSort],vb=b[usrSort];
     if(typeof va==='number'||typeof vb==='number')return ((va||0)-(vb||0))*usrDir;
@@ -3252,13 +3252,13 @@ async function viewUsers(){
   <div class="card anim"><h2>Users <span class="sub">${rows.length===all.length?num(all.length)+' total':num(rows.length)+' of '+num(all.length)+' shown'}${rows.length>500?' · first 500':''} · click a heading to sort, a row for the profile</span></h2>
   <div class="tbar">
     <div class="seg" id="usrWho">${[['accounts','Accounts'],['all','Everyone']].map(([k,l])=>`<button data-w="${k}" class="${usrWho===k?'on':''}">${l}</button>`).join('')}</div>
-    <input id="usrQ" class="grow" placeholder="Search name, email, username, country…" value="${esc(usrQ)}">
+    <input id="usrQ" class="grow" placeholder="Search ID (name#1234), name, email, username, country…" value="${esc(usrQ)}">
     ${usrQ?'<button class="lnk" id="usrClear">Clear</button>':''}
   </div>
   <div class="muted" style="font-size:.78rem;margin-bottom:10px">Talk time and calls are counted when a call or chat ends. Messages are the chat messages they sent, to strangers and friends.${since}${usrWho==='all'&&r.guestsTotal>r.guestsCap?` Showing the ${num(r.guestsCap)} most active of ${num(r.guestsTotal)} guests.`:''}</div>
   <table><tr>${th}<th></th></tr>
   ${shown.map(x=>{const id=x.account||x.clientId;return `<tr class="usrRow" data-k="${esc(id)}" style="cursor:pointer">
-    <td><div class="ucell">${userFace(x,36)}<div><b>${esc(x.username)}</b>${x.online?'<span class="on-dot" title="Online now"></span>':''}${x.name&&x.name!==x.username?`<div class="muted" style="font-size:.78rem">${esc(x.name)}</div>`:''}
+    <td><div class="ucell">${userFace(x,36)}<div><b>${esc(x.username)}</b>${x.online?'<span class="on-dot" title="Online now"></span>':''}${x.handle?`<div class="muted" style="font-size:.78rem">${esc(x.handle)}</div>`:''}${x.name&&x.name!==x.username?`<div class="muted" style="font-size:.78rem">${esc(x.name)}</div>`:''}
       <div>${x.method==='google'?'<span class="pill info">Google</span>':x.method==='guest'?'<span class="pill">Guest</span>':'<span class="pill good">Password</span>'}${x.plus?' <span class="pill warn">Plus</span>':''}</div></div></div></td>
     <td>${x.email?esc(x.email)+(x.emailVerified?' <span class="pill good">verified</span>':''):'<span class="muted">-</span>'}</td>
     <td class="num">${num(x.friends)}</td>
@@ -3930,7 +3930,7 @@ async function viewRevenue(){
   const expiringSoon=r.rows.filter(x=>x.status==='active'&&x.expiresAt&&x.expiresAt-Date.now()<7*86400000);
   $('#main').innerHTML=`<div class="card anim"><h2>Give Plus <span class="sub">to anyone, by email, ID or username</span></h2>
     <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-      <input id="gpWho" placeholder="email, asad#1234, or ID" style="flex:1;min-width:200px">
+      <input id="gpWho" placeholder="email, alex#1234, or ID" style="flex:1;min-width:200px">
       <select id="gpDays"><option value="1">1 day</option><option value="7">7 days</option><option value="15">15 days</option><option value="30">30 days</option><option value="365">1 year</option></select>
       <button class="btn" id="gpGo">Give Plus</button>
     </div>

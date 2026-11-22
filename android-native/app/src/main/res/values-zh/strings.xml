@@ -145,7 +145,7 @@
     <string name="call">通话</string>
     <string name="your_friend_id">你的 ID</string>
     <string name="share_id_text">来 TalkLive 和我聊天！我的好友 ID 是 %1$s  https://talklive.app</string>
-    <string name="friend_id_hint">好友 ID，例如 asad#1234</string>
+    <string name="friend_id_hint">好友 ID，例如 alex#1234</string>
     <string name="find">查找</string>
     <string name="pin">置顶</string>
     <string name="unpin">取消置顶</string>

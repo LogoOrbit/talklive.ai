@@ -145,7 +145,7 @@
     <string name="call">通話</string>
     <string name="your_friend_id">あなたのID</string>
     <string name="share_id_text">TalkLiveで話そう！私のフレンドIDは %1$s  https://talklive.app</string>
-    <string name="friend_id_hint">フレンドID（例: asad#1234）</string>
+    <string name="friend_id_hint">フレンドID（例: alex#1234）</string>
     <string name="find">検索</string>
     <string name="pin">上部に固定</string>
     <string name="unpin">固定を解除</string>

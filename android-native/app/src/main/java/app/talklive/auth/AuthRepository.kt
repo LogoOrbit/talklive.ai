@@ -129,7 +129,7 @@ class AuthRepository(
     }
 
     suspend fun changePassword(current: String, new: String): AuthResult {
-        val (r, res) = callRaw("change-password", JSONObject().put("currentPassword", current).put("newPassword", new), "change-password-result")
+        val (r, res) = callRaw("change-password", JSONObject().put("currentPassword", current).put("newPassword", new), "change-password-result", timeoutMs = 40_000)
         // Changing the password signs out every session, this one included, and
         // hands back a fresh token; without keeping it the phone was signed out
         // at its next reconnect.
@@ -243,10 +243,10 @@ class AuthRepository(
         return r
     }
 
-    private suspend fun callRaw(event: String, payload: JSONObject, result: String): Pair<AuthResult, JSONObject> {
+    private suspend fun callRaw(event: String, payload: JSONObject, result: String, timeoutMs: Long = 15_000): Pair<AuthResult, JSONObject> {
         if (!socket.awaitConnected()) return AuthResult.Error("No connection. Check your internet and try again.") to JSONObject()
         val res = try {
-            socket.request(event, payload, result)
+            socket.request(event, payload, result, timeoutMs)
         } catch (_: TimeoutCancellationException) {
             return AuthResult.Error("The server did not answer. Please try again.") to JSONObject()
         }

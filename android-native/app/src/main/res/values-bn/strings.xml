@@ -145,7 +145,7 @@
     <string name="call">কল</string>
     <string name="your_friend_id">আপনার ID</string>
     <string name="share_id_text">TalkLive-এ আমার সাথে কথা বলো! আমার ফ্রেন্ড আইডি %1$s  https://talklive.app</string>
-    <string name="friend_id_hint">ফ্রেন্ড আইডি, যেমন asad#1234</string>
+    <string name="friend_id_hint">ফ্রেন্ড আইডি, যেমন alex#1234</string>
     <string name="find">খুঁজুন</string>
     <string name="pin">উপরে পিন করুন</string>
     <string name="unpin">আনপিন</string>

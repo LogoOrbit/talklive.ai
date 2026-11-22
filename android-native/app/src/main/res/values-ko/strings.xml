@@ -145,7 +145,7 @@
     <string name="call">통화</string>
     <string name="your_friend_id">내 ID</string>
     <string name="share_id_text">TalkLive에서 대화해요! 내 친구 ID는 %1$s  https://talklive.app</string>
-    <string name="friend_id_hint">친구 ID (예: asad#1234)</string>
+    <string name="friend_id_hint">친구 ID (예: alex#1234)</string>
     <string name="find">찾기</string>
     <string name="pin">상단 고정</string>
     <string name="unpin">고정 해제</string>

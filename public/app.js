@@ -2332,7 +2332,7 @@ socket.on('friend-id', ({ friendId, temporary, editable } = {}) => {
 });
 
 // --- Your ID, editable ----------------------------------------------------
-// Every account has a unique public ID like "asad#1234" (a guest has a
+// Every account has a unique public ID like "alex#1234" (a guest has a
 // temporary one). It is shown on every profile, and its owner can change it
 // here to any ID nobody else has. Lives in the Profile section, so it is in
 // Settings > Profile and in the My profile sheet alike.

@@ -838,7 +838,7 @@ app.post('/internal/premium/grant', express.json({ limit: '2kb' }), (req, res) =
   res.status(r.status || 200).json(r);
 });
 
-// Plus for `days` days to an account found by email, ID (asad#1234 or the
+// Plus for `days` days to an account found by email, ID (alex#1234 or the
 // 8-letter code) or username. Adds to any time left; a permanent grant stays.
 function grantPlusTo(whoRaw, daysRaw, by) {
   const who = String(whoRaw || '').trim();
@@ -2626,7 +2626,7 @@ const lastSeen = new Map();
 // Ten since October 2026: the client shows the last 10 calls (5 on the home
 // rail), so the rest was stored for nobody. Rows also expire after a day
 // (CHAT_HISTORY_TTL_MS).
-const MAX_CHAT_HISTORY = 10;
+const MAX_CHAT_HISTORY = 20;
 const MAX_NOTIFICATIONS = 50;
 // Pending requests and queued notifications older than this are dead weight:
 // nobody acts on a month-old "wants to talk".
@@ -2975,10 +2975,10 @@ function dropFromChatHistory(ownerClientId, otherClientId) {
   if (left.length) chatHistory.set(ownerClientId, left); else chatHistory.delete(ownerClientId);
 }
 
-// Recent people (the call and chat history) is kept for one day. It used to
-// keep the last 20 partners forever, for everyone who ever visited: 15,000
-// lists and ~10MB of the store by October 2026, rewritten on every save.
-const CHAT_HISTORY_TTL_MS = 24 * 60 * 60 * 1000;
+// Recent people (the call and chat history) is kept for a week. Forever, for
+// everyone who ever visited, was 15,000 lists and ~10MB of the store by October
+// 2026; one day was so short people thought their history had been lost.
+const CHAT_HISTORY_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 // Drop history rows older than a day, then the conversations nobody can open
 // any more: one between two people who are not friends is reached only from
@@ -5996,7 +5996,7 @@ function randomFriendCode(length) {
 // Whatever the user typed ("#g-4rt9kq", "K7MX 29QP") -> canonical code, or null.
 function normalizeFriendId(raw) {
   if (typeof raw !== 'string') return null;
-  // A chosen account ID: "asad#1234" (any case, an "@" or spaces tolerated).
+  // A chosen account ID: "alex#1234" (any case, an "@" or spaces tolerated).
   const handle = normalizeHandle(raw);
   if (handle) return handle;
   const code = raw.toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -6006,7 +6006,7 @@ function normalizeFriendId(raw) {
 }
 
 // --- Chosen account IDs ---------------------------------------------------
-// Every account has a public ID like "asad#1234": a name of 3-20 letters,
+// Every account has a public ID like "alex#1234": a name of 3-20 letters,
 // numbers, dots or underscores, then # and four digits. Unique across all
 // accounts, shown on every profile, searchable, and changeable by its owner
 // to any ID nobody else has. (The older 8-character codes still find the same
@@ -6716,13 +6716,21 @@ io.on('connection', (socket) => {
     const salt = crypto.randomBytes(16).toString('hex');
     account.passwordHash = await hashPassword(newPassword, salt);
     account.salt = salt;
-    persistAccount(authedUsername);
     // A password change signs out every other device; this one gets a fresh
-    // durable token so it stays logged in.
+    // durable token so it stays logged in. The answer goes out first: the
+    // writes below (a full store flush for the identity epoch) took long
+    // enough on a big store that the app timed out and reported an error for
+    // a change that had in fact been made.
     store.deleteAuthSessionsForUser(authedUsername, null);
+    const freshToken = store.createAuthSession(authedUsername);
     signOutOtherSockets(authedUsername, socket.id);
-    rotateAccountIdentity(authedUsername, socket);
-    socket.emit('change-password-result', { ok: true, sessionToken: store.createAuthSession(authedUsername) });
+    socket.emit('change-password-result', { ok: true, sessionToken: freshToken });
+    try {
+      persistAccount(authedUsername);
+      rotateAccountIdentity(authedUsername, socket);
+    } catch (err) {
+      console.error('[auth] after password change:', err && err.message);
+    }
   });
 
   // Set or change the address password-reset codes are sent to. Changing it is
@@ -8207,7 +8215,7 @@ io.on('connection', (socket) => {
     if (!me) return;
     const code = normalizeFriendId(friendId);
     const reply = (result) => socket.emit('find-by-friend-id-result', { query: code ? displayFriendId(code) : '', ...result });
-    if (!code) return reply({ ok: false, error: 'IDs look like asad#1234, or G-4RT9KQ for guests.' });
+    if (!code) return reply({ ok: false, error: 'IDs look like alex#1234, or G-4RT9KQ for guests.' });
     // Codes are short enough to guess at, so searching is metered - per
     // profile, and per network too, since a fresh clientId costs nothing.
     if (!socialRateOk('find-by-friend-id', me.clientId, 30, 10 * 60000)
@@ -8240,7 +8248,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  // Change this account's public ID. "asad#1234" asks for exactly that one;
+  // Change this account's public ID. "alex#1234" asks for exactly that one;
   // just "asad" takes any free number after it.
   socket.on('set-handle', ({ handle } = {}) => {
     const usernameLower = socketAuth.get(socket.id);

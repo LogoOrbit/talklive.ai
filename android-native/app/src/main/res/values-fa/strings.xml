@@ -145,7 +145,7 @@
     <string name="call">تماس</string>
     <string name="your_friend_id">شناسهٔ تو</string>
     <string name="share_id_text">در TalkLive با من حرف بزن! شناسهٔ دوستی من %1$s است  https://talklive.app</string>
-    <string name="friend_id_hint">شناسهٔ دوستی، مثل asad#1234</string>
+    <string name="friend_id_hint">شناسهٔ دوستی، مثل alex#1234</string>
     <string name="find">پیدا کن</string>
     <string name="pin">سنجاق به بالا</string>
     <string name="unpin">برداشتن سنجاق</string>

@@ -2166,7 +2166,7 @@
     renderIdEdit(!!data.editable);
   });
 
-  // An account's ID ("asad#1234") is its own to change, to any ID nobody else
+  // An account's ID ("alex#1234") is its own to change, to any ID nobody else
   // has - the same control as the call app's Profile.
   var idEdit = null;
   function renderIdEdit(editable) {
