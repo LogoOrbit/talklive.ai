@@ -198,7 +198,6 @@
     <string name="need_icebreaker">Need an icebreaker?</string>
     <string name="tap_another">Tap for another</string>
     <string name="its_a_match">It is a match!</string>
-    <string name="match_body">You and %1$s both tapped the heart.</string>
     <string name="how_was_it">How was your chat with %1$s?</string>
     <string name="clear_chat">Clear chat</string>
     <string name="clear_chat_title">Clear this chat?</string>
