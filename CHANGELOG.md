@@ -1,5 +1,31 @@
 # Changelog
 
+## 2026-11-22 — Auto-bans for major offenses, and a case file for every warning and ban
+
+- **Major offenses climb their own ladder** (`server/automod.js`): a threat or
+  "go kill yourself" typed in a call chat, said on a voice call (the speaker's
+  own device reports what it heard) or sent as a voice message is a **warning**,
+  then a **7-day**, **30-day** and **1-year** ban (strikes count for 90 days; the
+  same incident within 10 minutes is one strike). An AI-confirmed severe
+  violation on a report is a 30-day ban at once. Someone already warned who is
+  reported for something serious (abuse, harassment, nudity, hate, underage,
+  scam) by 5 different authentic people within 48 hours gets the 7-day ban.
+  Spam / fake-profile / "other" reports still never ban. Sexual talk where
+  someone said they are under 18 still only goes to your review queue (the
+  sender may be the minor). Dry run first (nothing sent, logged as would-have),
+  and `majorBans` switches the ladder off in Safety → Auto-mod → Rules.
+- **Cases** (Safety → Cases, `server/case-files.js`): every warning and ban,
+  automatic or yours, keeps a frozen case file: the rule that fired and why,
+  the words that triggered it, the conversation (call lines marked), the
+  reports, what was sent or the ban's reach, and the appeal thread. Answer an
+  appeal, lift a ban, withdraw a warning, warn, ban or add a private note from
+  the case itself. The list filters by automatic / yours / active bans /
+  appealed / dry run and counts appeals waiting.
+- Cases are capped at 500 and trimmed (24 lines each) to keep the store small;
+  real bans are dropped last. The dashboard's 60 s GET cache skips `/api/cases`.
+- Tests: `npm run test:major` (ladder, dry run, critical, report cluster,
+  case files, caps; and an end-to-end threat → warning → ban → appeal → lift).
+
 ## 2026-11-16 — Phone UI pass (web)
 
 - **Panels are full screens on a phone.** Friends, History, Filters and

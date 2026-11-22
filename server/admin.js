@@ -603,7 +603,8 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
   const reportCache = new Map();
   router.use('/api', (req, res, next) => {
     if (req.method !== 'GET') { reportCache.clear(); voiceCache = null; return next(); }
-    if (/^\/(live\/stream|status|export\/|voice-notes\/.+\/audio|data(\/|$)|support)/.test(req.path)) return next();
+    // Case files change from the server side too (auto-mod, appeals), so they are never cached.
+    if (/^\/(live\/stream|status|export\/|voice-notes\/.+\/audio|data(\/|$)|support|cases(\/|$))/.test(req.path)) return next();
     const key = req.originalUrl;
     const hit = reportCache.get(key);
     if (hit && Date.now() - hit.at < REPORT_TTL) return res.json(hit.body);
@@ -872,9 +873,34 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
       deviceId = given || (clientId && deviceIdOfClient ? deviceIdOfClient(clientId) : null) || null;
     }
     const ban = store.addBan({ clientId, ip, username, country, city, reason, minutes: mins, account, deviceId });
+    // The evidence behind it (conversation, reports) is frozen on a case file.
+    const bc = automod && automod.recordManual({ type: 'ban', clientId: ban.clientId, account: ban.account, username, country, ip, reason, minutes: mins, banId: ban.id });
+    if (bc) ban.caseId = bc.id;
     store.audit('ban', reqIp(req), `Banned ${username || clientId || account || ip} for ${mins} min${ban.deviceId ? ' (device too)' : ''}${ban.account ? ` (account ${ban.account})` : ''} - ${reason || 'no reason'}`);
     kickBanned(ban.clientId, ip, ban);
     res.json({ ok: true, ban });
+  });
+
+  // --- Case files (server/case-files.js) --------------------------------------
+  // Every warning and ban with its evidence: the rule that fired, the
+  // conversation, the reports, the sanction and the appeal thread.
+  router.get('/api/cases', (req, res) => {
+    if (!automod) return res.status(503).json({ error: 'Auto-mod is not running.' });
+    res.json(automod.cases.listRows({ q: req.query.q, filter: String(req.query.filter || ''), limit: Math.min(Number(req.query.limit) || 300, 500) }));
+  });
+  router.get('/api/cases/:id', (req, res) => {
+    if (!automod) return res.status(503).json({ error: 'Auto-mod is not running.' });
+    const d = automod.cases.detail(req.params.id);
+    if (!d) return res.status(404).json({ error: 'Case not found (the oldest cases are dropped to keep the store small).' });
+    store.audit('case_view', reqIp(req), `Opened case file for ${d.case.person.username || d.case.person.clientId || 'a user'}`);
+    res.json(d);
+  });
+  router.post('/api/cases/:id/note', (req, res) => {
+    if (!automod) return res.status(503).json({ error: 'Auto-mod is not running.' });
+    const c = automod.cases.addNote(req.params.id, (req.body || {}).text, 'owner');
+    if (!c) return res.status(400).json({ error: 'Case not found or note empty.' });
+    store.audit('case_note', reqIp(req), `Added a note to the case for ${c.person.username || c.person.clientId || 'a user'}`);
+    res.json({ ok: true, notes: c.notes });
   });
 
   // --- Auto-mod (server/automod.js) ------------------------------------------
@@ -996,6 +1022,8 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
       country: String(b.country || '').slice(0, 60),
       reason, message,
     });
+    const wc = automod && automod.recordManual({ type: 'warning', clientId, account, username: w.username, country: w.country, reason: reason || message, message, warningId: w.id });
+    if (wc) w.caseId = wc.id;
     const sentTo = deliverWarning ? deliverWarning(w) : 0;
     store.audit('warn', reqIp(req), `Warned ${w.username || clientId || account}${reason ? ` (${reason})` : ''}${sentTo ? ' - delivered live' : ' - queued for next visit'}`);
     res.json({ ok: true, warning: w, delivered: sentTo > 0 });

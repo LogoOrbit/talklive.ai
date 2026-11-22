@@ -151,6 +151,9 @@ function defaults() {
     // username, country, reason, message, deliveredAt, acknowledgedAt,
     // withdrawnAt }. Re-shown on every visit until the person acknowledges it.
     warnings: [],
+    // Evidence snapshots behind warnings and bans (server/case-files.js):
+    // { id, ts, kind, dry, person, offense, action, evidence, notes }, newest first.
+    cases: [],
     errors: [], // { id, ts, source, message, stack, url, username, country, count }
     auditLog: [], // { ts, ip, action, detail }
     transcripts: [], // { ts, pair, from, fromClientId, to, toClientId, country, text, kind }

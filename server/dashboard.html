@@ -1206,7 +1206,7 @@ const NAV=[
   ['Moderation',[
     ['reports','Reports',ico('reports'),[['reports','Reports','']]],
     ['chats','Messages',ico('chats'),[['chats','Chats',''],['voicenotes','Voice notes','']]],
-    ['automod','Safety',ico('automod'),[['automod','Auto-mod',''],['aiguard','AI guard',''],['voice','Voice check',''],['bans','Bans',''],['warnings','Warnings','']]],
+    ['automod','Safety',ico('automod'),[['automod','Auto-mod',''],['cases','Cases',''],['aiguard','AI guard',''],['voice','Voice check',''],['bans','Bans',''],['warnings','Warnings','']]],
     ['feedback','Feedback',ico('feedback'),[['feedback','Feedback','']]]]],
   ['People',[
     ['users','Users',ico('users'),[['users','All users',''],['accounts','Accounts',''],['talktime','Talk time',''],['data','User data','']]],
@@ -1244,6 +1244,7 @@ function navBadge(id){
   if(id==='support'&&counts.supportWaiting)return `<span class="badge">${counts.supportWaiting}</span>`;
   if(id==='reports'&&counts.unhandledReports)return `<span class="badge">${counts.unhandledReports}</span>`;
   if(id==='automod'&&counts.autoReview)return `<span class="badge">${counts.autoReview}</span>`;
+  if(id==='cases'&&counts.banAppeals)return `<span class="badge">${counts.banAppeals}</span>`;
   if(id==='bans'&&counts.banAppeals)return `<span class="badge">${counts.banAppeals}</span>`;
   if(id==='voice'&&counts.voiceAppeals)return `<span class="badge">${counts.voiceAppeals}</span>`;
   if(id==='errors'&&counts.errors)return `<span class="badge" style="background:var(--serious)">${counts.errors}</span>`;
@@ -1490,6 +1491,7 @@ async function load(force){
     else if(tab==='bans')await viewBans();
     else if(tab==='warnings')await viewWarnings();
     else if(tab==='automod')await viewAutomod();
+    else if(tab==='cases')await viewCases();
     else if(tab==='aiguard')await viewAiGuard();
     else if(tab==='voice')await viewVoice();
     else if(tab==='chats')await viewChats();
@@ -2392,7 +2394,7 @@ let warnFilter='all';
    Warnings first, never an automatic ban. Reports are weighted by how genuine
    they look (and checked by AI when the chat was typed); the ladder is
    warning -> final warning -> owner review. Logic lives in server/automod.js. */
-const AM_ACT={warn1:['Warning','warn'],warn2:['Final warning','warn'],review:['Sent to review','info'],severe:['Urgent review','crit'],skip:['Not acted on','good'],owner_ban:['You banned','crit'],owner_clear:['You cleared','good'],owner_warn:['You warned','warn'],live:['Went live','good'],policy_warn:['Rule warning','warn'],policy_ban:['Auto-banned (money)','crit']};
+const AM_ACT={warn1:['Warning','warn'],warn2:['Final warning','warn'],review:['Sent to review','info'],severe:['Urgent review','crit'],skip:['Not acted on','good'],owner_ban:['You banned','crit'],owner_clear:['You cleared','good'],owner_warn:['You warned','warn'],live:['Went live','good'],policy_warn:['Rule warning','warn'],policy_ban:['Auto-banned (money)','crit'],major_warn:['Major offense: warning','crit'],major_ban:['Major offense: auto-banned','crit']};
 const AM_EV={report:'Report',keyword:'Threat',model:'TalkGuard',voice:'Said on a call',pattern:'Spam pattern',ai:'AI',policy:'Site rule'};
 function amEvents(evs){
   return evs.map(e=>`<div style="padding:7px 0;border-top:1px solid var(--grid);font-size:.8rem${e.cleared?';opacity:.5':''}">
@@ -2491,18 +2493,21 @@ async function amRules(){
   modal('Auto-mod rules',`
     ${f('warn1','Score for a warning','About this many genuine, different reporters.')}
     ${f('warn2','Score for a final warning','Needs new reports after the first warning.')}
-    ${f('review','Score to send to you for review','Never an automatic ban - you decide.')}
+    ${f('review','Score to send to you for review','General reports never ban by themselves - you decide.')}
     ${f('windowDays','Look back (days)','Reports older than this stop counting.')}
     ${f('minRate','Minimum report rate (%)','Share of their conversations that got a genuine report. Keeps busy, normal users safe.',0.5)}
     ${f('strikeDays','Warnings fade after (days)','With no new reports.')}
     ${b('ai','Use AI for chat checks if an ANTHROPIC_API_KEY is ever added (costs money; free keyword rules otherwise)')}
     ${b('keywordStrikes','Count slurs and threats typed in chat')}
     ${b('policy','Site rules (own switch, runs even when auto-mod is off): money requests get a warning, a final warning, then a ban (7 days, 30, then a year); copy-pasted money requests are banned at once; links to other websites and picture requests get a warning (sharing socials, WhatsApp/IG/Snapchat and phone numbers is allowed); threats and suicide baiting go to your review queue. Flirting, sexual chat and friendly slang are allowed.')}
+    ${b('majorBans','Major offenses get automatic bans: a threat or "go kill yourself" said in chat or on a call is a warning, then a 7-day, 30-day and 1-year ban; someone already warned and reported for something serious by 5 different people within 48 hours gets a 7-day ban; an AI-confirmed severe violation is a 30-day ban. Every action is saved with its evidence under Safety → Cases.')}
+    ${f('majorWindowDays','Major-offense strikes count for (days)','Older strikes are forgotten.')}
+    ${f('majorReportSources','Different reporters for a serious-reports ban','Authentic reporters citing abuse, harassment, nudity, hate, underage or scam within 48 hours, for someone already warned.')}
     ${b('autoLive','Go live automatically when the dry run ends')}
     <button class="btn" id="amSave">Save rules</button>`,(sh)=>{
       sh.querySelector('#amSave').onclick=async()=>{
         const g=(k)=>sh.querySelector('#am_'+k);
-        const patch={warn1:+g('warn1').value,warn2:+g('warn2').value,review:+g('review').value,windowDays:+g('windowDays').value,minRate:+g('minRate').value/100,strikeDays:+g('strikeDays').value,ai:g('ai').checked,keywordStrikes:g('keywordStrikes').checked,policy:g('policy').checked,autoLive:g('autoLive').checked};
+        const patch={warn1:+g('warn1').value,warn2:+g('warn2').value,review:+g('review').value,windowDays:+g('windowDays').value,minRate:+g('minRate').value/100,strikeDays:+g('strikeDays').value,ai:g('ai').checked,keywordStrikes:g('keywordStrikes').checked,policy:g('policy').checked,autoLive:g('autoLive').checked,majorBans:g('majorBans').checked,majorWindowDays:+g('majorWindowDays').value,majorReportSources:+g('majorReportSources').value};
         closeModal();amSet(patch,'Rules saved');
       };
     });
@@ -2867,6 +2872,110 @@ function replyAppeal(b,aid){
     },{mid:true});
 }
 window.unban=async(id)=>{try{await post('unban',{banId:id});toast('Ban lifted','The user can connect again.','good');load();}catch(e){toast('Could not lift ban',e.message,'bad');}};
+
+/* ---------- cases: every warning and ban with its evidence ----------
+   One page per sanction: the rule that fired, the conversation and reports
+   frozen at that moment (server/case-files.js), what was done, the appeal
+   thread (answer it here) and the person's history. */
+let caseFilter='all',caseQ='',caseOpen=null;
+const CA_CAT={threat:'Threat',selfharm:'Told to self-harm',reports:'Serious reports',ai:'AI-confirmed',money:'Asked for money',link:'Link',pics:'Asked for pictures',illegal:'Illegal offer',harm:'Threat / self-harm',sexual_minor:'Sexual talk + minor',owner:'Owner action','owner-review':'Review queue'};
+const CA_SEV={critical:['Critical','crit'],major:['Major','warn'],minor:['Minor','info']};
+const CA_WS={queued:['Waiting for their next visit','warn'],delivered:['Shown, not yet acknowledged','warn'],acknowledged:['Acknowledged','good'],withdrawn:['Withdrawn','info']};
+const CA_BS={active:['Ban active','crit'],lifted:['Lifted','info'],expired:['Expired','good']};
+const caDur=(m)=>!m?'':m<60?m+' min':m<1440?Math.round(m/60)+' h':m<525600?Math.round(m/1440)+' days':Math.round(m/525600)+' year(s)';
+const caAction=(c)=>c.action.type==='ban'?`Ban ${caDur(c.action.minutes)}`:c.action.type==='warning'?'Warning':'Sent to review';
+function caStatus(c){
+  if(c.dry)return '<span class="pill info">Dry run: nothing sent</span>';
+  if(c.banState)return `<span class="pill ${CA_BS[c.banState][1]}">${CA_BS[c.banState][0]}</span>`;
+  if(c.warningState)return `<span class="pill ${CA_WS[c.warningState][1]}">${CA_WS[c.warningState][0]}</span>`;
+  return '<span class="pill info">Waiting for you</span>';
+}
+async function viewCases(){
+  if(quiet&&caseOpen&&$('#caNote')&&$('#caNote').value)return;
+  if(caseOpen)return viewCaseDetail(caseOpen);
+  const r=await vapi('cases?filter='+encodeURIComponent(caseFilter)+'&q='+encodeURIComponent(caseQ));
+  const c=r.counts;
+  const seg=[['all','All',c.total],['auto','Automatic',c.auto],['owner','By you',c.owner],['bans','Active bans',c.activeBans],['appeals','Appealed',null],['dry','Dry run',c.dry]]
+    .map(([k,l,n])=>`<button data-cf="${k}" class="${caseFilter===k?'on':''}">${l}${n==null?'':' ('+n+')'}</button>`).join('');
+  $('#main').innerHTML=`<div class="grid tiles anim" style="margin-top:0">
+    <div class="tile"><div class="k">Cases on file</div><div class="v" data-count="${c.total}">0</div><div class="s">each with its evidence</div></div>
+    <div class="tile"><div class="k">Automatic</div><div class="v" data-count="${c.auto}">0</div><div class="s">warnings and bans the system issued</div></div>
+    <div class="tile"><div class="k">Active bans</div><div class="v" style="color:${c.activeBans?'var(--crit)':'inherit'}" data-count="${c.activeBans}">0</div><div class="s">with a case file</div></div>
+    <div class="tile"><div class="k">Appeals to answer</div><div class="v" style="color:${c.openAppeals?'var(--warn)':'inherit'}" data-count="${c.openAppeals}">0</div><div class="s">open one to read the evidence first</div></div>
+  </div>
+  <div class="card anim"><h2>Cases <span class="sub">why each person was warned or banned: the rule, the conversation, the reports, their appeal</span></h2>
+  <div class="tbar"><div class="seg">${seg}</div></div>
+  <div class="tbar"><input id="caQ" type="search" placeholder="Search name, account, offense…" value="${esc(caseQ)}" style="min-width:min(320px,100%)"></div>
+  <table><tr><th>When</th><th>User</th><th>Offense</th><th>Action</th><th>Status</th><th>Appeal</th><th></th></tr>
+  ${r.cases.map(x=>`<tr style="${x.dry?'opacity:.6':''}">
+    <td>${ago(x.ts)}<br><span class="muted">${fmtTs(x.ts)}</span></td>
+    <td><b>${esc(x.person.username||'Unknown')}</b>${x.person.account?` <span class="muted">@${esc(x.person.account)}</span>`:''}<br><span class="muted">${esc(x.person.country||'')}</span></td>
+    <td><span class="pill ${CA_SEV[x.offense.severity][1]}">${CA_SEV[x.offense.severity][0]}</span> <b>${esc(x.offense.title||CA_CAT[x.offense.category]||x.offense.category)}</b><br><span class="muted">${x.kind==='owner'?'You':'Automatic'} · ${esc(x.offense.source||'')}${x.lines?` · ${x.lines} chat line(s)`:''}${x.reports?` · ${x.reports} report(s)`:''}</span></td>
+    <td><b>${esc(caAction(x))}</b>${x.action.strike?`<br><span class="muted">strike ${x.action.strike}</span>`:''}</td>
+    <td>${caStatus(x)}</td>
+    <td>${x.openAppeals?'<span class="pill warn">Needs reply</span>':x.appeals?'<span class="pill good">Answered</span>':'<span class="muted">none</span>'}</td>
+    <td><div class="rowbtns"><button onclick="caseGo('${jsq(x.id)}')">Open case</button></div></td></tr>`).join('')||`<tr><td colspan="7" class="muted">${caseQ||caseFilter!=='all'?'No case matches that filter.':'No warnings or bans with evidence yet. New automatic and manual ones appear here.'}</td></tr>`}</table></div>`;
+  animateCounters();
+  document.querySelectorAll('[data-cf]').forEach(b=>b.onclick=()=>{caseFilter=b.dataset.cf;load();});
+  const inp=$('#caQ');if(inp)onFilterInput(inp,(v)=>{caseQ=v;},()=>viewCases().then(()=>keepFocus('#caQ')));
+}
+window.caseGo=(id)=>{caseOpen=id;load();};
+window.caseBack=()=>{caseOpen=null;load();};
+async function viewCaseDetail(id){
+  let d;
+  try{d=await vapi('cases/'+encodeURIComponent(id));}
+  catch(e){caseOpen=null;toast('Case not found',e.message,'warn');return viewCases();}
+  const c=d.case,o=c.offense,pr=c.person,a=c.action;
+  const sev=CA_SEV[o.severity]||CA_SEV.minor;
+  const line=(m)=>`<div style="display:flex;gap:10px;padding:6px 8px;border-radius:8px;margin:3px 0;${m.who==='offender'?'background:color-mix(in srgb,var(--crit) 8%,transparent)':'background:var(--surface-2)'}${m.hit?';outline:2px solid var(--crit)':''}">
+    <div class="muted" style="min-width:58px;font-size:.74rem">${new Date(m.ts).toLocaleTimeString()}</div>
+    <div style="flex:1"><b style="font-size:.8rem">${m.who==='offender'?'⚠ ':''}${esc(m.name||'?')}</b>
+    ${m.kind==='call'?'<span class="pill info" style="margin-left:6px">🎙 call (heard by their device)</span>':m.kind==='friend'?'<span class="pill info" style="margin-left:6px">friend chat</span>':''}
+    ${m.hit?'<span class="pill crit" style="margin-left:6px">triggered this</span>':''}
+    <div class="txt">${esc(m.text)}</div></div></div>`;
+  let did='';
+  if(c.dry)did='<div class="muted">Dry run: this is what the system <b>would have</b> done. Nobody was warned or banned.</div>';
+  else if(d.warning){const w=d.warning;did=`<div><span class="pill ${CA_WS[d.warningState][1]}">${CA_WS[d.warningState][0]}</span></div>
+    <div class="fmsg" style="margin:8px 0"><div class="muted">Message they were shown</div><div class="txt">${esc(w.message)}</div></div>
+    <div class="muted" style="font-size:.8rem">Sent ${fmtTs(w.ts)}${w.deliveredAt?' · shown '+fmtTs(w.deliveredAt):''}${w.acknowledgedAt?' · acknowledged '+fmtTs(w.acknowledgedAt):''}${w.withdrawnAt?' · withdrawn '+fmtTs(w.withdrawnAt):''}</div>
+    ${!w.acknowledgedAt&&!w.withdrawnAt?`<div class="rowbtns" style="margin-top:8px"><button onclick="caseWithdraw('${jsq(w.id)}')">Withdraw warning</button></div>`:''}`;}
+  else if(d.ban){const b=d.ban;did=`<div><span class="pill ${CA_BS[d.banState][1]}">${CA_BS[d.banState][0]}</span> <b>${esc(caDur(Math.round((b.expiresAt-b.createdAt)/60000)))}</b></div>
+    <div class="muted" style="margin:6px 0">Reason shown to them: ${esc(b.reason)}</div>
+    <div class="muted" style="font-size:.8rem">Banned ${fmtTs(b.createdAt)} · ${d.banState==='active'?'expires '+fmtTs(b.expiresAt)+' ('+until(b.expiresAt)+')':d.banState==='lifted'?'lifted '+fmtTs(b.liftedAt):'expired '+fmtTs(b.expiresAt)}<br>Covers: ${b.clientId?'profile':''}${b.account?' · account '+esc(b.account):''}${b.deviceBound?' · device':''}${b.ip?' · network':''}</div>
+    ${(b.evasions&&b.evasions.length)?`<div style="margin-top:6px"><span class="pill warn">Tried again as ${b.evasions.map(e=>esc(String(e.clientId).slice(0,10))+' ('+esc(e.via)+(e.count>1?' x'+e.count:'')+')').join(', ')}</span></div>`:''}
+    ${d.banState==='active'?`<div class="rowbtns" style="margin-top:8px"><button onclick="caseUnban('${jsq(b.id)}')">Lift ban</button></div>`:''}`;}
+  else did='<div class="muted">Held for your review: no warning or ban was sent automatically. Use <b>Warn…</b> or <b>Ban…</b> below once you have read the evidence.</div>';
+  const ap=d.ban?(d.ban.appeals||[]):[];
+  const appeals=!d.ban?'<div class="muted">Nothing to appeal: no ban was issued.</div>':ap.length?ap.map(x=>`<div style="margin:8px 0"><span class="pill ${x.reply?'good':'warn'}">${x.reply?'Answered':'Needs reply'}</span> <span class="muted">${fmtTs(x.ts)}</span>
+      <div class="fmsg"><div class="muted">Their appeal</div><div class="txt">${esc(x.text)}</div></div>
+      ${x.reply?`<div class="fbreply"><div class="top"><span><b>Your reply</b> · ${x.seenAt?'seen '+ago(x.seenAt):'not seen yet'}</span><span>${ago(x.repliedAt)}</span></div><div class="txt">${esc(x.reply)}</div></div>`
+        :`<div class="rowbtns" style="margin-top:6px"><button data-capr="${esc(x.id)}">Reply${d.banState==='active'?' / lift ban':''}</button></div>`}</div>`).join(''):'<div class="muted">They have not appealed.</div>';
+  const h=d.history;
+  $('#main').innerHTML=`<div class="tbar"><button class="lnk" onclick="caseBack()">← All cases</button></div>
+  <div class="card anim" style="margin-top:0"><h2>${esc(pr.username||'Unknown user')} <span class="sub">${pr.account?'@'+esc(pr.account)+' · ':''}${esc(pr.country||'')} · ${c.kind==='owner'?'action by you':'automatic'} · ${fmtTs(c.ts)}</span></h2>
+    <div style="margin:4px 0 10px"><span class="pill ${sev[1]}">${sev[0]}</span> <b style="font-size:1.05rem">${esc(o.title||CA_CAT[o.category]||o.category)}</b> ${c.dry?'<span class="pill info">dry run</span>':''}</div>
+    ${o.summary?`<div style="margin-bottom:8px">${esc(o.summary)}</div>`:''}
+    ${o.text?`<div class="fmsg" style="margin:8px 0"><div class="muted">The words that triggered it${o.source?' · '+esc(o.source):''}</div><div class="txt">“${esc(o.text)}”</div></div>`:''}
+    ${o.signals&&o.signals.length?`<div class="muted" style="font-size:.8rem;margin-top:6px"><b>Why the system acted</b>${o.signals.map(x=>`<div>· ${esc(x)}</div>`).join('')}</div>`:''}
+    <div class="muted" style="font-size:.8rem;margin-top:8px">Outcome: <b>${esc(caAction({action:a}))}</b>${a.strike?` · strike ${a.strike}`:''}${c.evidence.seconds?` · reported ${c.evidence.seconds}s into the call`:''}</div></div>
+  <div class="card anim"><h2>What was done</h2>${did}</div>
+  <div class="card anim"><h2>The conversation <span class="sub">${c.evidence.conversation.length} line(s) saved when this was issued</span></h2>
+    ${c.evidence.conversation.length?c.evidence.conversation.map(line).join(''):'<div class="muted">No text was on record. Voice calls are not recorded: only lines the speaker\'s own device flagged, and reports, are saved.</div>'}</div>
+  <div class="card anim"><h2>Reports on this person <span class="sub">${num(h.reportsTotal)} in total · the latest ${c.evidence.reports.length} when this was issued</span></h2>
+    ${c.evidence.reports.length?`<table><tr><th>When</th><th>Reason</th><th>Said</th><th>Reporter</th></tr>${c.evidence.reports.map(x=>`<tr><td>${fmtTs(x.ts)}</td><td><b>${esc(x.reason)}</b></td><td>${x.detail?'“'+esc(x.detail)+'”':'<span class="muted">-</span>'}</td><td>${esc(x.reporter||'?')}<br><span class="muted">${esc(x.reporterCountry||'')}</span></td></tr>`).join('')}</table>`:'<div class="muted">No reports in the 30 days before this.</div>'}</div>
+  <div class="card anim"><h2>Appeal <span class="sub">${ap.length} of 3 used</span></h2>${appeals}</div>
+  <div class="card anim"><h2>This person <span class="sub">${h.warnings} warning(s) · ${h.bans} ban(s) · ${num(h.reportsTotal)} report(s)</span></h2>
+    <div class="rowbtns">${warnBtn(pr.clientId,pr.account,pr.username,pr.country)}<button class="danger" onclick="banUser('${jsq(pr.clientId||'')}','${jsq(pr.ip||'')}','${jsq(pr.username||'')}','${jsq(pr.country||'')}','')">Ban…</button></div>
+    ${h.otherCases.length?`<div style="margin-top:12px"><b style="font-size:.85rem">Their other cases</b>${h.otherCases.map(x=>`<div style="display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:8px 0;border-top:1px solid var(--grid);cursor:pointer" onclick="caseGo('${jsq(x.id)}')"><div style="flex:1;min-width:200px">${esc(x.offense.title||x.offense.category)}<br><span class="muted">${ago(x.ts)}</span></div><div><b>${esc(caAction(x))}</b></div><div>${caStatus(x)}</div></div>`).join('')}</div>`:''}</div>
+  <div class="card anim"><h2>Your notes <span class="sub">private, only you see these</span></h2>
+    ${c.notes.map(n=>`<div class="fmsg" style="margin-bottom:6px"><div class="muted">${fmtTs(n.ts)}</div><div class="txt">${esc(n.text)}</div></div>`).join('')}
+    <textarea id="caNote" rows="2" maxlength="600" placeholder="Add a note (what you decided and why)…"></textarea>
+    <div class="rowbtns" style="margin-top:8px"><button id="caNoteBtn">Save note</button></div></div>`;
+  document.querySelectorAll('[data-capr]').forEach(btn=>btn.onclick=()=>replyAppeal(d.ban,btn.dataset.capr));
+  $('#caNoteBtn').onclick=async()=>{const t=$('#caNote').value.trim();if(!t)return;try{await post('cases/'+encodeURIComponent(id)+'/note',{text:t});toast('Note saved','','good');load();}catch(e){toast('Could not save',e.message,'bad');}};
+}
+window.caseWithdraw=async(wid)=>{if(!confirm('Withdraw this warning? If they have not seen it yet it will not be shown.'))return;try{await post('warnings/'+encodeURIComponent(wid)+'/withdraw');toast('Warning withdrawn','','good');load();}catch(e){toast('Could not withdraw',e.message,'bad');}};
+window.caseUnban=async(bid)=>{try{await post('unban',{banId:bid});toast('Ban lifted','The user can connect again.','good');load();}catch(e){toast('Could not lift ban',e.message,'bad');}};
 
 /* ---------- chats: conversation reader ----------
    Chat used to render as one flat, newest-first feed of every message from
