@@ -527,7 +527,7 @@
   // What the pickers offer (spec section 1): three free, five Plus, then the
   // three level-locked special faces. Every other character stays valid for
   // whoever already wears it.
-  var PICKER_IDS = ['wizard', 'pirate', 'robot', 'detective', 'ninja', 'warrior', 'gamer', 'artist'];
+  var PICKER_IDS = ['wizard', 'queen', 'pirate', 'robot', 'artist', 'detective', 'ninja', 'warrior', 'gamer', 'astronaut'];
   var SPECIALS = { silver_knight: 'silver', gold_phoenix: 'gold', diamond_legend: 'diamond' };
 
   global.TalkLiveCharacters = {

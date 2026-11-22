@@ -71,6 +71,8 @@ function rewrite(file, fn) {
 // Replace what sits between <!-- langs:NAME --> and <!-- /langs:NAME -->.
 function region(html, name, body, file) {
   const re = new RegExp(`(<!-- langs:${name} -->)[\\s\\S]*?(<!-- /langs:${name} -->)`);
+  // The homepage no longer carries the SEO copy these markers sat in.
+  if (!re.test(html) && file === 'index.html') return html;
   if (!re.test(html)) throw new Error(`${file}: marker <!-- langs:${name} --> not found`);
   return html.replace(re, (_, open, close) => open + body + close);
 }

@@ -1852,7 +1852,7 @@ function closeQuickSettings() {
 // page over its size budget); it is fetched once the page is idle, or on the
 // first tap of the gear if that comes sooner.
 // It also brings settings.css, which the screen waits for (html.tl-set-css).
-var SETTINGS_PANEL_SRC = '/settings-panel.js?v=22c66f6906';
+var SETTINGS_PANEL_SRC = '/settings-panel.js?v=ab40f13b37';
 // Top 3 films on profiles (fav-films.js), loaded when a profile first opens.
 var filmsLoading = null;
 function withFilms(cb) {
@@ -3491,8 +3491,8 @@ if (animalGrid) {
     if (blockLockedSpecial(option.dataset.avatar)) return;
     setMyAvatarChoice(option.dataset.avatar);
   });
-  renderAnimalPicker();
 }
+renderAnimalPicker();
 
 // The stranger's animal, shown on their card once the call is actually
 // connected (same moment as their name - never before, see revealPartner).
@@ -3817,14 +3817,15 @@ function loadLazyScript(name, src) {
 }
 function withBadges(cb) {
   if (window.TalkLiveBadges) { cb(window.TalkLiveBadges); return; }
-  loadLazyScript('badges', '/badges.js?v=3acf3c4282').then(() => cb(window.TalkLiveBadges), () => {});
+  loadLazyScript('badges', '/badges.js?v=e9312841fa').then(() => cb(window.TalkLiveBadges), () => {});
 }
 function withCovers(cb) {
   if (window.TalkLiveCovers) { cb(window.TalkLiveCovers); return; }
-  loadLazyScript('covers', '/covers.js?v=74e8325a84').then(() => cb(window.TalkLiveCovers), () => {});
+  loadLazyScript('covers', '/covers.js?v=c0f5259273').then(() => cb(window.TalkLiveCovers), () => {});
 }
 var myCover = null;
 var myBadges = null;
+var myBadgesHidden = false;
 var serverSendsExtras = false;
 // A Plus cover is only ever shown while Plus is on, whatever was stored.
 function effectiveCover(id) {
@@ -3868,6 +3869,7 @@ function ingestOwnExtras(o) {
     myBadges = src.badges;
     changed = true;
   }
+  if (typeof src.badgesHidden === 'boolean' && src.badgesHidden !== myBadgesHidden) { myBadgesHidden = src.badgesHidden; changed = true; }
   if (typeof src.avatar === 'string' && src.avatar && src.avatar !== myAvatar && validAvatarId(src.avatar)) {
     adoptServerAvatar(src.avatar);
     changed = true;
@@ -3923,6 +3925,16 @@ var myProfileBorrowed = [];
 function myProfileIsOpen() {
   return !!myProfileSheet && myProfileSheet.classList.contains('open');
 }
+// The profile's rows: [key, colour, icon, where the lent control goes].
+var MP_ACC = [
+  ['avatar', 'hue-brand', '<circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/>', 'tl-set-group mp-avatar-host'],
+  ['cover', 'hue-blue', '<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="m3 16 5-5 4 4 3-3 6 6"/>', 'mp-cover-picker'],
+  ['name', 'hue-orange', '<path d="M4 20h4L19 9a2.5 2.5 0 0 0-3.5-3.5L4 16z"/>', 'tl-set-group mp-name-host'],
+  ['id', 'hue-grey', '<path d="M9 4 7 20M17 4l-2 16M4 9h16M3 15h16"/>', 'tl-set-group mp-id-host'],
+  ['ga', 'hue-pink', '<circle cx="9" cy="9" r="3.5"/><circle cx="16" cy="15" r="3"/><path d="M3 20c.5-3 3-4.5 6-4.5"/>', 'tl-set-group mp-ga-host'],
+  ['badges', 'hue-green', '<circle cx="12" cy="9" r="5.5"/><path d="m8.500 14 -1.500 7 5-3 5 3-1.500-7"/>', 'mp-badges'],
+  ['voice', 'hue-red', '<rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>', 'tl-set-group mp-voice-host'],
+];
 function buildMyProfileSheet() {
   myProfileSheet = document.createElement('div');
   myProfileSheet.id = 'myProfileSheet';
@@ -3939,32 +3951,18 @@ function buildMyProfileSheet() {
           <h2 id="myProfileName" class="my-profile-name"></h2>
           <span class="mp-badge"></span>
           <button type="button" class="mp-id my-profile-copy"><span class="my-profile-id-value"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
-          <button type="button" class="btn btn-primary mp-change-avatar" data-act="avatar" aria-expanded="false">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/></svg>
-            <span class="mp-change-avatar-text"></span>
-          </button>
         </div>
-        <section class="mp-sec mp-avatar-sec" hidden>
-          <h3 class="mp-sec-title mp-t-avatar"></h3>
-          <div class="tl-set-group mp-avatar-host"></div>
-        </section>
         <button type="button" class="mp-plus" data-act="plus"><span class="mp-plus-gem" aria-hidden="true">\u{1F48E}</span><span class="mp-row-text"><strong></strong><small></small></span><span class="mp-go" aria-hidden="true"></span></button>
-        <section class="mp-sec mp-cover-sec" hidden>
-          <h3 class="mp-sec-title mp-t-cover"></h3>
-          <div class="mp-cover-picker"></div>
-        </section>
-        <section class="mp-sec">
-          <h3 class="mp-sec-title mp-t-about"></h3>
-          <div class="tl-set-group mp-about-host"></div>
-        </section>
-        <section class="mp-sec mp-badges-sec" hidden>
-          <h3 class="mp-sec-title mp-t-badges"></h3>
-          <div class="mp-badges"></div>
-        </section>
-        <section class="mp-sec mp-voice-sec" hidden>
-          <h3 class="mp-sec-title mp-t-voice"></h3>
-          <div class="tl-set-group mp-voice-host"></div>
-        </section>
+        <div class="mp-rows mp-acc-list">${MP_ACC.map(([k, hue, icon, host]) => `
+          <section class="mp-acc mp-acc-${k}" data-acc="${k}"${k === 'cover' || k === 'badges' || k === 'voice' ? ' hidden' : ''}>
+            <button type="button" class="mp-row mp-acc-head" data-act="acc" data-key="${k}" aria-expanded="false">
+              <span class="mp-ico ${hue}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icon}</svg></span>
+              <span class="mp-row-text"><strong></strong><small></small></span>
+              <span class="mp-go" aria-hidden="true"></span>
+            </button>
+            <div class="mp-acc-body" hidden><div class="${host}"></div></div>
+          </section>`).join('')}
+        </div>
         <p class="mp-legend"></p>
         <div class="mp-rows mp-you"></div>
         <div class="my-profile-films" hidden></div>
@@ -4018,26 +4016,35 @@ function renderMyProfileCard() {
   q('.my-profile-id-value').textContent = myFriendId || '…';
   q('.my-profile-copy').setAttribute('aria-label', t('copyFriendId'));
   q('.my-profile-close').setAttribute('aria-label', t('close'));
-  q('.mp-change-avatar-text').textContent = mpText('changeAvatar', 'Change Avatar');
-  q('.mp-t-avatar').textContent = mpText('avatar', 'Avatar');
-  q('.mp-t-cover').textContent = mpText('coverTitle', 'Cover');
-  q('.mp-t-about').textContent = mpText('aboutYouTitle', 'About you');
-  q('.mp-t-badges').textContent = mpText('badgesTitle', 'Badges');
-  q('.mp-t-voice').textContent = mpText('voiceCheck', 'Voice check');
+  [
+    ['avatar', 'changeAvatar', 'Change avatar', 'mpHintAvatar', 'Pick your face'],
+    ['cover', 'coverTitle', 'Cover', 'mpHintCover', 'Colour or animated scene'],
+    ['name', 'tempUsername', 'Display name', 'mpHintName', 'How people see you'],
+    ['id', 'mpYourId', 'Your ID', 'mpHintId', 'Friends find you with it'],
+    ['ga', 'mpGenderAge', 'Gender & age', 'mpHintGa', 'Optional'],
+    ['badges', 'badgesTitle', 'Badges', 'mpHintBadges', 'Earned by talking'],
+    ['voice', 'voiceCheck', 'Voice check', 'mpHintVoice', 'Keeps calls friendly'],
+  ].forEach(([k, tk, tf, hk, hf]) => {
+    q('.mp-acc-' + k + ' strong').textContent = mpText(tk, tf);
+    q('.mp-acc-' + k + ' small').textContent = mpText(hk, hf);
+  });
   paintCover(q('.mp-cover'), myCover, true);
   paintBadgeChip(q('.mp-badge'), myBadges, 22);
   // Covers and badges only exist once the server sends them.
   const extras = serverSendsExtras;
-  q('.mp-cover-sec').hidden = !extras;
-  q('.mp-badges-sec').hidden = !extras;
+  q('.mp-acc-cover').hidden = !extras;
+  q('.mp-acc-badges').hidden = !extras;
   if (extras) {
     withCovers((C) => {
       const host = q('.mp-cover-picker');
       host.innerHTML = C.picker(effectiveCover(myCover), isPremiumUser);
     });
-    withBadges((B) => { q('.mp-badges').innerHTML = B.shelf(myBadges || { earned: [], hours: 0 }); });
+    withBadges((B) => {
+      q('.mp-badges').innerHTML = `<label class="tl-set-control tl-set-toggle mp-show-badges"><span class="tl-set-text"><strong>${escapeHtml(mpText('showBadges', 'Show badges on my profile'))}</strong></span><span class="switch"><input type="checkbox" id="mpShowBadges"${myBadgesHidden ? '' : ' checked'} /><span class="switch-slider" aria-hidden="true"></span></span></label>`
+        + B.shelf(myBadges || { earned: [], hours: 0 });
+    });
   }
-  q('.mp-voice-sec').hidden = !voiceCheckAvailable;
+  q('.mp-acc-voice').hidden = !voiceCheckAvailable;
   const plus = q('.mp-plus');
   plus.querySelector('strong').textContent = isPremiumUser ? 'TalkLive Plus' : mpText('getPlus', 'Get TalkLive Plus');
   plus.querySelector('small').textContent = isPremiumUser
@@ -4073,17 +4080,20 @@ function chooseCover(id) {
     renderMyProfileCard();
   });
 }
-function toggleMyProfileAvatar(open) {
-  const sec = myProfileSheet.querySelector('.mp-avatar-sec');
-  const on = typeof open === 'boolean' ? open : sec.hidden;
-  sec.hidden = !on;
-  myProfileSheet.querySelector('.mp-change-avatar').setAttribute('aria-expanded', on ? 'true' : 'false');
-  if (on) {
-    renderAvatarGrid();
-    sec.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    revealSelectedAvatar();
-  }
+// One row open at a time; the lent control lives in its body.
+function toggleMyProfileAcc(key, open) {
+  myProfileSheet.querySelectorAll('.mp-acc').forEach((sec) => {
+    const on = sec.dataset.acc === key && (typeof open === 'boolean' ? open : sec.querySelector('.mp-acc-body').hidden);
+    sec.querySelector('.mp-acc-body').hidden = !on;
+    sec.querySelector('.mp-acc-head').setAttribute('aria-expanded', on ? 'true' : 'false');
+    sec.classList.toggle('open', on);
+    if (on) {
+      if (key === 'avatar') { renderAvatarGrid(); revealSelectedAvatar(); }
+      sec.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  });
 }
+function toggleMyProfileAvatar(open) { toggleMyProfileAcc('avatar', open); }
 // Leaving the sheet for somewhere else in the app: it closes without sending
 // someone who came from /chat straight back there.
 function leaveMyProfileFor(next) {
@@ -4091,6 +4101,17 @@ function leaveMyProfileFor(next) {
   closeMyProfile(true);
 }
 function onMyProfileAction(e) {
+  if (e.target.id === 'mpShowBadges') {
+    const on = e.target.checked;
+    myBadgesHidden = !on;
+    socket.emit('show-badges', { on }, (r) => {
+      if (r && r.ok) { myBadgesHidden = !r.on; return; }
+      myBadgesHidden = !myBadgesHidden;
+      e.target.checked = !myBadgesHidden;
+      showToast(t('coverFailed'), 'warn');
+    });
+    return;
+  }
   const cover = e.target.closest('[data-cover]');
   if (cover) { chooseCover(cover.dataset.cover); return; }
   if (e.target.closest('[data-cover-upsell]')) { leaveMyProfileFor('settings'); showPremiumUpsell('', 'avatars'); return; }
@@ -4098,7 +4119,7 @@ function onMyProfileAction(e) {
   if (!btn) return;
   const act = btn.dataset.act;
   const E = window.TalkLiveEngage;
-  if (act === 'avatar') { toggleMyProfileAvatar(); return; }
+  if (act === 'acc') { toggleMyProfileAcc(btn.dataset.key); return; }
   if (act === 'films') { myProfileSheet.querySelector('.my-profile-films').classList.toggle('open'); return; }
   if (act === 'passport' && E && E.openPassport) { E.openPassport(); return; }
   if (act === 'invite') { showSharePrompt(); return; }
@@ -4121,10 +4142,10 @@ function openMyProfile() {
   const ctl = (id) => { const n = document.getElementById(id); return n && n.closest('.tl-set-control'); };
   // [control, where it goes]: everything about how you appear, in one place.
   myProfileBorrowed = [
-    [ctl('tempUsernameInput'), '.mp-about-host'],
-    [myFriendIdEditable && idEditor, '.mp-about-host'],
-    [ctl('genderGroup'), '.mp-about-host'],
-    [ctl('ageGroup'), '.mp-about-host'],
+    [ctl('tempUsernameInput'), '.mp-name-host'],
+    [myFriendIdEditable && idEditor, '.mp-id-host'],
+    [ctl('genderGroup'), '.mp-ga-host'],
+    [ctl('ageGroup'), '.mp-ga-host'],
     [ctl('avatarGrid'), '.mp-avatar-host'],
     [document.getElementById('voiceCheckRow'), '.mp-voice-host'],
     [document.getElementById('voiceCheckActions'), '.mp-voice-host'],
@@ -4134,7 +4155,7 @@ function openMyProfile() {
     host(where).appendChild(el);
     return { el, spot };
   });
-  toggleMyProfileAvatar(false);
+  toggleMyProfileAcc('', false);
   myProfileSheet.querySelector('.my-profile-films').classList.remove('open');
   refreshProgress();
   renderMyProfileCard();
@@ -5301,6 +5322,8 @@ function openUserProfile(person) {
   // friends-only, so the one person you most wanted gone after a bad call
   // could only be reported, never simply blocked.
   friendProfileChatBtn.classList.toggle('hidden', !canMessage(person.clientId) && !inCallWith(person.clientId));
+  // A heart for someone from your recent people or the call you are in (likes.js).
+  if (window.TalkLiveLikes) window.TalkLiveLikes.decorateProfile(person, !!met || inCallWith(person.clientId));
   // Calling: anyone this user can reach - friends, and people met before.
   // Someone offline is offered a call request for later instead of an error.
   // Never the person this user is already on a call with.
@@ -12390,52 +12413,17 @@ socket.on('friend-online', ({ clientId, username, countryCode, country } = {}) =
 // a call, so it loads once the page is up and stays out of the first paint.
 window.addEventListener('load', () => {
   const s = document.createElement('script');
-  s.src = '/engage.js?v=019d42df74';
+  s.src = '/engage.js?v=b7be34cbac';
   s.async = true;
   document.head.appendChild(s);
 });
 
-// --- Daily featured blog article: rotates once every 24 hours so the SEO
-// section below the app always has a fresh, highlighted read. Deterministic
-// on the day-of-year so it's the same pick for everyone on a given day. ---
-(function initDailyArticle() {
-  const card = document.getElementById('dailyArticleCard');
-  const titleEl = document.getElementById('dailyArticleTitle');
-  const blurbEl = document.getElementById('dailyArticleBlurb');
-  if (!card || !titleEl || !blurbEl) return;
-
-  const ARTICLES = [
-    { slug: 'science-of-talking-to-strangers', title: 'We Are Bad at Predicting How Talking to Strangers Will Feel', blurb: 'Six studies on why conversations with strangers go better than we expect.' },
-    { slug: 'why-talking-to-strangers-feels-easier', title: 'Why It Is Sometimes Easier to Tell a Stranger the Truth', blurb: 'A sociologist noticed it in 1908. What is going on, and where it stops working.' },
-    { slug: 'what-happened-to-omegle', title: 'The Rise and Fall of Omegle', blurb: 'Fourteen years of talking to strangers, and the question it left behind.' },
-    { slug: 'loneliness-what-actually-helps', title: 'Loneliness Is Not the Same as Being Alone', blurb: 'Why loneliness makes people pull away, and which kinds of help work best.' },
-    { slug: 'how-random-matchmaking-works', title: 'What Happens in the Two Seconds After You Press Start', blurb: 'Queues, filters, and the relay that carries your voice.' },
-    { slug: 'how-to-be-a-good-listener', title: 'Listening Is a Skill. Most of Us Were Never Taught It.', blurb: 'Ten questions about the underrated half of every conversation.' },
-    { slug: 'phone-anxiety-how-to-get-comfortable-talking', title: 'Why Does My Heart Race Every Time the Phone Rings?', blurb: 'Why calls really are harder, and a ladder out of the fear.' },
-    { slug: 'how-to-practise-a-language-by-speaking', title: 'Why You Understand More Than You Can Say', blurb: 'Notes on the speaking gap, and a four-week routine.' },
-    { slug: 'how-to-spot-a-bot-or-scam-in-random-chat', title: 'A Field Guide to the Scams That Start With "Hi"', blurb: 'Seven common scams and the one rule that defeats them.' },
-    { slug: 'what-to-talk-about-with-a-stranger', title: '30 Questions That Get Past Small Talk', blurb: 'The 45-minute experiment, and thirty questions in three tiers.' },
-  ];
-
-  const dayNumber = Math.floor(Date.now() / 86400000); // whole days since epoch, changes every 24h UTC
-  const pick = ARTICLES[dayNumber % ARTICLES.length];
-
-  card.href = `/blog/${pick.slug}`;
-  titleEl.textContent = pick.title;
-  blurbEl.textContent = pick.blurb;
-})();
-
-
-// --- "From TalkLive" posts: fetched once the home page is scrolled near them ----
+// --- "From TalkLive" posts: right under the Talk / Chat buttons. posts.js is
+// fetched once the page is idle, so it never competes with the first paint. ---
 {
-  const sentinel = document.getElementById('tlPostsSentinel');
   const section = document.getElementById('tlPosts');
-  if (sentinel && section && 'IntersectionObserver' in window) {
-    const watcher = new IntersectionObserver((entries) => {
-      if (!entries.some((en) => en.isIntersecting)) return;
-      watcher.disconnect();
-      loadLazyScript('posts', '/posts.js?v=ec2bd51ac7').then(() => window.TalkLivePosts.mount(section), () => {});
-    }, { rootMargin: '600px 0px' });
-    watcher.observe(sentinel);
+  if (section) {
+    const go = () => loadLazyScript('posts', '/posts.js?v=6435ed5dff').then(() => window.TalkLivePosts.mount(section), () => {});
+    window.addEventListener('load', () => { (window.requestIdleCallback || ((f) => setTimeout(f, 300)))(go, { timeout: 2500 }); });
   }
 }

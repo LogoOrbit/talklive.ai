@@ -55,13 +55,13 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=153fc85b70" crossorigin />
-<link rel="stylesheet" href="style.css?v=d99ccd88bc" />
+<link rel="stylesheet" href="style.css?v=715288a279" />
 <link rel="stylesheet" href="chat-extras.css?v=4b7b6398b3" />
 <link rel="stylesheet" href="games.css?v=2dd354f960" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=64cc5be771" />
+<link rel="stylesheet" href="ui.css?v=3d6d853a23" />
 <link rel="stylesheet" href="auth.css?v=aae37ee102" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
@@ -639,6 +639,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
       <div class="side-panel-body">
         <div class="tl-panel-body">
           <p class="tl-hint" data-i18n="callHistoryHint">The last people you talked to, by voice or text. Message them, or tap the green button to call back if they are online.</p>
+          <p class="tl-hint tl-kept" style="margin-top:-6px;font-size:12px;opacity:.7" data-i18n="historyKept">Kept for 30 days</p>
           <div id="historyList" class="history-list">
             <p class="tl-empty" data-i18n="noCallsYet">No calls yet.</p>
           </div>
@@ -1137,29 +1138,20 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                setup panel it rendered ~400px below a phone screen, so a blocked
                mic looked like Tap to Talk silently doing nothing. -->
           <p id="setupErrorText" class="error-text hidden" role="alert"></p>
-          <!-- Spirit animal: one tap, no sign-up, and the stranger on the other
-               end sees it the moment you connect. Deliberately sits on the
-               landing screen rather than behind the settings panel - it only
-               works as an ice-breaker if people actually see it before they
-               call. The icons are vectors from /animals.js (an SVG sprite),
-               not emoji, so they look the same on every device. -->
-          <!-- Filled by engage.js; here from the start so the page does not jump when it is. -->
-          <section class="tl-engage" id="tlEngage"></section>
-          <!-- A first-time visitor gets the one-line strip, not the three tiles:
-               hold that much room, so the avatar picker does not jump up. -->
-          <script>try{if(!localStorage.getItem('tl_engage_state')&&!localStorage.getItem('tl_streak'))document.getElementById('tlEngage').classList.add('is-fresh')}catch(e){}</script>
-          <section class="animal-picker" aria-labelledby="animalPickerTitle">
-            <div role="heading" aria-level="2" class="ui-h2 animal-picker-title" id="animalPickerTitle" data-i18n="pickAnimal">Your avatar</div>
-            <p class="animal-picker-hint" data-i18n="pickAnimalHint">Everyone you talk to sees it - an easy way to start talking.</p>
-            <div class="animal-grid" id="animalGrid" role="radiogroup" data-i18n-aria="pickAnimal" aria-label="Your avatar"></div>
-            <p class="animal-chosen" id="animalChosen" aria-live="polite"></p>
+          <!-- "From TalkLive": posts from the team, straight under the two
+               buttons. public/posts.js is fetched once the page is idle; the
+               section stays hidden until there is something to show. -->
+          <section id="tlPosts" class="tl-posts" aria-label="From TalkLive" hidden>
+            <div class="tl-posts-inner"></div>
           </section>
+          <!-- Streak, countries and likes: one compact row of small chips,
+               filled by engage.js. Reserved here so the page does not jump. -->
+          <section class="tl-engage" id="tlEngage"></section>
 
           <p class="consent-line">
             <span data-i18n="consentPrefix">By tapping Call you agree to our</span>
             <button type="button" id="openTermsLink" class="link-btn" data-i18n="termsLink">Terms &amp; Community Guidelines</button>
           </p>
-          <p style="margin:6px 0 0;text-align:center"><a href="#tour" style="color:var(--accent-2);font-weight:600;font-size:14px;text-decoration:none">New here? See how TalkLive works ↓</a></p>
           <div class="setup-growth" data-i18n-aria="growthAria" aria-label="TalkLive membership and sharing">
             <a class="setup-growth-card setup-growth-premium" href="/pricing?utm_source=app">
               <span class="setup-growth-icon" aria-hidden="true"><i class="ti ti-gem" aria-hidden="true"></i></span>
@@ -1207,7 +1199,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             <nav class="tl-set-nav" id="settingsNav" role="tablist" data-i18n-aria="settings" aria-label="Settings sections">
               <button type="button" class="tl-set-nav-item selected" data-settings-tab="profile" role="tab" aria-selected="true" aria-controls="settingsPane-profile">
                 <span class="tl-set-nav-icon hue-brand" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/></svg></span>
-                <span class="tl-set-nav-text"><span class="tl-set-nav-label" data-i18n="catProfile">Profile</span><small data-i18n-set="setDescProfile">Name, avatar, ID and account</small></span>
+                <span class="tl-set-nav-text"><span class="tl-set-nav-label" data-i18n="catAccount">Account &amp; security</span><small data-i18n-set="setDescProfile">Sign in, password and email</small></span>
                 <span class="tl-set-nav-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
               </button>
               <button type="button" class="tl-set-nav-item" data-settings-tab="app" role="tab" aria-selected="false" aria-controls="settingsPane-app">
@@ -1235,18 +1227,13 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
           <div class="tl-set-content" id="settingsContent">
         <div id="settingsPane-profile" class="tl-set-pane" data-settings-pane="profile" role="tabpanel">
-          <section>
+          <section hidden>
             <div role="heading" aria-level="3" class="ui-h3 tl-set-legend" data-i18n="catProfile">Profile</div>
             <div class="tl-set-group">
               <!-- One entry for everything about how you appear: avatar, cover,
                    name, ID, gender, age, badges and voice check. The controls
                    below keep their ids and handlers; they live here, out of
                    sight, and are lent to the My Profile sheet while it is open. -->
-              <button type="button" id="settingsMyProfileBtn" class="tl-set-control tl-set-link-row">
-                <span class="tl-set-ico i-person" aria-hidden="true"></span>
-                <span class="tl-set-text"><strong data-i18n="myProfileTitle">My Profile</strong><small data-i18n="myProfileHint">Avatar, cover, name, ID, badges and voice check</small></span>
-                <span class="tl-set-hero-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
-              </button>
               <div id="profileControlsHome" hidden>
 <div class="tl-set-control tl-set-control-stack">
                 <label class="tl-set-label" for="tempUsernameInput" data-i18n="tempUsername">Display name</label>
@@ -1302,7 +1289,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           </section>
 
           <section class="tl-set-account">
-            <div role="heading" aria-level="3" class="ui-h3 tl-set-legend" data-i18n="myAccount">My Account</div>
+            <div role="heading" aria-level="3" class="ui-h3 tl-set-legend" data-i18n="catAccount">Account &amp; security</div>
             <div class="tl-set-foot" id="sidePanelAuth">
               <span class="tl-set-ico i-cloud" aria-hidden="true"></span>
               <p class="tl-field-note tl-set-foot-note" data-i18n="accountGuestHint">Sign in to keep your name, avatar and friends on any device.</p>
@@ -2119,13 +2106,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         </div>
       </aside>
 </main>
-  <!-- "From TalkLive": posts from the team. public/posts.js is fetched when the
-       sentinel is scrolled near (app.js); the section stays hidden until there is
-       something to show. -->
-  <section id="tlPosts" class="tl-posts" aria-label="From TalkLive" hidden>
-    <div class="tl-posts-inner"></div>
-  </section>
-  <div id="tlPostsSentinel" aria-hidden="true" style="height:1px"></div>
   <!-- Home tour: the Android app showcase and reading links, under the
        stage in the middle column, so it starts right below the hero instead of
        below the (taller) activity rail. Its stylesheet loads without blocking first paint (all of this is below
@@ -2136,9 +2116,9 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
     <div class="tt-in">
       <div class="tt-app tt-rv">
         <header class="tt-head">
-          <span class="tt-play"><svg class="tt-play-logo" viewBox="0 0 24 26" aria-hidden="true" focusable="false"><path fill="#00d7fe" d="M1.1.6C.8.9.6 1.4.6 2v22c0 .6.2 1.1.5 1.4l.1.1L13.5 13.2v-.3L1.2.5z"/><path fill="#ffce00" d="m17.6 17.3-4.1-4.1v-.3l4.1-4.1.1.1 4.9 2.8c1.4.8 1.4 2.1 0 2.9l-4.9 2.8z"/><path fill="#ff3a44" d="M17.7 17.3 13.5 13 1.1 25.4c.5.5 1.2.5 2.1.1l14.5-8.2"/><path fill="#00f076" d="M17.7 8.7 3.2.5C2.3 0 1.6.1 1.1.6L13.5 13z"/></svg><span><small>Coming soon on</small><b>Google Play</b></span></span>
-          <h2 class="tt-h2" id="ttTitle">The TalkLive Android app is <span class="tt-accent">coming soon</span></h2>
-          <p class="tt-lede">Voice calls, voice notes, your spirit animal and your friends, built for your phone. It is not on Google Play yet - here is a first look.</p>
+          <a class="tt-play" href="https://play.google.com/store/apps/details?id=app.talklive" target="_blank" rel="noopener"><svg class="tt-play-logo" viewBox="0 0 24 26" aria-hidden="true" focusable="false"><path fill="#00d7fe" d="M1.1.6C.8.9.6 1.4.6 2v22c0 .6.2 1.1.5 1.4l.1.1L13.5 13.2v-.3L1.2.5z"/><path fill="#ffce00" d="m17.6 17.3-4.1-4.1v-.3l4.1-4.1.1.1 4.9 2.8c1.4.8 1.4 2.1 0 2.9l-4.9 2.8z"/><path fill="#ff3a44" d="M17.7 17.3 13.5 13 1.1 25.4c.5.5 1.2.5 2.1.1l14.5-8.2"/><path fill="#00f076" d="M17.7 8.7 3.2.5C2.3 0 1.6.1 1.1.6L13.5 13z"/></svg><span><small>Get it on</small><b>Google Play</b></span></a>
+          <h2 class="tt-h2" id="ttTitle">TalkLive for <span class="tt-accent">Android</span></h2>
+          <p class="tt-lede">Voice calls, voice notes, your spirit animal and your friends, built for your phone. Here is a first look.</p>
         </header>
         <div class="tt-shots-wrap">
         <button type="button" class="tt-arrow tt-prev" aria-label="Previous screenshots"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
@@ -2159,24 +2139,9 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           <li><b>Never miss a friend</b><span>Instant call and message alerts</span></li>
           <li><b>Same account</b><span>Friends and Plus carry over</span></li>
         </ul>
-        <p class="tt-note">Until then, everything works right here in your browser.</p>
+        <p class="tt-note">Everything also works right here in your browser.</p>
       </div>
 
-      <a class="tt-story tt-rv" href="/what-is-talklive">
-        <picture><source type="image/avif" srcset="/images/what-is-talklive/cover-800.avif?v=b5c7785376 800w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/what-is-talklive/cover-800.webp?v=24bc0217d0" srcset="/images/what-is-talklive/cover-800.webp?v=24bc0217d0 800w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1600" height="900" alt="TalkLive on desktop and phone" loading="lazy" decoding="async" /></picture>
-        <div class="tt-story-body"><h3>What is TalkLive?</h3><p>The why behind one-tap voice chat, avatars and a camera-free internet.</p><span class="tt-more">Read the article →</span></div>
-      </a>
-      <div class="tt-guides tt-rv">
-        <a class="tt-guide" href="/blog/what-to-talk-about-with-a-stranger"><b>Questions that get past small talk</b><small>Read guide →</small></a>
-        <a class="tt-guide" href="/blog/introvert-guide-to-talking-to-strangers"><b>The introvert's guide to talking to strangers</b><small>Read guide →</small></a>
-        <a class="tt-guide" href="/blog/how-to-practise-a-language-by-speaking"><b>Why you understand more than you can say</b><small>Read guide →</small></a>
-        <a class="tt-guide" href="/blog/how-to-spot-a-bot-or-scam-in-random-chat"><b>The scams that start with "hi"</b><small>Read guide →</small></a>
-      </div>
-
-      <div class="tt-cta tt-rv">
-        <h2 class="tt-h2">Someone is waiting <span class="tt-grad">to say hello.</span></h2>
-        <div class="tt-btns"><button type="button" class="tt-btn talk" id="ttTalk"><i class="ti ti-mic" aria-hidden="true"></i> Tap to Talk</button><a class="tt-btn chat" href="/chat?go=1"><i class="ti ti-chat" aria-hidden="true"></i> Tap to Chat</a></div>
-      </div>
     </div>
   </section>
   <script>
@@ -2195,9 +2160,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
     var rail = root.querySelector('.tt-shots');
     if (rail) root.querySelectorAll('.tt-arrow').forEach(function (b) {
       b.addEventListener('click', function () { rail.scrollBy({ left: (b.classList.contains('tt-next') ? 1 : -1) * rail.clientWidth * 0.8, behavior: 'smooth' }); });
-    });
-    document.getElementById('ttTalk').addEventListener('click', function () {
-      var b = document.getElementById('startBtn'); scrollTo({ top: 0, behavior: 'smooth' }); if (b) setTimeout(function () { b.click(); }, 350);
     });
   })();
   </script>
@@ -2258,174 +2220,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
     </div>
 
 
-
-  <!-- Plain-language answers for people arriving from search. Below the app and
-       the tour, real HTML in the first response (translated client-side via
-       data-i18n; the 16 localized homepages get the same copy from scripts/build-seo.js). -->
-  <section class="seo-section hc-about" aria-labelledby="hcTitle">
-    <div class="seo-inner">
-      <h2 id="hcTitle" data-i18n="hcH2">TalkLive at a glance: what it is, what it costs, how to stay safe</h2>
-      <h3 data-i18n="hcWhatH">What is TalkLive?</h3>
-      <p data-i18n="hcWhatP">TalkLive is a free way to talk to a random person by voice or text, right in your browser. Tap Talk for a live voice call or Chat for a text conversation. There is no video, and you do not need an account.</p>
-      <h3 data-i18n="hcHowH">How it works</h3>
-      <ol class="seo-list">
-        <li data-i18n="hcHow1">Tap Talk for voice or Chat for text. You can set optional filters first.</li>
-        <li data-i18n="hcHow2">TalkLive connects you with another adult who is looking to talk right now. How long it takes depends on who is online.</li>
-        <li data-i18n="hcHow3">Say hello. Not a fit? Move on to someone new, or add a friend to talk again later.</li>
-      </ol>
-      <h3 data-i18n="hcPlanH">Free and Plus</h3>
-      <p data-i18n="hcPlanP">Voice calls and text chat are free and unlimited, with ads. Free users can pick up to 2 preferred and 2 avoided countries. Plus is optional and adds a Men/Women filter, up to 50 preferred and avoided countries, priority matching when it is busy, and no ads. You buy it in the Android app through Google Play.</p>
-      <h3 data-i18n="hcSafeH">Staying safe</h3>
-      <p data-i18n="hcSafeP">TalkLive is for people aged 18 and over. You can block or report anyone in one tap, and the team reviews reports. Voice calls are never recorded, links to other websites are blocked in chat, and automated checks look for abuse. Sharing your Instagram or Snapchat is allowed, but only with people you trust. Never share passwords, codes or money.</p>
-      <h3 data-i18n="hcFaqH">Common questions</h3>
-      <div class="hc-faq">
-        <details><summary data-i18n="hcQ1">Is TalkLive free?</summary><p data-i18n="hcA1">Yes. Voice calls and text chat are free and unlimited, and there is no paywall. Plus is an optional upgrade.</p></details>
-        <details><summary data-i18n="hcQ2">Do I need an account?</summary><p data-i18n="hcA2">No. Open the page and tap Talk or Chat. An account is optional and only keeps your friends and history between visits.</p></details>
-        <details><summary data-i18n="hcQ3">Can I choose to talk to men or women?</summary><p data-i18n="hcA3">Yes, with Plus. The Men/Women filter is a Plus feature, and it is a preference, not a verified guarantee. Free users can still choose countries.</p></details>
-        <details><summary data-i18n="hcQ4">Is TalkLive safe?</summary><p data-i18n="hcA4">It is built for adults 18 and over, with one-tap block and report, moderation and no voice recording. No service that connects strangers can promise perfect safety, so never share passwords, codes or money.</p></details>
-        <details><summary data-i18n="hcQ5">Does TalkLive work on Android?</summary><p data-i18n="hcA5">Yes. It works in the browser on Android, iPhone and computers, and there is an Android app on Google Play.</p></details>
-        <details><summary data-i18n="hcQ6">How is TalkLive different from Omegle?</summary><p data-i18n="hcA6">Omegle closed in 2023. TalkLive is a separate service with no connection to it. It is voice and text only with no video, limited to adults 18 and over, and needs no account.</p></details>
-      </div>
-    </div>
-  </section>
-
-  <!-- Crawlable content region: gives search engines a rich, indexable
-       description of TalkLive and links out to the keyword landing pages.
-       Sits below the app so it never interferes with the call experience. -->
-  <section class="seo-section" aria-labelledby="seoHeading">
-    <div class="seo-inner">
-      <img src="/illustrations/connected-world.svg" width="1177" height="874" alt="People around the world connected by voice calls on TalkLive" loading="lazy" decoding="async" style="display:block;width:100%;max-width:360px;height:auto;margin:0 auto 24px" />
-      <h2 id="seoHeading">Talk to strangers: free random voice &amp; text chat, worldwide</h2>
-      <p>TalkLive is a browser-based random chat service for adults. Tap to Talk searches for a live voice match; Tap to Chat searches for a text match without microphone permission. Core matching is free and needs no install or account. Availability, identity, country and language are not guaranteed, so keep personal information private and leave any conversation that feels wrong.</p>
-
-      <h3>Why people choose TalkLive</h3>
-      <ul class="seo-list">
-        <li><strong>Two ways to connect</strong> - Tap to Talk for a live voice call, or Tap to Chat for a text conversation with no mic at all.</li>
-        <li><strong>One-tap random matching</strong> - press either button to join the live queue; wait time depends on availability and your preferences.</li>
-        <li><strong>Private by default</strong> - no real name, email, or phone number is required for a basic match. Operational data is handled under the Privacy Policy.</li>
-        <li><strong>No camera, ever</strong> - no video pressure, low bandwidth, and real connection through voice or words.</li>
-        <li><strong>Light enough for any phone</strong> - text chat runs smoothly even on 1GB devices and slow networks.</li>
-        <li><strong>Next</strong> - not clicking? Move on to a new person in a single tap.</li>
-        <li><strong>Worldwide reach</strong> - talk to people across dozens of countries, or filter to the regions you prefer.</li>
-        <li><strong>Safety controls</strong> - intended for adults, with leave, block and report tools. No online chat service can guarantee safety.</li>
-        <li><!-- langs:bullet --><strong>17 languages</strong> - the whole app is translated, including right-to-left Arabic, Persian and Urdu.<!-- /langs:bullet --></li>
-      </ul>
-
-      <h3>Popular ways to use TalkLive</h3>
-      <nav class="seo-links" aria-label="Explore TalkLive">
-        <a href="/talk-to-strangers">Talk to strangers online</a>
-        <a href="/random-voice-chat">Random voice chat</a>
-        <a href="/random-text-chat">Random text chat</a>
-        <a href="/random-call">Random call</a>
-        <a href="/anonymous-chat">Anonymous chat</a>
-        <a href="/talk-to-someone">Someone to talk to</a>
-        <a href="/language-exchange">Language exchange</a>
-        <a href="/practice-english-speaking">Practice English speaking</a>
-        <a href="/make-friends-online">Make friends online</a>
-        <a href="/late-night-chat">Late night chat</a>
-        <a href="/blog/">Journal &amp; guides</a>
-      </nav>
-
-      <h3>Choosing a format</h3>
-      <nav class="seo-links" aria-label="Choosing a chat format">
-        <a href="/omegle-alternative">Omegle alternative</a>
-        <a href="/voice-chat-vs-video-chat">Voice chat vs video chat</a>
-        <a href="/how-it-works">How matching works</a>
-        <a href="/safety">Safety center</a>
-      </nav>
-
-      <!-- Regional and language guides: the homepage is the crawl path into them. -->
-      <h3>Countries, regions and languages</h3>
-      <p>Guides to the 30 countries TalkLive hears from most, six long reads on how different parts of the world talk, and one feature on the <!-- langs:count -->17<!-- /langs:count --> languages TalkLive is available in. <a href="/country-chat-guide">All country guides</a>.</p>
-
-      <nav class="seo-links" aria-label="Country guides">
-        <a href="/countries/india">India</a>
-        <a href="/countries/pakistan">Pakistan</a>
-        <a href="/countries/bangladesh">Bangladesh</a>
-        <a href="/countries/united-states">United States</a>
-        <a href="/countries/united-kingdom">United Kingdom</a>
-        <a href="/countries/egypt">Egypt</a>
-        <a href="/countries/nigeria">Nigeria</a>
-        <a href="/countries/indonesia">Indonesia</a>
-        <a href="/countries/germany">Germany</a>
-        <a href="/countries/saudi-arabia">Saudi Arabia</a>
-        <a href="/countries/morocco">Morocco</a>
-        <a href="/countries/united-arab-emirates">United Arab Emirates</a>
-        <a href="/countries/canada">Canada</a>
-        <a href="/countries/philippines">Philippines</a>
-        <a href="/countries/china">China</a>
-        <a href="/countries/turkey">Turkey</a>
-        <a href="/countries/brazil">Brazil</a>
-        <a href="/countries/mexico">Mexico</a>
-        <a href="/countries/malaysia">Malaysia</a>
-        <a href="/countries/kenya">Kenya</a>
-        <a href="/countries/south-africa">South Africa</a>
-        <a href="/countries/france">France</a>
-        <a href="/countries/iran">Iran</a>
-        <a href="/countries/italy">Italy</a>
-        <a href="/countries/algeria">Algeria</a>
-        <a href="/countries/singapore">Singapore</a>
-        <a href="/countries/australia">Australia</a>
-        <a href="/countries/iraq">Iraq</a>
-        <a href="/countries/netherlands">Netherlands</a>
-        <a href="/countries/japan">Japan</a>
-      </nav>
-
-      <nav class="seo-links" aria-label="Regional features">
-        <a href="/regions/south-asia">Why South Asia talks after midnight</a>
-        <a href="/regions/southeast-asia">How Southeast Asia talks</a>
-        <a href="/regions/middle-east">The Middle East and North Africa</a>
-        <a href="/regions/africa">How Africa talks</a>
-        <a href="/regions/europe">Europe runs on four clocks</a>
-        <a href="/regions/americas">One evening, two continents</a>
-        <a href="/languages/">Seventeen ways to say hello</a>
-      </nav>
-
-      <nav class="seo-links" aria-label="Chat by language"><!-- langs:links -->
-        <a href="/languages/#english">English</a>
-        <a href="/languages/#spanish">Spanish</a>
-        <a href="/languages/#portuguese">Portuguese</a>
-        <a href="/languages/#french">French</a>
-        <a href="/languages/#german">German</a>
-        <a href="/languages/#russian">Russian</a>
-        <a href="/languages/#turkish">Turkish</a>
-        <a href="/languages/#arabic">Arabic</a>
-        <a href="/languages/#persian">Persian</a>
-        <a href="/languages/#hindi">Hindi</a>
-        <a href="/languages/#bengali">Bengali</a>
-        <a href="/languages/#urdu">Urdu</a>
-        <a href="/languages/#indonesian">Indonesian</a>
-        <a href="/languages/#italian">Italian</a>
-        <a href="/languages/#japanese">Japanese</a>
-        <a href="/languages/#korean">Korean</a>
-        <a href="/languages/#chinese">Chinese (Mandarin)</a><!-- /langs:links -->
-      </nav>
-
-      <h3>Today's featured read</h3>
-      <a id="dailyArticleCard" class="daily-article-card" href="/blog/">
-        <span class="daily-article-badge">New today</span>
-        <span id="dailyArticleTitle" class="daily-article-title">Loading today's article…</span>
-        <span id="dailyArticleBlurb" class="daily-article-blurb"></span>
-        <span class="daily-article-cta">Read now →</span>
-      </a>
-
-
-      <h3>How TalkLive works</h3>
-      <p>TalkLive uses encrypted WebRTC audio through a production TURN relay. TalkLive does not record or store voice audio, although another participant can record on their own device. Typed messages are kept in a moderation log (the newest 5,000 messages across the site), and direct-message conversations keep their newest 200 messages; see the Privacy Policy. If both people choose, the optional friends feature can help them reconnect without exchanging phone numbers.</p>
-
-      <h3>Frequently asked questions</h3>
-      <div class="seo-faq">
-        <p><strong>Is it anonymous?</strong> A basic match needs no real name or phone number, but TalkLive processes operational data and another participant may record on their own device.</p>
-        <p><strong>Can I chat without talking?</strong> Yes. Tap to Chat uses text without microphone permission. Typed messages may be retained under the Privacy Policy.</p>
-        <p><strong>Is there video?</strong> No. TalkLive is intentionally voice-and-text only for privacy and comfort.</p>
-        <p><strong>Is TalkLive a dating app?</strong> No. It is a random voice and text chat for conversation, not a dating or matchmaking service.</p>
-        <p><strong>Is TalkLive the same as Talkliv?</strong> No. TalkLive is the free voice and text chat at talklive.app. It is not connected to other apps or sites with similar names.</p>
-        <p><strong>Which languages are supported?</strong> <!-- langs:faq -->TalkLive is available in 17 languages: English, Spanish, Portuguese, French, German, Russian, Turkish, Arabic, Persian, Hindi, Bengali, Urdu, Indonesian, Italian, Japanese, Korean and Chinese. Right-to-left languages (Arabic, Persian and Urdu) are fully supported.<!-- /langs:faq --></p>
-      </div>
-
-
-    </div>
-  </section>
 
   <!-- The footer closes the page, after the crawlable section rather than
        above it. -->
@@ -2563,10 +2357,10 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        browser finish parsing and paint the page first. -->
   <script defer src="/vendor/socket.io.min.js?v=7bcff1b4f1"></script>
   <script defer src="countries.js?v=30bcd7f146"></script>
-  <script defer src="i18n.js?v=59f883513a"></script>
+  <script defer src="i18n.js?v=1899e8c3aa"></script>
   <script defer src="chat-time.js?v=9d4e50bcf7"></script>
-  <script defer src="animals.js?v=0cccb3b920"></script>
-  <script defer src="characters.js?v=a8636f2bc4"></script>
+  <script defer src="animals.js?v=b06413711c"></script>
+  <script defer src="characters.js?v=0da1f15e5d"></script>
   <script defer src="social-kit.js?v=fa26a36909"></script>
   <script defer src="moderation.js?v=7a69fce698"></script>
   <script defer src="error-reporter.js?v=0e5b1c5f7d"></script>
@@ -2575,7 +2369,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="games.js?v=4a44d16cae"></script>
   <script defer src="nickname-rules.js?v=077c943b4d"></script>
   <script defer src="social-links.js?v=a4e5c724ac"></script>
-  <script defer src="app.js?v=d3a091f39d"></script>
+  <script defer src="app.js?v=083b16e74e"></script>
 
 <!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

@@ -51,17 +51,19 @@
   };
   var NAME = { like: 'Like', love: 'Love', haha: 'Haha', wow: 'Wow', sad: 'Sad' };
   function typeName(k) { return tr('reaction_' + k, NAME[k]); }
-  var LOGO = '<svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="tlpg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2a6fe8"/><stop offset="1" stop-color="#00d4ff"/></linearGradient></defs><circle cx="16" cy="16" r="16" fill="url(#tlpg)"/><g fill="#fff"><rect x="8" y="13" width="2.600" height="6" rx="1.300"/><rect x="12.400" y="9.500" width="2.600" height="13" rx="1.300"/><rect x="16.900" y="7" width="2.600" height="18" rx="1.300"/><rect x="21.300" y="10.500" width="2.600" height="11" rx="1.300"/></g></svg>';
+  // The team's avatar: a clean person silhouette on a calm brand-blue disc.
+  var LOGO = '<svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="tlpg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b4a66"/><stop offset="1" stop-color="#1f2a40"/></linearGradient></defs><circle cx="16" cy="16" r="16" fill="url(#tlpg)"/><circle cx="16" cy="12.500" r="5" fill="#cfe0ff"/><path d="M6.500 27c.4-5.200 4.300-8.300 9.500-8.300s9.100 3.100 9.500 8.300A15.900 15.900 0 0 1 16 32a15.900 15.900 0 0 1-9.500-5z" fill="#cfe0ff"/></svg>';
+  var PIN = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M14.500 3.500 20.500 9.500l-1.600 1.100-2.200-.4-3.700 3.700.4 4.200-1.400 1.400-3.600-3.600L3.800 20.200 3 19.400l4.900-4.600L4.300 11.200l1.400-1.400 4.200.4 3.700-3.700-.4-2.200z"/></svg>';
 
-  var CSS = '.tl-posts{max-width:640px;margin:0 auto;padding:36px 16px 8px}.tl-posts[hidden]{display:none}'
-    + '.tl-posts-title{margin:0 0 14px;font-size:22px;font-weight:800;color:var(--text)}'
+  var CSS = '.tl-posts{width:100%;max-width:none;align-self:stretch;box-sizing:border-box;margin:18px auto 0;padding:0;text-align:start;contain:layout}.tl-posts[hidden]{display:none}'
+    + '.tl-posts-title{margin:0 0 10px;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}'
     + '.tl-post{background:var(--bg-2);border:1px solid var(--line);border-radius:16px;margin:0 0 16px;overflow:hidden;color:var(--text);box-shadow:0 6px 24px -14px rgba(0,0,0,.5)}'
     + '.tl-post-head{display:flex;align-items:center;gap:10px;padding:12px 14px 4px}'
-    + '.tl-post-av{width:40px;height:40px;flex:none}.tl-post-av svg{width:100%;height:100%}'
+    + '.tl-post-av{width:40px;height:40px;flex:none;border-radius:50%;overflow:hidden}.tl-post-av svg{width:100%;height:100%}'
     + '.tl-post-who{display:flex;flex-direction:column;min-width:0}.tl-post-who strong{font-size:15px;display:flex;align-items:center;gap:6px}'
     + '.tl-post-who small{color:var(--muted);font-size:12.5px}'
     + '.tl-post-tag{display:inline-block;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:#fff;background:linear-gradient(135deg,#2a6fe8,#00a8cc)}'
-    + '.tl-post-tag.pin{background:linear-gradient(135deg,#f5a623,#ffcf5c);color:#2b1c00}'
+    + '.tl-post-pin{display:inline-flex;width:16px;height:16px;color:#f5a623;transform:rotate(30deg)}.tl-post-pin svg{width:100%;height:100%}'
     + '.tl-post-text{margin:6px 14px 10px;font-size:15.5px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}'
     + '.tl-post-img{display:block;width:100%;max-height:480px;object-fit:cover;background:var(--bg-glow)}'
     + '.tl-post-stats{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;color:var(--muted);font-size:13.5px}'
@@ -161,7 +163,7 @@
       }
       return '<article class="tl-post" data-post="' + esc(p.id) + '">'
         + '<div class="tl-post-head"><span class="tl-post-av">' + LOGO + '</span><span class="tl-post-who"><strong>TalkLive <span class="tl-post-tag">' + esc(tr('adminBadge', 'Admin')) + '</span>'
-        + (p.pinned ? '<span class="tl-post-tag pin">' + esc(tr('postPinned', 'Pinned')) + '</span>' : '') + '</strong><small>' + esc(when(p.createdAt)) + '</small></span></div>'
+        + (p.pinned ? '<span class="tl-post-pin" role="img" title="' + esc(tr('postPinned', 'Pinned')) + '" aria-label="' + esc(tr('postPinned', 'Pinned')) + '">' + PIN + '</span>' : '') + '</strong><small>' + esc(when(p.createdAt)) + '</small></span></div>'
         + (p.text ? '<p class="tl-post-text">' + esc(p.text) + '</p>' : '')
         + (img ? '<img class="tl-post-img" src="' + esc(img) + '" alt="" loading="lazy" decoding="async">' : '')
         + '<div class="tl-post-stats"><div class="tl-post-reacts">' + reacts + (total ? '<span class="tl-post-total">' + total + '</span>' : '') + '</div>'
