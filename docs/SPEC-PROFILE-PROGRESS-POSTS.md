@@ -130,3 +130,10 @@ verified account to comment"). Reacting/commenting updates counts live.
 - When both have liked each other: both get `like-match` `{ clientId, username, avatar, cover, badges }`; the server makes them friends (if not already, and not blocked) and the UI shows "It's a match!" with a "Call again" action.
 - `likes-summary` -> ack `{ count, matches, people }`: `count` = likes received in the last 30 days not yet matched; `people` = `[{ clientId, username, avatar, ts }]` only for Plus (empty list otherwise, UI shows blurred faces + "See who with Plus"). Push `likes` `{ count }` when it changes.
 - Likes received in the last 7 days give a small match-priority boost (reputation / ranking).
+
+## 9. Top-talker rank badges + hide badges
+
+- Rank badges `top1`..`top5` ("#1 Top Talker" crown, "#2 Top Talker", ... "#5 Top Talker"): held by the 5 people with the most total call time (`talkTime.seconds`, same numbers as the dashboard Talk time leaderboard). Recomputed automatically (on boot, after each call end at most once a minute). Accounts and guests both count; banned profiles are skipped. A rank badge outranks hour badges: when held it is the `top` badge shown by the name. Payload: `badges: { top, earned, hours, rank: 1..5|null }`, with `top1`..`top5` in `earned` when held.
+- Art: more special than hour badges (crown/trophy motif, gold for #1, silver #2, bronze #3, platinum-blue #4/#5), shiny and animated.
+- Dashboard Badges view shows the current top 5 with their rank badge.
+- Setting `show-badges` `{ on }` -> ack `{ ok, on }` (default on, stored per profile/account). When off, the server sends `badges: null` to OTHER people; the owner still gets their own badges plus `badgesHidden: true` in own state. Toggle lives in My Profile > Badges ("Show badges on my profile").
