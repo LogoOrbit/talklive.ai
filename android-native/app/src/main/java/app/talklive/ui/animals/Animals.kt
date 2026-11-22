@@ -42,4 +42,4 @@ val Animals: List<Animal> = listOf(
 
 private val byId = (Animals + Characters + SpecialFaces).associateBy { it.id }
 
-fun animalById(id: String?): Animal? = id?.let { byId[it] }
+fun animalById(id: String?): Animal? = id?.let { byId[it] ?: byId[it.removePrefix("a:")] }

@@ -301,6 +301,51 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
             }
         }
     }
+    // TalkLive's posts: Home shows the latest (fetched once per app open); the news screen loads when opened.
+    val postsVm: app.talklive.ui.posts.PostsViewModel = hiltViewModel()
+    val postsState by postsVm.state.collectAsStateWithLifecycle()
+    var showNews by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { postsVm.loadOnce() }
+    if (showNews) androidx.compose.ui.window.Dialog(
+        onDismissRequest = { showNews = false },
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+    ) { app.talklive.ui.posts.NewsScreen(postsVm, onBack = { showNews = false }) }
+
+    // Someone wearing a Plus face without Plus gets a free one (spec 8), here too and not only on the server.
+    LaunchedEffect(animal, premium.ended, premium.look) {
+        if (premium.ended && !premium.look && app.talklive.ui.animals.isPlusFace(animal)) vm.setAnimal(app.talklive.ui.animals.freeFaceFor(animal))
+    }
+
+    // Likes: a mutual like is "It's a match!"; after a call or chat ends, a soft ask to like the person.
+    var match by remember { mutableStateOf<app.talklive.social.Person?>(null) }
+    LaunchedEffect(Unit) { social.likeMatches.collect { match = it } }
+    match?.let { m ->
+        app.talklive.ui.social.MatchDialog(
+            m, animal,
+            onCall = { social.call(m) },
+            onMessage = { openChat = m.clientId },
+            onDismiss = { match = null },
+        )
+    }
+    var lastPartner by remember { mutableStateOf<app.talklive.net.Partner?>(null) }
+    var likePrompt by remember { mutableStateOf<app.talklive.net.Partner?>(null) }
+    val likedNow by social.liked.collectAsStateWithLifecycle()
+    LaunchedEffect(state.phase) {
+        val ph = state.phase
+        if (ph is CallPhase.Connected) lastPartner = ph.partner
+        else if (ph is CallPhase.Idle) {
+            val prev = lastPartner
+            lastPartner = null
+            if (prev != null && prev.clientId.isNotBlank() && prev.clientId !in likedNow && friends.none { it.clientId == prev.clientId }) {
+                kotlinx.coroutines.delay(1800)
+                likePrompt = prev
+            }
+        }
+    }
+    likePrompt?.let { pp ->
+        app.talklive.ui.social.PostCallLikeDialog(pp.username, onLike = { social.likePartner(pp.clientId) }, onDismiss = { likePrompt = null })
+    }
+
     away?.let { list ->
         AlertDialog(
             onDismissRequest = { away = null },
@@ -571,6 +616,8 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                         dark = dark,
                         progress = levelProgress,
                         onRewards = { showRewards = true },
+                        latestPost = postsState.posts.firstOrNull(),
+                        onNews = { showNews = true },
                         onStart = onStart,
                         onToggleTheme = vm::toggleTheme,
                         onProfile = { tab = MainTab.Profile },

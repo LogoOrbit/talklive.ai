@@ -122,7 +122,8 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
     val sent by vm.sent.collectAsStateWithLifecycle()
     val person: Person = friends.firstOrNull { it.clientId == clientId }
         ?: history.firstOrNull { it.clientId == clientId }
-        ?: Person(clientId, "", null, null, null, null, false, null, null)
+        ?: vm.person(clientId)
+        ?: Person(clientId, "", null, null, vm.knownFace(clientId), null, false, null, null)
     val isFriend = friends.any { it.clientId == clientId }
     val messages = threads[clientId].orEmpty()
     val typing = clientId in typingSet
@@ -177,8 +178,10 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
     BackHandler(onBack = onBack)
     var showProfile by remember { mutableStateOf(false) }
     val incomingRequests by vm.requests.collectAsStateWithLifecycle()
+    val likedSet by vm.liked.collectAsStateWithLifecycle()
     if (showProfile) PersonSheet(person, isFriend, onCall = { vm.call(person) }, onMessage = null, requested = clientId in sent, onAddFriend = { vm.sendRequest(clientId) },
-        incomingRequest = incomingRequests.any { it.clientId == clientId }, onAccept = { vm.respond(clientId, true) }) { showProfile = false }
+        incomingRequest = incomingRequests.any { it.clientId == clientId }, onAccept = { vm.respond(clientId, true) },
+        onLike = if (!isFriend) ({ vm.likePartner(clientId) }) else null, liked = clientId in likedSet) { showProfile = false }
     // New message or typing: glide to the bottom.
     // Not while they are reading further up, unless the new message is their own.
     LaunchedEffect(messages.size, typing) {
@@ -845,6 +848,9 @@ internal fun PersonSheet(
     onAccept: (() -> Unit)? = null,
     /** Someone you talked to on a call can be called back before being friends. */
     canCall: Boolean = isFriend,
+    /** Someone met on a call or chat: a heart to like them (a mutual like becomes a match). */
+    onLike: (() -> Unit)? = null,
+    liked: Boolean = false,
     onDismiss: () -> Unit,
 ) {
     androidx.compose.material3.ModalBottomSheet(
@@ -902,6 +908,10 @@ internal fun PersonSheet(
                 if (requested) androidx.compose.material3.OutlinedButton(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth().height(56.dp), shape = CircleShape) {
                     Icon(Icons.Rounded.Check, null); Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.request_sent))
                 } else app.talklive.ui.components.PrimaryButton(stringResource(R.string.add_friend), onClick = onAddFriend, icon = Icons.Rounded.PersonAdd)
+                Spacer(Modifier.height(12.dp))
+            }
+            if (!isFriend && onLike != null) {
+                LikeButton(liked, onLike, Modifier.fillMaxWidth())
                 Spacer(Modifier.height(12.dp))
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {

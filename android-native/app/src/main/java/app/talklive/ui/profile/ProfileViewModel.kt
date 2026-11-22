@@ -39,6 +39,8 @@ class ProfileViewModel @Inject constructor(
     val blocked = social.blocked
     val myFriendId = social.myFriendId
     val myBadges = social.myBadges
+    val badgesHidden = social.badgesHidden
+    fun setShowBadges(on: Boolean, onResult: (Boolean) -> Unit) { viewModelScope.launch { onResult(social.setShowBadges(on)) } }
     val myCover = social.myCover
     /** Level, points and tier (null until the server has sent them). */
     val progress = progressRepo.progress

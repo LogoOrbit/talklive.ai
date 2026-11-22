@@ -6,10 +6,20 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,7 +31,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -66,7 +79,18 @@ val BADGES: List<BadgeDef> = listOf(
     BadgeDef("b10", R.string.badge_b10, 2500),
 )
 
-fun badgeDef(id: String?): BadgeDef? = BADGES.firstOrNull { it.id == id }
+/** The five top-talker badges (spec 9): held by the people with the most call time. [BadgeDef.hours] is unused. */
+val RANK_BADGES: List<BadgeDef> = listOf(
+    BadgeDef("top1", R.string.badge_top1, 0),
+    BadgeDef("top2", R.string.badge_top2, 0),
+    BadgeDef("top3", R.string.badge_top3, 0),
+    BadgeDef("top4", R.string.badge_top4, 0),
+    BadgeDef("top5", R.string.badge_top5, 0),
+)
+
+fun isRankBadge(id: String?): Boolean = id != null && id.length == 4 && id.startsWith("top")
+
+fun badgeDef(id: String?): BadgeDef? = BADGES.firstOrNull { it.id == id } ?: RANK_BADGES.firstOrNull { it.id == id }
 
 // ---- Public pieces ---------------------------------------------------------
 
@@ -80,7 +104,7 @@ fun BadgeMedal(id: String, size: Dp, modifier: Modifier = Modifier, earned: Bool
     val reduce = LocalReduceMotion.current
     val phase = if (animate && earned && !reduce) {
         rememberInfiniteTransition(label = "medal")
-            .animateFloat(0f, 1f, infiniteRepeatable(tween(4200 + (id.hashCode() and 7) * 260, easing = LinearEasing)), label = "shine")
+            .animateFloat(0f, 1f, infiniteRepeatable(tween(if (isRankBadge(id)) 2600 else 3600 + (id.hashCode() and 7) * 240, easing = LinearEasing)), label = "shine")
     } else null
     val outline = remember(id) { outlineOf(id) }
     Box(modifier.size(size)) {
@@ -91,24 +115,37 @@ fun BadgeMedal(id: String, size: Dp, modifier: Modifier = Modifier, earned: Bool
         if (phase != null) Canvas(Modifier.fillMaxSize()) {
             val k = this.size.minDimension / 100f
             scale(k, k, Offset.Zero) {
+                val p = phase.value
                 clipPath(outline) {
-                    // Idle for the first half of each turn, then one bright band from corner to corner.
-                    val p = phase.value
-                    val t = if (p < 0.5f) -1f else (p - 0.5f) / 0.5f
+                    // Idle for the first third of each turn, then one bright metallic band from corner to corner.
+                    val t = if (p < 0.34f) -1f else (p - 0.34f) / 0.66f
                     if (t >= 0f) {
-                        val x = -40f + 180f * t
+                        val x = -50f + 200f * t
                         drawRect(
                             Brush.linearGradient(
-                                0f to Color.Transparent, 0.5f to Color(0x99FFFFFF), 1f to Color.Transparent,
-                                start = Offset(x, 0f), end = Offset(x + 38f, 38f),
+                                0f to Color.Transparent, 0.35f to Color(0x55FFFFFF), 0.5f to Color(0xCCFFFFFF), 0.65f to Color(0x55FFFFFF), 1f to Color.Transparent,
+                                start = Offset(x, 0f), end = Offset(x + 46f, 46f),
                             ),
                             Offset.Zero, Size(100f, 100f),
                         )
                     }
                 }
+                // Little four-point sparkles that twinkle at the edge, each on its own beat.
+                val spots = if (isRankBadge(id)) listOf(Offset(22f, 20f), Offset(80f, 28f), Offset(70f, 80f), Offset(24f, 74f), Offset(50f, 10f)) else listOf(Offset(22f, 20f), Offset(80f, 28f), Offset(70f, 80f))
+                spots.forEachIndexed { i, o ->
+                    val u = (p * 2f + i * 0.31f) % 1f
+                    val a = if (u < 0.22f) kotlin.math.sin(u / 0.22f * Math.PI.toFloat()) else 0f
+                    if (a > 0.02f) drawPath(sparkle(o.x, o.y, 3f + 7f * a), Color.White.copy(alpha = a))
+                }
             }
         }
     }
+}
+
+/** A thin four-point sparkle. */
+private fun sparkle(cx: Float, cy: Float, r: Float): Path = Path().apply {
+    moveTo(cx, cy - r); lineTo(cx + r * 0.22f, cy - r * 0.22f); lineTo(cx + r, cy); lineTo(cx + r * 0.22f, cy + r * 0.22f)
+    lineTo(cx, cy + r); lineTo(cx - r * 0.22f, cy + r * 0.22f); lineTo(cx - r, cy); lineTo(cx - r * 0.22f, cy - r * 0.22f); close()
 }
 
 /** The badge shown beside a name: nothing when there is none. */
@@ -116,14 +153,18 @@ fun BadgeMedal(id: String, size: Dp, modifier: Modifier = Modifier, earned: Bool
 fun TopBadge(badges: BadgeSet?, size: Dp = 18.dp, modifier: Modifier = Modifier) {
     val id = badges?.top ?: return
     if (badgeDef(id) == null) return
-    BadgeMedal(id, size, modifier, animate = false)
+    var open by remember { mutableStateOf(false) }
+    BadgeMedal(id, size, modifier.clickable { open = true }, animate = false)
+    if (open) BadgeDetailSheet(id, badges) { open = false }
 }
 
 /** The top badge with its name, as a small pill. */
 @Composable
 fun TopBadgePill(badges: BadgeSet?, modifier: Modifier = Modifier) {
     val def = badgeDef(badges?.top) ?: return
-    Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surface, modifier = modifier) {
+    var open by remember { mutableStateOf(false) }
+    if (open) BadgeDetailSheet(def.id, badges) { open = false }
+    Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surface, modifier = modifier.clickable { open = true }) {
         Row(Modifier.padding(start = 4.dp, end = 10.dp, top = 3.dp, bottom = 3.dp), verticalAlignment = Alignment.CenterVertically) {
             BadgeMedal(def.id, 22.dp)
             Spacer(Modifier.width(6.dp))
@@ -132,21 +173,17 @@ fun TopBadgePill(badges: BadgeSet?, modifier: Modifier = Modifier) {
     }
 }
 
-/** All ten badges: earned ones lit, the rest greyed with the hours still needed. */
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+/** All ten badges in one row that scrolls sideways: earned ones lit, the rest greyed. Tap one for its details. */
 @Composable
 fun BadgeShelf(badges: BadgeSet?, modifier: Modifier = Modifier) {
     val earned = badges?.earned.orEmpty().toSet()
     val hours = badges?.hours ?: 0.0
-    FlowRow(
-        modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        BADGES.forEach { b ->
+    var detail by remember { mutableStateOf<String?>(null) }
+    LazyRow(modifier, horizontalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(horizontal = 2.dp)) {
+        items(RANK_BADGES.filter { it.id in earned } + BADGES, key = { it.id }) { b ->
             val has = b.id in earned
-            Column(Modifier.width(62.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                BadgeMedal(b.id, 52.dp, earned = has)
+            Column(Modifier.width(68.dp).clickable { detail = b.id }, horizontalAlignment = Alignment.CenterHorizontally) {
+                BadgeMedal(b.id, 56.dp, earned = has)
                 Spacer(Modifier.size(4.dp))
                 Text(
                     stringResource(b.name), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, maxLines = 2,
@@ -154,9 +191,48 @@ fun BadgeShelf(badges: BadgeSet?, modifier: Modifier = Modifier) {
                     color = if (has) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    if (has) stringResource(R.string.badge_earned) else stringResource(R.string.badge_hours_needed, hoursLeft(b.hours, hours)),
+                    if (has || isRankBadge(b.id)) stringResource(R.string.badge_earned) else stringResource(R.string.badge_hours_needed, hoursLeft(b.hours, hours)),
                     style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, maxLines = 2,
                     color = if (has) app.talklive.ui.theme.AccentText else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+    detail?.let { BadgeDetailSheet(it, badges) { detail = null } }
+}
+
+/** A badge's details: big shiny art, its name, the hours it needs, and whether it is earned or how far off it is. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BadgeDetailSheet(id: String, badges: BadgeSet?, onDismiss: () -> Unit) {
+    val def = badgeDef(id) ?: run { onDismiss(); return }
+    val has = id in badges?.earned.orEmpty()
+    val hours = badges?.hours ?: 0.0
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.background,
+    ) {
+        Column(
+            Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 24.dp).padding(bottom = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            BadgeMedal(id, 140.dp, earned = has, animate = true)
+            Spacer(Modifier.height(14.dp))
+            Text(stringResource(def.name), style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground)
+            Spacer(Modifier.height(4.dp))
+            Text(
+                if (isRankBadge(id)) stringResource(R.string.badge_rank_desc, id.removePrefix("top").toInt())
+                else androidx.compose.ui.res.pluralStringResource(R.plurals.badge_needs_hours, def.hours, def.hours),
+                style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(12.dp))
+            Surface(shape = RoundedCornerShape(50), color = if (has) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface) {
+                Text(
+                    if (has) stringResource(R.string.badge_earned) else if (isRankBadge(id)) stringResource(R.string.badge_rank_locked) else stringResource(R.string.badge_hours_needed, hoursLeft(def.hours, hours)),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (has) app.talklive.ui.theme.AccentText else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
             }
         }
@@ -182,6 +258,12 @@ private fun lookOf(id: String): Look = when (id) {
     "b7" -> Look(Color(0xFFFFF0A6), Color(0xFFB8860B), Color(0xFFFFD84D), Color(0xFFD99A12), Color(0xFF7A4F05), Color(0xFFFFFBE3))
     "b8" -> Look(Color(0xFFE9B8FF), Color(0xFF6A1FA0), Color(0xFF9B3FD6), Color(0xFF4A1275), Color(0xFF2A0846), Color(0xFFFFD84D))
     "b9" -> Look(Color(0xFFFFB0EA), Color(0xFF8A1E9E), Color(0xFFE23FC2), Color(0xFF5B1B9C), Color(0xFF2D0A52), Color(0xFF9DF3FF))
+    // Top talkers: gold, silver, bronze, then platinum blue.
+    "top1" -> Look(Color(0xFFFFF4B0), Color(0xFFB8860B), Color(0xFFFFD43B), Color(0xFFC77D0A), Color(0xFF6B4300), Color(0xFFFFFBE0))
+    "top2" -> Look(Color(0xFFFFFFFF), Color(0xFF6B7686), Color(0xFFDDE3EC), Color(0xFF8E9AAB), Color(0xFF3B4556), Color(0xFFFFFFFF))
+    "top3" -> Look(Color(0xFFFFD2A6), Color(0xFF8A4A1C), Color(0xFFD9904F), Color(0xFF93511F), Color(0xFF4F2609), Color(0xFFFFE9D2))
+    "top4" -> Look(Color(0xFFE0F4FF), Color(0xFF3E7DB8), Color(0xFF8FD0F5), Color(0xFF3C86C8), Color(0xFF123B66), Color(0xFFFFFFFF))
+    "top5" -> Look(Color(0xFFD6ECFF), Color(0xFF4B6FB5), Color(0xFF7FB6F0), Color(0xFF4568B8), Color(0xFF172F66), Color(0xFFF2FAFF))
     else -> Look(Color(0xFFFFF3B0), Color(0xFFB77900), Color(0xFF7C6CF0), Color(0xFF0FB3C8), Color(0xFF1A1450), Color(0xFFFFE066))
 }
 
@@ -228,6 +310,7 @@ private fun outlineOf(id: String): Path = when (id) {
     "b6" -> starPath(50f, 50f, 48f, 38f, 8)
     "b7" -> starPath(50f, 50f, 47f, 43f, 20)
     "b9" -> starPath(50f, 50f, 48f, 33f, 4)
+    "top1", "top2", "top3", "top4", "top5" -> starPath(50f, 50f, 49f, 42f, 16)
     else -> starPath(50f, 50f, 48f, 41f, 12)
 }
 
@@ -244,11 +327,13 @@ private fun DrawScope.drawMedal(id: String, earned: Boolean) {
     val outline = outlineOf(id)
     // Soft drop shadow, then the rim.
     translateShadow(outline)
-    drawPath(outline, Brush.linearGradient(listOf(rimA, rimB), Offset(10f, 0f), Offset(90f, 100f)))
+    // A metal look: bright, dark, bright and dark bands across the rim.
+    val hi = lerp(rimA, Color.White, if (earned) 0.7f else 0.35f)
+    drawPath(outline, Brush.linearGradient(0f to rimA, 0.22f to hi, 0.42f to rimB, 0.66f to lerp(rimA, hi, 0.5f), 0.86f to rimB, 1f to rimA, start = Offset(6f, 0f), end = Offset(94f, 100f)))
     // Face, a little smaller than the rim, with its own gradient and a fine inner line.
     scale(0.8f, Offset(50f, 50f)) {
-        drawPath(outline, Brush.linearGradient(listOf(faceA, faceB), Offset(20f, 8f), Offset(80f, 96f)))
-        drawPath(outline, rimA.copy(alpha = 0.55f), style = Stroke(1.6f))
+        drawPath(outline, Brush.linearGradient(0f to faceA, 0.35f to lerp(faceA, Color.White, if (earned) 0.32f else 0.15f), 0.6f to faceB, 1f to lerp(faceB, faceA, 0.4f), start = Offset(20f, 8f), end = Offset(80f, 96f)))
+        drawPath(outline, hi.copy(alpha = 0.75f), style = Stroke(1.8f))
     }
     // A gloss on the upper half.
     clipPath(outline) {
@@ -353,6 +438,20 @@ private fun DrawScope.drawMedal(id: String, earned: Boolean) {
             drawPath(Path().apply { moveTo(50f, 24f); lineTo(42f, 41f); lineTo(50f, 41f); close() }, Color.White.copy(alpha = 0.45f))
             drawPath(starPath(72f, 30f, 6f, 1.8f, 4), accent)
             drawPath(starPath(27f, 62f, 4.5f, 1.4f, 4), accent.copy(alpha = 0.85f))
+        }
+        "top1", "top2", "top3", "top4", "top5" -> {
+            // A crown over the rank: one pip per place (the #1 crown also carries a gem on every point).
+            val n = id.removePrefix("top").toInt()
+            val crown = Path().apply {
+                moveTo(26f, 60f); lineTo(24f, 32f); lineTo(38f, 46f); lineTo(50f, 25f); lineTo(62f, 46f); lineTo(76f, 32f); lineTo(74f, 60f); close()
+            }
+            drawPath(crown, Brush.linearGradient(listOf(accent, lerp(accent, rimB, 0.35f)), Offset(26f, 25f), Offset(74f, 62f)))
+            drawRoundRect(accent, Offset(26f, 60f), Size(48f, 9f), CornerRadius(3f))
+            drawRoundRect(ink.copy(alpha = 0.35f), Offset(26f, 63f), Size(48f, 1.6f), CornerRadius(1f))
+            val gem = if (earned) Color(0xFFFF4D6D) else Color(0xFF8A8F9C)
+            for ((x, y) in listOf(24f to 32f, 50f to 25f, 76f to 32f)) drawCircle(gem, if (n == 1) 4.2f else 3.2f, Offset(x, y))
+            drawCircle(if (earned) Color(0xFF4DD2FF) else Color(0xFF9AA0AD), 3f, Offset(50f, 51f))
+            for (i in 0 until n) drawPath(starPath(50f + (i - (n - 1) / 2f) * 9f, 79f, 4f, 1.6f, 4), accent)
         }
         else -> {
             // TalkLive Icon: the brand orb with its voice bars, ringed by stars.

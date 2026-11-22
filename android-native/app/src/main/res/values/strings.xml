@@ -897,4 +897,53 @@
     <string name="cover_fireflies">Fireflies</string>
     <string name="plus_why_cover">Animated covers</string>
     <string name="plus_why_cover_body">Six live covers for your profile: aurora, galaxy, waves, neon, sakura and fireflies.</string>
+
+    <!-- Round 2: My Profile, news, likes, rank badges -->
+    <string name="my_profile">My Profile</string>
+    <string name="my_profile_desc">Avatar, cover, name, badges and rewards</string>
+    <string name="section_avatar">Avatar</string>
+    <string name="section_help">Help and friends</string>
+    <string name="history_kept_30">Kept for 30 days</string>
+    <string name="news_title">TalkLive news</string>
+    <string name="news_row_desc">Updates and posts from the TalkLive team</string>
+    <string name="news_empty">No news yet. Check back soon.</string>
+    <string name="news_error">Could not load the news. Pull down to try again.</string>
+    <string name="from_talklive">From TalkLive</string>
+    <string name="admin_tag">Admin</string>
+    <string name="comment_hint">Write a comment…</string>
+    <string name="comment_verify">Sign in with a verified account to comment</string>
+    <string name="comment_rate">Slow down a little, then try again</string>
+    <string name="comment_blocked">That comment cannot be posted</string>
+    <string name="view_all_comments">View all %1$d comments</string>
+    <plurals name="post_comments">
+        <item quantity="one">%1$d comment</item>
+        <item quantity="other">%1$d comments</item>
+    </plurals>
+    <plurals name="badge_needs_hours">
+        <item quantity="one">Talk %1$d hour in total to earn this badge</item>
+        <item quantity="other">Talk %1$d hours in total to earn this badge</item>
+    </plurals>
+    <string name="badge_top1">#1 Top Talker</string>
+    <string name="badge_top2">#2 Top Talker</string>
+    <string name="badge_top3">#3 Top Talker</string>
+    <string name="badge_top4">#4 Top Talker</string>
+    <string name="badge_top5">#5 Top Talker</string>
+    <string name="badge_rank_desc">#%1$d Top Talker - one of the 5 people who talked the most on TalkLive</string>
+    <string name="badge_rank_locked">Talk the most to reach the top 5</string>
+    <string name="show_badges">Show badges on my profile</string>
+    <string name="show_badges_desc">When off, other people do not see your badges. You still see them.</string>
+    <string name="like">Like</string>
+    <string name="liked">Liked</string>
+    <string name="like_sent">Liked. If they like you back, it is a match.</string>
+    <string name="like_prompt_title">Enjoyed talking with %1$s?</string>
+    <string name="like_prompt_body">Send a like. If they like you back, you become friends.</string>
+    <string name="match_title">It\'s a match!</string>
+    <string name="match_body">You and %1$s liked each other. You are friends now.</string>
+    <string name="call_again">Call again</string>
+    <string name="close">Close</string>
+    <plurals name="people_liked_you">
+        <item quantity="one">%1$d person liked you</item>
+        <item quantity="other">%1$d people liked you</item>
+    </plurals>
+    <string name="see_who_with_plus">See who with Plus</string>
 </resources>
