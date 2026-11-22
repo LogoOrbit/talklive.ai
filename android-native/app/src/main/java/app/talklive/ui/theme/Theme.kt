@@ -18,17 +18,17 @@ import androidx.compose.ui.unit.sp
 import app.talklive.R
 
 // Brand colours, the same values as public/chat.css.
-val BrandViolet = Color(0xFF6C5CE7)
+val BrandBlue = Color(0xFF2A6FE8)
 val BrandTeal = Color(0xFF0086B3)
 val BrandCyan = Color(0xFF00D4FF)
 val Danger = Color(0xFFFF5470)
 val Success = Color(0xFF17A862)
 
 private val Light = lightColorScheme(
-    primary = BrandViolet,
+    primary = BrandBlue,
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFE9E6FC),
-    onPrimaryContainer = Color(0xFF2A1F8F),
+    primaryContainer = Color(0xFFE1EBFD),
+    onPrimaryContainer = Color(0xFF0B2E80),
     secondary = BrandTeal,
     onSecondary = Color.White,
     // Softer than the website's near-white, so a full-screen app is easy on the eyes.
@@ -60,7 +60,7 @@ private fun darkScheme(bg1: Long, bg2: Long, glow: Long, accent: Long, accent2: 
     primary = Color(accent),
     onPrimary = Color.White,
     primaryContainer = Color(glow).copy(alpha = 1f),
-    onPrimaryContainer = Color(0xFFE2DDFF),
+    onPrimaryContainer = Color(0xFFDCE8FF),
     secondary = Color(accent2),
     onSecondary = Color.Black,
     background = Color(bg1),
@@ -79,13 +79,13 @@ private fun darkScheme(bg1: Long, bg2: Long, glow: Long, accent: Long, accent2: 
     error = Danger,
 )
 
-private val Dark = darkScheme(0xFF0B0F1A, 0xFF141B30, 0xFF1C2240, 0xFF6C5CE7, 0xFF00D4FF)
+private val Dark = darkScheme(0xFF0B0F1A, 0xFF141B30, 0xFF1C2240, 0xFF2A6FE8, 0xFF00D4FF)
 private val Ocean = darkScheme(0xFF03151F, 0xFF072330, 0xFF0A3648, 0xFF00B4D8, 0xFF90E0EF)
 private val Sunset = darkScheme(0xFF1A0B14, 0xFF2A1220, 0xFF3D1A2E, 0xFFFF6B6B, 0xFFFFA94D)
 
 fun accentsFor(t: AppTheme) = when (t) {
-    AppTheme.Dark -> Accents(BrandViolet, BrandCyan.copy(red = 0f, green = 0.62f, blue = 0.86f), Color(0xFF1C2240))
-    AppTheme.Light -> Accents(BrandViolet, BrandTeal, Color(0xFFDDE4F5))
+    AppTheme.Dark -> Accents(BrandBlue, BrandCyan.copy(red = 0f, green = 0.62f, blue = 0.86f), Color(0xFF1C2240))
+    AppTheme.Light -> Accents(BrandBlue, BrandTeal, Color(0xFFDDE4F5))
     AppTheme.Ocean -> Accents(Color(0xFF00B4D8), Color(0xFF0077B6), Color(0xFF0A3648))
     AppTheme.Sunset -> Accents(Color(0xFFFF6B6B), Color(0xFFFFA94D), Color(0xFF3D1A2E))
 }
@@ -158,5 +158,5 @@ val SuccessText: Color @Composable @androidx.compose.runtime.ReadOnlyComposable
 val GoldText: Color @Composable @androidx.compose.runtime.ReadOnlyComposable
     get() = if (lightBg()) Color(0xFF7A5100) else Color(0xFFF5C451)
 val AccentText: Color @Composable @androidx.compose.runtime.ReadOnlyComposable
-    get() = if (lightBg()) Color(0xFF4A3AC8)
+    get() = if (lightBg()) Color(0xFF1F58C8)
         else androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.primary, Color.White, 0.38f)

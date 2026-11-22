@@ -72,6 +72,8 @@ class SocialViewModel @Inject constructor(
     fun setPinned(id: String, pinned: Boolean) = repo.setPinned(id, pinned)
     fun setMuted(id: String, muted: Boolean) = repo.setMuted(id, muted)
     fun rename(id: String, name: String) = repo.rename(id, name)
+    /** Pull to refresh: asks the server for friends and requests again. */
+    suspend fun refresh() = repo.refresh()
     suspend fun find(friendId: String): Result<FoundUser> = repo.find(friendId)
 
     fun openChat(id: String?) {

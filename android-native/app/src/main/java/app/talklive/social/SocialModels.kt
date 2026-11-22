@@ -3,8 +3,15 @@ package app.talklive.social
 import app.talklive.net.optNullableString
 import org.json.JSONObject
 
-/** "a:fox" (the server's avatar field) to "fox". */
-internal fun animalOf(avatar: String?): String? = avatar?.takeIf { it.startsWith("a:") }?.substring(2)
+/**
+ * The server's avatar field to the app's avatar id: "a:fox" is the animal "fox",
+ * "c:wizard" is a character (its id keeps the "c:" prefix, see ui/animals/Characters.kt),
+ * and a bare id is taken as is.
+ */
+internal fun animalOf(avatar: String?): String? {
+    val a = avatar?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+    return if (a.startsWith("a:")) a.substring(2).ifEmpty { null } else a
+}
 
 data class LastMessage(
     val mine: Boolean, val text: String, val gif: Boolean, val voice: Boolean, val ts: Long, val seen: Boolean,
@@ -80,7 +87,7 @@ data class Person(
             username = o.optString("username"),
             nickname = o.optNullableString("nickname"),
             countryCode = o.optNullableString("countryCode"),
-            animal = animalOf(o.optNullableString("avatar")),
+            animal = animalOf(o.optNullableString("avatar") ?: o.optNullableString("animal")),
             friendId = o.optNullableString("friendId"),
             online = o.optBoolean("online"),
             lastSeen = if (o.isNull("lastSeen")) null else o.optLong("lastSeen").takeIf { it > 0 },

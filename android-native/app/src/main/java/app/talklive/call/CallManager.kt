@@ -79,6 +79,8 @@ data class CallState(
     val partnerTyping: Boolean = false,
     /** The stranger switched to another app (text chat). */
     val partnerAway: Boolean = false,
+    /** Their connection dropped; the server keeps the conversation for a couple of minutes for them to return. */
+    val partnerOffline: Boolean = false,
     val heartSent: Boolean = false,
     /** Both sides tapped the heart. */
     val mutualHeart: Boolean = false,
@@ -451,7 +453,7 @@ class CallManager @Inject constructor(
 
     private fun resetPartnerState() {
         typingJob?.cancel()
-        _state.update { it.copy(partnerTyping = false, partnerAway = false, heartSent = false, mutualHeart = false) }
+        _state.update { it.copy(partnerTyping = false, partnerAway = false, partnerOffline = false, heartSent = false, mutualHeart = false) }
     }
 
     private suspend fun onEvent(e: ServerEvent) {
@@ -464,7 +466,10 @@ class CallManager @Inject constructor(
                 e.pairId?.let { pairId = it }
                 if (session != null && !linkUp) { lastRestartAt = 0L; iceRestart(matchId) }
             }
-            ServerEvent.PartnerResumed -> if (session != null && !linkUp && initiator) { lastRestartAt = 0L; iceRestart(matchId) }
+            ServerEvent.PartnerResumed -> {
+                _state.update { it.copy(partnerAway = false, partnerOffline = false) }
+                if (session != null && !linkUp && initiator) { lastRestartAt = 0L; iceRestart(matchId) }
+            }
             ServerEvent.NeedsRegister -> if (phase is CallPhase.Searching) {
                 delay(800)
                 socket.emit("find-partner", searchOpts())
@@ -532,7 +537,7 @@ class CallManager @Inject constructor(
             is ServerEvent.StrangerReaction -> _chat.update { list ->
                 list.map { if (it.id == e.id) it.copy(theirReaction = if (e.on) e.emoji else null) else it }
             }
-            is ServerEvent.PartnerAway -> _state.update { it.copy(partnerAway = e.away) }
+            is ServerEvent.PartnerAway -> _state.update { it.copy(partnerAway = e.away && !e.offline, partnerOffline = e.away && e.offline) }
             is ServerEvent.Reaction -> if (phase is CallPhase.Connected) _reactions.tryEmit(FloatingReaction(e.type, mine = false))
             is ServerEvent.MutualHeart -> _state.update { it.copy(mutualHeart = true) }
             is ServerEvent.RatePrompt -> if (e.seconds >= 20) _state.update { it.copy(ratePrompt = RatePrompt(e.token, lastPartnerName)) }

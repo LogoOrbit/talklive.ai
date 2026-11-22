@@ -93,12 +93,13 @@ import app.talklive.ui.components.BrandGradient
 import app.talklive.ui.components.ErrorBanner
 import app.talklive.ui.components.PrimaryButton
 import app.talklive.ui.components.TalkTextField
+import app.talklive.ui.components.verticalScrollbar
 import app.talklive.ui.main.EmptyTab
 import app.talklive.ui.main.MainTab
 import app.talklive.ui.theme.Danger
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalking: () -> Unit, onPlus: () -> Unit = {}) {
     var profileOf by remember { mutableStateOf<Person?>(null) }
@@ -106,9 +107,11 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
         val friendsNow by vm.friends.collectAsStateWithLifecycle()
         val sentNow by vm.sent.collectAsStateWithLifecycle()
         val friend = friendsNow.any { it.clientId == p.clientId }
+        val incomingNow by vm.requests.collectAsStateWithLifecycle()
         PersonSheet(
             p, isFriend = friend, onCall = { vm.call(p) }, onMessage = { onOpenChat(p.clientId) },
             requested = p.clientId in sentNow, onAddFriend = { vm.sendRequest(p.clientId) },
+            incomingRequest = incomingNow.any { it.clientId == p.clientId }, onAccept = { vm.respond(p.clientId, true) },
             canCall = friend || p.mode == "talk",
         ) { profileOf = null }
     }
@@ -161,7 +164,14 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
             return@Column
         }
 
-        LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(bottom = 16.dp)) {
+        var refreshing by remember { mutableStateOf(false) }
+        val refreshScope = rememberCoroutineScope()
+        androidx.compose.material3.pulltorefresh.PullToRefreshBox(
+            isRefreshing = refreshing,
+            onRefresh = { refreshing = true; refreshScope.launch { vm.refresh(); refreshing = false } },
+            modifier = Modifier.weight(1f),
+        ) {
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 16.dp)) {
             item(key = "notify") { NotificationsBanner() }
             if (requests.isNotEmpty()) {
                 item { SectionLabel(stringResource(R.string.friend_requests, requests.size)) }
@@ -245,6 +255,7 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
                     )
                 }
             }
+        }
         }
     }
 
@@ -409,6 +420,7 @@ private fun FriendRow(p: Person, modifier: Modifier, onCall: () -> Unit, onChat:
 private fun AddFriendSheet(vm: SocialViewModel, onDismiss: () -> Unit, onOpenChat: (String) -> Unit) {
     val myId by vm.myFriendId.collectAsStateWithLifecycle()
     val sent by vm.sent.collectAsStateWithLifecycle()
+    val incoming by vm.requests.collectAsStateWithLifecycle()
     val clipboard = LocalClipboardManager.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -459,7 +471,13 @@ private fun AddFriendSheet(vm: SocialViewModel, onDismiss: () -> Unit, onOpenCha
                 }
             }
             Spacer(Modifier.height(20.dp))
-            TalkTextField(query, { query = it; error = null }, stringResource(R.string.friend_id_hint), imeAction = ImeAction.Search, onIme = ::search)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TalkTextField(query, { query = it; error = null }, stringResource(R.string.friend_id_hint), modifier = Modifier.weight(1f), imeAction = ImeAction.Search, onIme = ::search)
+                Spacer(Modifier.width(8.dp))
+                FilledTonalIconButton(onClick = ::search, enabled = query.isNotBlank() && !busy, modifier = Modifier.size(52.dp)) {
+                    Icon(Icons.Rounded.Search, stringResource(R.string.find))
+                }
+            }
             Spacer(Modifier.height(12.dp))
             PrimaryButton(stringResource(R.string.find), onClick = ::search, enabled = query.isNotBlank(), loading = busy, icon = Icons.Rounded.Search)
             ErrorBanner(error)
@@ -475,6 +493,7 @@ private fun AddFriendSheet(vm: SocialViewModel, onDismiss: () -> Unit, onOpenCha
                         }
                         when {
                             u.isFriend -> TextButton(onClick = { onOpenChat(u.clientId) }) { Text(stringResource(R.string.message)) }
+                            incoming.any { it.clientId == u.clientId } -> TextButton(onClick = { vm.respond(u.clientId, true) }) { Text(stringResource(R.string.accept)) }
                             u.pending || u.clientId in sent -> Text(stringResource(R.string.requested), color = MaterialTheme.colorScheme.onSurfaceVariant)
                             else -> TextButton(onClick = { vm.sendRequest(u.clientId, u.friendId) }) { Text(stringResource(R.string.add)) }
                         }
@@ -492,7 +511,8 @@ private fun FriendActionsSheet(vm: SocialViewModel, p: Person, onDismiss: () -> 
     var renaming by remember { mutableStateOf(false) }
     var confirm by remember { mutableStateOf<String?>(null) }
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.background) {
-        Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 16.dp)) {
+        val actionsScroll = androidx.compose.foundation.rememberScrollState()
+        Column(Modifier.fillMaxWidth().verticalScrollbar(actionsScroll).verticalScroll(actionsScroll).navigationBarsPadding().padding(bottom = 16.dp)) {
             Row(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 PersonAvatar(p, 52.dp)
                 Spacer(Modifier.width(14.dp))

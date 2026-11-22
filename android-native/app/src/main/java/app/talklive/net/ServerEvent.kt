@@ -61,7 +61,8 @@ sealed interface ServerEvent {
     data class StrangerMessage(val id: String, val text: String, val gifUrl: String?, val replyTo: String?, val ts: Long) : ServerEvent
     data object StrangerTyping : ServerEvent
     data class StrangerReaction(val id: String, val emoji: String, val on: Boolean) : ServerEvent
-    data class PartnerAway(val away: Boolean) : ServerEvent
+    /** [offline]: their connection dropped (the server holds the call ~2 min for them to come back), not just an app switch. */
+    data class PartnerAway(val away: Boolean, val offline: Boolean = false) : ServerEvent
     /** like / laugh / clap / heart, sent during a voice call. */
     data class Reaction(val type: String) : ServerEvent
     data class MutualHeart(val partner: Partner) : ServerEvent

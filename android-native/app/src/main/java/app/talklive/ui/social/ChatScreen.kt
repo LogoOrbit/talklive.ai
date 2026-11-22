@@ -47,6 +47,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
+import app.talklive.ui.components.verticalScrollbar
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -175,7 +176,9 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
     }
     BackHandler(onBack = onBack)
     var showProfile by remember { mutableStateOf(false) }
-    if (showProfile) PersonSheet(person, isFriend, onCall = { vm.call(person) }, onMessage = null, requested = clientId in sent, onAddFriend = { vm.sendRequest(clientId) }) { showProfile = false }
+    val incomingRequests by vm.requests.collectAsStateWithLifecycle()
+    if (showProfile) PersonSheet(person, isFriend, onCall = { vm.call(person) }, onMessage = null, requested = clientId in sent, onAddFriend = { vm.sendRequest(clientId) },
+        incomingRequest = incomingRequests.any { it.clientId == clientId }, onAccept = { vm.respond(clientId, true) }) { showProfile = false }
     // New message or typing: glide to the bottom.
     // Not while they are reading further up, unless the new message is their own.
     LaunchedEffect(messages.size, typing) {
@@ -837,6 +840,9 @@ internal fun PersonSheet(
     /** Not friends yet: Add friend (or Request sent once asked). */
     requested: Boolean = false,
     onAddFriend: (() -> Unit)? = null,
+    /** This person already sent us a friend request: the button becomes Accept. */
+    incomingRequest: Boolean = false,
+    onAccept: (() -> Unit)? = null,
     /** Someone you talked to on a call can be called back before being friends. */
     canCall: Boolean = isFriend,
     onDismiss: () -> Unit,
@@ -846,8 +852,9 @@ internal fun PersonSheet(
         sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.background,
     ) {
+        val profileScroll = androidx.compose.foundation.rememberScrollState()
         Column(
-            Modifier.fillMaxWidth().verticalScroll(androidx.compose.foundation.rememberScrollState()).navigationBarsPadding().padding(horizontal = 24.dp).padding(bottom = 24.dp),
+            Modifier.fillMaxWidth().verticalScrollbar(profileScroll).verticalScroll(profileScroll).navigationBarsPadding().padding(horizontal = 24.dp).padding(bottom = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             PersonAvatar(person, 112.dp)
@@ -878,7 +885,10 @@ internal fun PersonSheet(
                 }
             }
             Spacer(Modifier.height(20.dp))
-            if (!isFriend && onAddFriend != null) {
+            if (!isFriend && incomingRequest && onAccept != null) {
+                app.talklive.ui.components.PrimaryButton(stringResource(R.string.accept), onClick = onAccept, icon = Icons.Rounded.Check)
+                Spacer(Modifier.height(12.dp))
+            } else if (!isFriend && onAddFriend != null) {
                 if (requested) androidx.compose.material3.OutlinedButton(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth().height(56.dp), shape = CircleShape) {
                     Icon(Icons.Rounded.Check, null); Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.request_sent))
                 } else app.talklive.ui.components.PrimaryButton(stringResource(R.string.add_friend), onClick = onAddFriend, icon = Icons.Rounded.PersonAdd)

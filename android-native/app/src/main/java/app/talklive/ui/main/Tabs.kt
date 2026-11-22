@@ -48,7 +48,7 @@ import androidx.compose.foundation.layout.Box
 import app.talklive.R
 import app.talklive.ui.components.PrimaryButton
 import app.talklive.ui.theme.BrandTeal
-import app.talklive.ui.theme.BrandViolet
+import app.talklive.ui.theme.BrandBlue
 
 enum class MainTab(val label: Int, val icon: ImageVector, val selectedIcon: ImageVector) {
     Talk(R.string.tab_talk, Icons.Outlined.GraphicEq, Icons.Rounded.GraphicEq),

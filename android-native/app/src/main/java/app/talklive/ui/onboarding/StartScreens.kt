@@ -63,7 +63,7 @@ import app.talklive.ui.components.PrimaryButton
 import app.talklive.ui.components.SecondaryButton
 import app.talklive.ui.components.WheelPicker
 import app.talklive.ui.theme.BrandTeal
-import app.talklive.ui.theme.BrandViolet
+import app.talklive.ui.theme.BrandBlue
 import java.text.DateFormatSymbols
 import java.util.Calendar
 

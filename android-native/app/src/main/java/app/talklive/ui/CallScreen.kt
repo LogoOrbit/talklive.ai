@@ -93,7 +93,7 @@ import app.talklive.net.Partner
 import app.talklive.ui.animals.AnimalAvatar
 import app.talklive.ui.animals.animalById
 import app.talklive.ui.theme.BrandTeal
-import app.talklive.ui.theme.BrandViolet
+import app.talklive.ui.theme.BrandBlue
 import app.talklive.ui.theme.Danger
 import app.talklive.ui.theme.Success
 import kotlinx.coroutines.delay
@@ -210,6 +210,9 @@ fun CallScreen(
             }
         }
 
+        AnimatedVisibility(live && state.partnerOffline, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
+            app.talklive.ui.components.PartnerOfflineBanner(partner?.username ?: "", onEnd, Modifier.padding(top = 10.dp))
+        }
         Spacer(Modifier.weight(1f))
         // The person, on a slightly faster layer than the background: a gentle parallax.
         AnimatedContent(
@@ -411,7 +414,7 @@ private fun Radar(content: @Composable () -> Unit) {
             phases.forEach { p ->
                 val f = p.value
                 drawCircle(
-                    color = BrandViolet.copy(alpha = (1f - f) * 0.35f),
+                    color = BrandBlue.copy(alpha = (1f - f) * 0.35f),
                     radius = base + (size.minDimension / 2 - base) * f,
                     style = Stroke(width = 2.dp.toPx()),
                 )
@@ -488,7 +491,7 @@ private fun SpeakingAvatar(partner: Partner, active: Boolean, level: () -> Float
         if (!active) { smooth.snapTo(0f); return@LaunchedEffect }
         snapshotFlow(level).collect { smooth.animateTo((it * 3f).coerceIn(0f, 1f), tween(200)) }
     }
-    val ring by animateColorAsState(if (active) BrandTeal else BrandViolet, label = "ring")
+    val ring by animateColorAsState(if (active) BrandTeal else BrandBlue, label = "ring")
     Box(
         Modifier.size(240.dp).drawBehind {
             val v = smooth.value
