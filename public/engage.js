@@ -62,7 +62,6 @@
     engageQuestionToast: "Today's question: {q}",
     presOnline: "Online now",
     presActive: "Active {time}",
-    presUsual: "Usually online {from}–{to}",
     bellOn: "You'll be told when {name} comes online",
     bellOff: "Online alerts off for {name}",
     bellTitle: "Tell me when they're online",
@@ -204,7 +203,6 @@
 
   // --- Landing strip ------------------------------------------------------------
   var strip = null;
-  var likes = { count: 0, locked: true, list: [] };
 
   function buildStrip() {
     var anchor = document.querySelector('#setupPanel .animal-picker');
@@ -238,7 +236,7 @@
     }
     // Someone who has not talked to anyone yet has three zeros to look at; the
     // tiles appear with their first streak day, country or like.
-    var fresh = !s.count && !s.lost && !p.codes.length && !likes.count;
+    var fresh = !s.count && !s.lost && !p.codes.length;
     if (!fresh) html += '<div class="tl-engage-tiles">'
       + '<button type="button" class="tl-engage-tile' + (today ? ' is-done' : (s.count ? ' is-due' : '')) + '" data-act="streak">'
       + '<span class="tl-engage-big"><i class="ti ti-flame" aria-hidden="true"></i> ' + s.count + '</span>'
@@ -248,10 +246,6 @@
       + '<span class="tl-engage-big"><i class="ti ti-globe" aria-hidden="true"></i> ' + p.codes.length + '</span>'
       + '<span class="tl-engage-label">' + esc(t('engagePassportLabel')) + '</span>'
       + '<span class="tl-engage-sub tl-engage-flags">' + (p.codes.length ? p.codes.slice(-4).map(function (c) { return flagImg(c, 20); }).join('') : esc(t('engagePassportEmpty'))) + '</span></button>'
-      + '<button type="button" class="tl-engage-tile tl-engage-likes" data-act="likes">'
-      + '<span class="tl-engage-big"><i class="ti ti-heart" aria-hidden="true"></i> ' + likes.count + '</span>'
-      + '<span class="tl-engage-label">' + esc(t('engageLikesLabel')) + '</span>'
-      + '<span class="tl-engage-sub">' + esc(likes.locked ? (likes.count ? t('engageLikesUnlock') : t('engageLikesNone')) : t('engageLikesSee')) + '</span></button>'
       + '</div>';
     html += '<div class="tl-engage-q"><small>' + esc(t('engageQuestionLabel')) + '</small><span>' + esc(todaysQuestion()) + '</span></div>';
     strip.innerHTML = html;
@@ -282,7 +276,6 @@
       return;
     }
     if (act === 'passport') { openPassport(); return; }
-    if (act === 'likes') openLikes();
   }
 
   // --- Small dialogs (built on demand, styled like the Premium card) --------
@@ -336,15 +329,6 @@
     } catch (_) { /* no clipboard */ }
   }
 
-  function refreshLikes() {
-    if (!socket || !socket.connected) return;
-    socket.emit('get-likes', function (res) {
-      res = res || {};
-      likes = { count: res.count || 0, locked: !!res.locked, list: res.list || [], countries: res.countries || [] };
-      render();
-    });
-  }
-
   function ago(ts) {
     var m = Math.max(1, Math.round((Date.now() - ts) / 60000));
     if (m < 60) return t('engageAgoMin', { n: m });
@@ -356,83 +340,12 @@
   // The Plus dialog shows its own price (app.js showUpsellPrice).
   function plusUpsell(message, perk) { showPremiumUpsell(message, perk); }
 
-  function openLikes() {
-    if (likes.locked) {
-      if (typeof trackGrowthEvent === 'function') trackGrowthEvent('likes_locked_tap');
-      if (!likes.count) { plusUpsell(t('engageLikesReasonNone'), 'likes'); return; }
-      // A teaser: real likes, one row each with the country, names hidden.
-      var shown = likes.countries.slice(0, 5);
-      if (!shown.length) shown = [''];
-      var tm = dialog('likesModal',
-        '<div class="pu-hero" aria-hidden="true"><span class="pu-gem tl-gem-pink">❤️</span></div>'
-        + '<div class="pu-title">' + esc(t('engageLikesTitle', { n: likes.count })) + '</div>'
-        + '<ul class="tl-likes">' + shown.map(function (c) {
-          return '<li><span class="tl-likes-who"><b><span class="tl-blur-av">?</span>' + esc(t('likesFrom', { where: c ? flag(c) + ' ' + countryName(c) : '🌍' })) + '</b></span>🔒</li>';
-        }).join('') + '</ul>'
-        + (likes.count > shown.length ? '<p class="pu-reason">' + esc(t('likesMore', { n: likes.count - shown.length })) + '</p>' : '')
-        + '<button type="button" class="pu-cta tl-see-who">' + esc(t('likesSeeWho')) + '</button>');
-      var go = tm.querySelector('.tl-see-who');
-      if (go) go.addEventListener('click', function () { closeModal(tm); plusUpsell(t('engageLikesReason', { n: likes.count }), 'likes'); });
-      return;
-    }
-    var rows = likes.list.length
-      ? '<ul class="tl-likes">' + likes.list.map(function (l) {
-        return '<li><span class="tl-likes-who"><b>' + flagImg(l.countryCode, 18) + ' ' + esc(l.username) + '</b><small>'
-          + (l.online ? '<i class="tl-dot"></i>' + esc(t('engageOnline')) + ' · ' : '') + esc(ago(l.at)) + '</small></span>'
-          + (l.online ? '<button type="button" class="tl-likes-call" data-call="' + esc(l.clientId) + '" data-name="' + esc(l.username) + '">📞 ' + esc(t('engageCallBack')) + '</button>' : '')
-          + '</li>';
-      }).join('') + '</ul>'
-      : '<p class="pu-reason">' + esc(t('engageLikesReasonNone')) + '</p>';
-    var m = dialog('likesModal',
-      '<div class="pu-hero" aria-hidden="true"><span class="pu-gem tl-gem-pink">❤️</span></div>'
-      + '<div class="pu-title">' + esc(t('engageLikesTitle', { n: likes.count })) + '</div>'
-      + '<p class="pu-reason">' + esc(t('engageLikesSub')) + '</p>' + rows);
-    m.querySelectorAll('[data-call]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        closeModal(m);
-        if (typeof requestCallBack === 'function') requestCallBack(b.dataset.call, b.dataset.name);
-      });
-    });
-  }
 
   // --- Chat Support launch chip --------------------------------------------------
   // support-chat.js owns the announcement window; this only mirrors it on the
   // home screen and repaints when it starts or ends.
   function supportPromoLive() { return !!(window.TLSupport && window.TLSupport.promoLive && window.TLSupport.promoLive()); }
   window.addEventListener('tl-support-promo', function () { render(); });
-
-  // --- Undo skip ----------------------------------------------------------------
-  var undoBtn = null;
-  var undoTimer = null;
-  function hideUndo() {
-    clearTimeout(undoTimer);
-    if (undoBtn) undoBtn.classList.add('hidden');
-  }
-  function offerUndo() {
-    var anchor = document.getElementById('subText');
-    if (!anchor) return;
-    if (!undoBtn) {
-      undoBtn = el('button', 'tl-undo-skip hidden');
-      undoBtn.type = 'button';
-      undoBtn.addEventListener('click', function () {
-        hideUndo();
-        if (!isPremiumUser) {
-          plusUpsell(t('engageUndoReason'), 'undo');
-          return;
-        }
-        socket.emit('undo-skip', function (res) {
-          if (res && res.ok) return;
-          var why = res && res.reason;
-          showToast(t(why === 'busy' ? 'engageUndoBusy' : why === 'premium' ? 'engageUndoReason' : 'engageUndoExpired'), 'warn');
-        });
-      });
-      anchor.parentNode.insertBefore(undoBtn, anchor.nextSibling);
-    }
-    undoBtn.innerHTML = '↩ ' + esc(t('engageUndo')) + (isPremiumUser ? '' : ' <i class="ti ti-gem" aria-hidden="true"></i>');
-    undoBtn.classList.remove('hidden');
-    clearTimeout(undoTimer);
-    undoTimer = setTimeout(hideUndo, UNDO_MS);
-  }
 
   // --- Hooks app.js calls ---------------------------------------------------
   // A call ended: count it if it was a real one.
@@ -483,19 +396,6 @@
   socket.on('engage-update', onEngageUpdate);
   socket.on('connect', function () { setTimeout(syncWithServer, 800); });
 
-  socket.on('mutual-heart', function () {
-    var add = document.getElementById('addFriendBtn');
-    showToast(t('engageMutual'), 'success', function () {
-      if (add && !add.disabled) add.click();
-    });
-    if (typeof vibrate === 'function') vibrate([20, 40, 20, 40, 20]);
-  });
-  socket.on('matched', function (m) {
-    hideUndo();
-    if (m && m.undo === 'them') setTimeout(function () { showToast(t('engageUndoThem'), 'social'); }, 1500);
-  });
-  socket.on('premium-status', function () { setTimeout(refreshLikes, 300); });
-  socket.on('connect', function () { setTimeout(refreshLikes, 1500); });
 
   // ---- Plus touches ---------------------------------------------------------
   (function style() {
@@ -603,28 +503,15 @@
   var friendsById = {};
   socket.on('state-sync', function (st) {
     st = st || {};
-    var before = Object.keys(friendsById).length;
     friendsById = {};
     (st.friends || []).forEach(function (f) { if (f && f.clientId) friendsById[f.clientId] = f; });
     notifs = st.notifications || notifs;
     setTimeout(decorateFriends, 0);
-    // First friend: the best moment to offer notifications.
-    var list = st.friends || [];
-    if (before === 0 && list.length === 1 && pushState() === 'off' && !read('tl_ntf_first', 0)) {
-      write('tl_ntf_first', 1);
-      setTimeout(function () { showToast(t('ntfFirstFriend', { name: list[0].username || '' }), 'social', enableNotifications); }, 1200);
-    }
-    maybeAway();
   });
-  function hourLabel(utcHour) {
-    var d = new Date(); d.setUTCHours(utcHour, 0, 0, 0);
-    try { return d.toLocaleTimeString([], { hour: 'numeric' }); } catch (_) { return String(d.getHours()); }
-  }
   function statusLine(f) {
     if (f.online) return '<span class="tl-pres is-on">' + esc(t('presOnline')) + '</span>';
     var parts = [];
     if (f.lastSeen && typeof timeAgo === 'function') parts.push(t('presActive', { time: timeAgo(f.lastSeen) }));
-    if (f.usual) parts.push(t('presUsual', { from: hourLabel(f.usual.from), to: hourLabel(f.usual.to) }));
     return parts.length ? '<span class="tl-pres">' + esc(parts.join(' · ')) + '</span>' : '';
   }
   function decorateFriends() {
@@ -710,43 +597,7 @@
 
   // ---- While you were away ----------------------------------------------------
   var notifs = [];
-  var hiddenAt = 0;
-  document.addEventListener('visibilitychange', function () {
-    if (document.hidden) { hiddenAt = Date.now(); write('tl_away_since', hiddenAt); }
-    else if (hiddenAt && Date.now() - hiddenAt > 10 * 60000) { awaySince = hiddenAt; awayShown = false; }
-  });
-  var awaySince = read('tl_away_since', 0) || 0;
-  if (Date.now() - awaySince < 10 * 60000) awaySince = 0;
-  var awayShown = false;
-  function maybeAway() {
-    if (awayShown || !awaySince || document.hidden) return;
-    var since = awaySince;
-    var rows = {};
-    notifs.forEach(function (n) {
-      if (!n || !n.ts || n.ts < since || !n.fromClientId) return;
-      if (n.type !== 'message' && n.type !== 'call_back_request') return;
-      var r = rows[n.fromClientId] || (rows[n.fromClientId] = { id: n.fromClientId, name: n.username || '', msgs: 0, call: false });
-      if (n.type === 'message') r.msgs++; else r.call = true;
-    });
-    var list = Object.keys(rows).map(function (k) { return rows[k]; });
-    awayShown = true;
-    write('tl_away_since', 0);
-    if (!list.length) return;
-    var m = dialog('awayModal', '<div class="pu-title">' + esc(t('awayTitle')) + '</div><ul class="tl-likes">'
-      + list.slice(0, 6).map(function (r) {
-        return '<li><span class="tl-likes-who"><b>' + esc(r.name) + '</b><small>'
-          + esc(r.call ? t('awayCall', { name: r.name }) : t('awayMsg', { name: r.name, n: r.msgs })) + '</small></span>'
-          + '<button type="button" class="tl-likes-call" data-away="' + (r.call ? 'call' : 'reply') + '" data-id="' + esc(r.id) + '" data-name="' + esc(r.name) + '">'
-          + esc(r.call ? '📞 ' + t('awayCall2') : '💬 ' + t('awayReply')) + '</button></li>';
-      }).join('') + '</ul>');
-    m.querySelectorAll('[data-away]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        closeModal(m);
-        if (b.dataset.away === 'call' && typeof requestCallBack === 'function') requestCallBack(b.dataset.id, b.dataset.name);
-        else if (typeof openFriendChat === 'function') openFriendChat(b.dataset.id);
-      });
-    });
-  }
+  // (The "while you were away" popup is disabled: no unsolicited popups.)
 
   (function presenceStyle() {
     var st = document.createElement('style');
@@ -795,11 +646,10 @@
     });
   })();
 
-  window.TalkLiveEngage = { onCall: onCall, onReveal: onReveal, offerUndo: offerUndo, render: render,
-    openPassport: openPassport, openLikes: openLikes,
+  window.TalkLiveEngage = { onCall: onCall, onReveal: onReveal, render: render,
+    openPassport: openPassport, 
     passportCount: function () { return (state.passport || []).length; } };
   window.addEventListener('i18n-changed', render);
   buildStrip();
-  refreshLikes();
   syncWithServer();
 })();

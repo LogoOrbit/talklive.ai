@@ -5225,6 +5225,25 @@ html.perf-lite .side-panel { box-shadow: none; }
   color: var(--muted);
 }
 
+/* Waiting for them to come back: an amber, animated card with a way out. */
+.peer-gone.is-waiting { border-color: rgba(245, 196, 81, 0.45); }
+.peer-gone.is-waiting .peer-gone-dot { background: #f5c451; box-shadow: 0 0 8px #f5c451; }
+.peer-gone-text { flex: 1 1 auto; }
+.peer-gone-leave {
+  flex: none;
+  margin-inline-start: auto;
+  padding: 7px 14px;
+  border: 1px solid var(--danger);
+  border-radius: 99px;
+  background: transparent;
+  color: var(--danger);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.peer-gone-leave.hidden { display: none; }
+
 /* In a chat it sits above the composer, full width of the panel. */
 .peer-gone-chat {
   width: auto;
@@ -5444,6 +5463,8 @@ html.perf-lite .side-panel { box-shadow: none; }
    basis measured the whole preview on one line and wrapped the info onto its
    own row, stacking avatar, name and buttons vertically. */
 .friend-item-info { flex: 1 1 0; min-width: 0; }
+.friend-item-disappearing { gap: 4px; justify-content: flex-start; font-size: 11.5px; line-height: 1.3; color: var(--accent); }
+.friend-item-disappearing .friend-flag-icon { width: 12px; height: 12px; flex: none; }
 .friend-item-preview {
   flex-basis: 100%;
   min-width: 0;
@@ -5781,6 +5802,7 @@ html.perf-lite .side-panel { box-shadow: none; }
   flex-shrink: 0;
 }
 
+.friend-id-search-btn { display: inline-flex; align-items: center; gap: 6px; }
 .friend-id-search {
   display: flex;
   gap: 8px;

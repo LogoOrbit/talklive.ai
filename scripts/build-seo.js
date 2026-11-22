@@ -220,7 +220,7 @@ ${alternates}
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/favicon-192.png" />
 <link rel="manifest" href="/site.webmanifest" />
-<script defer src="/pwa.js?v=d5bc87601a"></script>
+<script defer src="/pwa.js?v=81ef3ba884"></script>
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>
 <body>

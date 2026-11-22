@@ -1229,23 +1229,25 @@ summary:active {
 .chat-block-btn.confirm { background: var(--danger, #e5484d); color: #fff; opacity: 1; }
 
 /* "Break the ice": tap-to-send starter questions under the match line. */
-.icebreak { align-self: center; width: 100%; max-width: 560px; margin: 10px auto 6px; text-align: center; animation: msgIn 0.2s ease both; }
-.icebreak-head { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; font-size: 11.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
-.icebreak-shuffle { border: 0; background: none; color: var(--accent); font: inherit; letter-spacing: 0.04em; text-transform: none; font-size: 12.5px; cursor: pointer; padding: 4px 6px; border-radius: 8px; }
-.icebreak-close { border: 0; background: none; color: var(--muted); font-size: 18px; line-height: 1; cursor: pointer; padding: 2px 8px; border-radius: 8px; }
+.icebreak { align-self: flex-start; width: min(100%, 480px); margin: 8px 0 6px; text-align: left; animation: msgIn 0.2s ease both; }
+.icebreak-head { display: flex; align-items: center; justify-content: flex-start; gap: 8px; margin-bottom: 8px; font-size: 12px; font-weight: 700; line-height: 1.3; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.icebreak-head > span { flex: 1 1 auto; min-width: 0; }
+.icebreak-shuffle { flex: none; border: 0; background: none; color: var(--accent); font: inherit; font-size: 13px; font-weight: 600; line-height: 1.3; letter-spacing: 0; text-transform: none; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
+.icebreak-close { flex: none; border: 0; background: none; color: var(--muted); font-size: 18px; line-height: 1; cursor: pointer; padding: 2px 8px; border-radius: 8px; }
 .icebreak-close:hover { color: var(--text); background: var(--accent-soft, rgba(42,111,232, 0.12)); }
 .icebreak-shuffle:hover { background: var(--accent-soft, rgba(42,111,232, 0.12)); }
-.icebreak-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.icebreak-list { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
 .icebreak-chip {
-  display: inline-flex; align-items: center; gap: 8px; max-width: 100%;
-  padding: 9px 15px; border-radius: 999px; border: 1px solid var(--line);
+  display: inline-flex; align-items: flex-start; gap: 8px; max-width: 100%;
+  padding: 8px 14px; border-radius: 16px; border: 1px solid var(--line);
   background: color-mix(in srgb, var(--bubble-them) 70%, transparent); color: var(--text);
-  font: inherit; font-size: 14px; font-weight: 600; text-align: left; cursor: pointer;
+  font: inherit; font-size: 14px; font-weight: 500; line-height: 1.35; text-align: left; overflow-wrap: anywhere; cursor: pointer;
   transition: transform 0.12s ease, border-color 0.15s ease, background 0.15s ease;
 }
+.icebreak-chip > span:last-child { min-width: 0; }
 .icebreak-chip:hover { border-color: var(--accent); }
-.icebreak-chip:active { transform: scale(0.96); }
-.icebreak-emoji { font-size: 16px; line-height: 1; }
+.icebreak-chip:active { transform: scale(0.98); }
+.icebreak-emoji { flex: none; font-size: 15px; line-height: 1.35; }
 @media (prefers-reduced-motion: reduce) { .icebreak { animation: none; } }
 
 /* Direct messages on their way to the server, and ones that never got there. */
@@ -1529,3 +1531,7 @@ summary:active {
 /* Presence lines: thin red while someone is offline, green once back. */
 .msg.system.system-presence { color: var(--danger); font-weight: 400; font-size: 13px; letter-spacing: 0.01em; }
 .msg.system.system-presence.is-back { color: var(--green); }
+.msg.system.system-presence:not(.is-back)::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-inline-end: 8px; border-radius: 50%; background: #f5c451; vertical-align: middle; animation: presencePulse 1.4s ease-in-out infinite; }
+@keyframes presencePulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.7); } }
+@media (prefers-reduced-motion: reduce) { .msg.system.system-presence:not(.is-back)::before { animation: none; } }
+.presence-leave { margin-inline-start: 10px; padding: 3px 12px; border: 1px solid var(--danger); border-radius: 99px; background: transparent; color: var(--danger); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }

@@ -193,6 +193,15 @@ const friendProfileCancelBtn = document.getElementById('friendProfileCancelBtn')
 const peerGoneBanner = document.getElementById('peerGoneBanner');
 const peerGoneTitle = document.getElementById('peerGoneTitle');
 const peerGoneSub = document.getElementById('peerGoneSub');
+const peerGoneLeaveBtn = document.getElementById('peerGoneLeave');
+if (peerGoneLeaveBtn) {
+  peerGoneLeaveBtn.addEventListener('click', () => {
+    // Same as confirming a hang-up.
+    hidePeerGone();
+    callMainBtn.dataset.mode = 'confirm';
+    callMainBtn.click();
+  });
+}
 const friendChatPresence = document.getElementById('friendChatPresence');
 const friendChatPresenceTitle = document.getElementById('friendChatPresenceTitle');
 const friendChatPresenceSub = document.getElementById('friendChatPresenceSub');
@@ -2481,6 +2490,7 @@ friendIdSearchForm.addEventListener('submit', (e) => {
   e.preventDefault();
   const query = friendIdSearchInput.value.trim();
   if (!query) return friendIdSearchInput.focus();
+  if (isOwnFriendId(query)) { showFriendIdIsYou(); return; }
   socket.emit('find-by-friend-id', { friendId: query });
 });
 
@@ -2507,6 +2517,17 @@ function renderFriendIdResult() {
     ${action}`;
 }
 
+function isOwnFriendId(query) {
+  const norm = (v) => String(v || '').trim().replace(/^@/, '').toLowerCase();
+  return !!myFriendId && norm(query) === norm(myFriendId);
+}
+function showFriendIdIsYou() {
+  friendIdFound = null;
+  friendIdResult.classList.remove('hidden');
+  friendIdResult.classList.add('is-error');
+  friendIdResult.textContent = t('friendIdThatIsYou');
+}
+
 function clearFriendIdResult() {
   friendIdFound = null;
   friendIdResult.classList.add('hidden');
@@ -2521,6 +2542,7 @@ friendIdSearchInput.addEventListener('input', () => {
 });
 
 socket.on('find-by-friend-id-result', ({ ok, error, user } = {}) => {
+  if (ok && user && user.clientId === getClientId()) { showFriendIdIsYou(); return; }
   friendIdFound = ok && user ? user : null;
   if (!friendIdFound) {
     friendIdResult.classList.remove('hidden');
@@ -2631,7 +2653,12 @@ friendsOverlay.addEventListener('click', () => {
   closeSidePanel(friendsDropdown, friendsOverlay);
   updateScrollLock();
 });
-friendProfileOverlay.addEventListener('click', () => dismissFriendProfile());
+friendProfileOverlay.addEventListener('click', () => {
+  // A pending friend request must be answered with its buttons (or the close
+  // button): a stray tap on the backdrop must not make it vanish.
+  if (activeProfileFriendId && relationTo(activeProfileFriendId) === 'incoming') return;
+  dismissFriendProfile();
+});
 friendChatOverlay.addEventListener('click', () => {
   closeSidePanel(friendChatModal, friendChatOverlay);
   activeFriendChatId = null;
@@ -2760,10 +2787,13 @@ if (linkProfileBanner) {
 // back - so say which of the two happened, in the call and in a friend chat
 // alike, instead of leaving the other person staring at a dead screen.
 
-function showPeerGone(name) {
+function showPeerGone(name, waiting) {
   if (!peerGoneBanner) return;
-  peerGoneTitle.textContent = t('peerDisconnected', { name: name || t('stranger') });
-  peerGoneSub.textContent = t('peerDisconnectedSub');
+  peerGoneTitle.textContent = t(waiting ? 'peerWentOffline' : 'peerDisconnected', { name: name || t('stranger') });
+  peerGoneSub.textContent = t(waiting ? 'peerWaitingBack' : 'peerDisconnectedSub');
+  // While they may still come back, the person waiting can always walk away.
+  peerGoneBanner.classList.toggle('is-waiting', !!waiting);
+  if (peerGoneLeaveBtn) peerGoneLeaveBtn.classList.toggle('hidden', !waiting);
   peerGoneBanner.classList.remove('hidden');
 }
 
@@ -3485,7 +3515,7 @@ function accountUi() {
       css.href = '/account-ui.css?v=00ddfccc11';
       document.head.appendChild(css);
       const js = document.createElement('script');
-      js.src = '/account-ui.js?v=8f13756e07';
+      js.src = '/account-ui.js?v=15ce527ab1';
       js.onload = () => resolve(window.AccountUI);
       js.onerror = (e) => { accountUiP = null; reject(e); };
       document.head.appendChild(js);
@@ -3806,7 +3836,6 @@ function onMyProfileAction(e) {
   if (act === 'edit') { myProfileSheet.querySelector('.my-profile-body').hidden = false; myProfileSheet.querySelector('.my-profile-body').scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
   if (act === 'films') { myProfileSheet.querySelector('.my-profile-films').classList.toggle('open'); return; }
   if (act === 'passport' && E && E.openPassport) { E.openPassport(); return; }
-  if (act === 'likes' && E && E.openLikes) { E.openLikes(); return; }
   if (act === 'invite') { showSharePrompt(); return; }
   if (act === 'plus') { leaveMyProfileFor('settings'); if (isPremiumUser) openBilling(); else showPremiumUpsell('', 'general'); return; }
   if (act === 'logout') { logoutBtn.click(); return; }
@@ -4666,6 +4695,7 @@ const FRIEND_CALL_SVG = '<svg viewBox="0 0 24 24" fill="white" aria-hidden="true
 // small green call button on the right. Tapping the avatar opens the profile view.
 // Small glyphs for list rows: a pinned friend and a muted conversation.
 const PIN_SVG = '<svg class="friend-flag-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15 3l6 6-3 1-4 4 .5 4.5L13 20l-3.5-3.5L4 22l-.5-.5L9 16l-3.5-3.5L7 11l4.5.5 4-4z"/></svg>';
+const DISAPPEAR_SVG = '<svg class="friend-flag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg>';
 const MUTE_SVG = '<svg class="friend-flag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/></svg>';
 
 // Filter box above the friends list, only once the list is long enough to need
@@ -4822,6 +4852,7 @@ function renderFriendsList() {
           <span class="friend-item-name">${getFlagImg(f.countryCode)} <span class="friend-item-label">${escapeHtml(friendLabel(f))}</span>${f.pinned ? PIN_SVG : ''}${mutedIds.has(f.clientId) ? MUTE_SVG : ''}</span>
           ${stamp ? `<span class="friend-item-time${unread > 0 ? ' is-unread' : ''}">${escapeHtml(stamp)}</span>` : ''}
         </span>
+        ${disappearingChats.has(f.clientId) ? `<span class="friend-item-line friend-item-disappearing">${DISAPPEAR_SVG}${escapeHtml(t('disappearingOn'))}</span>` : ''}
         <span class="friend-item-line">
           ${second}
           ${unread > 0 ? `<span class="unread-badge">${unread > 99 ? '99+' : unread}</span>` : ''}
@@ -4833,7 +4864,6 @@ function renderFriendsList() {
       <button type="button" class="friend-call-btn" data-id="${escapeHtml(f.clientId)}" data-name="${escapeHtml(friendLabel(f))}" title="${escapeHtml(t('callBack'))}" aria-label="${escapeHtml(t('callBack'))}">
         ${FRIEND_CALL_SVG}
       </button>
-      <button type="button" class="tl-row-remove friend-remove-btn" data-id="${escapeHtml(f.clientId)}" title="${escapeHtml(t('removeFriend'))}" aria-label="${escapeHtml(t('removeFriend'))}">${ICONS.close}</button>
     `;
     friendsList.appendChild(item);
   });
@@ -5810,9 +5840,8 @@ socket.on('notification', (n) => {
   // someone who can reach them, and every message after this one arrives while
   // the tab is closed unless they say yes. Asking here rather than on page load
   // is the difference between an opt-in and a permanent denial.
-  if ((n.type === 'friend_accepted' || n.type === 'message') && window.TalkLivePWA) {
-    window.TalkLivePWA.askForPush(n.type);
-  }
+  // (No automatic push-permission card any more: notifications are turned on
+  // from Settings.)
 });
 
 // --- Friend-to-friend chat ---
@@ -6791,7 +6820,20 @@ socket.on('dm-gate', ({ clientId, gate } = {}) => {
   if (activeFriendChatId === clientId) applyFriendChatLock();
 });
 
-socket.on('friend-chat-history', ({ friendClientId, messages, gate, voice, hasMore, older }) => {
+// Which conversations have disappearing messages on. The server tells each side
+// when a thread is opened or the setting changes (not in the friends list
+// itself), so the row remembers what it was last told.
+const disappearingChats = new Set();
+try { JSON.parse(localStorage.getItem('tl_disappearing') || '[]').forEach((id) => disappearingChats.add(id)); } catch (_) { /* storage blocked */ }
+function setDisappearing(friendClientId, on) {
+  if (!friendClientId || disappearingChats.has(friendClientId) === !!on) return;
+  if (on) disappearingChats.add(friendClientId); else disappearingChats.delete(friendClientId);
+  try { localStorage.setItem('tl_disappearing', JSON.stringify([...disappearingChats])); } catch (_) { /* storage blocked */ }
+  renderFriendsList();
+}
+socket.on('chat-disappearing', ({ friendClientId, on } = {}) => setDisappearing(friendClientId, on === true));
+socket.on('friend-chat-history', ({ friendClientId, messages, gate, voice, hasMore, older, disappearing }) => {
+  if (disappearing) setDisappearing(friendClientId, disappearing.on === true);
   if (voice) {
     friendVoiceState.set(friendClientId, voice);
     if (activeFriendChatId === friendClientId) renderVoiceGate();
@@ -7008,7 +7050,7 @@ function recordCallHistory() {
   if (durationSeconds >= 30) trackGrowthEvent('quality_call');
   if (window.TalkLiveEngage) window.TalkLiveEngage.onCall(currentPartner, durationSeconds);
   // The share pop-up after calls is gone: shown 6,264 times in a month for 71 shares.
-  maybeShowFriendPrompt(currentPartner, durationSeconds);
+  // (The post-call "add friend" card is disabled: no unsolicited popups.)
 }
 
 // --- Post-call share prompt -------------------------------------------------
@@ -9268,9 +9310,7 @@ callMainBtn.addEventListener('click', () => {
     // Second press confirms the hang-up.
     clearHangupConfirm();
     playHangupSound();
-    const hadCall = callState === 'connected';
     socket.emit('leave');
-    if (hadCall && window.TalkLiveEngage) setTimeout(() => window.TalkLiveEngage.offerUndo(), 0);
     if (autoCallEnabled && !currentCallIsCallback) {
       findNextPerson('statusFindingNew');
     } else {
@@ -10282,47 +10322,7 @@ if (fvOn) {
   }
 }
 
-// "Add friend", asked at the one moment it makes sense: right after a call
-// that went well (a minute or more), with someone who is not already a friend.
-// Returns true when it took the slot the share prompt would otherwise use.
-const FV_GOOD_CALL_SECONDS = 60;
-function maybeShowFriendPrompt(partner, durationSeconds) {
-  if (!fvOn || durationSeconds < FV_GOOD_CALL_SECONDS) return false;
-  if (!partner || !partner.clientId) return false;
-  if (friendsData.some((f) => f.clientId === partner.clientId)) return false;
-  if (addFriendBtn.classList.contains('added')) return false;
-  const target = { clientId: partner.clientId, username: partner.username || '' };
-  fvTrack('friend_prompt');
-  let card = document.getElementById('friendPromptCard');
-  if (card) card.remove();
-  card = document.createElement('div');
-  card.id = 'friendPromptCard';
-  card.className = 'share-prompt';
-  card.innerHTML = `
-    <h3></h3><p></p>
-    <div class="share-prompt-actions">
-      <button type="button" class="share-prompt-yes"></button>
-      <button type="button" class="share-prompt-no"></button>
-    </div>`;
-  card.querySelector('h3').textContent = t('fvFriendPromptTitle', { name: target.username || t('stranger') });
-  card.querySelector('p').textContent = t('fvFriendPromptBody');
-  const yes = card.querySelector('.share-prompt-yes');
-  const no = card.querySelector('.share-prompt-no');
-  yes.textContent = t('addFriend');
-  no.textContent = t('sharePromptLater');
-  const dismiss = () => { card.classList.remove('show'); setTimeout(() => card.remove(), 300); };
-  no.addEventListener('click', dismiss);
-  yes.addEventListener('click', () => {
-    dismiss();
-    fvTrack('friend_prompt_add');
-    socket.emit('friend-request', { targetClientId: target.clientId });
-    showToast(t('friendRequestSent'), 'success');
-  });
-  document.body.appendChild(card);
-  requestAnimationFrame(() => card.classList.add('show'));
-  setTimeout(() => { if (card.isConnected) dismiss(); }, 15000);
-  return true;
-}
+// (The post-call "add friend" card was removed: no unsolicited popups.)
 
 // "See all" on a rail card opens the panel that owns the full list, by
 // clicking the nav button that owns the panel - one path into each panel,
@@ -11548,8 +11548,13 @@ function showPresence(key, back) {
 }
 socket.on('partner-away', ({ away } = {}) => {
   if (callState !== 'connected' && callState !== 'reconnecting') return;
-  if (away) showPresence('chatPartnerAway');
-  else if (presenceEl && !presenceEl.classList.contains('is-back')) showPresence('chatPartnerBack', true);
+  if (away) {
+    showPresence(null);
+    showPeerGone(currentPartner && currentPartner.username, true);
+  } else {
+    hidePeerGone();
+    showPresence('chatPartnerBack', true);
+  }
 });
 socket.on('disconnect', () => {
   if (callState === 'connected' || callState === 'reconnecting') showPresence('chatYouOffline');
@@ -11561,6 +11566,7 @@ socket.on('call-resumed', ({ pairId } = {}) => {
 });
 // The other side's socket dropped and came back: same, from this end.
 socket.on('partner-resumed', () => {
+  hidePeerGone();
   if (pc && !iceIsUp(pc) && amCallInitiator) { lastIceRestartAt = 0; attemptIceRestart(pc); }
 });
 
@@ -11596,20 +11602,14 @@ socket.on('feedback-reply', (r) => {
 });
 
 // Post-call "how was it?" - the card loads only when first needed.
-socket.on('rate-prompt', (d) => {
-  const show = () => window.TalkLiveRate && window.TalkLiveRate.show(socket, d);
-  if (window.TalkLiveRate) return show();
-  const s = document.createElement('script');
-  s.src = '/rate-prompt.js?v=8708a89e43';
-  s.onload = show;
-  document.head.appendChild(s);
-});
+// (The automatic 'rate-prompt' card is disabled: no unsolicited popups.)
 socket.on('partner-left', (info) => {
   showPresence(null);
   // Their connection dropped rather than them leaving: say so, by name, and
   // leave the door open instead of declaring the call over.
   const dropped = !!(info && info.reason === 'disconnected') && mediaConnected;
   if (dropped) showPeerGone(info.username || (currentPartner && currentPartner.username));
+  else hidePeerGone();
   // Two very different endings arrive on this event, and treating them alike is
   // why people reported being "disconnected without ever getting connected":
   // the stranger hanging up mid-conversation, and a pairing whose media never
@@ -12103,7 +12103,7 @@ socket.on('friend-online', ({ clientId, username, countryCode, country } = {}) =
 // a call, so it loads once the page is up and stays out of the first paint.
 window.addEventListener('load', () => {
   const s = document.createElement('script');
-  s.src = '/engage.js?v=3f28bc4dd1';
+  s.src = '/engage.js?v=c6a693be56';
   s.async = true;
   document.head.appendChild(s);
 });
