@@ -3,7 +3,6 @@
 //
 //   Daily streak      a call of 30s+ each day; one free streak-saver a week
 //   Country passport  every country you have talked to, shareable
-//   Today's question  one opener for everyone, every day
 //   Weekly recap      last week's calls, countries and longest call
 //   Who liked you     how many hearted you; Premium sees who, and calls back
 //   Undo skip         Premium brings back the person just skipped
@@ -179,40 +178,13 @@
     socket.emit('engage-merge', legacyProgress());
   }
 
-  // --- Today's question ------------------------------------------------------
-  var QUESTIONS = [
-    '🍜 What food from your country should everyone try?', '🎵 What song would you play to a stranger?',
-    '✈️ Where would you go tomorrow if you could?', '😂 What made you laugh this week?',
-    '🏠 What is your city famous for?', '📚 What is something you learned recently?',
-    '🎬 What movie do you recommend to everyone?', '🌅 Morning person or night owl?',
-    '🗣️ Teach me one word in your language.', '🎮 What game could you play forever?',
-    '🍕 Pineapple on pizza: yes or no?', '🎯 What is one goal you have this year?',
-    '🐾 Do you have a pet? Tell me about it.', '🌍 What surprises visitors to your country?',
-    '☕ Tea or coffee, and how do you take it?', '🎤 What is your go-to karaoke song?',
-    '🏆 What is something you are proud of?', '📺 What show are you watching right now?',
-    '🧳 Best trip you have ever taken?', '⚽ What sport do people love where you live?',
-    '🎂 How do people celebrate birthdays where you are?', '🌦️ What is the weather like there right now?',
-    '💼 What would be your dream job?', '🎨 What hobby would you pick up if you had time?',
-    '🛍️ What is one thing you bought that was worth it?', '🌙 What do you do to relax at night?',
-    '🎉 What is the best festival in your country?', '🍦 Favourite dessert of all time?',
-    '📱 Which app do you use the most?', '🚀 Would you go to space if you could?',
-    '🤝 What is a small thing that makes your day better?',
-  ];
-  // The questions are written with a leading emoji; the page shows the words only.
-  function todaysQuestion() { return QUESTIONS[dayNum(dayKey()) % QUESTIONS.length].replace(/^[^A-Za-z0-9"'(]+/, ''); }
-
   // --- Landing strip ------------------------------------------------------------
   var strip = null;
 
   function buildStrip() {
-    var anchor = document.querySelector('#setupPanel .animal-picker');
-    if (!anchor || strip) return;
-    // index.html reserves the slot so filling it does not shift the page.
+    // index.html reserves the slot under the posts.
     strip = document.getElementById('tlEngage');
-    if (!strip) {
-      strip = el('section', 'tl-engage');
-      anchor.parentNode.insertBefore(strip, anchor);
-    }
+    if (!strip) return;
     strip.setAttribute('aria-label', t('engageAria'));
     strip.addEventListener('click', onStripClick);
     render();
@@ -234,20 +206,18 @@
         calls: prev.calls, countries: prev.countries, minutes: Math.max(1, Math.round(prev.longest / 60)),
       })) + '</span><button type="button" class="tl-engage-x" data-act="recap" aria-label="' + esc(t('close')) + '">&times;</button></div>';
     }
-    // Someone who has not talked to anyone yet has three zeros to look at; the
-    // tiles appear with their first streak day, country or like.
-    var fresh = !s.count && !s.lost && !p.codes.length;
-    if (!fresh) html += '<div class="tl-engage-tiles">'
-      + '<button type="button" class="tl-engage-tile' + (today ? ' is-done' : (s.count ? ' is-due' : '')) + '" data-act="streak">'
-      + '<span class="tl-engage-big"><i class="ti ti-flame" aria-hidden="true"></i> ' + s.count + '</span>'
-      + '<span class="tl-engage-label">' + esc(t('engageStreakLabel')) + '</span>'
-      + '<span class="tl-engage-sub">' + esc(today ? t('engageStreakDone') : t('engageStreakDue')) + '</span></button>'
-      + '<button type="button" class="tl-engage-tile" data-act="passport">'
-      + '<span class="tl-engage-big"><i class="ti ti-globe" aria-hidden="true"></i> ' + p.codes.length + '</span>'
-      + '<span class="tl-engage-label">' + esc(t('engagePassportLabel')) + '</span>'
-      + '<span class="tl-engage-sub tl-engage-flags">' + (p.codes.length ? p.codes.slice(-4).map(function (c) { return flagImg(c, 20); }).join('') : esc(t('engagePassportEmpty'))) + '</span></button>'
-      + '</div>';
-    html += '<div class="tl-engage-q"><small>' + esc(t('engageQuestionLabel')) + '</small><span>' + esc(todaysQuestion()) + '</span></div>';
+    // Someone who has not talked to anyone yet has zeros to look at: the chips
+    // appear with their first streak day, country or like.
+    var chips = '';
+    if (s.count || s.lost) chips += '<button type="button" class="tl-chip tl-chip-streak' + (today ? ' is-done' : (s.count ? ' is-due' : '')) + '" data-act="streak"'
+      + ' title="' + esc(today ? t('engageStreakDone') : t('engageStreakDue')) + '">'
+      + '<i class="ti ti-flame" aria-hidden="true"></i><span>' + s.count + '</span><small>' + esc(t('engageStreakLabel')) + '</small></button>';
+    if (p.codes.length) chips += '<button type="button" class="tl-chip tl-chip-world" data-act="passport">'
+      + '<i class="ti ti-globe" aria-hidden="true"></i><span>' + p.codes.length + '</span><small>' + esc(t('engagePassportLabel')) + '</small>'
+      + '<span class="tl-chip-flags">' + p.codes.slice(-3).map(function (c) { return flagImg(c, 16); }).join('') + '</span></button>';
+    var likes = window.TalkLiveLikes && window.TalkLiveLikes.chip ? window.TalkLiveLikes.chip() : '';
+    if (likes) chips += likes;
+    if (chips) html += '<div class="tl-chips">' + chips + '</div>';
     strip.innerHTML = html;
   }
 
@@ -365,7 +335,7 @@
     if (parts.length) showToast(parts.join(' · '), 'success');
   }
 
-  // The partner is on the line: Premium badge, and today's question once a day.
+  // The partner is on the line: the Plus badge.
   function onReveal(partner) {
     var nameEl = document.getElementById('partnerName');
     if (nameEl) nameEl.classList.toggle('tl-plus-name', !!(partner && partner.premium));
@@ -376,12 +346,6 @@
       var b = el('span', 'tl-plus-tag', '<i class="ti ti-gem" aria-hidden="true"></i> Plus');
       nameEl.appendChild(b);
       plusEntrance();
-    }
-    if (read(KEY.question, '') !== dayKey()) {
-      write(KEY.question, dayKey());
-      setTimeout(function () {
-        if (typeof callState === 'undefined' || callState === 'connected') showToast(t('engageQuestionToast', { q: todaysQuestion() }), 'social');
-      }, 2500);
     }
   }
 
@@ -652,6 +616,14 @@
     openPassport: openPassport, 
     passportCount: function () { return (state.passport || []).length; } };
   window.addEventListener('i18n-changed', render);
+  window.addEventListener('tl-likes', render);
   buildStrip();
+  // Likes (likes.js): "It's a match!", the post-call heart and the likes chip.
+  (function () {
+    var s = document.createElement('script');
+    s.src = '/likes.js?v=d2b75bee22';
+    s.async = true;
+    document.head.appendChild(s);
+  })();
   syncWithServer();
 })();

@@ -114,8 +114,14 @@
 
     s += '@media (prefers-reduced-motion:reduce){.tl-cv>i{animation:none!important}}';
 
-    // The picker: swatches, a lock and a Plus tag on scenes you cannot use yet.
-    s += '.tl-cvp{display:grid;gap:14px}.tl-cvp h4{margin:0 0 8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted,#8a90a8)}'
+    // The picker: swatches in one scrollable box, a lock on scenes you cannot use yet.
+    s += '.tl-cvp{display:grid;gap:10px}.tl-cvp-boxwrap{position:relative}'
+      + '.tl-cvp{position:relative}'
+      + '.tl-cvp-box{max-height:152px;overflow-y:auto;overscroll-behavior:contain;padding:2px 10px 2px 2px;scrollbar-width:thin;scrollbar-color:var(--accent-2,#00d4ff) rgba(128,128,160,.25)}'
+      + '.tl-cvp-box::-webkit-scrollbar{width:7px;-webkit-appearance:none}'
+      + '.tl-cvp-box::-webkit-scrollbar-track{background:rgba(128,128,160,.22);border-radius:99px}'
+      + '.tl-cvp-box::-webkit-scrollbar-thumb{background:var(--accent-2,#00d4ff);border-radius:99px}'
+      + '.tl-cvp:not(.is-end)::after{content:"";position:absolute;left:0;right:12px;top:98px;height:56px;pointer-events:none;background:linear-gradient(180deg,transparent,var(--cvp-fade,var(--bg-2,#141a2b)) 92%)}'
       + '.tl-cvp-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px}'
       + '.tl-cvp-opt{position:relative;border:2px solid transparent;border-radius:12px;padding:0;height:52px;cursor:pointer;background:none;overflow:hidden;outline-offset:2px}'
       + '.tl-cvp-opt .tl-cv{position:absolute;inset:0;border-radius:10px}'
@@ -124,7 +130,7 @@
       + '.tl-cvp-opt .tl-cvp-lock{position:absolute;top:4px;right:5px;z-index:2;width:18px;height:18px;border-radius:50%;background:rgba(10,14,30,.72);display:grid;place-items:center}'
       + '.tl-cvp-opt .tl-cvp-lock svg{width:11px;height:11px;color:#ffd166}'
       + '.tl-cvp-opt.is-locked .tl-cv{filter:saturate(.8)}'
-      + '.tl-cvp-plus{display:flex;align-items:center;justify-content:space-between;gap:8px}'
+      + '.tl-cvp-plus{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--muted,#8a90a8)}'
       + '.tl-cvp-up{border:0;border-radius:999px;padding:4px 10px;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;color:#241a00;background:linear-gradient(135deg,#ffe38a,#ffb020)}';
     return s;
   }
@@ -183,13 +189,25 @@
         + '<span class="tl-cv" data-cv="' + c.id + '">' + layers + '</span><span class="tl-cvp-name">' + esc(nameOf(c.id)) + '</span>'
         + (locked ? '<span class="tl-cvp-lock">' + LOCK + '</span>' : '') + '</button>';
     }
-    function row(kind) { return '<div class="tl-cvp-row">' + LIST.filter(function (c) { return c.kind === kind; }).map(opt).join('') + '</div>'; }
+    // One scrollable grid: two rows show, a half row peeks under a fade and a
+    // visible scrollbar says there is more. Plus scenes come last.
     return '<div class="tl-cvp">'
-      + '<div><h4>' + esc(label('coverSolids', 'Colours')) + '</h4>' + row('solid') + '</div>'
-      + '<div><h4>' + esc(label('coverGradients', 'Gradients')) + '</h4>' + row('grad') + '</div>'
-      + '<div><div class="tl-cvp-plus"><h4>' + esc(label('coverAnimated', 'Animated, with Plus')) + '</h4>'
-      + (hasPlus ? '' : '<button type="button" class="tl-cvp-up" data-cover-upsell="1">' + esc(label('coverGetPlus', 'Get Plus')) + '</button>') + '</div>' + row('plus') + '</div>'
+      + '<div class="tl-cvp-box" data-cvp-box><div class="tl-cvp-row">' + LIST.map(opt).join('') + '</div></div>'
+      + (hasPlus ? '' : '<div class="tl-cvp-plus"><span>' + esc(label('coverAnimated', 'Animated, with Plus')) + '</span>'
+        + '<button type="button" class="tl-cvp-up" data-cover-upsell="1">' + esc(label('coverGetPlus', 'Get Plus')) + '</button></div>')
       + '</div>';
+  }
+
+  // The bottom fade goes away once the box is scrolled to its end.
+  function syncBox(box) {
+    if (!box) return;
+    var end = box.scrollTop + box.clientHeight >= box.scrollHeight - 3;
+    box.parentNode.classList.toggle('is-end', end);
+  }
+  if (typeof document !== 'undefined') {
+    document.addEventListener('scroll', function (e) {
+      if (e.target && e.target.hasAttribute && e.target.hasAttribute('data-cvp-box')) syncBox(e.target);
+    }, true);
   }
 
   global.TalkLiveCovers = { list: LIST, isValid: isValid, isPlus: isPlus, name: nameOf, apply: apply, picker: picker, ensureCss: ensureCss };

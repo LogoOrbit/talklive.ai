@@ -1571,7 +1571,7 @@
     if (!settingsPanelLoading) {
       settingsPanelLoading = [];
       var s = document.createElement('script');
-      s.src = '/settings-panel.js?v=22c66f6906';
+      s.src = '/settings-panel.js?v=ab40f13b37';
       s.async = true;
       s.onload = function () {
         window.TalkLiveSettingsPanel.ready.then(function () {
@@ -3094,10 +3094,10 @@
     var nameEl = box.querySelector('.ps-name');
     Array.prototype.forEach.call(nameEl.querySelectorAll('.tl-badge-chip'), function (n) { n.remove(); });
     if (cover && (p.cover || window.TalkLiveCovers)) {
-      lazyMod('covers', '/covers.js?v=74e8325a84').then(function () { window.TalkLiveCovers.apply(cover, p.cover || null); }, function () {});
+      lazyMod('covers', '/covers.js?v=c0f5259273').then(function () { window.TalkLiveCovers.apply(cover, p.cover || null); }, function () {});
     }
     if (p.badges && (p.badges.top || (p.badges.earned && p.badges.earned.length))) {
-      lazyMod('badges', '/badges.js?v=3acf3c4282').then(function () {
+      lazyMod('badges', '/badges.js?v=e9312841fa').then(function () {
         if (!nameEl.querySelector('.tl-badge-chip')) nameEl.insertAdjacentHTML('beforeend', window.TalkLiveBadges.chip(p.badges, 18));
       }, function () {});
     }

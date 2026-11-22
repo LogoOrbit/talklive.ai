@@ -1265,11 +1265,9 @@
   }
   .setup-panel .setup-title { margin-inline: 0; font-size: clamp(2.1rem, 3.4vw, 2.9rem); letter-spacing: -0.038em; }
   .setup-panel .tl-hero-sub { margin-inline: 0; }
-  .setup-panel .animal-picker { max-width: none; margin-inline: 0; text-align: start; }
   /* The measure is there to force a good break on a phone. From here the
      column is wide enough for the whole hint on one line, which is better
      than any break. */
-  .setup-panel .animal-picker-hint { margin-inline: 0; max-width: none; }
   .setup-panel .animal-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); }
   /* The panel is a centring flex column, which is what still pulled the two
      narrow items below the picker into the middle of a left-aligned page -
@@ -3319,10 +3317,28 @@ summary.tl-filter-legend::-webkit-details-marker { display: none; }
 /* ===========================================================================
  * ENGAGE (engage.js): streak, passport, likes, today's question
  * ======================================================================== */
-.tl-engage { margin: 18px 0 8px; display: grid; gap: 10px; }
-/* Space held for the strip until engage.js fills it (no layout shift). */
-.tl-engage:empty { min-height: 155px; }
-.tl-engage.is-fresh:empty { min-height: 55px; }
+.tl-engage { margin: 14px 0 4px; display: grid; gap: 10px; }
+.tl-engage:empty { display: none; }
+/* One compact row of small chips: streak, countries, likes. */
+.tl-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.tl-chip {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 32px; max-width: 100%;
+  padding: 4px 12px 4px 10px; border: 1px solid var(--tl-line); border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 5%, transparent); color: var(--text);
+  font: inherit; font-size: 13px; font-weight: 700; line-height: 1; cursor: pointer; white-space: nowrap;
+  transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+.tl-chip:hover { transform: translateY(-1px); border-color: var(--tl-line-strong); }
+.tl-chip i { font-size: 15px; line-height: 1; }
+.tl-chip small { font-size: 12px; font-weight: 600; color: var(--muted); }
+.tl-chip .tl-chip-flags { display: inline-flex; gap: 2px; margin-inline-start: 2px; }
+.tl-chip .tl-chip-flags img { border-radius: 2px; }
+.tl-chip.is-due { border-color: color-mix(in srgb, #ff8a3d 55%, transparent); }
+.tl-chip.is-done { border-color: color-mix(in srgb, var(--green) 45%, transparent); }
+.tl-chip-streak i { color: #ff8a3d; }
+.tl-chip-world i { color: var(--accent-2); }
+.tl-chip-likes { border-color: color-mix(in srgb, #ff4f8b 45%, transparent); background: color-mix(in srgb, #ff4f8b 10%, transparent); }
+.tl-chip-likes svg { width: 15px; height: 15px; color: #ff4f8b; flex: none; }
 .tl-engage-banner {
   display: flex;
   align-items: center;
@@ -3338,51 +3354,6 @@ summary.tl-filter-legend::-webkit-details-marker { display: none; }
 .tl-engage-banner span { flex: 1; }
 .tl-engage-recap { border-color: color-mix(in srgb, var(--green) 35%, var(--tl-line)); background: color-mix(in srgb, var(--green) 10%, transparent); }
 .tl-engage-x { border: 0; background: transparent; color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer; padding: 0 4px; }
-.tl-engage-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.tl-engage-tile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  min-width: 0;
-  padding: 12px 6px 10px;
-  border: 1px solid var(--tl-line);
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--text) 4%, transparent);
-  color: var(--text);
-  font: inherit;
-  cursor: pointer;
-  transition: transform 0.15s ease, border-color 0.15s ease;
-}
-.tl-engage-tile:hover { transform: translateY(-1px); border-color: var(--tl-line-strong); }
-.tl-engage-tile.is-due { border-color: color-mix(in srgb, #ff8a3d 55%, transparent); }
-.tl-engage-tile.is-done { border-color: color-mix(in srgb, var(--green) 45%, transparent); }
-.tl-engage-big { font-size: 20px; font-weight: 800; letter-spacing: -0.3px; }
-.tl-engage-label { font-size: 12.5px; font-weight: 700; }
-.tl-engage-sub {
-  max-width: 100%;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  line-height: 1.3;
-  font-size: 11.5px;
-  color: var(--muted);
-}
-.tl-engage-likes .tl-engage-sub { color: var(--accent-2); font-weight: 700; }
-.tl-engage-q {
-  display: grid;
-  gap: 2px;
-  padding: 10px 14px;
-  border-radius: 14px;
-  border: 1px solid var(--tl-line);
-  background: color-mix(in srgb, var(--text) 4%, transparent);
-  font-size: 14px;
-  font-weight: 600;
-  text-align: start;
-}
-.tl-engage-q small { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-
 .tl-engage-dialog { max-height: 85vh; overflow-y: auto; }
 .tl-gem-green { background: linear-gradient(135deg, #1fbf75, #2ad4c4); font-size: 30px; }
 .tl-gem-pink { background: linear-gradient(135deg, #ff4f8b, #ff8a5c); font-size: 30px; }
@@ -3415,7 +3386,6 @@ summary.tl-filter-legend::-webkit-details-marker { display: none; }
 .tl-flag img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .tl-flag.is-failed { display: inline-grid; place-items: center; overflow: visible; box-shadow: none; font-weight: 800; font-size: 13px; }
 .tl-flag.is-failed::before { content: attr(data-cc); }
-.tl-engage-flags { display: flex; gap: 4px; justify-content: center; }
 .tl-stamp small { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tl-likes { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; text-align: start; }
 .tl-likes li {
@@ -3637,16 +3607,13 @@ button.tl-filter-summary:focus-visible { outline: 2px solid var(--accent-2); out
   .setup-panel .tl-engage { margin-top: var(--tl-s5); }
   .setup-panel .setup-growth { width: 100%; max-width: none; }
   .tl-engage-banner,
-  .tl-engage-q,
   .setup-growth-card { border-radius: 16px; }
   .tl-engage-banner { padding: 12px 14px; }
-  .tl-engage-q { padding: 12px 16px; }
   .tl-engage-banner,
   .setup-growth-card,
-  .tl-engage-tile { transition: transform 0.16s var(--tl-ease), background-color 0.16s ease, border-color 0.16s ease; }
+
   .tl-engage-banner:active,
-  .setup-growth-card:active,
-  .tl-engage-tile:active { transform: scale(0.98); }
+  .setup-growth-card:active { transform: scale(0.98); }
 
   /* --- Dialogs with nothing to type are sheets. ---------------------------
      Anchored to the bottom edge, where the thumb is. A dialog with a text

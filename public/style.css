@@ -6352,10 +6352,6 @@ body .setup-panel .setup-title {
 }
 body .setup-panel .tl-hero-sub { color: var(--tl-ink-2); letter-spacing: -0.003em; }
 body .setup-panel .tap-choice-divider { letter-spacing: 0.16em; font-size: 11px; font-weight: 800; }
-body .tl-engage-q small { letter-spacing: 0.12em; }
-body .tl-engage-q { font-size: 15px; letter-spacing: -0.006em; }
-body .setup-panel .animal-picker-title { font-size: 21px; font-weight: 800; letter-spacing: -0.025em; line-height: 1.2; }
-body .setup-panel .animal-picker-hint { color: var(--tl-ink-3); text-wrap: pretty; }
 body .topbar.nav, body .tl-rail, body .tl-nav { font-variant-numeric: tabular-nums; }
 
 /* Long-form sections below the app: at a glance, the SEO block, the tour. */
@@ -6554,8 +6550,15 @@ html.perf-lite .tl-hero-clouds, html.perf-lite .tl-hero-range { animation: none;
 .mp-face { cursor: default; margin-top: -48px; border-radius: 50%; box-shadow: 0 0 0 4px var(--bg-2), 0 8px 24px rgba(0, 0, 0, 0.3); background: var(--bg-2); }
 .mp-badge:empty { display: none; }
 .mp-badge .tl-badge-chip { margin: 6px 0 0; font-size: 13px; }
-.mp-change-avatar { margin-top: 12px; width: 100%; max-width: 280px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; font-weight: 700; }
-.mp-change-avatar svg { width: 18px; height: 18px; flex: none; }
+.mp-acc + .mp-acc { border-top: 1px solid color-mix(in srgb, var(--text) 7%, transparent); }
+.mp-acc[hidden], .mp-acc-body[hidden] { display: none; }
+.mp-acc-head .mp-go { transition: transform .2s; }
+.mp-acc.open .mp-acc-head .mp-go { transform: rotate(135deg); }
+.mp-acc-body { padding: 4px 14px 16px; --cvp-fade: color-mix(in srgb, var(--text) 5%, var(--bg-2)); }
+.mp-acc-body .tl-set-group, .mp-acc-body .mp-badges { background: none; border-radius: 0; padding: 0; }
+.mp-acc-body .tl-set-control { padding-inline: 0; }
+.mp-acc-body .mp-badges { margin-inline: -14px; }
+.mp-acc-list { margin-top: 6px; }
 .mp-sec { margin-bottom: 18px; }
 .mp-sec[hidden] { display: none; }
 .mp-sec-title { margin: 0 6px 8px; font-size: 14px; font-weight: 700; color: var(--muted); }
@@ -6563,3 +6566,4 @@ html.perf-lite .tl-hero-clouds, html.perf-lite .tl-hero-range { animation: none;
 .mp-badges, .mp-cover-picker { padding: 12px; border-radius: 20px; background: color-mix(in srgb, var(--text) 5%, transparent); }
 .mp-avatar-host .avatar-option.is-locked .avatar-animal { filter: grayscale(0.85) brightness(0.8); }
 .my-profile-scroll #avatarGrid { max-height: none; }
+a.tt-play{text-decoration:none}

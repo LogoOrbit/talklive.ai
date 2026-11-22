@@ -26,7 +26,7 @@
   const EN = {
     setSearch: "Search settings",
     setNoResults: "Nothing matches “{q}”",
-    setDescProfile: "My Profile and account",
+    setDescProfile: "Sign in, password and email",
     setDescApp: "Language, theme and sounds",
     setDescPrivacy: "Calls, online status and blocking",
     setDescBilling: "Passes and receipts",
