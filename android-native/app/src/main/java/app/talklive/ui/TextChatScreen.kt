@@ -75,6 +75,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -92,7 +93,7 @@ import app.talklive.ui.animals.AnimalAvatar
 import app.talklive.ui.components.BrandGradient
 import app.talklive.ui.social.MessageBubble
 import app.talklive.ui.social.TypingBubble
-import app.talklive.ui.theme.BrandViolet
+import app.talklive.ui.theme.BrandBlue
 import app.talklive.ui.theme.Danger
 import androidx.compose.foundation.basicMarquee
 import app.talklive.ui.chat.ChatAction
@@ -163,6 +164,7 @@ fun TextChatScreen(
                                 Text(
                                     when {
                                         state.partnerTyping -> stringResource(R.string.typing)
+                                        state.partnerOffline -> stringResource(R.string.partner_offline_short)
                                         state.partnerAway -> stringResource(R.string.partner_away)
                                         else -> listOfNotNull(app.talklive.ui.social.flag(p.countryCode), p.country).joinToString(" ").ifBlank { partnerLine(p) }
                                     },
@@ -192,6 +194,9 @@ fun TextChatScreen(
             }
         }
 
+        AnimatedVisibility(partner != null && state.partnerOffline, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
+            app.talklive.ui.components.PartnerOfflineBanner(partner?.username ?: "", onEnd, Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
+        }
         if (partner == null) {
             Searching(Modifier.weight(1f), myAnimal, (state.phase as? CallPhase.Searching)?.etaSeconds)
         } else {
@@ -355,15 +360,47 @@ private fun Searching(modifier: Modifier, myAnimal: String?, eta: Int?) {
             Modifier.size(220.dp).drawBehind {
                 val base = 52.dp.toPx()
                 rings.forEach { r ->
-                    drawCircle(BrandViolet.copy(alpha = (1f - r.value) * 0.35f), radius = base + (size.minDimension / 2 - base) * r.value, style = Stroke(2.dp.toPx()))
+                    drawCircle(BrandBlue.copy(alpha = (1f - r.value) * 0.35f), radius = base + (size.minDimension / 2 - base) * r.value, style = Stroke(2.dp.toPx()))
                 }
             },
             contentAlignment = Alignment.Center,
         ) { AnimalAvatar(myAnimal, null, 104.dp) }
         Spacer(Modifier.height(20.dp))
         Text(stringResource(R.string.searching_chat), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
+        Spacer(Modifier.height(14.dp))
+        SearchingBubbles()
+        Spacer(Modifier.height(6.dp))
         eta?.takeIf { it > 0 }?.let {
             Text(stringResource(R.string.searching_eta, it), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+/** Two chat bubbles that take turns "typing" with pulsing dots: a conversation is being looked for. */
+@Composable
+private fun SearchingBubbles() {
+    val still = app.talklive.ui.theme.LocalReduceMotion.current
+    val t = rememberInfiniteTransition(label = "bubbles")
+    val phase = t.animateFloat(0f, 1f, infiniteRepeatable(tween(2600, easing = LinearEasing), RepeatMode.Restart), label = "turn")
+    Column(Modifier.width(150.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        listOf(false, true).forEachIndexed { i, mine ->
+            Box(Modifier.fillMaxWidth(), contentAlignment = if (mine) Alignment.CenterEnd else Alignment.CenterStart) {
+                Box(
+                    Modifier.graphicsLayer {
+                        // Each bubble is lit for half of the cycle, the other half dimmed.
+                        val p = phase.value
+                        val lit = if (still) 1f else if (i == 0) (if (p < 0.5f) 1f else 0.35f) else (if (p < 0.5f) 0.35f else 1f)
+                        alpha = lit
+                        val s = 0.96f + 0.04f * lit
+                        scaleX = s; scaleY = s
+                    }
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(if (mine) BrandBlue.copy(alpha = 0.85f) else MaterialTheme.colorScheme.surfaceVariant)
+                        .padding(horizontal = 14.dp, vertical = 11.dp),
+                ) {
+                    app.talklive.ui.components.PulsingDots(color = if (mine) Color.White else MaterialTheme.colorScheme.onSurfaceVariant, dot = 6.dp)
+                }
+            }
         }
     }
 }

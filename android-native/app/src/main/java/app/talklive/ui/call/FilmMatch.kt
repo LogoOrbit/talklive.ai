@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.talklive.R
 import app.talklive.ui.theme.BrandTeal
-import app.talklive.ui.theme.BrandViolet
+import app.talklive.ui.theme.BrandBlue
 
 /** "You both liked Interstellar" - shown for a few seconds when two people share a favourite. */
 @Composable

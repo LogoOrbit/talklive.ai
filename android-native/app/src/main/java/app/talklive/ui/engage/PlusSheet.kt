@@ -43,6 +43,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FilterAlt
 import androidx.compose.material.icons.rounded.Bolt
@@ -222,16 +224,9 @@ private const val NO = "—"
 private val BENEFITS = listOf(
     Benefit(Icons.Rounded.FilterAlt, R.string.plus_b_gender, NO, YES, PlusReason.GenderFilter),
     Benefit(Icons.Rounded.Public, R.string.plus_b_countries, "2", "50", PlusReason.Countries),
-    Benefit(Icons.Rounded.Sell, R.string.plus_b_interests, "2", "10", PlusReason.Interests),
     Benefit(Icons.Rounded.Bolt, R.string.plus_b_priority, NO, YES, PlusReason.Priority),
-    Benefit(Icons.Rounded.Undo, R.string.plus_b_undo, NO, YES),
-    Benefit(Icons.Rounded.Favorite, R.string.plus_b_likes, NO, YES, PlusReason.LikedYou),
     Benefit(Icons.Rounded.History, R.string.plus_b_history, "3", "∞", PlusReason.History),
-    Benefit(Icons.Rounded.LocalFireDepartment, R.string.plus_b_streak, NO, "2", PlusReason.StreakRestore),
-    Benefit(Icons.Rounded.Movie, R.string.plus_b_films, "1", "3"),
-    Benefit(Icons.Rounded.WorkspacePremium, R.string.plus_b_faces, NO, "8", PlusReason.Avatar),
-    Benefit(Icons.Rounded.Verified, R.string.plus_b_gold, NO, YES),
-    Benefit(Icons.Rounded.Palette, R.string.plus_b_themes, "2", "4", PlusReason.Theme),
+    Benefit(Icons.Rounded.Verified, R.string.plus_b_gold, NO, YES, PlusReason.Avatar),
 )
 
 private val Gold1 = Color(0xFFFFE29A)
@@ -291,8 +286,9 @@ fun PlusContent(
             else -> null
         })
     }
+    var showPasses by remember(shown) { mutableStateOf(passFirst || pickedPass != null) }
     Box(Modifier.fillMaxSize().background(PlusBg)) {
-        // Aurora: gold and violet light drifting behind everything.
+        // Aurora: gold and blue light drifting behind everything.
         // The State is read in the draw lambda only, so the drift doesn't recompose the sheet.
         val driftState = if (still) null else rememberInfiniteTransition(label = "aurora").animateFloat(0f, 1f, infiniteRepeatable(tween(7000, easing = LinearEasing), RepeatMode.Reverse), label = "d")
         Box(
@@ -327,12 +323,7 @@ fun PlusContent(
                 style = MaterialTheme.typography.bodyLarge, color = Color.White.copy(alpha = 0.72f), textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 28.dp),
             )
-            Spacer(Modifier.height(24.dp))
-            // Your own profile, before and after.
-            if (!premium.active) {
-                YouWithPlus(myAnimal, myName)
-                Spacer(Modifier.height(20.dp))
-            }
+            Spacer(Modifier.height(20.dp))
             BenefitTable(why, Modifier.padding(horizontal = 20.dp))
             Spacer(Modifier.height(24.dp))
             Column(Modifier.padding(horizontal = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -356,32 +347,28 @@ fun PlusContent(
                         }
                         if (!passFirst) shown.plans.asReversed().forEach { plan -> PlanCard(plan, shown.plans, plan == picked && pickedPass == null) { picked = plan; pickedPass = null } }
                         if (shown.passes.isNotEmpty()) {
-                            Text(
-                                stringResource(R.string.pass_heading), style = MaterialTheme.typography.titleSmall, color = Color.White.copy(alpha = 0.8f),
-                                modifier = Modifier.fillMaxWidth().padding(top = 10.dp), textAlign = TextAlign.Center,
-                            )
-                            Text(
-                                stringResource(R.string.pass_sub), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.72f),
-                                modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
-                            )
-                            Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                                shown.passes.forEach { pass -> PassCard(pass, shown.passes, selected = pass == pickedPass) { pickedPass = pass } }
+                            // Quiet by default: one line, opened when someone wants a few days only.
+                            TextButton(
+                                onClick = { showPasses = !showPasses },
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                            ) {
+                                Text(stringResource(R.string.pass_heading), color = Gold1, textAlign = TextAlign.Center)
+                                Icon(if (showPasses) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown, null, tint = Gold1)
+                            }
+                            androidx.compose.animation.AnimatedVisibility(visible = showPasses) {
+                                Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                                    shown.passes.forEach { pass -> PassCard(pass, shown.passes, selected = pass == pickedPass) { pickedPass = pass } }
+                                }
                             }
                         }
                         if (passFirst) shown.plans.asReversed().forEach { plan -> PlanCard(plan, shown.plans, plan == picked && pickedPass == null) { picked = plan; pickedPass = null } }
                     }
                 }
                 if (onInvite != null && !premium.active) {
-                    Spacer(Modifier.height(16.dp))
-                    Surface(onClick = onInvite, shape = RoundedCornerShape(18.dp), color = Color.White.copy(alpha = 0.06f), modifier = Modifier.fillMaxWidth()) {
-                        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            app.talklive.ui.components.GiftIcon(28.dp)
-                            Spacer(Modifier.width(12.dp))
-                            Column(Modifier.weight(1f)) {
-                                Text(stringResource(R.string.plus_earn_title), style = MaterialTheme.typography.titleMedium, color = Color.White)
-                                Text(stringResource(R.string.plus_earn_body), style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.7f))
-                            }
-                        }
+                    TextButton(onClick = onInvite, modifier = Modifier.padding(top = 4.dp).heightIn(min = 48.dp)) {
+                        app.talklive.ui.components.GiftIcon(20.dp)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.plus_earn_title), color = Gold1)
                     }
                 }
                 // Always one tap away for anyone signed in: a new phone, or a purchase made elsewhere.
@@ -504,49 +491,6 @@ internal fun GoldButton(text: String, busy: Boolean, onClick: () -> Unit) {
     }
 }
 
-/**
- * How your own profile looks with Plus: your avatar today next to the same
- * avatar with the turning gold ring and the Plus badge, live.
- */
-@Composable
-private fun YouWithPlus(animal: String?, name: String?) {
-    val shown = name?.takeIf { it.isNotBlank() } ?: stringResource(R.string.you)
-    Surface(
-        shape = RoundedCornerShape(28.dp),
-        color = Color.White.copy(alpha = 0.06f),
-        border = BorderStroke(1.dp, Brush.linearGradient(listOf(Gold1.copy(alpha = 0.7f), Color.White.copy(alpha = 0.05f)))),
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-    ) {
-        Column(Modifier.padding(vertical = 18.dp, horizontal = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(stringResource(R.string.plus_you_title), style = MaterialTheme.typography.titleMedium, color = Color.White)
-            Spacer(Modifier.height(14.dp))
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxWidth()) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(Modifier.size(84.dp), contentAlignment = Alignment.Center) { app.talklive.ui.animals.AnimalAvatar(animal, name, 64.dp) }
-                    Spacer(Modifier.height(6.dp))
-                    Text(shown, style = MaterialTheme.typography.labelLarge, color = Color.White.copy(alpha = 0.75f), maxLines = 1)
-                    Text(stringResource(R.string.cmp_free), style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.72f))
-                }
-                Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = Gold1, modifier = Modifier.size(26.dp))
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    app.talklive.ui.components.PlusRing(true, 64.dp) { app.talklive.ui.animals.AnimalAvatar(animal, name, 64.dp) }
-                    Spacer(Modifier.height(6.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(shown, style = MaterialTheme.typography.labelLarge, color = Gold1, maxLines = 1, fontWeight = FontWeight.Bold)
-                        Spacer(Modifier.width(4.dp)); app.talklive.ui.components.PlusGem(14.dp)
-                    }
-                    Text("PLUS", style = MaterialTheme.typography.labelMedium, color = Gold1, fontWeight = FontWeight.ExtraBold)
-                }
-            }
-            Spacer(Modifier.height(10.dp))
-            Text(
-                stringResource(R.string.plus_you_body), style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.7f), textAlign = TextAlign.Center,
-            )
-        }
-    }
-}
-
 /** "That is $0.33 a day", from the real price in micro-units of [currency] spread over [days]. */
 @Composable
 private fun PerDayLine(priceMicros: Long, currency: String, days: Int) {
@@ -599,45 +543,31 @@ private fun WhyHeader(why: PlusWhy) {
 }
 
 /**
- * Free vs Plus, one row each, in the same order and with the same names as the website.
- * What the person just ran into is lit and listed first. Calls and friends are included
- * for everyone, so they are shown as a tick on both sides.
+ * The few things Plus is for: an icon and one short line each. What the person just ran
+ * into is lit and listed first.
  */
 @Composable
 private fun BenefitTable(why: PlusWhy, modifier: Modifier = Modifier) {
     val first = BENEFITS.firstOrNull { it.reason != null && it.reason == why.reason }
     val rows = if (first == null) BENEFITS else listOf(first) + BENEFITS.filter { it !== first }
-    Surface(shape = RoundedCornerShape(24.dp), color = Color.White.copy(alpha = 0.05f), modifier = modifier.fillMaxWidth()) {
-        Column(Modifier.padding(vertical = 8.dp)) {
-            Row(Modifier.padding(horizontal = 18.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Spacer(Modifier.weight(1f))
-                Text(stringResource(R.string.cmp_free), color = Color.White.copy(alpha = 0.72f), style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
-                Text("PLUS", style = MaterialTheme.typography.labelLarge.copy(brush = GoldBrush), fontWeight = FontWeight.Black, modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
-            }
-            // Included for everyone: ticks on both sides.
-            listOf(Icons.Rounded.Mic to R.string.plus_b_calls, Icons.Rounded.People to R.string.plus_b_friends).forEach { (icon, label) ->
-                BenefitRow(icon, stringResource(label), YES, YES, lit = false, divider = true)
-            }
-            rows.forEachIndexed { i, b ->
-                BenefitRow(b.icon, stringResource(b.title), b.free, b.plus, lit = first != null && i == 0, divider = true)
-            }
-        }
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        rows.forEachIndexed { i, b -> BenefitRow(b.icon, stringResource(b.title), lit = first != null && i == 0) }
     }
 }
 
 @Composable
-private fun BenefitRow(icon: ImageVector, label: String, free: String, plus: String, lit: Boolean, divider: Boolean) {
-    if (divider) Box(Modifier.padding(horizontal = 18.dp).fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.05f)))
+private fun BenefitRow(icon: ImageVector, label: String, lit: Boolean) {
     Row(
-        Modifier.fillMaxWidth().background(if (lit) Gold2.copy(alpha = 0.12f) else Color.Transparent).padding(horizontal = 18.dp, vertical = 11.dp)
-            .semantics(mergeDescendants = true) {},
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+            .background(if (lit) Gold2.copy(alpha = 0.14f) else Color.White.copy(alpha = 0.05f))
+            .padding(horizontal = 14.dp, vertical = 12.dp).semantics(mergeDescendants = true) {},
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, null, tint = if (lit) Gold1 else Gold2, modifier = Modifier.size(20.dp))
-        Spacer(Modifier.width(12.dp))
-        Text(label, color = Color.White, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-        Text(free, color = Color.White.copy(alpha = if (free == NO) 0.4f else 0.8f), style = MaterialTheme.typography.titleSmall, modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
-        Text(plus, style = MaterialTheme.typography.titleMedium.copy(brush = GoldBrush), fontWeight = FontWeight.Bold, modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
+        Box(Modifier.size(34.dp).clip(CircleShape).background(Gold2.copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
+            Icon(icon, null, tint = if (lit) Gold1 else Gold2, modifier = Modifier.size(20.dp))
+        }
+        Spacer(Modifier.width(14.dp))
+        Text(label, color = Color.White, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
     }
 }
 

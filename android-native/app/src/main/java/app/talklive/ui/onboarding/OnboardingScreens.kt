@@ -85,7 +85,7 @@ import app.talklive.ui.components.ScreenTitle
 import app.talklive.ui.components.SecondaryButton
 import app.talklive.ui.components.TalkTextField
 import app.talklive.ui.theme.BrandTeal
-import app.talklive.ui.theme.BrandViolet
+import app.talklive.ui.theme.BrandBlue
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 
@@ -236,7 +236,7 @@ internal fun WelcomeScreen(onDone: () -> Unit, onPlus: () -> Unit = onDone) {
                 val w by animateDpAsState(if (i == pager.currentPage) 24.dp else 8.dp, spring(stiffness = 600f), label = "dot")
                 Box(
                     Modifier.padding(horizontal = 4.dp).height(8.dp).width(w).clip(CircleShape)
-                        .background(if (i == pager.currentPage) BrandViolet else MaterialTheme.colorScheme.outline),
+                        .background(if (i == pager.currentPage) BrandBlue else MaterialTheme.colorScheme.outline),
                 )
             }
         }
@@ -271,7 +271,6 @@ private fun PlusIntroPage(modifier: Modifier = Modifier) {
             Triple(R.string.intro_plus_row_priority, null, null),
             Triple(R.string.intro_plus_row_countries, "2", stringResource(R.string.intro_plus_all)),
             Triple(R.string.intro_plus_row_gender, null, null),
-            Triple(R.string.intro_plus_row_undo, null, null),
             Triple(R.string.intro_plus_row_gold, null, null),
         )
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surface)) {
@@ -553,7 +552,7 @@ private fun FormScaffold(
                 LinearProgressIndicator(
                     progress = { p },
                     modifier = Modifier.weight(1f).padding(end = 24.dp).height(6.dp).clip(CircleShape),
-                    color = BrandViolet,
+                    color = BrandBlue,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant,
                     drawStopIndicator = {},
                 )

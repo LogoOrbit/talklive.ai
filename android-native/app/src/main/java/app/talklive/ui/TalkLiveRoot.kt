@@ -231,13 +231,11 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     // The soft card on Home (someone liked you, a good call, the 1-day pass), or null when none is showing.
     var plusCard by remember { mutableStateOf<app.talklive.ui.engage.PlusCardUi?>(null) }
     var goodCall by remember { mutableStateOf(false) }
-    val likesNow = engageVm.likes
     fun offerCard() {
         if (premium.active || plusCard != null || inCallNow) return
-        val m = moments.best({ app.talklive.engage.MomentContext(premium = premium.active, inCall = inCallNow, goodCall = goodCall, likedCount = if (likesNow?.locked == true) likesNow.count else 0) },
-            listOf(app.talklive.engage.PlusMoment.Good, app.talklive.engage.PlusMoment.Liked, app.talklive.engage.PlusMoment.Pass)) ?: return
+        val m = moments.best({ app.talklive.engage.MomentContext(premium = premium.active, inCall = inCallNow, goodCall = goodCall, likedCount = 0) },
+            listOf(app.talklive.engage.PlusMoment.Good, app.talklive.engage.PlusMoment.Pass)) ?: return
         val card = when (m) {
-            app.talklive.engage.PlusMoment.Liked -> app.talklive.ui.engage.PlusCardUi(m, context.resources.getQuantityString(R.plurals.plus_moment_liked, likesNow?.count ?: 1, likesNow?.count ?: 1), context.getString(R.string.plus_moment_liked_cta))
             app.talklive.engage.PlusMoment.Good -> app.talklive.ui.engage.PlusCardUi(m, context.getString(R.string.plus_moment_good), context.getString(R.string.plus_moment_good_cta))
             else -> app.talklive.ui.engage.PlusCardUi(m, context.getString(R.string.plus_moment_pass, app.talklive.billing.LocalPrice.pass(context, "pass_1d", 1, 2.0).price), context.getString(R.string.plus_moment_pass_cta))
         }
@@ -247,9 +245,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     // A new session starts when the app comes back after 30 minutes away.
     LaunchedEffect(Unit) { moments.touch() }
     androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) { moments.touch() }
-    // People who liked you: the real count, free members only, evaluated once it is known.
-    LaunchedEffect(premium.active, tab) { if (!premium.active && tab == MainTab.Talk) engageVm.loadLikes() }
-    LaunchedEffect(likesNow?.count, goodCall, premium.active) { if (tab == MainTab.Talk && state.phase is CallPhase.Idle) offerCard() }
+    LaunchedEffect(goodCall, premium.active) { if (tab == MainTab.Talk && state.phase is CallPhase.Idle) offerCard() }
     // Tapped "Get TalkLive Plus" on the first-launch intro: open Plus once home.
     LaunchedEffect(Unit) {
         val ui = context.getSharedPreferences("ui", android.content.Context.MODE_PRIVATE)
@@ -452,9 +448,8 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     }
     LaunchedEffect(state.notice) {
         val n = state.notice ?: return@LaunchedEffect
-        // "X left" says what the screen already shows (searching again, or back
-        // home): only a dropped line, an ended friend call or a refusal is news.
-        if (noticeText != null && !(n is CallNotice.PartnerLeft && !n.dropped)) snackbar.say(noticeText)
+        // Always said out loud, so a stranger leaving is never a silent jump to the next search.
+        if (noticeText != null) snackbar.say(noticeText)
         vm.dismissNotice()
     }
 
@@ -504,31 +499,26 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         )
     }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
-    // Next, with Undo for Plus members (the server keeps the skipped person for 15 s).
-    val onNext: () -> Unit = {
-        val skipped = (state.phase as? CallPhase.Connected)?.partner?.username
-        vm.next()
-        if (premium.active && skipped != null) scope.launch {
-            val r = snackbar.say(
-                context.getString(R.string.skipped_short), actionLabel = context.getString(R.string.undo),
-                // Four seconds, not ten: long enough to change your mind, short
-                // enough not to sit over the next conversation.
-                duration = androidx.compose.material3.SnackbarDuration.Short,
-            )
-            if (r == androidx.compose.material3.SnackbarResult.ActionPerformed) {
-                vm.undoSkip()?.let { why ->
-                    snackbar.say(context.getString(if (why == "busy") R.string.undo_busy else R.string.undo_gone))
-                }
-            }
-        }
-    }
+    val onNext: () -> Unit = { vm.next() }
 
     val barShown = inCall && callMinimized && state.phase is CallPhase.Connected
+    // Not on the line yet (the app just came back, a weak network): a friendly "Connecting..."
+    // bar after a short beat, so a quick reconnect stays invisible.
+    var homeRefreshing by remember { mutableStateOf(false) }
+    var connectingWait by remember { mutableStateOf(false) }
+    LaunchedEffect(connected) { if (connected) connectingWait = false else { kotlinx.coroutines.delay(600); connectingWait = true } }
+    val connectingShown = connectingWait && !connected && !showFullCall
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         // The minimised call, like WhatsApp: a slim strip across the very top,
         // the app pushed down beneath it rather than covered.
         topBar = {
+          Column {
+            AnimatedVisibility(
+                visible = connectingShown,
+                enter = androidx.compose.animation.expandVertically(tween(240)) + fadeIn(tween(200)),
+                exit = androidx.compose.animation.shrinkVertically(tween(200)) + fadeOut(tween(160)),
+            ) { app.talklive.ui.components.ConnectingBar(insets = !barShown) }
             AnimatedVisibility(
                 visible = barShown,
                 enter = androidx.compose.animation.expandVertically(tween(280)) + fadeIn(tween(200)),
@@ -541,6 +531,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                     )
                 }
             }
+          }
         },
         bottomBar = {
             AnimatedVisibility(
@@ -558,9 +549,9 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     ) { pad ->
         Box(
             Modifier.fillMaxSize()
-                .padding(top = if (barShown) pad.calculateTopPadding() else 0.dp, bottom = if (showFullCall) 0.dp else pad.calculateBottomPadding())
+                .padding(top = if (barShown || connectingShown) pad.calculateTopPadding() else 0.dp, bottom = if (showFullCall) 0.dp else pad.calculateBottomPadding())
                 // Under the call strip, screens must not add the status bar again.
-                .then(if (barShown) Modifier.consumeWindowInsets(androidx.compose.foundation.layout.WindowInsets.Companion.statusBars) else Modifier),
+                .then(if (barShown || connectingShown) Modifier.consumeWindowInsets(androidx.compose.foundation.layout.WindowInsets.Companion.statusBars) else Modifier),
         ) {
             val homeAutoConnect by vm.autoConnect.collectAsStateWithLifecycle()
             AnimatedContent(
@@ -589,6 +580,8 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                         premium = premium.active,
                         ring = premium.ring,
                         onPlus = { openPlus("home") },
+                        refreshing = homeRefreshing,
+                        onRefresh = { homeRefreshing = true; scope.launch { social.refresh(); homeRefreshing = false } },
                         plusCard = plusCard,
                         onPlusCard = { plusCard?.let { c -> moments.onTapped(c.moment); plusCard = null; openPlus(if (c.moment == app.talklive.engage.PlusMoment.Pass) "card_pass" else "card") } },
                         onPlusCardClose = { plusCard?.let { c -> moments.onDismissed(c.moment) }; plusCard = null },

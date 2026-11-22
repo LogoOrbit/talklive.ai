@@ -75,7 +75,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.talklive.ui.theme.BrandTeal
-import app.talklive.ui.theme.BrandViolet
+import app.talklive.ui.theme.BrandBlue
 import app.talklive.ui.theme.Danger
 
 /** The website's primary button: violet to teal, 135°. */
@@ -265,7 +265,7 @@ fun OtpField(value: String, onValueChange: (String) -> Unit, onComplete: (String
                     val tint by animateColorAsState(
                         when {
                             error -> Danger.copy(alpha = 0.16f)
-                            active -> BrandViolet.copy(alpha = 0.18f)
+                            active -> BrandBlue.copy(alpha = 0.18f)
                             else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)
                         },
                         label = "otp",
@@ -286,7 +286,7 @@ fun OtpField(value: String, onValueChange: (String) -> Unit, onComplete: (String
                             val blink = androidx.compose.animation.core.rememberInfiniteTransition(label = "caret").animateFloat(
                                 1f, 0f, androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(530), androidx.compose.animation.core.RepeatMode.Reverse), label = "c",
                             )
-                            Box(Modifier.width(2.dp).height(26.dp).graphicsLayer { alpha = blink.value }.background(BrandViolet))
+                            Box(Modifier.width(2.dp).height(26.dp).graphicsLayer { alpha = blink.value }.background(BrandBlue))
                         }
                     }
                 }

@@ -47,7 +47,7 @@ object StreakReminder {
         )
         val n = NotificationCompat.Builder(context, TalkLiveApplication.CHANNEL_SOCIAL)
             .setSmallIcon(R.drawable.ic_stat_talklive)
-            .setColor(0xFF6C5CE7.toInt())
+            .setColor(0xFF2A6FE8.toInt())
             .setContentTitle(context.getString(R.string.streak_reminder_title, count))
             .setContentText(context.getString(R.string.streak_reminder_body))
             .setAutoCancel(true)

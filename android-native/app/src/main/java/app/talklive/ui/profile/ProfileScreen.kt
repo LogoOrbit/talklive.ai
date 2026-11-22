@@ -213,7 +213,6 @@ fun ProfileScreen(
             }
             Section(stringResource(R.string.section_you)) {
                 SettingRow(Icons.Rounded.Public, stringResource(R.string.passport), stringResource(R.string.passport_count, engage?.passport?.size ?: 0)) { youSheet = "passport" }
-                SettingRow(Icons.Rounded.Favorite, stringResource(R.string.likes), null) { youSheet = "likes" }
                 SettingRow(Icons.Rounded.CardGiftcard, stringResource(R.string.invite_title), null) { youSheet = "invite" }
                 val myGender by engageVm.myGender.collectAsStateWithLifecycle()
                 val ageGroup by engageVm.ageGroup.collectAsStateWithLifecycle()
@@ -234,7 +233,6 @@ fun ProfileScreen(
             when (youSheet) {
                 "passport" -> engage?.let { app.talklive.ui.engage.StreakSheet(it, onDismiss = { youSheet = null }, premium = premium.active, restoring = engageVm.restoring, onRestore = engageVm::restoreStreak, onPlus = { plusWhy = it; youSheet = "plus-locked" }) } ?: run { youSheet = null }
                 "films" -> app.talklive.ui.engage.FilmsSheet(engageVm, films, premium.active, onPlus = { plusWhy = app.talklive.ui.engage.PlusWhy(); youSheet = "plus-locked" }) { youSheet = null }
-                "likes" -> app.talklive.ui.engage.LikesSheet(engageVm, onPlus = { plusWhy = it; youSheet = "plus-locked" }) { youSheet = null }
                 "invite" -> app.talklive.ui.engage.InviteSheet(engageVm) { youSheet = null }
                 "notifications" -> NotificationSettingsSheet(vm.notif) { youSheet = null }
                 "feedback" -> app.talklive.ui.engage.FeedbackSheet(onSend = { engageVm.sendFeedback(it); vm.saved = context.getString(R.string.feedback_thanks) }) { youSheet = null }
@@ -510,7 +508,7 @@ private fun settingColor(icon: ImageVector): androidx.compose.ui.graphics.Color 
         Icons.Rounded.Groups -> androidx.compose.ui.graphics.Color(0xFF8B5CF6)
         Icons.Rounded.PrivacyTip -> androidx.compose.ui.graphics.Color(0xFF0EA5E9)
         Icons.Rounded.Gavel -> androidx.compose.ui.graphics.Color(0xFF64748B)
-        else -> androidx.compose.ui.graphics.Color(0xFF6C5CE7)
+        else -> androidx.compose.ui.graphics.Color(0xFF2A6FE8)
     }
 }
 

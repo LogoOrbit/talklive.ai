@@ -1,5 +1,5 @@
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@color/brand_violet" />
+    <background android:drawable="@color/brand_blue" />
     <foreground>
         <inset android:inset="30%">
             <vector android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">

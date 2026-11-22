@@ -2,6 +2,10 @@
 <resources>
     <string name="app_name">TalkLive</string>
     <string name="tagline">Talk to someone new, right now</string>
+    <string name="connecting_wait">Connecting… just a moment</string>
+    <string name="partner_offline_waiting">%1$s went offline - waiting for them…</string>
+    <string name="partner_offline_short">Offline - waiting…</string>
+    <string name="filters_chip">Filters</string>
     <string name="connecting_server">Connecting…</string>
     <string name="start_talking">Start talking</string>
     <string name="searching">Finding someone to talk to…</string>
@@ -15,8 +19,8 @@
     <string name="speaker">Speaker</string>
     <string name="report">Report</string>
     <string name="partner_muted">They muted their mic</string>
-    <string name="partner_left">%1$s left. Finding someone new…</string>
-    <string name="partner_dropped">Connection to %1$s dropped. Finding someone new…</string>
+    <string name="partner_left">Disconnected: %1$s left. Finding someone new…</string>
+    <string name="partner_dropped">Disconnected: the connection to %1$s dropped. Finding someone new…</string>
     <string name="mic_needed">TalkLive needs the microphone to talk. Allow it in Settings.</string>
     <string name="open_settings">Open settings</string>
     <string name="banned">Your access is paused. Contact support if this is a mistake.</string>
@@ -101,7 +105,7 @@
     <string name="animal_title">Pick your spirit animal</string>
     <string name="animal_body">Strangers see it the moment you connect. It is an easy way to say hi.</string>
     <string name="surprise_me">Surprise me</string>
-    <string name="reconnecting">Reconnecting…</string>
+    <string name="reconnecting">Connecting… please wait</string>
     <string name="unstable">Connection is unstable…</string>
     <string name="on_hold">On hold while you are on another call</string>
     <string name="you">You</string>
@@ -338,7 +342,7 @@
     <string name="plus_later">Payment received. Plus turns on as soon as TalkLive confirms it.</string>
     <string name="plus_failed">Something went wrong. You were not charged twice; try again.</string>
     <string name="plus_nothing_to_restore">No Plus purchase on this Google account.</string>
-    <string name="plus_inactive">Gender filter, see who liked you, undo skip</string>
+    <string name="plus_inactive">Gender filter, priority matching, gold name</string>
     <string name="moment_streak">🔥 %1$d day streak!</string>
     <string name="moment_stamp">New passport stamp: %1$s %2$s</string>
     <string name="ok">OK</string>
@@ -492,7 +496,7 @@
     <string name="tap_to_stop">Stop</string>
     <string name="tap_again_next">Tap again</string>
     <string name="tap_again_end">Tap to end</string>
-    <string name="plus_card_pitch">Every filter, see who liked you, undo skips</string>
+    <string name="plus_card_pitch">Every filter, priority matching, gold name</string>
     <string name="filters_interests_hint">We try to match you with people who like the same things.</string>
     <string name="countries_title">Countries</string>
     <string name="countries_only">Only meet</string>

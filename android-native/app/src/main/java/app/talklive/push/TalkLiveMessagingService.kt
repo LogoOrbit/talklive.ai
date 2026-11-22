@@ -46,7 +46,7 @@ class TalkLiveMessagingService : FirebaseMessagingService() {
         )
         val notification = NotificationCompat.Builder(this, channel)
             .setSmallIcon(R.drawable.ic_stat_talklive)
-            .setColor(0xFF6C5CE7.toInt())
+            .setColor(0xFF2A6FE8.toInt())
             .setContentTitle(n.title)
             .setContentText(n.body)
             .setAutoCancel(true)

@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -58,13 +59,14 @@ import app.talklive.R
 import app.talklive.ui.components.BrandGradient
 import app.talklive.ui.components.PrimaryButton
 import app.talklive.ui.theme.BrandTeal
-import app.talklive.ui.theme.BrandViolet
+import app.talklive.ui.theme.BrandBlue
 import app.talklive.ui.theme.Success
 import java.text.NumberFormat
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.border
 import androidx.compose.ui.unit.sp
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     connected: Boolean,
@@ -88,12 +90,20 @@ fun HomeScreen(
     autoConnect: Boolean = true,
     onAutoConnect: (Boolean) -> Unit = {},
     ring: Boolean = false,
-    // A small, dismissible Plus card (someone liked you, a good call, the 1-day pass), or null for none.
+    // A small, dismissible Plus card (a good call, the 1-day pass), or null for none.
     plusCard: app.talklive.ui.engage.PlusCardUi? = null,
     onPlusCard: () -> Unit = {},
     onPlusCardClose: () -> Unit = {},
+    // Pull down to refresh: reconnect and fetch friends and state again.
+    refreshing: Boolean = false,
+    onRefresh: () -> Unit = {},
 ) {
-    Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 24.dp, vertical = 16.dp)) {
+    // The page is one screen tall; it sits in a scroller of exactly that height so a pull-down gesture has something to pull.
+    androidx.compose.material3.pulltorefresh.PullToRefreshBox(isRefreshing = refreshing, onRefresh = onRefresh, modifier = Modifier.fillMaxSize()) {
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+    val pageHeight = maxHeight
+    Column(Modifier.fillMaxSize().verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+    Column(Modifier.fillMaxWidth().height(pageHeight).statusBarsPadding().padding(horizontal = 24.dp, vertical = 16.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Image(painterResource(R.drawable.logo), null, Modifier.size(32.dp))
             Spacer(Modifier.size(10.dp))
@@ -173,11 +183,23 @@ fun HomeScreen(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f)) { ModeSwitch(mode, onMode) }
             Spacer(Modifier.width(10.dp))
-            Surface(onClick = onFilters, shape = CircleShape, color = if (filtersActive > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface, modifier = Modifier.size(48.dp)) {
-                Box(contentAlignment = Alignment.Center) {
-                    androidx.compose.material3.BadgedBox(badge = {
-                        if (filtersActive > 0) androidx.compose.material3.Badge(containerColor = MaterialTheme.colorScheme.primary) { Text(filtersActive.toString()) }
-                    }) { Icon(androidx.compose.material.icons.Icons.Rounded.Tune, androidx.compose.ui.res.stringResource(R.string.filters), tint = MaterialTheme.colorScheme.primary) }
+            // A labelled chip, so it reads as a button: icon, "Filters", and how many are on.
+            Surface(
+                onClick = onFilters, shape = CircleShape,
+                color = if (filtersActive > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                border = androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = if (filtersActive > 0) 0.9f else 0.55f)),
+                modifier = Modifier.height(48.dp),
+            ) {
+                Row(Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(androidx.compose.material.icons.Icons.Rounded.Tune, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.filters_chip), style = MaterialTheme.typography.labelLarge, color = app.talklive.ui.theme.AccentText)
+                    if (filtersActive > 0) {
+                        Spacer(Modifier.width(8.dp))
+                        Box(Modifier.size(22.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary), contentAlignment = Alignment.Center) {
+                            Text(filtersActive.toString(), style = MaterialTheme.typography.labelMedium, color = Color.White)
+                        }
+                    }
                 }
             }
         }
@@ -191,6 +213,9 @@ fun HomeScreen(
             onClick = onStart,
             icon = if (mode == app.talklive.call.CallMode.Chat) Icons.AutoMirrored.Rounded.Chat else Icons.Rounded.Mic,
         )
+    }
+    }
+    }
     }
 }
 
@@ -271,7 +296,7 @@ private fun MicOrb(text: Boolean = false, fit: Float = 1f) {
             Modifier.size(220.dp * fit).graphicsLayer { val s = halo?.value ?: 1.02f; scaleX = s; scaleY = s }.clip(CircleShape)
                 .background(Brush.radialGradient(listOf(BrandTeal.copy(alpha = 0.18f), BrandTeal.copy(alpha = 0.0f)))),
         )
-        Box(Modifier.size(160.dp * fit).clip(CircleShape).background(BrandViolet.copy(alpha = 0.10f)))
+        Box(Modifier.size(160.dp * fit).clip(CircleShape).background(BrandBlue.copy(alpha = 0.10f)))
         Box(
             Modifier.size(112.dp * fit).clip(CircleShape).background(BrandGradient),
             contentAlignment = Alignment.Center,

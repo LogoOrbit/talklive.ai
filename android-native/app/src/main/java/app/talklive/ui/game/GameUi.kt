@@ -62,10 +62,10 @@ import app.talklive.game.Stage
 import app.talklive.ui.components.PrimaryButton
 import app.talklive.ui.components.SecondaryButton
 import app.talklive.ui.theme.BrandTeal
-import app.talklive.ui.theme.BrandViolet
+import app.talklive.ui.theme.BrandBlue
 import kotlin.math.abs
 
-private val P0 = BrandViolet
+private val P0 = BrandBlue
 private val P1 = BrandTeal
 
 /** The games sheet: pick and invite, wait, then play. */

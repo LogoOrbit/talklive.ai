@@ -264,7 +264,10 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
             val o = args.firstObject() ?: return@on
             _events.tryEmit(ServerEvent.StrangerReaction(o.optString("id"), o.optString("emoji"), o.optBoolean("on")))
         }
-        socket.on("partner-away") { args -> _events.tryEmit(ServerEvent.PartnerAway(args.firstObject()?.optBoolean("away") == true)) }
+        socket.on("partner-away") { args ->
+            val o = args.firstObject()
+            _events.tryEmit(ServerEvent.PartnerAway(o?.optBoolean("away") == true, o?.optBoolean("offline") == true))
+        }
         socket.on("reaction") { args -> (args.firstOrNull() as? String)?.let { _events.tryEmit(ServerEvent.Reaction(it)) } }
         socket.on("mutual-heart") { args -> _events.tryEmit(ServerEvent.MutualHeart(Partner.from(args.firstObject()?.optJSONObject("partner")))) }
         socket.on("rate-prompt") { args ->

@@ -376,6 +376,12 @@ class SocialRepository @Inject constructor(
         socket.emit("rename-friend", JSONObject().put("friendClientId", clientId).put("nickname", nickname.trim()))
     }
 
+    /** Pull to refresh: registers again so the server sends the friends and requests afresh (a reconnect first if the line is down). */
+    suspend fun refresh() {
+        if (socket.isConnected()) socket.register() else socket.awaitConnected(6_000)
+        kotlinx.coroutines.delay(800)
+    }
+
     /** Looks someone up by their friend ID (alex#1234 or G-4RT9KQ). */
     suspend fun find(friendId: String): Result<FoundUser> {
         val res = request("find-by-friend-id", JSONObject().put("friendId", friendId.trim()), "find-by-friend-id-result")
@@ -388,7 +394,7 @@ class SocialRepository @Inject constructor(
                 friendId = u.optString("friendId"),
                 username = u.optString("username"),
                 countryCode = u.optNullableString("countryCode"),
-                animal = animalOf(u.optNullableString("avatar")),
+                animal = animalOf(u.optNullableString("avatar") ?: u.optNullableString("animal")),
                 isFriend = u.optBoolean("isFriend"),
                 pending = u.optBoolean("pending"),
                 online = u.optBoolean("online"),
