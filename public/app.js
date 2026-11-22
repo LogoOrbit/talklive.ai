@@ -1562,6 +1562,8 @@ const SFX = {
   move: [[700, 0.045, 0.22, 0, 'p']],
   win: [[523, 0.12, 0.2, 0, 'b'], [659, 0.12, 0.2, 0.09, 'b'], [784, 0.12, 0.2, 0.18, 'b'], [1047, 0.42, 0.22, 0.27, 'b']],
   invite: [[587, 0.12, 0.2, 0, 'b'], [880, 0.28, 0.2, 0.1, 'b']],
+  lose: [[440, 0.16, 0.2, 0, 's'], [370, 0.16, 0.2, 0.12, 's'], [294, 0.4, 0.2, 0.24, 's']],
+  draw: [[523, 0.14, 0.18, 0, 's'], [523, 0.3, 0.16, 0.16, 's']],
   friend: [[587, 0.1, 0.18, 0, 'b'], [784, 0.1, 0.18, 0.08, 'b'], [988, 0.1, 0.18, 0.16, 'b'], [1175, 0.4, 0.2, 0.24, 'b']],
 };
 const sfxBuf = {};
@@ -1622,6 +1624,8 @@ function playSendSound() { sfx('send'); }
 function playTurnSound() { sfx('turn'); }
 function playMoveSound() { sfx('move'); }
 function playWinSound() { sfx('win'); }
+function playLoseSound() { sfx('lose'); }
+function playDrawSound() { sfx('draw'); }
 function playInviteSound() { sfx('invite'); }
 function playFriendAddedSound() { sfx('friend'); }
 
@@ -1886,6 +1890,7 @@ function enhanceSettingsPage() {
   loadSettingsPanel().then(() => {
     window.TalkLiveSettingsPanel.enhancePage(settingsPage, {
       show: (tab, drill) => showSettingsTab(tab, drill),
+      openProfile: () => { renderAccountState(); openMyProfile(); },
     });
   }, () => {});
 }
@@ -3190,8 +3195,8 @@ function renderAvatarGrid() {
   avatarGrid.innerHTML = '';
   [
     ['basic', 'avatarBasic', AVATAR_IDS.male.concat(AVATAR_IDS.female)],
-    ['personality', 'avatarPersonality', AVATAR_IDS.character],
-    ['animals', 'animals', AVATAR_IDS.animal],
+    ['personality', 'avatarPersonality', pickerCharacters()],
+    ['animals', 'animals', pickerAnimals()],
   ].forEach(([cat, labelKey, ids]) => {
     if (!ids.length) return;
     const section = document.createElement('div');
@@ -3214,6 +3219,7 @@ function renderAvatarGrid() {
       btn.setAttribute('aria-label', label || t('avatar'));
       btn.innerHTML = avatarFaceHtml(id, 52)
         + (label ? `<span class="avatar-option-name">${escapeHtml(label)}</span>` : '');
+      decorateSpecialTile(btn, id);
       row.appendChild(btn);
     });
     section.append(heading, row);
@@ -3244,6 +3250,7 @@ function syncSaveAvatarBtn() {
 avatarGrid.addEventListener('click', (e) => {
   const option = e.target.closest('.avatar-option');
   if (!option) return;
+  if (blockLockedSpecial(option.dataset.avatar)) return;
   pendingAvatar = option.dataset.avatar;
   renderAvatarGrid();          // move the tick to the one just picked
   syncSaveAvatarBtn();
@@ -3287,8 +3294,65 @@ const ANIMAL_PREVIEW_COUNT = 7;
 const PREVIEW_ANIMALS = 4;
 let animalPickerExpanded = false;
 
-function pickerAnimals() { return Animals ? Animals.list.map((a) => ANIMAL_AVATAR_PREFIX + a.id) : []; }
-function pickerCharacters() { return AVATAR_IDS.character; }
+// What the pickers offer (spec section 1): the free faces, the Plus faces and
+// the three level-locked special faces. Every other face stays valid for whoever
+// already wears it; it is just not offered any more.
+function pickerAnimals() { return Animals && Animals.pickerIds ? Animals.pickerIds.map((id) => ANIMAL_AVATAR_PREFIX + id) : []; }
+function pickerCharacters() {
+  const C = window.TalkLiveCharacters;
+  return C && C.pickerIds ? C.pickerIds.concat(C.specialIds).map((id) => 'c:' + id) : [];
+}
+
+// --- Special faces: Silver, Gold and Diamond ----------------------------------
+// Unlocked by points (earned in the Android app), never by Plus. The server says
+// which tier this person has reached; until it does the faces stay locked.
+const TIER_RANK = { none: 0, silver: 1, gold: 2, diamond: 3 };
+let myProgress = null;
+function specialTierOf(id) {
+  const C = window.TalkLiveCharacters;
+  const ch = characterAvatarId(id);
+  return ch && C && C.specials ? C.specials[ch] || null : null;
+}
+function specialUnlocked(id) {
+  const tier = specialTierOf(id);
+  if (!tier) return true;
+  if (id === myAvatar) return true;
+  return !!(myProgress && TIER_RANK[myProgress.tier] >= TIER_RANK[tier]);
+}
+function specialHint(id) {
+  const tier = specialTierOf(id);
+  const name = t('tier_' + tier);
+  return t('specialFaceLocked', { tier: name === 'tier_' + tier ? tier.charAt(0).toUpperCase() + tier.slice(1) : name });
+}
+// Returns true (and says why) when a tapped face cannot be worn yet.
+function blockLockedSpecial(id) {
+  if (specialUnlocked(id)) return false;
+  showToast(specialHint(id), 'info');
+  return true;
+}
+function decorateSpecialTile(btn, id) {
+  if (!specialTierOf(id)) return;
+  const open = specialUnlocked(id);
+  btn.classList.add('tl-special-face');
+  btn.classList.toggle('is-locked', !open);
+  if (!open) {
+    btn.dataset.lock = '\u{1F512}';
+    btn.title = specialHint(id);
+  }
+}
+function refreshProgress() {
+  if (!socket || !socket.connected) return;
+  try {
+    socket.emit('progress-get', (r) => {
+      if (r && typeof r === 'object' && r.tier) applyProgress(r);
+    });
+  } catch (_) { /* an older server has no such event */ }
+}
+function applyProgress(r) {
+  myProgress = r;
+  if (typeof renderAvatarGrid === 'function') { renderAnimalPicker(); renderAvatarGrid(); }
+}
+socket.on('progress', (r) => { if (r && typeof r === 'object' && r.tier) applyProgress(r); });
 function animalPreviewIds() {
   const ids = pickerAnimals().slice(0, PREVIEW_ANIMALS)
     .concat(pickerCharacters().slice(0, ANIMAL_PREVIEW_COUNT - PREVIEW_ANIMALS));
@@ -3334,6 +3398,7 @@ function paintAnimalPicker(grid, limitIds) {
     btn.className = `animal-option${on ? ' selected' : ''}`;
     btn.dataset.avatar = id;
     if (tile.color) btn.style.setProperty('--animal-color', tile.color);
+    decorateSpecialTile(btn, id);
     btn.setAttribute('role', 'radio');
     btn.setAttribute('aria-checked', on ? 'true' : 'false');
     btn.innerHTML = `${tile.art}<span class="animal-option-name">${escapeHtml(tile.name)}</span>`;
@@ -3407,6 +3472,7 @@ if (callAnimalGrid) {
   callAnimalGrid.addEventListener('click', (e) => {
     const option = e.target.closest('.animal-option');
     if (!option || !option.dataset.avatar) return;
+    if (blockLockedSpecial(option.dataset.avatar)) return;
     vibrate(8);
     setMyAvatarChoice(option.dataset.avatar);
   });
@@ -3422,6 +3488,7 @@ if (animalGrid) {
       renderAnimalPicker();
       return;
     }
+    if (blockLockedSpecial(option.dataset.avatar)) return;
     setMyAvatarChoice(option.dataset.avatar);
   });
   renderAnimalPicker();
@@ -3724,6 +3791,123 @@ headerAccountBtn.addEventListener('click', () => {
   renderAccountState();
   openMyProfile();
 });
+// The one entry in Settings for everything about how you appear.
+{
+  const myProfileEntry = document.getElementById('settingsMyProfileBtn');
+  if (myProfileEntry) myProfileEntry.addEventListener('click', () => { renderAccountState(); openMyProfile(); });
+}
+
+// --- Covers and badges (public/covers.js, public/badges.js) --------------------
+// Loaded the first time a profile needs them, so the landing page never pays
+// for them. The server sends `cover` and `badges` on a person's own state and on
+// every public profile (docs/SPEC-PROFILE-PROGRESS-POSTS.md); an older server
+// sends neither, and then the cover picker and the badge shelf simply stay hidden.
+var lazyScripts = {};
+function loadLazyScript(name, src) {
+  if (!lazyScripts[name]) {
+    lazyScripts[name] = new Promise((resolve, reject) => {
+      const el = document.createElement('script');
+      el.src = src;
+      el.onload = resolve;
+      el.onerror = () => { delete lazyScripts[name]; reject(); };
+      document.head.appendChild(el);
+    });
+  }
+  return lazyScripts[name];
+}
+function withBadges(cb) {
+  if (window.TalkLiveBadges) { cb(window.TalkLiveBadges); return; }
+  loadLazyScript('badges', '/badges.js?v=3acf3c4282').then(() => cb(window.TalkLiveBadges), () => {});
+}
+function withCovers(cb) {
+  if (window.TalkLiveCovers) { cb(window.TalkLiveCovers); return; }
+  loadLazyScript('covers', '/covers.js?v=74e8325a84').then(() => cb(window.TalkLiveCovers), () => {});
+}
+var myCover = null;
+var myBadges = null;
+var serverSendsExtras = false;
+// A Plus cover is only ever shown while Plus is on, whatever was stored.
+function effectiveCover(id) {
+  if (typeof id !== 'string' || !id) return null;
+  if (id.indexOf('plus:') === 0 && !isPremiumUser) return null;
+  return id;
+}
+// Paints a profile header (own or somebody else's) as a cover.
+function paintCover(el, id, own) {
+  // Somebody else's cover is whatever the server reports; only my own is
+  // filtered by my own Plus state.
+  const c = own ? effectiveCover(id) : (typeof id === 'string' && id ? id : null);
+  if (!el) return;
+  if (!c && !window.TalkLiveCovers) return; // nothing to undo, nothing to load
+  withCovers((C) => C.apply(el, c));
+}
+// Their top badge next to a name, own or someone else's.
+function paintBadgeChip(host, badges, size) {
+  if (!host) return;
+  host.querySelectorAll('.tl-badge-chip').forEach((n) => n.remove());
+  if (!badges || !(badges.top || (badges.earned && badges.earned.length))) return;
+  withBadges((B) => {
+    if (host.querySelector('.tl-badge-chip')) return;
+    host.insertAdjacentHTML('beforeend', B.chip(badges, size || 18));
+  });
+}
+// The server's word on this person's own cover, badges and face (state-sync,
+// profile and premium-status all may carry them). Plus ending changes the
+// cover and the face server-side; this is how the page follows.
+function ingestOwnExtras(o) {
+  if (!o || typeof o !== 'object') return;
+  const src = o.me && typeof o.me === 'object' ? Object.assign({}, o, o.me) : o;
+  let changed = false;
+  if ('cover' in src) {
+    serverSendsExtras = true;
+    const c = typeof src.cover === 'string' && src.cover ? src.cover : null;
+    if (c !== myCover) { myCover = c; changed = true; }
+  }
+  if (src.badges && typeof src.badges === 'object') {
+    serverSendsExtras = true;
+    myBadges = src.badges;
+    changed = true;
+  }
+  if (typeof src.avatar === 'string' && src.avatar && src.avatar !== myAvatar && validAvatarId(src.avatar)) {
+    adoptServerAvatar(src.avatar);
+    changed = true;
+  }
+  if (changed && myProfileIsOpen()) renderMyProfileCard();
+}
+// The server decided which face this person wears (a Plus face replaced by a
+// free one, or brought back): follow it without echoing it back.
+function adoptServerAvatar(id) {
+  myAvatar = id;
+  pendingAvatar = id;
+  try { localStorage.setItem('talklive_avatar', id); } catch (e) { /* storage blocked */ }
+  myAnimal = animalAvatarId(id);
+  if (Animals) Animals.store(myAnimal);
+  renderAnimalPicker();
+  renderAvatarGrid();
+  renderAccountState();
+  renderHeaderAccountFace();
+  renderSettingsProfileRow();
+}
+// A face that needs Plus: offered, not free, and not one of the level faces.
+function isPlusOnlyFace(id) {
+  return typeof id === 'string' && /^[ac]:/.test(id) && !specialTierOf(id)
+    && !!Animals && !Animals.isFree(id);
+}
+// Plus ended (or never was): stop showing Plus things, and follow whatever the
+// server then reports.
+function dropPlusCover() {
+  if (isPremiumUser || !myCover || myCover.indexOf('plus:') !== 0) return;
+  myCover = null;
+  if (myProfileIsOpen()) renderMyProfileCard();
+}
+function dropPlusFace(look) {
+  if (isPremiumUser || !isPlusOnlyFace(myAvatar)) return;
+  // The invite reward's one face stays.
+  if (look && (!look.face || look.face === myAvatar)) return;
+  adoptServerAvatar(myAvatar.charAt(0) === 'a' ? 'a:lion' : 'c:wizard');
+}
+socket.on('state-sync', ingestOwnExtras);
+socket.on('profile', ingestOwnExtras);
 
 // --- My profile: a sheet of its own --------------------------------------
 // Your face in the corner opens your profile and nothing else - who you are,
@@ -3750,17 +3934,40 @@ function buildMyProfileSheet() {
       <button type="button" class="my-profile-close">&times;</button>
       <div class="my-profile-scroll">
         <div class="my-profile-card">
-          <button type="button" class="mp-face" data-act="edit"><span class="my-profile-face"></span><span class="mp-pencil" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span></button>
+          <div class="mp-cover" aria-hidden="true"></div>
+          <span class="mp-face"><span class="my-profile-face"></span></span>
           <h2 id="myProfileName" class="my-profile-name"></h2>
+          <span class="mp-badge"></span>
           <button type="button" class="mp-id my-profile-copy"><span class="my-profile-id-value"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+          <button type="button" class="btn btn-primary mp-change-avatar" data-act="avatar" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/></svg>
+            <span class="mp-change-avatar-text"></span>
+          </button>
         </div>
+        <section class="mp-sec mp-avatar-sec" hidden>
+          <h3 class="mp-sec-title mp-t-avatar"></h3>
+          <div class="tl-set-group mp-avatar-host"></div>
+        </section>
         <button type="button" class="mp-plus" data-act="plus"><span class="mp-plus-gem" aria-hidden="true">\u{1F48E}</span><span class="mp-row-text"><strong></strong><small></small></span><span class="mp-go" aria-hidden="true"></span></button>
+        <section class="mp-sec mp-cover-sec" hidden>
+          <h3 class="mp-sec-title mp-t-cover"></h3>
+          <div class="mp-cover-picker"></div>
+        </section>
+        <section class="mp-sec">
+          <h3 class="mp-sec-title mp-t-about"></h3>
+          <div class="tl-set-group mp-about-host"></div>
+        </section>
+        <section class="mp-sec mp-badges-sec" hidden>
+          <h3 class="mp-sec-title mp-t-badges"></h3>
+          <div class="mp-badges"></div>
+        </section>
+        <section class="mp-sec mp-voice-sec" hidden>
+          <h3 class="mp-sec-title mp-t-voice"></h3>
+          <div class="tl-set-group mp-voice-host"></div>
+        </section>
         <p class="mp-legend"></p>
         <div class="mp-rows mp-you"></div>
         <div class="my-profile-films" hidden></div>
-        <div class="my-profile-body" hidden>
-          <div class="tl-set-group my-profile-controls"></div>
-        </div>
         <div class="mp-rows my-profile-actions"></div>
       </div>
     </section>`;
@@ -3804,13 +4011,34 @@ let premiumUntil = null;
 document.addEventListener('tl-films', () => { if (myProfileIsOpen()) renderMyProfileCard(); });
 function renderMyProfileCard() {
   if (!myProfileSheet) return;
+  const q = (sel) => myProfileSheet.querySelector(sel);
   const name = accountNickname || (tempUsernameInput && tempUsernameInput.value) || t('you');
-  myProfileSheet.querySelector('.my-profile-face').innerHTML = myAvatar ? avatarFaceHtml(myAvatar, 92, isPremiumUser) : genderIcon(null, 92);
-  myProfileSheet.querySelector('.my-profile-name').textContent = name;
-  myProfileSheet.querySelector('.my-profile-id-value').textContent = myFriendId || '…';
-  myProfileSheet.querySelector('.my-profile-copy').setAttribute('aria-label', t('copyFriendId'));
-  myProfileSheet.querySelector('.my-profile-close').setAttribute('aria-label', t('close'));
-  const plus = myProfileSheet.querySelector('.mp-plus');
+  q('.my-profile-face').innerHTML = myAvatar ? avatarFaceHtml(myAvatar, 92, isPremiumUser) : genderIcon(null, 92);
+  q('.my-profile-name').textContent = name;
+  q('.my-profile-id-value').textContent = myFriendId || '…';
+  q('.my-profile-copy').setAttribute('aria-label', t('copyFriendId'));
+  q('.my-profile-close').setAttribute('aria-label', t('close'));
+  q('.mp-change-avatar-text').textContent = mpText('changeAvatar', 'Change Avatar');
+  q('.mp-t-avatar').textContent = mpText('avatar', 'Avatar');
+  q('.mp-t-cover').textContent = mpText('coverTitle', 'Cover');
+  q('.mp-t-about').textContent = mpText('aboutYouTitle', 'About you');
+  q('.mp-t-badges').textContent = mpText('badgesTitle', 'Badges');
+  q('.mp-t-voice').textContent = mpText('voiceCheck', 'Voice check');
+  paintCover(q('.mp-cover'), myCover, true);
+  paintBadgeChip(q('.mp-badge'), myBadges, 22);
+  // Covers and badges only exist once the server sends them.
+  const extras = serverSendsExtras;
+  q('.mp-cover-sec').hidden = !extras;
+  q('.mp-badges-sec').hidden = !extras;
+  if (extras) {
+    withCovers((C) => {
+      const host = q('.mp-cover-picker');
+      host.innerHTML = C.picker(effectiveCover(myCover), isPremiumUser);
+    });
+    withBadges((B) => { q('.mp-badges').innerHTML = B.shelf(myBadges || { earned: [], hours: 0 }); });
+  }
+  q('.mp-voice-sec').hidden = !voiceCheckAvailable;
+  const plus = q('.mp-plus');
   plus.querySelector('strong').textContent = isPremiumUser ? 'TalkLive Plus' : mpText('getPlus', 'Get TalkLive Plus');
   plus.querySelector('small').textContent = isPremiumUser
     ? (premiumUntil ? mpText('plusActiveUntil', 'Active until {date}', { date: new Date(premiumUntil).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) }) : mpText('plusActive', 'Active'))
@@ -3822,6 +4050,40 @@ function renderMyProfileCard() {
     film: window.TalkLiveFilms && window.TalkLiveFilms.firstTitle ? window.TalkLiveFilms.firstTitle() : '',
   })).catch(() => {});
 }
+// Choosing a cover: a Plus scene needs Plus (the server says so too); the
+// server's answer is the cover that counts.
+function chooseCover(id) {
+  if (id === myCover) return;
+  if (id.indexOf('plus:') === 0 && !isPremiumUser) {
+    leaveMyProfileFor('settings');
+    showPremiumUpsell('', 'avatars');
+    return;
+  }
+  const before = myCover;
+  myCover = id;
+  renderMyProfileCard();
+  socket.emit('set-cover', { cover: id }, (r) => {
+    if (r && r.ok) {
+      myCover = typeof r.cover === 'string' ? r.cover : id;
+    } else {
+      myCover = before;
+      if (r && r.reason === 'plus') showPremiumUpsell('', 'avatars');
+      else if (r) showToast(t('coverFailed'), 'warn');
+    }
+    renderMyProfileCard();
+  });
+}
+function toggleMyProfileAvatar(open) {
+  const sec = myProfileSheet.querySelector('.mp-avatar-sec');
+  const on = typeof open === 'boolean' ? open : sec.hidden;
+  sec.hidden = !on;
+  myProfileSheet.querySelector('.mp-change-avatar').setAttribute('aria-expanded', on ? 'true' : 'false');
+  if (on) {
+    renderAvatarGrid();
+    sec.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    revealSelectedAvatar();
+  }
+}
 // Leaving the sheet for somewhere else in the app: it closes without sending
 // someone who came from /chat straight back there.
 function leaveMyProfileFor(next) {
@@ -3829,11 +4091,14 @@ function leaveMyProfileFor(next) {
   closeMyProfile(true);
 }
 function onMyProfileAction(e) {
+  const cover = e.target.closest('[data-cover]');
+  if (cover) { chooseCover(cover.dataset.cover); return; }
+  if (e.target.closest('[data-cover-upsell]')) { leaveMyProfileFor('settings'); showPremiumUpsell('', 'avatars'); return; }
   const btn = e.target.closest('[data-act]');
   if (!btn) return;
   const act = btn.dataset.act;
   const E = window.TalkLiveEngage;
-  if (act === 'edit') { myProfileSheet.querySelector('.my-profile-body').hidden = false; myProfileSheet.querySelector('.my-profile-body').scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+  if (act === 'avatar') { toggleMyProfileAvatar(); return; }
   if (act === 'films') { myProfileSheet.querySelector('.my-profile-films').classList.toggle('open'); return; }
   if (act === 'passport' && E && E.openPassport) { E.openPassport(); return; }
   if (act === 'invite') { showSharePrompt(); return; }
@@ -3852,21 +4117,26 @@ function openMyProfile() {
   // back exactly where they were); everything else - "I am", password,
   // recovery email - is one tap away under "More profile settings".
   renderIdEditor();
-  const controls = myProfileSheet.querySelector('.my-profile-controls');
-  const nameInput = document.getElementById('tempUsernameInput');
-  const avatarGrid = document.getElementById('avatarGrid');
+  const host = (sel) => myProfileSheet.querySelector(sel);
+  const ctl = (id) => { const n = document.getElementById(id); return n && n.closest('.tl-set-control'); };
+  // [control, where it goes]: everything about how you appear, in one place.
   myProfileBorrowed = [
-    nameInput && nameInput.closest('.tl-set-control'),
-    myFriendIdEditable && idEditor,
-    avatarGrid && avatarGrid.closest('.tl-set-control'),
-  ].filter(Boolean).map((el) => {
+    [ctl('tempUsernameInput'), '.mp-about-host'],
+    [myFriendIdEditable && idEditor, '.mp-about-host'],
+    [ctl('genderGroup'), '.mp-about-host'],
+    [ctl('ageGroup'), '.mp-about-host'],
+    [ctl('avatarGrid'), '.mp-avatar-host'],
+    [document.getElementById('voiceCheckRow'), '.mp-voice-host'],
+    [document.getElementById('voiceCheckActions'), '.mp-voice-host'],
+  ].filter(([el]) => el).map(([el, where]) => {
     const spot = document.createComment('my-profile');
     el.before(spot);
-    controls.appendChild(el);
+    host(where).appendChild(el);
     return { el, spot };
   });
-  myProfileSheet.querySelector('.my-profile-body').hidden = true;
+  toggleMyProfileAvatar(false);
   myProfileSheet.querySelector('.my-profile-films').classList.remove('open');
+  refreshProgress();
   renderMyProfileCard();
   withFilms((F) => F.editor(myProfileSheet.querySelector('.my-profile-films'), socket));
   myProfileSheet.querySelector('.my-profile-scroll').scrollTop = 0;
@@ -4990,6 +5260,10 @@ function openUserProfile(person) {
   activeProfileRelation = relation;
   friendProfileAvatar.innerHTML = chatPersonFace(known, 72);
   friendProfileName.innerHTML = `${getFlagImg(known.countryCode)} ${escapeHtml(friendLabel(known))}`;
+  // Their cover behind the header, and the badge they hold beside their name.
+  const shown = Object.assign({}, person, known);
+  paintBadgeChip(friendProfileName, shown.badges, 18);
+  paintCover(friendProfileModal.querySelector('.friend-profile-cover'), shown.cover, false);
   const countryName = getCountryName(known.countryCode);
   // Whichever list knows them best carries their ID (callers often pass a bare
   // name and clientId).
@@ -7285,6 +7559,7 @@ socket.on('profile', (profile) => {
   myProfile = profile;
   renderRailOnline();
   renderSettingsIdentity();
+  refreshProgress();
 });
 
 socket.on('identity-token', ({ clientId, token } = {}) => {
@@ -9765,7 +10040,9 @@ const GAME_SOUNDS = {
   move: playMoveSound,
   turn: playTurnSound,
   win: playWinSound,
-  lose: playHangupSound,
+  lose: playLoseSound,
+  draw: playDrawSound,
+  tap: playTapSound,
   invite: playInviteSound,
 };
 
@@ -11966,8 +12243,17 @@ updateFiltersBadge();
 renderFilterPresets();
 { const hs = document.getElementById('homeFilterSummary'); if (hs) hs.addEventListener('click', () => { const b = document.getElementById('filtersBtn'); if (b) b.click(); }); }
 
-socket.on('premium-status', ({ premium, limits, expiresAt, source, renews, state } = {}) => {
+socket.on('premium-status', (status = {}) => {
+  const { premium, limits, expiresAt, source, renews, state } = status;
+  const plusJustEnded = isPremiumUser && !premium;
   isPremiumUser = !!premium;
+  // The server also reports the effective cover and face; take them at once.
+  ingestOwnExtras(status);
+  // Plus covers go the moment Plus does. A Plus face does too when the end
+  // happens in front of us; right after signing in the first answer is the
+  // guest's (free) one, so there the face waits for the deferred check below.
+  dropPlusCover();
+  if (plusJustEnded) dropPlusFace(status.look);
   premiumInfoState = { source: source || null, renews: !!renews, state: state || (premium ? 'active' : 'none'), until: expiresAt || null };
   if (billingModal && !billingModal.classList.contains('hidden')) renderBilling();
   renderFilterSummary();
@@ -11984,6 +12270,7 @@ socket.on('premium-status', ({ premium, limits, expiresAt, source, renews, state
   clearTimeout(dropLockedFiltersTimer);
   if (!isPremiumUser) dropLockedFiltersTimer = setTimeout(() => {
     dropLockedFilters();
+    dropPlusFace(status.look);
     // A Plus theme left over from an ended subscription goes back to Dark.
     if (!isPremiumUser && PLUS_THEMES.includes(currentTheme)) { applyTheme('dark'); syncDrawerTheme(); }
   }, 4000);
@@ -12138,3 +12425,17 @@ window.addEventListener('load', () => {
   blurbEl.textContent = pick.blurb;
 })();
 
+
+// --- "From TalkLive" posts: fetched once the home page is scrolled near them ----
+{
+  const sentinel = document.getElementById('tlPostsSentinel');
+  const section = document.getElementById('tlPosts');
+  if (sentinel && section && 'IntersectionObserver' in window) {
+    const watcher = new IntersectionObserver((entries) => {
+      if (!entries.some((en) => en.isIntersecting)) return;
+      watcher.disconnect();
+      loadLazyScript('posts', '/posts.js?v=ec2bd51ac7').then(() => window.TalkLivePosts.mount(section), () => {});
+    }, { rootMargin: '600px 0px' });
+    watcher.observe(sentinel);
+  }
+}
