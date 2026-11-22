@@ -58,6 +58,9 @@ const { botLabel, isPrefetch, isBotUserAgent } = require('./bots');
 const Engage = require('./engage');
 const { createAdmin, applyOwnerReset } = require('./admin');
 const { createSupport } = require('./support');
+const { createPosts, isVerifiedAccount } = require('./posts');
+const { createProgress, SPECIAL_FACES } = require('./progress');
+const Badges = require('./badges');
 const { createGameTracker } = require('./game-tracker');
 const { isValidTimezone } = require('./analytics');
 const audience = require('./audience');
@@ -590,6 +593,42 @@ const support = createSupport({
   geoOf: (ip) => lookupGeo(ip),
 });
 app.use('/support/api', support.router);
+
+// Owner posts with reactions and comments on the home page (server/posts.js).
+// Comments are for verified accounts only and pass the same checks as chat.
+function isVerifiedClient(clientId) {
+  const usernameLower = clientId && store.findUsernameByClientId(clientId);
+  return !!usernameLower && isVerifiedAccount(accounts.get(usernameLower) || store.data.accounts[usernameLower]);
+}
+const posts = createPosts({
+  store,
+  httpRateLimit,
+  validIdentityToken,
+  isVerifiedClient,
+  identify: (clientId) => {
+    const usernameLower = store.findUsernameByClientId(clientId);
+    const acc = usernameLower && accounts.get(usernameLower);
+    return {
+      name: (acc && Nick.clean(acc.nickname)) || guestNameFor(clientId),
+      avatar: liveAvatarFor(clientId, acc && faceKey(acc.animal)),
+      handle: publicIdOf(clientId) || '',
+    };
+  },
+  textCheck: (clientId, text) => {
+    if (chatGuard.check(clientId, text, { rate: false })) return 'spam';
+    if (containsLink(text) || UNSAFE_RE.test(text)) return 'unsafe';
+    const sc = talkguard.check(text, { source: 'post', fromClientId: clientId });
+    const th = talkguard.thresholds();
+    if (sc && (sc.abuse >= th.strike || sc.sexual >= 0.85)) return 'abusive';
+    const usernameLower = store.findUsernameByClientId(clientId);
+    automod.onChatText({
+      from: { clientId, account: usernameLower || null, ip: '', deviceId: null, username: usernameLower || '', country: '' },
+      to: 'post', pair: `post|${clientId}`, text, kind: 'chat',
+    });
+    return null;
+  },
+});
+app.use('/api/posts', posts.router);
 
 // "Get email updates" form, injected into every page footer by pwa.js. Double
 // opt-in: the address joins the list only after its owner clicks the link we
@@ -1761,7 +1800,7 @@ app.get('/talkguard/model.json', (req, res) => {
   res.json(m);
 });
 const admin = createAdmin({
-  io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate, deviceIdOfClient, deliverWarning, deliverFeedbackReply, getUserStats, automod, talkguard, patterns, support,
+  io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate, deviceIdOfClient, deliverWarning, deliverFeedbackReply, getUserStats, automod, talkguard, patterns, support, posts,
   getLiveGames: () => gameTracker.live(), grantPlus: (who, days) => grantPlusTo(who, days, 'dashboard'),
   // An appeal was decided: show the person the outcome if they are online.
   onVoiceDecision: (clientId) => {
@@ -3514,6 +3553,9 @@ function syncClientState(socket, clientId) {
     ring: hasRing(fid),
     usual: usualHours(fid),
     alert: !!(onlineAlerts.get(clientId) && onlineAlerts.get(clientId).has(fid)),
+    ...profileExtras(fid),
+    // Seconds a message lasts in this chat, 0 when disappearing messages are off.
+    disappearing: disappearingSeconds(clientId, fid),
   }));
   const requestList = Array.from((friendRequests.get(clientId) || new Map()).entries()).map(([fid, info]) => ({
     clientId: fid,
@@ -3521,6 +3563,7 @@ function syncClientState(socket, clientId) {
     friendId: publicIdOf(fid),
     dm: 'accept',
     premium: isPremium(fid),
+    ...profileExtras(fid),
   }));
   // Recent random-chat partners (newest first), each carrying a live online
   // flag so the history panel can show who's around to message back right now.
@@ -3543,12 +3586,13 @@ function syncClientState(socket, clientId) {
       last: lastMessageBetween(clientId, e.clientId),
       dm: dmGate(clientId, e.clientId),
       premium: isPremium(e.clientId),
+      ...profileExtras(e.clientId),
     }));
   // Who this user has asked and not heard back from, so a profile can say
   // "Pending" instead of offering to send the same request twice.
   const sentList = Array.from((sentRequests.get(clientId) || new Map()).entries()).map(([fid, info]) => {
     const { held, ...rest } = info;
-    return { clientId: fid, ...rest, friendId: publicIdOf(fid), online: clientSockets.has(fid) && !statusHidden.get(fid), dm: dmGate(clientId, fid) };
+    return { clientId: fid, ...rest, friendId: publicIdOf(fid), online: clientSockets.has(fid) && !statusHidden.get(fid), dm: dmGate(clientId, fid), ...profileExtras(fid) };
   });
   // Only the people this user blocked - never who blocked them, which would
   // tell a blocked person exactly who shut them out.
@@ -3595,6 +3639,8 @@ function syncClientState(socket, clientId) {
     historyHidden: Math.max(0, fullHistory.length - historyList.length),
     blocked: blockedList,
     muted: Array.from(mutedChats.get(clientId) || []),
+    // The person's own talk-time badges and effective cover.
+    ...profileExtras(clientId),
   });
 }
 
@@ -4489,9 +4535,15 @@ function placeFromHints(timezone, acceptLanguage) {
 // Every other animal and character is Plus. Mirrored by FREE_FACES in
 // public/animals.js and android AnimalUi.kt; keep the three lists identical.
 const FREE_FACES = new Set([
-  'a:lion', 'a:fox', 'a:cat', 'a:dog', 'a:panda',
-  'c:wizard', 'c:pirate', 'c:detective', 'c:robot', 'c:ninja',
+  'a:lion', 'a:fox', 'a:cat',
+  'c:wizard', 'c:pirate', 'c:robot',
 ]);
+// Special faces are earned with points, never bought (server/progress.js):
+// silver_knight, gold_phoenix and diamond_legend unlock at Silver, Gold and Diamond.
+const progress = createProgress({ store });
+function isSpecialFace(value) {
+  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(SPECIAL_FACES, value);
+}
 // The gold profile ring: Plus, or the invite reward's Plus look.
 function hasRing(clientId) { return isPremium(clientId) || !!store.plusLook(clientId); }
 function lookStatus(clientId) {
@@ -4507,13 +4559,15 @@ function faceKey(value) {
 }
 function isPlusFace(value) {
   const key = faceKey(value);
-  return !!key && !FREE_FACES.has(key);
+  return !!key && !FREE_FACES.has(key) && !isSpecialFace(key);
 }
 // Whether this person may wear the face. Locked faces need Plus or the invite
 // reward - except the one they already wear: avatars that were free before the
 // list shrank are kept, and a person the server has never seen is taken as
 // already wearing what they send. Only a CHANGE to a locked face is refused.
 function faceAllowed(clientId, value, premium) {
+  // A special face is only for someone who has reached its tier, Plus or not.
+  if (isSpecialFace(faceKey(value))) return progress.faceUnlocked(clientId, faceKey(value));
   if (!isPlusFace(value) || premium) return true;
   const held = store.heldFace(clientId);
   if (held === undefined || held === faceKey(value)) return true;
@@ -4525,6 +4579,90 @@ function shownAvatar(p) {
   const face = p.avatar || (p.animal ? `a:${p.animal}` : null);
   if (face && !faceAllowed(p.clientId, face, isPremium(p.clientId))) return null;
   return face;
+}
+
+// --- Covers, badges and the Plus look (spec sections 3-6) -------------------
+const FREE_COVERS = new Set([
+  'solid:ocean', 'solid:sky', 'solid:mint', 'solid:sunset', 'solid:rose', 'solid:slate',
+  'grad:dawn', 'grad:lagoon', 'grad:berry', 'grad:forest', 'grad:peach', 'grad:night',
+]);
+const PLUS_COVERS = new Set([
+  'plus:aurora', 'plus:galaxy', 'plus:waves', 'plus:neon', 'plus:sakura', 'plus:fireflies',
+]);
+// What everyone else sees: a Plus cover is reported as null while Plus is off.
+function effectiveCover(clientId) {
+  const c = store.data.covers && store.data.covers[clientId];
+  if (!c) return null;
+  if (PLUS_COVERS.has(c)) return isPremium(clientId) ? c : null;
+  return FREE_COVERS.has(c) ? c : null;
+}
+// Added to every profile another person can see.
+function profileExtras(clientId) {
+  return { badges: Badges.badgesFor(store, clientId), cover: effectiveCover(clientId) };
+}
+function disappearingSeconds(a, b) {
+  return disappearing.has(pairKey(a, b)) ? Math.round(DISAPPEAR_MS / 1000) : 0;
+}
+// 'a:lion' -> the animal/avatar pair register and the profile use.
+function faceSlots(face) {
+  return face.startsWith('a:') ? { animal: face.slice(2), avatar: face } : { animal: face, avatar: face };
+}
+// When Plus is off a Plus face is swapped for a free one of the same kind and
+// the chosen face is remembered; when Plus is back it is put back (unless the
+// person has picked another face meanwhile). The invite reward's own legendary
+// face is left alone. Returns { animal, avatar, change: 'ended'|'restored'|null }.
+function reconcilePlusFace(clientId, animal, avatar) {
+  const key = faceKey(avatar) || faceKey(animal);
+  const saved = store.data.plusFaces[clientId];
+  if (isPremium(clientId)) {
+    if (!saved) return { animal, avatar, change: null };
+    delete store.data.plusFaces[clientId];
+    store.save();
+    if ((!key && !avatar) || key === saved.free) return { ...faceSlots(saved.face), change: 'restored' };
+    return { animal, avatar, change: null };
+  }
+  if (key && isPlusFace(key)) {
+    const look = store.plusLook(clientId);
+    if (look && (!look.face || look.face === key)) return { animal, avatar, change: null };
+    const free = key.startsWith('c:') ? 'c:wizard' : 'a:lion';
+    store.data.plusFaces[clientId] = { face: key, free };
+    store.save();
+    return { ...faceSlots(free), change: 'ended' };
+  }
+  return { animal, avatar, change: null };
+}
+// The live version of the above, for Plus starting or ending mid-session.
+function syncPlusLook(clientId) {
+  const live = [...profiles.values()].filter((p) => p.clientId === clientId);
+  if (!live.length) return null;
+  const r = reconcilePlusFace(clientId, live[0].animal, live[0].avatar);
+  if (!r.change) return null;
+  for (const p of live) { p.animal = sanitizeAnimal(r.animal); p.avatar = r.avatar; }
+  const usernameLower = store.findUsernameByClientId(clientId);
+  const acc = usernameLower && accounts.get(usernameLower);
+  if (acc) { acc.animal = r.animal; persistAccount(usernameLower); }
+  store.noteFace(clientId, faceKey(r.avatar) || faceKey(r.animal) || '');
+  refreshFriendSnapshots(clientId, live[0]);
+  resyncWatchers(clientId);
+  return r.change;
+}
+// What this person's own devices are told to show.
+function ownLook(clientId, reason) {
+  return { face: liveAvatarFor(clientId, null), cover: effectiveCover(clientId), ...(reason ? { reason } : {}) };
+}
+function recordTalkWithBadges(profile, seconds) {
+  const cid = profile.clientId;
+  const before = Badges.badgesFor(store, cid).top;
+  store.recordTalkTime(cid, seconds, { username: profile.username, country: profile.countryName || profile.country });
+  const after = Badges.badgesFor(store, cid);
+  if (after.top !== before) {
+    emitToClient(cid, 'badges', after);
+    resyncWatchers(cid);
+  }
+}
+function pushProgress(clientId) {
+  const hasAccount = !!store.findUsernameByClientId(clientId);
+  emitToClient(clientId, 'progress', progress.view(clientId, { hasAccount }));
 }
 
 function sanitizeAvatar(value) {
@@ -4883,6 +5021,8 @@ function recordEngageCall(profile, country, seconds) {
 // whenever a grant changes outside registration (a referral reward, a Play
 // notification).
 function emitPremiumStatus(clientId) {
+  // Plus starting or ending changes the face worn and the cover shown.
+  const lookChange = syncPlusLook(clientId);
   for (const [sid, profile] of profiles) {
     if (profile.clientId !== clientId) continue;
     // Queue priority follows the grant straight away, not at the next register.
@@ -4893,6 +5033,7 @@ function emitPremiumStatus(clientId) {
     const sock = io.sockets.sockets.get(sid);
     if (!sock) continue;
     sock.emit('premium-status', premiumStatusPayload(clientId, profile.premium));
+    if (lookChange) sock.emit('profile-look', ownLook(clientId, lookChange === 'ended' ? 'plus-ended' : 'plus-restored'));
   }
   armPremiumTimer(clientId);
 }
@@ -4910,6 +5051,10 @@ function premiumStatusPayload(clientId, premium) {
     limits: FREE_LIMITS,
     // The Android app can sell Plus through Google Play.
     play: play.configured(),
+    // What the server now shows for this person (a Plus face or cover is
+    // swapped out while Plus is off), so every client follows it.
+    ...ownLook(clientId),
+    badges: Badges.badgesFor(store, clientId),
   };
 }
 
@@ -5293,8 +5438,8 @@ function disconnectPartner(socketId, opts = {}) {
       noteCallForAnalytics(socketId, profile, partnerId, partnerProfile, seconds);
       recordEngageCall(profile, partnerProfile.country, seconds);
       recordEngageCall(partnerProfile, profile.country, seconds);
-      store.recordTalkTime(profile.clientId, seconds, { username: profile.username, country: profile.countryName || profile.country });
-      store.recordTalkTime(partnerProfile.clientId, seconds, { username: partnerProfile.username, country: partnerProfile.countryName || partnerProfile.country });
+      recordTalkWithBadges(profile, seconds);
+      recordTalkWithBadges(partnerProfile, seconds);
       const a = noteConversationLength(profile.clientId, partnerProfile.clientId, seconds);
       const b = noteConversationLength(partnerProfile.clientId, profile.clientId, seconds);
       if (a || b) {
@@ -5361,6 +5506,7 @@ const CHARACTER_IDS = new Set([
   'wizard', 'pirate', 'detective', 'hero', 'cowboy', 'robot', 'vampire',
   'ninja', 'astronaut', 'zombie', 'alien', 'knight', 'queen', 'warrior',
   'chef', 'doctor', 'scientist', 'artist', 'rockstar', 'firefighter', 'gamer', 'king', 'viking', 'witch', 'elf', 'clown',
+  'silver_knight', 'gold_phoenix', 'diamond_legend',
 ]);
 function sanitizeAnimal(value) {
   return typeof value === 'string' && ANIMAL_IDS.has(value) ? value : null;
@@ -5430,6 +5576,8 @@ function publicProfile(p) {
     friendId: publicIdOf(p.clientId) || null,
     // Their top 3 films & shows, shown on the live chat and call screens.
     films: shownFilms(p.clientId),
+    // Talk-time badges and the profile cover.
+    ...profileExtras(p.clientId),
   };
 }
 
@@ -7121,6 +7269,9 @@ io.on('connection', (socket) => {
       sentAnimal = held && held.startsWith('a:') ? held.slice(2) : held;
       sentAvatar = held;
     }
+    // Plus faces only last as long as Plus does (and come back with it).
+    const lookFix = reconcilePlusFace(clientId, sentAnimal, sentAvatar);
+    if (lookFix.change) { sentAnimal = lookFix.animal; sentAvatar = lookFix.avatar; }
     store.noteFace(clientId, faceKey(sentAvatar) || faceKey(sentAnimal) || '');
     const sentGender = audience.normGender(data.gender);
     const sentAge = audience.normAge(data.ageGroup);
@@ -7239,9 +7390,11 @@ io.on('connection', (socket) => {
       country: geo.countryName,
       countryCode: geo.country,
       city: geo.city,
+      ...profileExtras(clientId),
     });
 
     socket.emit('premium-status', premiumStatusPayload(clientId, premium));
+    if (lookFix.change) socket.emit('profile-look', ownLook(clientId, lookFix.change === 'ended' ? 'plus-ended' : 'plus-restored'));
     armPremiumTimer(clientId);
     socket.emit('identity-token', { clientId, token: issuedIdentityToken });
     socket.emit('engage-state', Engage.view(store.engageGet(clientId), { tz: profiles.get(socket.id).timezone, plus: isPremium(clientId) }));
@@ -7326,6 +7479,65 @@ io.on('connection', (socket) => {
     const code = store.referralCodeFor(profile.clientId);
     if (!code) return;
     socket.emit('referral-status', store.referralStats(profile.clientId));
+  });
+
+  // --- Points, levels and covers (server/progress.js, spec sections 2 and 4) ---
+  const progressView = (clientId) => progress.view(clientId, { hasAccount: !!store.findUsernameByClientId(clientId) });
+  socket.on('progress-get', (ack) => {
+    const me = profiles.get(socket.id);
+    if (!me || typeof ack !== 'function') return;
+    ack(progressView(me.clientId));
+  });
+  socket.on('progress-claim', (ack) => {
+    const me = profiles.get(socket.id);
+    if (!me || typeof ack !== 'function') return;
+    const r = progress.claim(me.clientId);
+    if (!r.ok) return ack(r);
+    store.recordFeature('progress_claim');
+    ack({ ...progressView(me.clientId), ok: true });
+    pushProgress(me.clientId);
+  });
+  socket.on('progress-redeem', (payload, ack) => {
+    const me = profiles.get(socket.id);
+    if (typeof ack !== 'function') return;
+    if (!me) return ack({ ok: false, reason: 'invalid' });
+    if (!socialRateOk('progress-redeem', me.clientId, 10, 10 * 60000)) return ack({ ok: false, reason: 'invalid' });
+    const usernameLower = store.findUsernameByClientId(me.clientId);
+    const acc = usernameLower && accounts.get(usernameLower);
+    const entry = usernameLower ? registryEntry(usernameLower) : null;
+    const r = progress.redeem(me.clientId, payload && payload.code, {
+      verified: isVerifiedAccount(acc),
+      accountCreatedAt: entry && entry.createdAt,
+      ownerHasAccount: (owner) => !!store.findUsernameByClientId(owner),
+      // The same checks that stop an invite from a friend's own network or
+      // device counting for the inviter (see referralOwnerNets).
+      sameDevice: (owner) => {
+        const mine = new Set([referralNet(getClientIp(socket)), ...referralOwnerNets(me.clientId)]);
+        if (referralOwnerNets(owner).some((n) => mine.has(n))) return true;
+        const theirs = deviceIdOfClient(owner);
+        return !!(socket.data.deviceId && theirs && socket.data.deviceId === theirs);
+      },
+    });
+    if (!r.ok) return ack({ ok: false, reason: r.reason });
+    store.recordFeature('progress_redeem');
+    ack({ ok: true, points: r.points });
+    pushProgress(me.clientId);
+    pushProgress(r.owner);
+  });
+  // Covers: free solids and gradients for everyone, animated ones with Plus.
+  socket.on('set-cover', (payload, ack) => {
+    const reply = typeof ack === 'function' ? ack : () => {};
+    const me = profiles.get(socket.id);
+    if (!me) return reply({ ok: false, reason: 'invalid' });
+    if (!socialRateOk('set-cover', me.clientId, 30, 60000)) return reply({ ok: false, reason: 'invalid' });
+    const cover = payload && typeof payload.cover === 'string' ? payload.cover : '';
+    if (cover && !FREE_COVERS.has(cover) && !PLUS_COVERS.has(cover)) return reply({ ok: false, reason: 'invalid' });
+    if (PLUS_COVERS.has(cover) && !isPremium(me.clientId)) return reply({ ok: false, reason: 'plus' });
+    if (cover) store.data.covers[me.clientId] = cover; else delete store.data.covers[me.clientId];
+    store.save();
+    reply({ ok: true, cover: cover || null });
+    emitToClient(me.clientId, 'profile-look', ownLook(me.clientId, 'cover'));
+    resyncWatchers(me.clientId);
   });
 
   // Give the just-connected client its initial count right away, then tell
@@ -8278,6 +8490,7 @@ io.on('connection', (socket) => {
         isFriend: isFriend(me.clientId, targetClientId),
         pending: (sentRequests.get(me.clientId) || new Map()).has(targetClientId),
         ...presenceOf(targetClientId),
+        ...profileExtras(targetClientId),
       },
     });
   });

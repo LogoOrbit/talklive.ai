@@ -1,9 +1,10 @@
-// Free accounts may wear only the basic avatars (5 animals, 5 characters);
+// Free accounts may wear only the basic avatars (3 animals, 3 characters);
 // everything else is Plus. Checks the server side of that:
 //
 //   1. a free user can pick a free avatar
 //   2. a free user cannot switch to a locked one
-//   3. a free user keeps a locked avatar they already had
+//   3. a free user wearing a Plus avatar is given a free one (Plus ended); special
+//      faces need their tier
 //   4. a Plus user can pick anything
 //
 //   node scripts/test-avatar-tiers.js
@@ -82,19 +83,22 @@ async function seenAs(clientId, face) {
 
     // 1-2. A new free user starts on a basic face and cannot move to a locked one.
     ok('a free user can pick a free animal', await seenAs('c_face_free', 'a:fox') === 'a:fox');
-    ok('a free user can switch between free faces', await seenAs('c_face_free', 'c:ninja') === 'c:ninja');
+    ok('a free user can switch between free faces', await seenAs('c_face_free', 'c:robot') === 'c:robot');
     const refused = await seenAs('c_face_free', 'a:dragon');
     ok('a free user cannot switch to a locked animal', refused !== 'a:dragon', refused);
-    ok('...and keeps the face they had', refused === 'c:ninja', refused);
+    ok('...and keeps the face they had', refused === 'c:robot', refused);
     const refusedChar = await seenAs('c_face_free', 'c:queen');
-    ok('a free user cannot switch to a locked character', refusedChar === 'c:ninja', refusedChar);
+    ok('a free user cannot switch to a locked character', refusedChar === 'c:robot', refusedChar);
 
-    // 3. Someone already wearing a face that became locked keeps it.
-    ok('a face worn before the list shrank is kept', await seenAs('c_face_old', 'a:bear') === 'a:bear');
-    ok('...across another registration', await seenAs('c_face_old', 'a:bear') === 'a:bear');
-    ok('...but they can still change to a free one', await seenAs('c_face_old', 'a:cat') === 'a:cat');
-    const lost = await seenAs('c_face_old', 'a:bear');
-    ok('...after which the old locked one is gone', lost === 'a:cat', lost);
+    // 3. Plus faces only last while Plus does: a free account wearing one is
+    // moved to a free face of the same kind.
+    const swapped = await seenAs('c_face_old', 'a:bear');
+    ok('a Plus face on a free account is replaced by a free one', swapped === 'a:lion', swapped);
+    ok('...and they can then pick another free face', await seenAs('c_face_old', 'a:cat') === 'a:cat');
+    const swappedChar = await seenAs('c_face_old2', 'c:ninja');
+    ok('a Plus character is replaced by a free character', swappedChar === 'c:wizard', swappedChar);
+    const special = await seenAs('c_face_free', 'c:silver_knight');
+    ok('a special face is refused before its tier', special !== 'c:silver_knight' && special === 'c:robot', special);
 
     // 4. Plus can pick anything.
     ok('Plus can pick a locked animal', await seenAs('c_face_plus', 'a:unicorn') === 'a:unicorn');

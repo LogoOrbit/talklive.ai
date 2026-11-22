@@ -256,6 +256,16 @@ function defaults() {
     // The avatar each profile last wore ('' = none): clientId -> 'a:fox' | 'c:wizard'.
     // Locked faces are refused only on a change (see faceAllowed in server/index.js).
     heldFace: {},
+    // Points and invite state per profile (server/progress.js):
+    // clientId -> { points, lastClaimAt, redeemedCode, invites: [clientId], inviteBatchesPaid }.
+    progress: {},
+    // Profile cover per profile (server/index.js, set-cover): clientId -> id such as 'grad:dawn'.
+    covers: {},
+    // A Plus face replaced when Plus ended, so it can come back with Plus:
+    // clientId -> { face: 'a:panda', free: 'a:lion' }.
+    plusFaces: {},
+    // Owner posts shown on the home page (server/posts.js).
+    posts: [],
     // Account settings saved in the cloud (theme, sounds, privacy switches):
     // username (lowercase) -> { key: boolean | number | short string }.
     accountSettings: {},
@@ -346,6 +356,10 @@ function applyParsed(parsed) {
   data.favFilms = parsed.favFilms || {};
   data.plusLook = parsed.plusLook || {};
   data.heldFace = parsed.heldFace || {};
+  data.progress = parsed.progress || {};
+  data.covers = parsed.covers || {};
+  data.plusFaces = parsed.plusFaces || {};
+  data.posts = Array.isArray(parsed.posts) ? parsed.posts : [];
   data.accountSettings = parsed.accountSettings || {};
   data.notifPrefs = parsed.notifPrefs || {};
   data.subscribers = parsed.subscribers || {};
@@ -2816,7 +2830,7 @@ function deleteAccount(usernameLower) {
 // exception: a live Stripe or Play subscription must keep its record so a
 // renewal or refund notice still finds it, so only the extras go.
 function purgeClientData(clientId) {
-  for (const key of ['engage', 'favFilms', 'talkTime', 'likes', 'push', 'notifPrefs', 'plusLook', 'heldFace',
+  for (const key of ['engage', 'favFilms', 'talkTime', 'likes', 'push', 'notifPrefs', 'plusLook', 'heldFace', 'progress', 'covers', 'plusFaces',
     'contactConsent', 'contactCapture', 'identityEpochs', 'voice']) {
     if (data[key]) delete data[key][clientId];
   }
@@ -2838,6 +2852,14 @@ function purgeClientData(clientId) {
   for (const [code, owner] of Object.entries(ref.codes)) if (owner === clientId) delete ref.codes[code];
   delete ref.owners[clientId];
   delete ref.claims[clientId];
+  // Their reactions and comments on owner posts go with the profile.
+  for (const post of data.posts || []) {
+    for (const list of Object.values(post.reactions || {})) {
+      const at = list.indexOf(clientId);
+      if (at !== -1) list.splice(at, 1);
+    }
+    post.comments = (post.comments || []).filter((c) => c.clientId !== clientId);
+  }
 }
 const PREMIUM_KEEP = new Set(['activatedAt', 'updatedAt', 'expiresAt', 'lastEvent', 'subscriptionId', 'playToken', 'source', 'stripeEventAt', 'revokedAt']);
 

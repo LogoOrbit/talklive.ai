@@ -21,6 +21,7 @@ const plusStats = require('./plus-stats');
 const paymentLog = require('./payment-log');
 const flags = require('./flags');
 const voiceCheck = require('./voice-check');
+const badges = require('./badges');
 
 const SESSION_HOURS = 12;
 const OWNER_EMAIL = process.env.OWNER_EMAIL || '';
@@ -420,7 +421,7 @@ function generateConclusion(runtime, report) {
 }
 
 // --- Module wiring ---
-function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate, deviceIdOfClient, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats, automod, talkguard, patterns, support, grantPlus, onVoiceDecision }) {
+function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate, deviceIdOfClient, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats, automod, talkguard, patterns, support, posts, grantPlus, onVoiceDecision }) {
   if (automod) automod.setAlert(sendAlertEmail);
   try { paymentLog.installPaymentLog(store); } catch (e) { console.log('[owner] payment log not installed:', e.message); }
   const router = express.Router();
@@ -604,7 +605,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
   router.use('/api', (req, res, next) => {
     if (req.method !== 'GET') { reportCache.clear(); voiceCache = null; return next(); }
     // Case files change from the server side too (auto-mod, appeals), so they are never cached.
-    if (/^\/(live\/stream|status|export\/|voice-notes\/.+\/audio|data(\/|$)|support|cases(\/|$))/.test(req.path)) return next();
+    if (/^\/(live\/stream|status|export\/|voice-notes\/.+\/audio|data(\/|$)|support|posts(\/|$)|cases(\/|$))/.test(req.path)) return next();
     const key = req.originalUrl;
     const hit = reportCache.get(key);
     if (hit && Date.now() - hit.at < REPORT_TTL) return res.json(hit.body);
@@ -626,6 +627,14 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
   // Chat Support inbox (server/support.js). Its GETs skip the cache above so a
   // new message shows on the next poll; its POSTs still clear it.
   if (support) support.mountOwner(router, { reqIp });
+
+  // Owner posts with reactions and comments (server/posts.js): the Posts tab.
+  if (posts) posts.mountOwner(router);
+
+  // People by talk hours with the badge they hold, and a count per badge.
+  router.get('/api/badges', (req, res) => {
+    res.json(badges.dashboardView(store));
+  });
 
   // Summing 30 days of per-country/city/feature maps was the most expensive
   // part of the Overview (tens of thousands of keys, every 12s poll). Only
