@@ -452,7 +452,7 @@ fun ProfileScreen(
             }
         }
     }
-    vm.sheet?.let { sheet -> ProfileSheetHost(sheet, vm, animal, onSignIn, premium = plusNow.active, look = plusNow.look, lookFace = plusNow.lookFace, onPlus = { vm.close(); plusWhy = app.talklive.ui.engage.PlusWhy(app.talklive.ui.engage.PlusReason.Avatar); youSheet = "plus-locked" }, tier = progress?.tier ?: "none", onRewards = { vm.close(); youSheet = "rewards" }) }
+    vm.sheet?.let { sheet -> ProfileSheetHost(sheet, vm, animal, onSignIn, premium = plusNow.active, look = plusNow.look, lookFace = plusNow.lookFace, onPlus = { vm.close(); plusWhy = app.talklive.ui.engage.PlusWhy(app.talklive.ui.engage.PlusReason.Avatar); youSheet = "plus-locked" }, tier = vm.progress.collectAsStateWithLifecycle().value?.tier ?: "none", onRewards = { vm.close(); youSheet = "rewards" }) }
 }
 
 @Composable

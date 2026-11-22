@@ -91,7 +91,7 @@ private fun gradientBrush(id: String): Brush = Brush.linearGradient(
         "grad:berry" -> listOf(Color(0xFFEC4899), Color(0xFF9333EA), Color(0xFF4338CA))
         "grad:forest" -> listOf(Color(0xFF86EFAC), Color(0xFF16A34A), Color(0xFF14532D))
         "grad:peach" -> listOf(Color(0xFFFECACA), Color(0xFFFDA4AF), Color(0xFFFB923C))
-        else -> listOf(Color(0xFF0F172A), Color(0xFF312E81), Color(0xFF7C3AED)),
+        else -> listOf(Color(0xFF0F172A), Color(0xFF312E81), Color(0xFF7C3AED))
     },
 )
 
