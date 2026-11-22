@@ -54,13 +54,13 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      system face a beat later. Only the latin subset is preloaded - latin-ext
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=153fc85b70" crossorigin />
-<link rel="stylesheet" href="style.css?v=1d0ecacbe2" />
+<link rel="stylesheet" href="style.css?v=d4736ff862" />
 <link rel="stylesheet" href="chat-extras.css?v=4b7b6398b3" />
 <link rel="stylesheet" href="games.css?v=2dd354f960" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=dd679b138c" />
+<link rel="stylesheet" href="ui.css?v=64cc5be771" />
 <link rel="stylesheet" href="auth.css?v=aae37ee102" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
@@ -1205,7 +1205,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 
             <nav class="tl-set-nav" id="settingsNav" role="tablist" data-i18n-aria="settings" aria-label="Settings sections">
               <button type="button" class="tl-set-nav-item selected" data-settings-tab="profile" role="tab" aria-selected="true" aria-controls="settingsPane-profile">
-                <span class="tl-set-nav-icon hue-violet" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/></svg></span>
+                <span class="tl-set-nav-icon hue-brand" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/></svg></span>
                 <span class="tl-set-nav-text"><span class="tl-set-nav-label" data-i18n="catProfile">Profile</span><small data-i18n-set="setDescProfile">Name, avatar, ID and account</small></span>
                 <span class="tl-set-nav-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
               </button>
@@ -1237,7 +1237,17 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           <section>
             <div role="heading" aria-level="3" class="ui-h3 tl-set-legend" data-i18n="catProfile">Profile</div>
             <div class="tl-set-group">
-              <div class="tl-set-control tl-set-control-stack">
+              <!-- One entry for everything about how you appear: avatar, cover,
+                   name, ID, gender, age, badges and voice check. The controls
+                   below keep their ids and handlers; they live here, out of
+                   sight, and are lent to the My Profile sheet while it is open. -->
+              <button type="button" id="settingsMyProfileBtn" class="tl-set-control tl-set-link-row">
+                <span class="tl-set-ico i-person" aria-hidden="true"></span>
+                <span class="tl-set-text"><strong data-i18n="myProfileTitle">My Profile</strong><small data-i18n="myProfileHint">Avatar, cover, name, ID, badges and voice check</small></span>
+                <span class="tl-set-hero-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+              </button>
+              <div id="profileControlsHome" hidden>
+<div class="tl-set-control tl-set-control-stack">
                 <label class="tl-set-label" for="tempUsernameInput" data-i18n="tempUsername">Display name</label>
                 <div class="tl-set-field">
                   <input type="text" id="tempUsernameInput" class="search-input" maxlength="40" data-i18n-placeholder="tempUsernamePlaceholder" placeholder="Your display name" autocomplete="off" />
@@ -1276,6 +1286,16 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                     <button type="button" id="saveAvatarBtn" data-i18n="saveAvatar" disabled>Save avatar</button>
                   </div>
                 </div>
+              </div>
+              <label id="voiceCheckRow" class="tl-set-control tl-set-toggle" for="voiceCheckToggle" hidden>
+                <span class="tl-set-ico i-dot" aria-hidden="true"></span>
+                <span class="tl-set-text"><strong data-i18n="voiceCheck">Voice check</strong><small data-i18n="voiceCheckHint">On voice calls your device measures how your voice sounds and sends those numbers, never audio, so we can estimate whether it fits the gender you picked. People filtering for Men or Women meet voice-checked people first. It is an estimate, not proof, and nobody you talk to sees it.</small><small id="voiceCheckStatus" class="tl-voice-status" hidden></small></span>
+                <span class="switch"><input type="checkbox" id="voiceCheckToggle" /><span class="switch-slider" aria-hidden="true"></span></span>
+              </label>
+              <div id="voiceCheckActions" class="tl-set-control tl-voice-actions" hidden>
+                <button type="button" id="voiceRetryBtn" class="btn btn-secondary" data-i18n="voiceCheckRetry">Check again</button>
+                <button type="button" id="voiceAppealBtn" class="btn btn-secondary" data-i18n="voiceCheckAppeal">Ask a person to review</button>
+              </div>
               </div>
             </div>
           </section>
@@ -1369,15 +1389,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           <section>
             <div role="heading" aria-level="3" class="ui-h3 tl-set-legend" data-i18n="catPrivacy">Privacy &amp; Safety</div>
             <div class="tl-set-group">
-              <label id="voiceCheckRow" class="tl-set-control tl-set-toggle" for="voiceCheckToggle" hidden>
-                <span class="tl-set-ico i-dot" aria-hidden="true"></span>
-                <span class="tl-set-text"><strong data-i18n="voiceCheck">Voice check</strong><small data-i18n="voiceCheckHint">On voice calls your device measures how your voice sounds and sends those numbers, never audio, so we can estimate whether it fits the gender you picked. People filtering for Men or Women meet voice-checked people first. It is an estimate, not proof, and nobody you talk to sees it.</small><small id="voiceCheckStatus" class="tl-voice-status" hidden></small></span>
-                <span class="switch"><input type="checkbox" id="voiceCheckToggle" /><span class="switch-slider" aria-hidden="true"></span></span>
-              </label>
-              <div id="voiceCheckActions" class="tl-set-control tl-voice-actions" hidden>
-                <button type="button" id="voiceRetryBtn" class="btn btn-secondary" data-i18n="voiceCheckRetry">Check again</button>
-                <button type="button" id="voiceAppealBtn" class="btn btn-secondary" data-i18n="voiceCheckAppeal">Ask a person to review</button>
-              </div>
               <label id="acceptCallsRow" class="tl-set-control tl-set-toggle" for="acceptCallsCheckbox">
                 <span class="tl-set-ico i-phone" aria-hidden="true"></span>
                 <span class="tl-set-text"><strong data-i18n="acceptCallsTitle">Receive incoming calls</strong><small data-i18n="acceptCallsBody">Friends can call you</small></span>
@@ -2107,6 +2118,13 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         </div>
       </aside>
 </main>
+  <!-- "From TalkLive": posts from the team. public/posts.js is fetched when the
+       sentinel is scrolled near (app.js); the section stays hidden until there is
+       something to show. -->
+  <section id="tlPosts" class="tl-posts" aria-label="From TalkLive" hidden>
+    <div class="tl-posts-inner"></div>
+  </section>
+  <div id="tlPostsSentinel" aria-hidden="true" style="height:1px"></div>
   <!-- Home tour: the Android app showcase and reading links, under the
        stage in the middle column, so it starts right below the hero instead of
        below the (taller) activity rail. Its stylesheet loads without blocking first paint (all of this is below
@@ -2544,19 +2562,19 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        browser finish parsing and paint the page first. -->
   <script defer src="/vendor/socket.io.min.js?v=7bcff1b4f1"></script>
   <script defer src="countries.js?v=30bcd7f146"></script>
-  <script defer src="i18n.js?v=f0d9bf4ab6"></script>
+  <script defer src="i18n.js?v=87fd60d274"></script>
   <script defer src="chat-time.js?v=9d4e50bcf7"></script>
-  <script defer src="animals.js?v=e934300459"></script>
-  <script defer src="characters.js?v=7df196acd3"></script>
+  <script defer src="animals.js?v=0cccb3b920"></script>
+  <script defer src="characters.js?v=a8636f2bc4"></script>
   <script defer src="social-kit.js?v=fa26a36909"></script>
   <script defer src="moderation.js?v=7a69fce698"></script>
   <script defer src="error-reporter.js?v=0e5b1c5f7d"></script>
   <script defer src="chat-extras.js?v=722851ac47"></script>
   <script defer src="voice-notes.js?v=8e48c58788"></script>
-  <script defer src="games.js?v=192e9d4f2d"></script>
+  <script defer src="games.js?v=4a44d16cae"></script>
   <script defer src="nickname-rules.js?v=077c943b4d"></script>
   <script defer src="social-links.js?v=a4e5c724ac"></script>
-  <script defer src="app.js?v=85d37e9e03"></script>
+  <script defer src="app.js?v=8838aeeba1"></script>
 
 <!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

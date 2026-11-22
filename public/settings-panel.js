@@ -15,9 +15,8 @@
 (function () {
   'use strict';
 
-  const CSS_HREF = '/settings.css?v=2ec646e634';
+  const CSS_HREF = '/settings.css?v=8070d4ee99';
   const THEMES = ['dark', 'light', 'ocean', 'sunset'];
-  const AGE_GROUPS = ['18-24', '25-34', '35-44', '45-54', '55+'];
   const CHEVRON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>';
 
   // English for the strings only Settings uses. They ship here rather than in
@@ -27,7 +26,7 @@
   const EN = {
     setSearch: "Search settings",
     setNoResults: "Nothing matches “{q}”",
-    setDescProfile: "Name, avatar, ID and account",
+    setDescProfile: "My Profile and account",
     setDescApp: "Language, theme and sounds",
     setDescPrivacy: "Calls, online status and blocking",
     setDescBilling: "Passes and receipts",
@@ -138,8 +137,8 @@
   }
 
   // hooks: {
-  //   profileFace(size) -> html, profileName() -> string, profileSub() -> string,
-  //   openProfile(), openAll(), saveName(value), onGender(g), onTheme(theme),
+  //   profileFace(size) -> html, profileName() -> string,
+  //   openProfile() (the one "My Profile" entry), openAll(), onTheme(theme),
   //   onSound(on), onVibration(on), onStatusVisible(on), onMessageSeen(on)
   // }
   function mount(container, hooks) {
@@ -149,16 +148,6 @@
         <span class="tl-set-hero-text"><strong class="qs-name"></strong><small class="qs-sub"></small></span>
         <span class="tl-set-hero-go" aria-hidden="true">${CHEVRON}</span>
       </button>
-      ${section('catProfile', `
-        <div class="tl-set-control tl-set-control-stack">
-          <label class="tl-set-label" for="qsName" data-i18n="tempUsername">${esc(tr('tempUsername'))}</label>
-          <div class="tl-set-field">
-            <input type="text" id="qsName" maxlength="40" autocomplete="off" data-i18n-placeholder="tempUsernamePlaceholder" placeholder="${esc(tr('tempUsernamePlaceholder'))}" />
-            <button type="button" id="qsNameSave" data-i18n="saveName" disabled>${esc(tr('saveName'))}</button>
-          </div>
-        </div>
-        ${seg('qsGender', 'iAm', [['', 'preferNotSay'], ['male', 'male'], ['female', 'female']])}
-        ${seg('qsAge', 'ageGroup', [['', 'preferNotSay']].concat(AGE_GROUPS.map((a) => [a, a])))}`)}
       ${section('setAppearance', `
         ${themes('qsTheme')}
         <div class="tl-set-control tl-set-control-stack">
@@ -179,8 +168,6 @@
       </div>`;
 
     const $ = (sel) => container.querySelector(sel);
-    const nameInput = $('#qsName');
-    const nameSave = $('#qsNameSave');
     const langSel = $('#qsLang');
 
     function setSeg(group, value) {
@@ -205,13 +192,7 @@
     function render() {
       $('.qs-face').innerHTML = hooks.profileFace ? hooks.profileFace(44) : '';
       $('.qs-name').textContent = (hooks.profileName && hooks.profileName()) || tr('you');
-      $('.qs-sub').textContent = (hooks.profileSub && hooks.profileSub()) || tr('myProfile');
-      if (document.activeElement !== nameInput) nameInput.value = (hooks.profileName && hooks.profileName()) || '';
-      nameSave.disabled = true;
-      const g = read('talklive_gender');
-      setSeg($('#qsGender'), g === 'male' || g === 'female' ? g : '');
-      const age = read('talklive_age_group');
-      setSeg($('#qsAge'), AGE_GROUPS.includes(age) ? age : '');
+      $('.qs-sub').textContent = tr('myProfile');
       const theme = read('talklive_theme');
       setSeg($('#qsTheme'), THEMES.includes(theme) ? theme : 'dark');
       if (typeof I18N_STATE !== 'undefined') langSel.value = I18N_STATE.lang;
@@ -224,48 +205,6 @@
     $('.qs-profile').addEventListener('click', () => hooks.openProfile && hooks.openProfile());
     $('.qs-all').addEventListener('click', () => hooks.openAll && hooks.openAll());
 
-    nameInput.addEventListener('input', () => {
-      const v = nameInput.value.trim();
-      nameSave.disabled = !v || v === ((hooks.profileName && hooks.profileName()) || '');
-    });
-    function saveName() {
-      if (nameSave.disabled) return;
-      const rules = window.TalkLiveNickname;
-      const nick = rules ? rules.check(nameInput.value) : { ok: true, value: nameInput.value.trim() };
-      if (!nick.ok) {
-        if (hooks.toast) hooks.toast(tr(nick.error), 'error');
-        nameInput.focus();
-        return;
-      }
-      nameInput.value = nick.value;
-      nameSave.disabled = true;
-      if (hooks.saveName) hooks.saveName(nick.value);
-      render();
-    }
-    nameSave.addEventListener('click', saveName);
-    nameInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); saveName(); }
-    });
-
-    $('#qsGender').addEventListener('click', (e) => {
-      const pill = e.target.closest('.pill');
-      if (!pill || pill.classList.contains('selected')) return;
-      const g = pill.dataset.value;
-      write('talklive_gender', g);
-      write('talklive_gender_asked', 'yes');
-      setSeg($('#qsGender'), g);
-      if (hooks.onGender) hooks.onGender(g);
-      flashSaved();
-    });
-    $('#qsAge').classList.add('tl-seg-3');
-    $('#qsAge').addEventListener('click', (e) => {
-      const pill = e.target.closest('.pill');
-      if (!pill || pill.classList.contains('selected')) return;
-      write('talklive_age_group', pill.dataset.value);
-      setSeg($('#qsAge'), pill.dataset.value);
-      if (hooks.onAge) hooks.onAge(pill.dataset.value);
-      flashSaved();
-    });
     $('#qsTheme').addEventListener('click', (e) => {
       const pill = e.target.closest('.pill');
       if (!pill || pill.classList.contains('selected')) return;
@@ -305,7 +244,7 @@
     langSelect: 'translate translation',
     soundToggle: 'audio mute volume ring',
     vibrationToggle: 'haptic haptics',
-    avatarGrid: 'picture photo face animal image movie character',
+    settingsMyProfileBtn: 'avatar name display gender age cover badges voice check picture photo face id',
     acceptCallsCheckbox: 'ring incoming',
     statusVisibilityToggle: 'invisible hidden presence last seen',
     messageSeenToggle: 'read receipts',
@@ -340,7 +279,7 @@
     });
 
     const hero = page.querySelector('.tl-set-hero');
-    if (hero) hero.addEventListener('click', () => { clearSearch(); api.show('profile', true); scrollUp(); });
+    if (hero) hero.addEventListener('click', () => { clearSearch(); if (api.openProfile) api.openProfile(); else { api.show('profile', true); scrollUp(); } });
 
     function scrollUp() {
       if (isPhone()) window.scrollTo({ top: 0 });

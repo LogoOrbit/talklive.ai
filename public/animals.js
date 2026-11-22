@@ -46,9 +46,12 @@
 
   // Free faces; all others are Plus. Same list as server FREE_FACES and android.
   // They lead LIST so the pickers show them first.
-  var FREE_FACES = ['a:lion', 'a:fox', 'a:cat', 'a:dog', 'a:panda',
-    'c:wizard', 'c:pirate', 'c:detective', 'c:robot', 'c:ninja'];
+  var FREE_FACES = ['a:lion', 'a:fox', 'a:cat', 'c:wizard', 'c:pirate', 'c:robot'];
   function isFree(face) { return FREE_FACES.indexOf(face) !== -1; }
+  // What the pickers offer (docs/SPEC-PROFILE-PROGRESS-POSTS.md section 1): the
+  // free animals, then the five Plus animals. Every other animal stays valid
+  // for whoever already wears it; it is just no longer offered.
+  var PICKER_IDS = ['lion', 'fox', 'cat', 'panda', 'dog', 'raccoon', 'giraffe', 'rabbit'];
 
   // --- The animals. Order is the order of the picker. -------------------------
   var LIST = [
@@ -523,6 +526,8 @@
       return ids[Math.floor(Math.random() * ids.length)].slice(2);
     },
     isFree: isFree,
+    FREE_FACES: FREE_FACES,
+    pickerIds: PICKER_IDS,
     STORAGE_KEY: STORAGE_KEY,
   };
 }(window));
