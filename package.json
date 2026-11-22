@@ -36,6 +36,7 @@
     "test:history": "node scripts/test-history-ttl.js",
     "test:analytics": "node scripts/test-analytics-visits.js",
     "test:warnings": "node scripts/test-owner-warning.js",
+    "test:major": "node scripts/test-major-offense.js && node scripts/test-case-files.js",
     "test:contacts": "node scripts/test-contact-capture.js",
     "test:subscribe": "node scripts/test-subscribe.js",
     "test:feedback-reply": "node scripts/test-feedback-reply.js",

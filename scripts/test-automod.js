@@ -5,7 +5,8 @@
  *   - each reporter counts once; reporters on one network count once
  *   - a reporter filing many reports counts for little
  *   - a busy user with a normal report rate is left alone
- *   - final warning needs new reports; the top of the ladder is review, not a ban
+ *   - final warning needs new reports; the top of the general ladder is review, not a ban
+ *     (serious reasons escalate to a ban: test-major-offense.js)
  *   - slurs in chat count; owner "clear" lowers reporter trust
  */
 delete process.env.ANTHROPIC_API_KEY;
@@ -32,8 +33,8 @@ function setup(mode) {
   return { store, am };
 }
 let n = 0;
-function report(am, target, reporterId, ip) {
-  am.onReport({ reportId: 'r' + (++n), reporter: { clientId: reporterId, ip: ip || '10.0.0.' + n }, reported: { clientId: target, username: target }, reason: 'harassment', detail: '', seconds: 60 });
+function report(am, target, reporterId, ip, reason = 'harassment') {
+  am.onReport({ reportId: 'r' + (++n), reporter: { clientId: reporterId, ip: ip || '10.0.0.' + n }, reported: { clientId: target, username: target }, reason, detail: '', seconds: 60 });
 }
 const person = (am, cid) => am._state().people['c:' + cid];
 const evalNow = (am, cid) => am._evaluate(person(am, cid));
@@ -83,16 +84,17 @@ const actions = (am) => am._state().log.map((l) => l.action);
   evalNow(am, 'T6');
   ok('busy user not warned for 4 reports in 300 chats', person(am, 'T6').level === 0 && actions(am).includes('skip'));
 }
-// 6. ladder tops out at review, never a ban
+// 6. the general ladder (a non-serious reason) tops out at review, never a ban.
+// Serious reasons escalate to a ban instead: see test-major-offense.js.
 {
   const { store, am } = setup('live');
   const reps = 'abcdefghijklmnop'.split('');
-  for (const r of reps.slice(0, 3)) report(am, 'T7', r);
+  for (const r of reps.slice(0, 3)) report(am, 'T7', r, null, 'other');
   evalNow(am, 'T7');
-  for (const r of reps.slice(3, 7)) report(am, 'T7', r);
+  for (const r of reps.slice(3, 7)) report(am, 'T7', r, null, 'other');
   evalNow(am, 'T7');
   ok('final warning after new reports', person(am, 'T7').level === 2 && store.sent.length === 2);
-  for (const r of reps.slice(7, 12)) report(am, 'T7', r);
+  for (const r of reps.slice(7, 12)) report(am, 'T7', r, null, 'other');
   evalNow(am, 'T7');
   ok('then owner review', person(am, 'T7').review && person(am, 'T7').review.status === 'open');
   ok('no automatic ban', store.bans.length === 0);

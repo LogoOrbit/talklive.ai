@@ -1,4 +1,5 @@
-// Automatic moderation: warnings first, never an automatic ban.
+// Automatic moderation: warnings first. The only automatic bans are for money
+// asks (below) and MAJOR offenses on calls (see "Major offenses").
 //
 // Every report (and a few unmistakable chat signals) becomes an "event" on the
 // reported person, weighted by how authentic it looks:
@@ -13,10 +14,23 @@
 // user with thousands of calls is not warned for the handful of reports any
 // popular user collects.
 //
-// The ladder:  warn1  ->  warn2 (final warning)  ->  review (owner decides).
-// Clear signs of danger (sexual talk with a minor, threats, as judged by the AI
-// or the keyword rules) go straight to the owner's review queue. Nothing here
-// ever bans; banning is a button in the review queue.
+// The report ladder:  warn1  ->  warn2 (final warning)  ->  review (owner
+// decides). It never bans by itself; banning is a button in the review queue.
+// Clear signs of danger (sexual talk with a minor) go straight to the review
+// queue too.
+//
+// Major offenses (threats or telling someone to kill themselves, said in text
+// chat or on a voice call; the AI confirming a severe violation on a report; or
+// someone already warned being reported for something serious by 5 different
+// people within 48 hours) climb their own ladder, strikes counted over
+// `majorWindowDays`:
+//   strike 1  warning (shown until acknowledged)
+//   strike 2  7-day ban      strike 3  30-day ban      strike 4+  1-year ban
+//   (a person the report ladder already warned starts at the 7-day ban)
+//   AI-confirmed severe violation: 30-day ban at once (1 year if repeated)
+// Every warning and ban gets a case file (server/case-files.js): the rule that
+// fired, the conversation and the reports, so the owner can judge an appeal.
+// Off with settings.majorBans = false.
 //
 // In dry-run mode (the default for the first week) every decision is logged as
 // "would have" and nobody is told anything.
@@ -41,6 +55,7 @@
 
 const modTags = require('./moderation-tags');
 const guardPolicy = require('./guard-policy');
+const { createCaseFiles } = require('./case-files');
 
 let Anthropic = null;
 try { Anthropic = require('@anthropic-ai/sdk'); Anthropic = Anthropic.default || Anthropic; } catch (_) { /* optional */ }
@@ -52,6 +67,7 @@ const MAX_LOG = 800;
 const MAX_PEOPLE = 20000;
 const MAX_REPORTERS = 20000;
 const AI_PER_HOUR = 300;
+const MAX_CASE_PARTNERS = 3;
 
 const DEFAULT_SETTINGS = {
   mode: 'dryrun', // 'dryrun' | 'live' | 'off'
@@ -66,6 +82,9 @@ const DEFAULT_SETTINGS = {
   ai: true,
   keywordStrikes: true,
   policy: true, // money / link / picture-request rules (see above)
+  majorBans: true, // the major-offense ladder: warning, then escalating bans
+  majorReportSources: 5, // different authentic reporters (48 h) citing a serious reason, for someone already warned
+  majorWindowDays: 90, // strikes older than this no longer count
 };
 
 const POLICY_TEXT = {
@@ -77,6 +96,19 @@ const POLICY_TEXT = {
   illegal: 'Selling drugs or anything illegal is not allowed on TalkLive. Doing it again will send your account for review.',
 };
 const MONEY_BAN_MIN = [7 * 1440, 30 * 1440, 365 * 1440];
+// Major offenses: strike 1 is a warning (null), then 7 days, 30 days, a year.
+const MAJOR_BAN_MIN = [null, 7 * 1440, 30 * 1440, 365 * 1440];
+const CRITICAL_BAN_MIN = [30 * 1440, 365 * 1440];
+const MAJOR_WHAT = {
+  threat: 'Threatened to hurt or kill someone',
+  selfharm: 'Told someone to kill or hurt themselves',
+  reports: 'Reported for a serious offense by several different people',
+  ai: 'A review of the conversation confirmed a serious violation',
+};
+// Report reasons (public/chat.html) that describe a serious offense. Spam,
+// fake profile, "other" and the matching-filter complaint do not.
+const MAJOR_REASON = /^(abuse|harassment|inappropriate|nudity|hate|underage|scammer)$/;
+const majorWarning = (what) => `Serious rule break: ${what}. This is your warning. If it happens again your account will be banned.`;
 const MONEY_ASK_GAP = 2 * 60000; // lines closer than this to the same person are one ask
 
 // Only what is unmistakable in any context. Everyday swearing is not here, and
@@ -120,6 +152,7 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
   const aiCalls = [];
   const minorPairs = new Map(); // pair -> ts a minor age was mentioned
   const pending = new Map(); // personKey -> timer, so one burst evaluates once
+  const cases = createCaseFiles({ store });
 
   function state() {
     let s = store.data.automod;
@@ -356,7 +389,10 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
             pushEvent(other, { ts: Date.now(), type: 'ai', source: tgt.clientId, weight: 1, why: ['AI: the reporter broke the rules in this chat'], detail: ai.summary });
             schedule(other);
           }
-          if (ai.severity === 'severe' && ai.verdict === 'violation') flagSevere(p, 'AI: ' + (ai.summary || ai.category));
+          if (ai.severity === 'severe' && ai.verdict === 'violation') {
+            flagSevere(p, 'AI: ' + (ai.summary || ai.category));
+            if (majorOn()) majorStrike(p, { category: 'ai', severity: 'critical', text: ev.detail, to: rep.clientId, source: 'report + AI review', summary: ai.summary, signals: ['reported as ' + ev.reason, 'AI: ' + (ai.category || 'severe')], reportIds: [ctx.reportId] });
+          }
         }
         store.save();
         schedule(p);
@@ -388,7 +424,16 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
   // Sexual talk after someone said they are a minor goes to the review queue.
   // kind: 'chat' | 'voice-note' | 'voice'
   function onChatText({ from, to, pair, text, kind = 'chat' }) {
-    if (text && from && from.clientId && kind === 'chat') policyCheck({ from, to, text });
+    if (text && from && from.clientId && kind === 'chat') policyCheck({ from, to, text, pair });
+    // A threat or "go kill yourself" said on a call (the speaker's own browser
+    // reports what it heard) or in a voice message is a major offense too.
+    if (text && from && from.clientId && kind !== 'chat' && majorOn()) {
+      const d = guardPolicy.detect(text);
+      if (d.harm) {
+        const mp = person(from.clientId, from.account, from);
+        majorStrike(mp, { category: d.suicideBait ? 'selfharm' : 'threat', text, to, source: kind === 'voice' ? 'voice call' : 'voice message', signals: ['said ' + (kind === 'voice' ? 'on a voice call' : 'in a voice message')] });
+      }
+    }
     if (off() || !text || !from || !from.clientId) return null;
     const flags = modTags.riskFlags(text);
     const sc = talkguard ? talkguard.check(text, { source: kind, from: from.username, fromClientId: from.clientId }) : { abuse: 0, sexual: 0, spam: 0 };
@@ -411,17 +456,139 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
       if (!already) pushEvent(p, { ts: now, type, source: to, weight, why, detail: String(text).slice(0, 160), evidence: [String(text).slice(0, 300)] });
       else if (already.weight < weight) Object.assign(already, { weight, why, type, detail: String(text).slice(0, 160), evidence: [String(text).slice(0, 300)] });
     }
-    if (sexualWithMinor) flagSevere(p, 'Sexual message in a chat where someone said they are under 18: "' + String(text).slice(0, 120) + '"');
+    if (sexualWithMinor) {
+      // Never an automatic ban: the sender may be the minor. The owner decides,
+      // with the conversation in front of them.
+      const fresh = !(p.review && p.review.status === 'open');
+      flagSevere(p, 'Sexual message in a chat where someone said they are under 18: "' + String(text).slice(0, 120) + '"');
+      if (fresh) recordCase(p, { offense: { category: 'sexual_minor', severity: 'critical', title: 'Sexual message where someone said they are under 18', summary: 'Held for your review: the sender may be the minor, so nothing was sent automatically.', source: kind, text }, action: { type: 'review' }, partnerIds: [to] });
+    }
     store.save();
     schedule(p);
     return sc;
+  }
+
+  // --- major offenses and case files ---------------------------------------------
+  const majorOn = () => settings().majorBans !== false;
+
+  // Opens the case file (evidence snapshot) for something about to be done to
+  // this person. Partners default to the people who reported them.
+  function recordCase(p, { offense, action, partnerIds, dry: isDry, kind, seconds }) {
+    let partners = (partnerIds || []).filter(Boolean);
+    if (!partners.length) partners = [...new Set(p.events.filter((e) => e.type === 'report').slice(-MAX_CASE_PARTNERS).map((e) => e.source))];
+    return cases.open({
+      kind: kind || 'auto', dry: !!isDry, seconds,
+      person: { key: p.key, clientIds: p.clientIds, account: p.account, username: p.username, country: p.country, ip: p.ip },
+      offense, action, partnerIds: partners,
+    });
+  }
+
+  // The reports behind a case, one line each.
+  function reportSignals(p) {
+    return p.events.filter((e) => e.type === 'report' && !e.cleared).slice(-6).reverse()
+      .map((e) => `${e.reason || 'report'}${e.detail ? ' - ' + e.detail : ''} (weight ${e.weight}${e.why && e.why.length ? '; ' + e.why.join(', ') : ''})`);
+  }
+
+  // One major offense. x: { category, severity: 'major' | 'critical', text, to
+  // | partnerIds, source, summary, signals }. Returns the case, or null when it
+  // is a repeat of an incident already counted.
+  function majorStrike(p, x) {
+    const st = settings();
+    const now = Date.now();
+    const isDry = policyDry();
+    const m = p.major || (p.major = { strikes: [], lastAt: 0, lastCat: '' });
+    // One incident: the same offense within ten minutes is one strike.
+    if (m.lastCat === x.category && now - m.lastAt < 10 * 60000) return null;
+    m.strikes = m.strikes.filter((s) => now - s.ts < st.majorWindowDays * DAY && (!s.dry || isDry));
+    const prior = m.strikes.length;
+    // Someone the report ladder already warned goes straight to the first ban.
+    const n = Math.max(prior + 1, x.afterWarning ? 2 : 1);
+    const critical = x.severity === 'critical';
+    const minutes = critical ? CRITICAL_BAN_MIN[Math.min(prior, 1)] : MAJOR_BAN_MIN[Math.min(n - 1, MAJOR_BAN_MIN.length - 1)];
+    const type = minutes ? 'ban' : 'warning';
+    const days = minutes ? Math.round(minutes / 1440) : 0;
+    const what = MAJOR_WHAT[x.category] || 'A serious offense';
+    const outcome = type === 'ban' ? `${days}-day ban` : 'warning';
+    const c = recordCase(p, {
+      offense: { category: x.category, severity: critical ? 'critical' : 'major', title: what, summary: `${x.summary ? x.summary + ' ' : ''}${critical ? 'Confirmed severe' : 'Strike ' + n + ' within ' + st.majorWindowDays + ' days'}: ${outcome}.`, source: x.source, text: x.text, signals: x.signals },
+      action: { type, strike: n, minutes: minutes || null },
+      partnerIds: x.partnerIds || [x.to], dry: isDry,
+    });
+    const cid = p.clientIds[p.clientIds.length - 1];
+    const name = p.username || p.key;
+    if (!isDry) {
+      if (type === 'warning') {
+        const message = majorWarning(what);
+        const w = store.addWarning({ clientId: cid, account: p.account, username: p.username, country: p.country, reason: 'Auto: ' + what, message });
+        w.caseId = c.id;
+        cases.patch(c.id, { action: { warningId: w.id, message } });
+        try { deliverWarning(w); } catch (_) { /* queued for next visit */ }
+        store.audit('automod', '', `Major offense: warned ${name} - ${what}`);
+      } else {
+        // Device only, not the IP: mobile carriers put many people on one IP.
+        const ban = store.addBan({ clientId: cid, account: p.account, deviceId: p.deviceId, username: p.username, country: p.country, reason: `Auto: ${what} (strike ${n})`, minutes });
+        ban.caseId = c.id;
+        cases.patch(c.id, { action: { banId: ban.id } });
+        try { kickBanned(cid, null, ban); } catch (_) { /* offline */ }
+        store.audit('ban', '', `Auto-banned ${name} for ${days} days - ${what} (strike ${n})`);
+        alert('automod-ban', `${name} was auto-banned for ${days} days`, `${what}.\n${x.summary || ''}\nStrike ${n}.${x.text ? `\nWhat they said: "${String(x.text).slice(0, 200)}"` : ''}\n\nFull case file: dashboard -> Safety -> Cases. Undo from Safety -> Bans.`);
+      }
+    }
+    m.strikes.push({ ts: now, category: x.category, caseId: c.id, n, dry: isDry });
+    m.lastAt = now;
+    m.lastCat = x.category;
+    log(p, type === 'ban' ? 'major_ban' : 'major_warn', `${what} - strike ${n}: ${outcome}${x.text ? ` - "${String(x.text).slice(0, 100)}"` : ''}`, { dry: isDry, caseId: c.id });
+    store.save();
+    return c;
+  }
+
+  // Someone the report ladder already warned (that happens at 3 reporters) who
+  // has now been reported for something serious by 5 different, authentic
+  // people within 48 hours: the first major strike, which for them is the 7-day
+  // ban. Returns true when it counted a strike.
+  function checkMajorReports(p, lastWarn) {
+    const st = settings();
+    if (!majorOn() || !lastWarn) return false;
+    const now = Date.now();
+    const since = now - 2 * DAY;
+    const bySource = new Map();
+    for (const e of p.events) {
+      if (e.type !== 'report' || e.ts < since || e.cleared || e.pending || !(e.weight >= 0.5) || !MAJOR_REASON.test(e.reason || '')) continue;
+      bySource.set(e.source, e);
+    }
+    if (bySource.size < st.majorReportSources) return false;
+    if (p.major && p.major.reportAt > since) return false;
+    const evs = [...bySource.values()];
+    p.major = p.major || { strikes: [], lastAt: 0, lastCat: '' };
+    p.major.reportAt = now;
+    const tally = {};
+    for (const e of evs) tally[e.reason] = (tally[e.reason] || 0) + 1;
+    const top = Object.entries(tally).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} x${v}`).join(', ');
+    return !!majorStrike(p, {
+      category: 'reports', afterWarning: true, text: (evs.find((e) => e.detail) || {}).detail || '', partnerIds: evs.map((e) => e.source), source: 'reports',
+      summary: `Already warned; ${bySource.size} different people reported something serious within 48 hours (${top}).`,
+      signals: evs.map((e) => `${e.reason}${e.detail ? ' - ' + e.detail : ''} (weight ${e.weight})`),
+    });
+  }
+
+  // The owner warned or banned someone by hand (dashboard): keep the evidence.
+  function recordManual(x) {
+    const key = personKey(x.clientId, x.account);
+    const p = state().people[key] || state().people['c:' + x.clientId];
+    const clientIds = p ? p.clientIds : [x.clientId].filter(Boolean);
+    return cases.open({
+      kind: 'owner',
+      person: { key, clientIds, account: x.account || (p && p.account) || null, username: x.username || (p && p.username), country: x.country || (p && p.country), ip: x.ip || (p && p.ip) },
+      offense: { category: 'owner', severity: 'major', title: x.type === 'ban' ? 'Banned by you' : 'Warned by you', summary: x.reason || '', source: 'owner', signals: p ? reportSignals(p) : [] },
+      action: { type: x.type, minutes: x.minutes, banId: x.banId, warningId: x.warningId, message: x.message },
+    });
   }
 
   // --- site rules: money, links, pictures ---------------------------------------
   const policyOn = () => settings().policy !== false;
   const policyDry = () => settings().mode === 'dryrun';
 
-  function policyCheck({ from, to, text }) {
+  function policyCheck({ from, to, text, pair }) {
     if (!policyOn()) return;
     const d = guardPolicy.detect(text);
     if (!d.money && !d.link && !d.pics && !d.harm && !d.illegal) return;
@@ -435,7 +602,8 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
       pol.warned.harm = now;
       const what = d.suicideBait ? 'Told someone to kill or hurt themselves' : 'Threatened someone / talked about killing';
       pushEvent(p, { ts: now, type: 'policy', source: to, weight: 1, why: [what.toLowerCase()], detail: String(text).slice(0, 160), evidence });
-      policyWarn(p, 'harm', what, text);
+      if (majorOn()) majorStrike(p, { category: d.suicideBait ? 'selfharm' : 'threat', text, to, pair, source: 'chat', signals: ['site rule: ' + what.toLowerCase()] });
+      else policyWarn(p, 'harm', what, text, { to });
       policyReview(p, `${what}: "${String(text).slice(0, 120)}"`, true);
     } else if (d.illegal) {
       pol.illegal = (pol.illegal || []).filter((x) => x && now - x.ts < DAY);
@@ -443,7 +611,7 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
       if (lastIl && lastIl.to === to && now - lastIl.ts < MONEY_ASK_GAP) { lastIl.ts = now; store.save(); return; }
       pol.illegal.push({ ts: now, to });
       pushEvent(p, { ts: now, type: 'policy', source: to, weight: 0.5, why: ['offered drugs or something illegal'], detail: String(text).slice(0, 160), evidence });
-      policyWarn(p, 'illegal', 'Selling drugs or something illegal', text);
+      policyWarn(p, 'illegal', 'Selling drugs or something illegal', text, { to });
       if (pol.illegal.length >= 2) policyReview(p, `Offered drugs or something illegal ${pol.illegal.length} times in 24 hours: "${String(text).slice(0, 120)}"`, false);
     } else if (d.money) {
       pol.money = (pol.money || []).filter((a) => now - a.ts < DAY);
@@ -452,8 +620,8 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
       pol.money.push({ ts: now, to });
       const n = pol.money.length;
       pushEvent(p, { ts: now, type: 'policy', source: to, weight: 0.5, why: ['asked for money in chat'], detail: String(text).slice(0, 160), evidence });
-      if (n >= 3) policyBan(p, `Asked for money ${n} times in 24 hours`, text);
-      else policyWarn(p, n === 1 ? 'money1' : 'money2', 'Asked for money', text);
+      if (n >= 3) policyBan(p, `Asked for money ${n} times in 24 hours`, text, { to });
+      else policyWarn(p, n === 1 ? 'money1' : 'money2', 'Asked for money', text, { to });
     } else {
       const k = d.pics ? 'pics' : 'link';
       const what = { pics: 'Asked for pictures', link: 'Sent a link to another website' }[k];
@@ -461,19 +629,22 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
       if (pol.warned[k] > now - 12 * 3600000) return;
       pol.warned[k] = now;
       pushEvent(p, { ts: now, type: 'policy', source: to, weight: 0.5, why: [what.toLowerCase()], detail: String(text).slice(0, 160), evidence });
-      policyWarn(p, k, what, text);
+      policyWarn(p, k, what, text, { to });
     }
     store.save();
   }
 
-  function policyWarn(p, key, reason, text) {
+  function policyWarn(p, key, reason, text, ctx = {}) {
     let warningId = null;
+    const c = recordCase(p, { offense: { category: key.replace(/\d$/, ''), severity: 'minor', title: reason, summary: POLICY_TEXT[key], source: 'chat', text }, action: { type: 'warning', message: POLICY_TEXT[key] }, partnerIds: [ctx.to], dry: policyDry() });
     if (!policyDry()) {
       const w = store.addWarning({ clientId: p.clientIds[p.clientIds.length - 1], account: p.account, username: p.username, country: p.country, reason: 'Auto: ' + reason, message: POLICY_TEXT[key] });
+      w.caseId = c.id;
       warningId = w.id;
+      cases.patch(c.id, { action: { warningId } });
       try { deliverWarning(w); } catch (_) { /* queued for next visit */ }
     }
-    log(p, 'policy_warn', `${reason}: "${String(text).slice(0, 120)}"`, { warningId, dry: policyDry() });
+    log(p, 'policy_warn', `${reason}: "${String(text).slice(0, 120)}"`, { warningId, dry: policyDry(), caseId: c.id });
   }
 
   // Into the owner's review queue (you decide whether to ban), with an email
@@ -490,21 +661,24 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
     if (!policyDry()) alert(severe ? 'automod-severe' : 'automod-review', `${severe ? 'Urgent: ' : ''}${p.username || 'A user'} needs review`, `${why}\n\nOpen the dashboard -> Safety -> Auto-mod to ban, warn or clear.`);
   }
 
-  function policyBan(p, why, text) {
+  function policyBan(p, why, text, ctx = {}) {
     const pol = p.policy;
     const mins = MONEY_BAN_MIN[Math.min(pol.bans || 0, MONEY_BAN_MIN.length - 1)];
     const days = Math.round(mins / 1440);
+    const c = recordCase(p, { offense: { category: 'money', severity: 'major', title: why, summary: `Asked for money again after two warnings. ${days}-day ban (ban number ${(pol.bans || 0) + 1}).`, source: 'chat', text }, action: { type: 'ban', minutes: mins, strike: (pol.bans || 0) + 1 }, partnerIds: [ctx.to], dry: policyDry() });
     if (!policyDry()) {
       const cid = p.clientIds[p.clientIds.length - 1];
       // Device only, not the IP: mobile carriers put many people on one IP.
       const ban = store.addBan({ clientId: cid, account: p.account, deviceId: p.deviceId, username: p.username, country: p.country, reason: 'Auto: ' + why, minutes: mins });
+      ban.caseId = c.id;
+      cases.patch(c.id, { action: { banId: ban.id } });
       try { kickBanned(cid, null, ban); } catch (_) { /* offline */ }
       store.audit('ban', '', `Auto-banned ${p.username || p.key} for ${days} days - ${why}`);
       alert('automod-ban', `${p.username || 'A user'} was auto-banned for ${days} days`, `${why}.\nLast message: "${String(text).slice(0, 200)}"\n\nUndo from the dashboard -> Safety -> Bans.`);
     }
     pol.bans = (pol.bans || 0) + 1;
     pol.money = [];
-    log(p, 'policy_ban', `${why} - ${days} day ban: "${String(text).slice(0, 120)}"`, { dry: policyDry() });
+    log(p, 'policy_ban', `${why} - ${days} day ban: "${String(text).slice(0, 120)}"`, { dry: policyDry(), caseId: c.id });
     store.save();
   }
 
@@ -574,19 +748,25 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
   function giveWarning(p, level, why) {
     const name = level === 1 ? 'warn1' : 'warn2';
     let warningId = null;
+    const c = recordCase(p, {
+      offense: { category: 'reports', severity: 'minor', title: level === 1 ? 'Reported by several people' : 'Reported again after a warning', summary: why, source: 'reports', signals: reportSignals(p) },
+      action: { type: 'warning', strike: level, message: WARN_TEXT[name] }, dry: dry(),
+    });
     if (!dry()) {
       const w = store.addWarning({
         clientId: p.clientIds[p.clientIds.length - 1], account: p.account, username: p.username, country: p.country,
         reason: level === 1 ? 'Auto: reported by several people' : 'Auto: final warning', message: WARN_TEXT[name],
       });
+      w.caseId = c.id;
       warningId = w.id;
+      cases.patch(c.id, { action: { warningId } });
       try { deliverWarning(w); } catch (_) { /* queued for next visit */ }
       store.audit('automod', '', `Auto ${level === 1 ? 'warning' : 'final warning'} to ${p.username || p.key} - ${why}`);
     }
     p.level = level;
     p.warnings.push({ ts: Date.now(), seq: p.seq || 0, level, id: warningId, dry: dry() });
     if (p.warnings.length > 10) p.warnings.shift();
-    log(p, name, why, { warningId });
+    log(p, name, why, { warningId, caseId: c.id });
   }
 
   function evaluate(p) {
@@ -606,6 +786,9 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
     }
     // New weight since the last warning, so warn2 and review need fresh reports.
     const sinceLast = lastWarn ? scoreSince(p, lastWarn.seq || 0) : sc;
+    // Warned already, and reported for something serious by 5 different people
+    // within 48 hours: the major ladder (a ban) instead of a second general warning.
+    if (p.level >= 1 && checkMajorReports(p, lastWarn)) { store.save(); return; }
     if (p.level < 1 && sc >= st.warn1) giveWarning(p, 1, why);
     else if (p.level === 1 && sc >= st.warn2 && sinceLast >= 1) giveWarning(p, 2, why);
     else if (p.level === 2 && sc >= st.review && sinceLast >= 1 && !(p.review && p.review.status === 'open')) openReview(p, `Reached the review line after a final warning - ${why}`, false);
@@ -634,6 +817,8 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
       const mins = Math.min(Math.max(Number(minutes) || 1440, 30), 5 * 365 * 24 * 60);
       const cid = p.clientIds[p.clientIds.length - 1];
       const ban = store.addBan({ clientId: cid, account: p.account, deviceId: p.deviceId, ip: p.ip, username: p.username, country: p.country, reason: 'Auto-mod review: ' + ((p.review && p.review.why) || 'repeated reports').slice(0, 120), minutes: mins });
+      const c = recordCase(p, { kind: 'owner', offense: { category: 'owner-review', severity: 'major', title: 'Banned from the review queue', summary: (p.review && p.review.why) || 'repeated reports', source: 'owner', signals: reportSignals(p) }, action: { type: 'ban', minutes: mins, banId: ban.id } });
+      ban.caseId = c.id;
       kickBanned(cid, p.ip, ban);
       for (const rid of reporters) reporter(rid).confirmed += 1;
       if (p.review) p.review.status = 'banned';
@@ -651,6 +836,8 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
       if (p.review) p.review.status = 'warned';
       for (const rid of reporters) reporter(rid).confirmed += 1;
       const w = store.addWarning({ clientId: p.clientIds[p.clientIds.length - 1], account: p.account, username: p.username, country: p.country, reason: 'Owner review', message: WARN_TEXT.warn2 });
+      const c = recordCase(p, { kind: 'owner', offense: { category: 'owner-review', severity: 'major', title: 'Warned from the review queue', summary: (p.review && p.review.why) || 'repeated reports', source: 'owner', signals: reportSignals(p) }, action: { type: 'warning', warningId: w.id, message: WARN_TEXT.warn2 } });
+      w.caseId = c.id;
       try { deliverWarning(w); } catch (_) { /* next visit */ }
       p.level = 2;
       p.warnings.push({ ts: Date.now(), seq: p.seq || 0, level: 2, id: w.id, dry: false });
@@ -682,11 +869,11 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
     const st = settings();
     const before = st.mode;
     if (['dryrun', 'live', 'off'].includes(patch.mode)) st.mode = patch.mode;
-    const nums = { warn1: [1, 50], warn2: [2, 80], review: [3, 200], windowDays: [1, 30], strikeDays: [1, 180], minRate: [0, 1] };
+    const nums = { warn1: [1, 50], warn2: [2, 80], review: [3, 200], windowDays: [1, 30], strikeDays: [1, 180], minRate: [0, 1], majorReportSources: [2, 20], majorWindowDays: [7, 365] };
     for (const [k, [lo, hi]] of Object.entries(nums)) if (patch[k] != null && Number.isFinite(Number(patch[k]))) st[k] = Math.min(hi, Math.max(lo, Number(patch[k])));
     if (st.warn2 <= st.warn1) st.warn2 = st.warn1 + 1;
     if (st.review <= st.warn2) st.review = st.warn2 + 1;
-    for (const k of ['ai', 'keywordStrikes', 'autoLive', 'policy']) if (typeof patch[k] === 'boolean') st[k] = patch[k];
+    for (const k of ['ai', 'keywordStrikes', 'autoLive', 'policy', 'majorBans']) if (typeof patch[k] === 'boolean') st[k] = patch[k];
     if (patch.extendDryRun) { st.mode = 'dryrun'; st.dryRunUntil = Date.now() + 7 * DAY; }
     if (before === 'dryrun' && st.mode === 'live') goLive();
     store.audit('automod', ownerIp, `Auto-mod settings: ${JSON.stringify(patch).slice(0, 200)}`);
@@ -702,7 +889,9 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
       p.warnings = p.warnings.filter((w) => !w.dry);
       p.level = Math.max(0, ...p.warnings.map((w) => w.level), 0);
       if (p.review && p.review.dry) p.review = null;
+      if (p.major) { p.major.strikes = p.major.strikes.filter((x) => !x.dry); delete p.major.reportAt; p.major.lastAt = 0; }
     }
+    cases.dropDry();
     s.settings.mode = 'live';
     s.log.unshift({ id: 'live' + Date.now().toString(36), ts: Date.now(), key: '', username: '', action: 'live', dry: false, score: 0, detail: 'Auto-mod switched from dry run to live.' });
   }
@@ -712,8 +901,8 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
     const st = s.settings;
     if (st.mode === 'dryrun' && st.autoLive && Date.now() > st.dryRunUntil) {
       goLive();
-      store.audit('automod', '', 'Dry-run week ended: auto-mod is now live (warnings only, no automatic bans).');
-      alert('automod-live', 'Auto-mod is now live', 'The dry-run week ended. Auto-mod now sends warnings and fills the review queue. It never bans on its own. Dashboard -> Safety -> Auto-mod to change this.');
+      store.audit('automod', '', 'Dry-run week ended: auto-mod is now live (warnings; automatic bans only for money asks and major offenses).');
+      alert('automod-live', 'Auto-mod is now live', 'The dry-run week ended. Auto-mod now sends warnings and fills the review queue, and bans only for money asks and major offenses (threats, telling someone to kill themselves, serious reports). Every action has a case file under Dashboard -> Safety -> Cases.');
     }
     // Forget people with nothing recent and nothing open.
     const cutoff = Date.now() - Math.max(st.strikeDays, st.windowDays) * DAY;
@@ -814,12 +1003,12 @@ function createAutomod({ store, deliverWarning, kickBanned, talkguard }) {
   }
 
   return {
-    onReport, onChatText, onPattern, decide, undo, updateSettings, summary, simulate,
+    onReport, onChatText, onPattern, decide, undo, updateSettings, summary, simulate, recordManual, cases,
     setAlert(fn) { alert = typeof fn === 'function' ? fn : () => {}; },
     // A device that belongs to someone in review or with a warning level.
     isFlagged: (clientId) => Object.values(state().people).some((p) => p.clientIds.includes(clientId) && (p.level >= 2 || (p.review && p.review.status !== 'cleared' && p.review.status !== 'dismissed'))),
     openReviews: () => Object.values(state().people).filter((p) => p.review && p.review.status === 'open').length,
-    _evaluate: evaluate, _state: state,
+    _evaluate: evaluate, _state: state, _majorStrike: majorStrike,
   };
 }
 
