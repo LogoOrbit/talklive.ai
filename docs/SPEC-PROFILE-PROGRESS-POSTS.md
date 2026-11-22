@@ -117,8 +117,9 @@ verified account to comment"). Reacting/commenting updates counts live.
 ## 8. Round 2 changes (Nov 22)
 
 **Free faces (replaces §1 lists):**
-- Free animals (5): `a:cat`, `a:fox`, `a:panda`, `a:rabbit`, `a:dog`
-- Free characters (5): `c:wizard`, `c:pirate`, `c:robot`, `c:astronaut`, `c:artist`
+- Free animals (5): `a:cat`, `a:fox`, `a:panda`, `a:rabbit` (pink, for girls), `a:dog`
+- Free characters (5): `c:wizard`, `c:pirate`, `c:robot`, `c:queen` (female), `c:artist`
+- `c:astronaut` is Plus.
 - Plus (picker, 5+5): animals `a:lion`, `a:raccoon`, `a:giraffe` + 2 most detailed others; characters `c:detective`, `c:ninja`, `c:warrior`, `c:gamer` + 1 most detailed other. Same lists on server, web, Android.
 - Anyone without Plus currently wearing a Plus face (account record, stored settings, live profile) is switched to a free face: animal -> `a:cat`, character -> `c:wizard`. One-time migration at boot plus the existing per-register check.
 
