@@ -491,8 +491,8 @@ class ServerE2ETest {
         a.engage.setMyGender("female")
         b.engage.setMyGender("male")
         a.mic.setEnabled(true)
-        check("server has the switch on") { a.mic.view.value?.on == true }
-        assertEquals("pending", a.mic.view.value!!.state)
+        // On by default now, so a view may arrive before the gender lands; wait for the one after it.
+        check("server has the switch on") { a.mic.view.value?.on == true && a.mic.view.value?.state == "pending" }
         assertTrue(a.mic.enabled.value)
 
         a.socket.emit("find-partner", org.json.JSONObject().put("mode", "talk"))
