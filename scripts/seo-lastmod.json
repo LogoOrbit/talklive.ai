@@ -1,12 +1,12 @@
 {
   "/": {
-    "hash": "52ad15a36f745f84",
+    "hash": "627e1c0f055a40e6",
     "date": "2026-11-22",
     "v": 3
   },
   "/about": {
-    "hash": "247cf6ee2d3ba54b",
-    "date": "2026-11-09",
+    "hash": "3e48a37902d5db56",
+    "date": "2026-11-22",
     "v": 3
   },
   "/anonymous-chat": {
@@ -140,13 +140,13 @@
     "v": 3
   },
   "/community-guidelines": {
-    "hash": "10f0f6bd33b03c9c",
-    "date": "2026-11-16",
+    "hash": "8d0d34c0ad42c76b",
+    "date": "2026-11-22",
     "v": 3
   },
   "/contact": {
-    "hash": "15daf070f2adcbef",
-    "date": "2026-11-09",
+    "hash": "754d060cb1338928",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/afghanistan": {
@@ -335,8 +335,8 @@
     "v": 3
   },
   "/delete-account": {
-    "hash": "951e28ab9ae9dbbb",
-    "date": "2026-11-09",
+    "hash": "f23a7cf849bc3e39",
+    "date": "2026-11-22",
     "v": 3
   },
   "/emerald-chat-alternative": {
@@ -435,13 +435,13 @@
     "v": 3
   },
   "/pricing": {
-    "hash": "64154984393898c3",
+    "hash": "d44cf16811ecf182",
     "date": "2026-11-22",
     "v": 3
   },
   "/privacy": {
-    "hash": "835af312cc9d100a",
-    "date": "2026-11-16",
+    "hash": "e11624589de9a0ad",
+    "date": "2026-11-22",
     "v": 3
   },
   "/pt/": {
@@ -465,8 +465,8 @@
     "v": 3
   },
   "/refund": {
-    "hash": "a03ff37630308379",
-    "date": "2026-11-09",
+    "hash": "882c40e2d32604e3",
+    "date": "2026-11-22",
     "v": 3
   },
   "/regions/africa": {
@@ -525,8 +525,8 @@
     "v": 3
   },
   "/terms": {
-    "hash": "87f6ec2e5b5192d2",
-    "date": "2026-11-16",
+    "hash": "f439e263cf42bc9c",
+    "date": "2026-11-22",
     "v": 3
   },
   "/tr/": {
@@ -545,7 +545,7 @@
     "v": 3
   },
   "/what-is-talklive": {
-    "hash": "536a481691653e92",
+    "hash": "6aaf3351d6d93333",
     "date": "2026-11-22",
     "v": 3
   },
