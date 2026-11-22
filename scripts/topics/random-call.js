@@ -5,6 +5,9 @@
 // Unbounded for display, IBM Plex Sans (with Inter) to read.
 module.exports = {
   slug: 'random-call',
+  answers: [
+    { q: "What is a random call?", a: "A random call is a live voice call with a stranger picked at random. On TalkLive you tap Talk, get paired with another adult, and talk with no camera, no phone number and no recording." },
+  ],
   name: 'Random Call',
   date: '2026-10-05',
   about: { '@type': 'Thing', name: 'Random voice calls over the internet' },

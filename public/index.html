@@ -587,8 +587,8 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               </div>
             </div>
             <form id="friendIdSearchForm" class="friend-id-search" autocomplete="off">
-              <input id="friendIdSearchInput" type="text" maxlength="26" spellcheck="false" autocapitalize="none" data-i18n-placeholder="friendIdSearchPlaceholder" placeholder="Add by ID, e.g. alex#1234" data-i18n-aria="friendIdSearchAria" aria-label="Search by friend ID">
-              <button type="submit" class="btn btn-primary friend-id-search-btn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span data-i18n="friendIdSearchBtn">Search</span></button>
+              <input id="friendIdSearchInput" type="text" maxlength="26" spellcheck="false" autocapitalize="none" data-i18n-placeholder="friendIdSearchPlaceholder" placeholder="Add by ID, e.g. asad#1234" data-i18n-aria="friendIdSearchAria" aria-label="Search by friend ID">
+              <button type="submit" class="btn btn-primary" data-i18n="friendIdSearchBtn">Find</button>
             </form>
             <div id="friendIdResult" class="friend-id-result hidden" aria-live="polite"></div>
           </section>
@@ -1053,7 +1053,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.5 8.5 7 11l5-5.5 5 5.5 3.5-2.5-1.6 9.2a1 1 0 0 1-1 .8H6.1a1 1 0 0 1-1-.8z"/></svg>
           </span>
           <strong data-i18n="plusCardTitle">TalkLive Plus</strong>
-          <small data-i18n="plusNavSub">Matched first, more filters and more.</small>
+          <small data-i18n="plusNavSub">Matched first, more filters, undo skip and more.</small>
           <ul class="tl-soon-list">
             <li data-i18n="plusBGender">Match with men or women</li>
             <li data-i18n="plusBPriority">Matched first when it is busy</li>
@@ -1162,7 +1162,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           <div class="setup-growth" data-i18n-aria="growthAria" aria-label="TalkLive membership and sharing">
             <a class="setup-growth-card setup-growth-premium" href="/pricing?utm_source=app">
               <span class="setup-growth-icon" aria-hidden="true"><i class="ti ti-gem" aria-hidden="true"></i></span>
-              <span><strong data-i18n="plusCardTitle">TalkLive Plus</strong><small data-i18n="plusCardSub">Filters and priority matching</small></span>
+              <span><strong data-i18n="plusCardTitle">TalkLive Plus</strong><small data-i18n="plusCardSub">Filters, priority matching, undo skip</small></span>
             </a>
             <button type="button" id="shareTalkLiveBtn" class="setup-growth-card setup-growth-share">
               <span class="setup-growth-icon" aria-hidden="true">↗</span>
@@ -1484,6 +1484,8 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                 <li><strong data-i18n="plusBCountries">Up to 50 preferred and 50 avoided countries</strong></li>
                 <li><strong data-i18n="plusBInterests">Match on up to 10 interests, not 2</strong></li>
                 <li><strong data-i18n="plusBPriority">Matched first when it is busy</strong></li>
+                <li><strong data-i18n="plusBUndo">Undo a skip</strong></li>
+                <li><strong data-i18n="plusBLikes">See who liked you</strong></li>
                 <li><strong data-i18n="plusBHistory">Everyone you met, not just the last 3</strong></li>
                 <li><strong data-i18n="plusBStreak">Streak freezes and streak restore</strong></li>
                 <li><strong data-i18n="plusBFilms">Show 3 favourite films, not 1</strong></li>
@@ -1801,7 +1803,6 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
             <strong id="peerGoneTitle"></strong>
             <small id="peerGoneSub"></small>
           </span>
-          <button type="button" id="peerGoneLeave" class="peer-gone-leave hidden" data-i18n="peerLeave">Leave</button>
         </div>
 
         <!-- ===============================================================
@@ -2142,6 +2143,16 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         <p class="tt-note">Until then, everything works right here in your browser.</p>
       </div>
 
+      <a class="tt-story tt-rv" href="/what-is-talklive">
+        <picture><source type="image/avif" srcset="/images/what-is-talklive/cover-800.avif?v=b5c7785376 800w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" /><img src="/images/what-is-talklive/cover-800.webp?v=24bc0217d0" srcset="/images/what-is-talklive/cover-800.webp?v=24bc0217d0 800w" sizes="(max-width: 900px) calc(100vw - 32px), 620px" width="1600" height="900" alt="TalkLive on desktop and phone" loading="lazy" decoding="async" /></picture>
+        <div class="tt-story-body"><h3>What is TalkLive?</h3><p>The why behind one-tap voice chat, avatars and a camera-free internet.</p><span class="tt-more">Read the article →</span></div>
+      </a>
+      <div class="tt-guides tt-rv">
+        <a class="tt-guide" href="/blog/what-to-talk-about-with-a-stranger"><b>Questions that get past small talk</b><small>Read guide →</small></a>
+        <a class="tt-guide" href="/blog/introvert-guide-to-talking-to-strangers"><b>The introvert's guide to talking to strangers</b><small>Read guide →</small></a>
+        <a class="tt-guide" href="/blog/how-to-practise-a-language-by-speaking"><b>Why you understand more than you can say</b><small>Read guide →</small></a>
+        <a class="tt-guide" href="/blog/how-to-spot-a-bot-or-scam-in-random-chat"><b>The scams that start with "hi"</b><small>Read guide →</small></a>
+      </div>
 
       <div class="tt-cta tt-rv">
         <h2 class="tt-h2">Someone is waiting <span class="tt-grad">to say hello.</span></h2>
@@ -2371,6 +2382,14 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         <a href="/languages/#chinese">Chinese (Mandarin)</a><!-- /langs:links -->
       </nav>
 
+      <h3>Today's featured read</h3>
+      <a id="dailyArticleCard" class="daily-article-card" href="/blog/">
+        <span class="daily-article-badge">New today</span>
+        <span id="dailyArticleTitle" class="daily-article-title">Loading today's article…</span>
+        <span id="dailyArticleBlurb" class="daily-article-blurb"></span>
+        <span class="daily-article-cta">Read now →</span>
+      </a>
+
 
       <h3>How TalkLive works</h3>
       <p>TalkLive uses encrypted WebRTC audio through a production TURN relay. TalkLive does not record or store voice audio, although another participant can record on their own device. Typed messages are kept in a moderation log (the newest 5,000 messages across the site), and direct-message conversations keep their newest 200 messages; see the Privacy Policy. If both people choose, the optional friends feature can help them reconnect without exchanging phone numbers.</p>
@@ -2392,6 +2411,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <!-- The footer closes the page, after the crawlable section rather than
        above it. -->
   <footer class="footer">
+    <a href="/blog/" class="footer-blog-btn" data-i18n="readOurBlog">Read our blog</a>
     <div class="footer-links">
       <a href="/about" class="link-btn" data-i18n="aboutLink">About</a>
       <a href="/safety" class="link-btn">Safety Center</a>
@@ -2524,7 +2544,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        browser finish parsing and paint the page first. -->
   <script defer src="/vendor/socket.io.min.js?v=7bcff1b4f1"></script>
   <script defer src="countries.js?v=30bcd7f146"></script>
-  <script defer src="i18n.js?v=e30f963c41"></script>
+  <script defer src="i18n.js?v=1f9b0a57c8"></script>
   <script defer src="chat-time.js?v=9d4e50bcf7"></script>
   <script defer src="animals.js?v=e934300459"></script>
   <script defer src="characters.js?v=7df196acd3"></script>
@@ -2536,7 +2556,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="games.js?v=192e9d4f2d"></script>
   <script defer src="nickname-rules.js?v=077c943b4d"></script>
   <script defer src="social-links.js?v=a4e5c724ac"></script>
-  <script defer src="app.js?v=b60239d92f"></script>
+  <script defer src="app.js?v=5c95628955"></script>
 
 <!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

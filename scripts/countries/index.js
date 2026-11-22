@@ -49,6 +49,9 @@ const BASE_CSS = `
 .c-faq summary::after{content:"+";float:right;margin-left:12px}
 .c-faq details[open] summary::after{content:"\\2212"}
 .c-faq details p{margin:10px 0 0}
+.c-answer{max-width:900px;margin:22px auto 0;padding:4px 20px 4px 18px;border-left:4px solid var(--accent,var(--hi,currentColor));box-sizing:border-box;width:calc(100% - 40px)}
+.c-answer h2{font:700 clamp(20px,2.6vw,26px)/1.25 system-ui,-apple-system,"Segoe UI",sans-serif;margin:14px 0 6px}
+.c-answer p{font:400 17px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;margin:0 0 14px;max-width:70ch}
 .c-guides{max-width:1180px;margin:64px auto 0;padding:0 20px}
 .c-guides h2{font:600 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.16em;text-transform:uppercase;margin:0 0 12px;opacity:.75}
 .c-guides ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px 22px;font:500 15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
@@ -77,6 +80,15 @@ function faqHtml(c, heading) {
     .map((f) => `<details><summary>${S.esc(f.q)}</summary><p>${S.esc(f.a)}</p></details>`).join('')}</section>`;
 }
 
+// Short, direct answers placed right under the hero: a question as the H2 and a
+// one-or-two-sentence factual answer, so a reader or an answer engine gets the
+// point without scrolling. Pages opt in with `answers: [{ q, a }]`.
+function answerHtml(c) {
+  if (!c.answers || !c.answers.length) return '';
+  return `<section class="c-answer" aria-label="Short answers">${c.answers
+    .map((x) => `<h2>${S.esc(x.q)}</h2><p>${S.esc(x.a)}</p>`).join('')}</section>`;
+}
+
 function guidesHtml(slug) {
   const items = COUNTRIES.filter((c) => c.slug !== slug)
     .map((c) => `<li><a href="/countries/${c.slug}">${S.esc(c.name)}</a></li>`).join('');
@@ -94,6 +106,10 @@ function head(page, wordCount) {
       {
         '@type': 'Organization', '@id': `${SITE}/#organization`, name: 'TalkLive', url: `${SITE}/`, sameAs: SOCIAL.SAME_AS,
         logo: { '@type': 'ImageObject', url: `${SITE}/favicon-192.png`, width: 192, height: 192 },
+      },
+      {
+        '@type': 'WebSite', '@id': `${SITE}/#website`, url: `${SITE}/`, name: 'TalkLive',
+        alternateName: ['Talk Live', 'TalkLive App'], publisher: { '@id': `${SITE}/#organization` },
       },
       {
         '@type': 'WebPage', '@id': `${canonical}#webpage`, url: canonical, name: c.title, description: c.description,
@@ -174,7 +190,9 @@ function footer(aside) {
  */
 function render(c, aside) {
   const pageCtx = { ...ctx, faq: (heading) => faqHtml(c, heading) };
-  const inner = c.body(pageCtx);
+  let inner = c.body(pageCtx);
+  const ans = answerHtml(c);
+  if (ans) inner = inner.includes('</section>') ? inner.replace('</section>', `</section>\n${ans}`) : inner.replace('<main id="story">', `<main id="story">\n${ans}`);
   return `${head(c, S.words(inner))}
 <body class="c-page c-${c.slug}">
 ${bar()}

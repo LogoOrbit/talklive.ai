@@ -1,7 +1,7 @@
 {
   "/": {
-    "hash": "d95080624a6f8a1c",
-    "date": "2026-11-16",
+    "hash": "52ad15a36f745f84",
+    "date": "2026-11-22",
     "v": 3
   },
   "/about": {
@@ -10,8 +10,8 @@
     "v": 3
   },
   "/anonymous-chat": {
-    "hash": "8692e1909bb19e61",
-    "date": "2026-11-10",
+    "hash": "737a65a8a3280a59",
+    "date": "2026-11-22",
     "v": 3
   },
   "/ar/": {
@@ -135,8 +135,8 @@
     "v": 3
   },
   "/chatroulette-alternative": {
-    "hash": "3e20dd8c0dd16a40",
-    "date": "2026-11-10",
+    "hash": "8ccdbd0a823bee70",
+    "date": "2026-11-22",
     "v": 3
   },
   "/community-guidelines": {
@@ -150,183 +150,183 @@
     "v": 3
   },
   "/countries/afghanistan": {
-    "hash": "afd9d039a5b76dcb",
-    "date": "2026-11-10",
+    "hash": "85885cc910d07a24",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/algeria": {
-    "hash": "8a71378d87df1f37",
-    "date": "2026-11-10",
+    "hash": "36b7675b35d783b4",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/australia": {
-    "hash": "2024c4b119e40da1",
-    "date": "2026-11-10",
+    "hash": "2cee165ab5d45076",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/bangladesh": {
-    "hash": "5de9aeaee5ef7f51",
-    "date": "2026-11-10",
+    "hash": "6b9dab992aa354d1",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/brazil": {
-    "hash": "fa753661b9f312b3",
-    "date": "2026-11-10",
+    "hash": "2ccf78c55ea72b0f",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/canada": {
-    "hash": "10aa99e1bd8512bf",
-    "date": "2026-11-10",
+    "hash": "4488afece3eaa490",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/china": {
-    "hash": "dc51f2e7595a5ac5",
-    "date": "2026-11-10",
+    "hash": "e290788cbd6bbabd",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/egypt": {
-    "hash": "05e988b168019c6e",
-    "date": "2026-11-10",
+    "hash": "29b65264b8c1fe48",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/france": {
-    "hash": "13d22f25e19792b0",
-    "date": "2026-11-10",
+    "hash": "51b611344a676039",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/germany": {
-    "hash": "c3d98352385b4123",
-    "date": "2026-11-10",
+    "hash": "72af279b6da565b3",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/india": {
-    "hash": "50b231a0547a2e3b",
-    "date": "2026-11-10",
+    "hash": "8bdfda092984e0f9",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/indonesia": {
-    "hash": "3923731ae1f92f10",
-    "date": "2026-11-10",
+    "hash": "508414b983ce981c",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/iran": {
-    "hash": "07a4389a7a86fffe",
-    "date": "2026-11-10",
+    "hash": "f476e9a130f95201",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/iraq": {
-    "hash": "acf4ffb92a6e91c1",
-    "date": "2026-11-10",
+    "hash": "35c94f5a8bf93ce2",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/italy": {
-    "hash": "073b09e5c42798ce",
-    "date": "2026-11-10",
+    "hash": "0d01c27fe377322d",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/japan": {
-    "hash": "432f8087dd9dbbe1",
-    "date": "2026-11-10",
+    "hash": "58e7070ae66acc9f",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/kenya": {
-    "hash": "58679d15ba3a5f56",
-    "date": "2026-11-10",
+    "hash": "9026c331f9bc789d",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/malaysia": {
-    "hash": "62a353b8958a7a5b",
-    "date": "2026-11-10",
+    "hash": "23ef0ce3d91a7416",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/mexico": {
-    "hash": "fe73e8a00f406b7d",
-    "date": "2026-11-10",
+    "hash": "18b0f94ff5281259",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/morocco": {
-    "hash": "a4be0a4cc3ad3526",
-    "date": "2026-11-10",
+    "hash": "340cd94d1eb28af9",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/nepal": {
-    "hash": "b392ea45b6871e6d",
-    "date": "2026-11-10",
+    "hash": "80b1e82f083f475f",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/netherlands": {
-    "hash": "3cdbee9d4fee7213",
-    "date": "2026-11-10",
+    "hash": "b32ab1e424e35cdb",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/nigeria": {
-    "hash": "596400fa72b3e77d",
-    "date": "2026-11-10",
+    "hash": "f63f0f17d0061ed4",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/pakistan": {
-    "hash": "bf28fc450920f77a",
-    "date": "2026-11-10",
+    "hash": "91b3a595873f6692",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/philippines": {
-    "hash": "94fb3284772f0954",
-    "date": "2026-11-10",
+    "hash": "e4497ef99f390ec6",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/saudi-arabia": {
-    "hash": "5605d56d9406ee53",
-    "date": "2026-11-10",
+    "hash": "b55351d68aae1c2e",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/singapore": {
-    "hash": "5fb426c713c7ed3b",
-    "date": "2026-11-10",
+    "hash": "95f648f71a257f37",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/south-africa": {
-    "hash": "b4350085028c7689",
-    "date": "2026-11-10",
+    "hash": "00c6d1b3d2c4de93",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/spain": {
-    "hash": "33512d11cececcff",
-    "date": "2026-11-10",
+    "hash": "375ed58a05ef84a7",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/turkey": {
-    "hash": "2b4d31b6f44501b6",
-    "date": "2026-11-10",
+    "hash": "0c5b117167aa0e12",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/uganda": {
-    "hash": "e0874aaf52e801cd",
-    "date": "2026-11-10",
+    "hash": "1d80eccc03fe7756",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/united-arab-emirates": {
-    "hash": "6cac85c1db08b3f8",
-    "date": "2026-11-10",
+    "hash": "3bdaf7509f58baeb",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/united-kingdom": {
-    "hash": "7284cc93095b404e",
-    "date": "2026-11-10",
+    "hash": "a0659555b0205521",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/united-states": {
-    "hash": "4341f04d23423e0f",
-    "date": "2026-11-10",
+    "hash": "a8e8dde3930f1175",
+    "date": "2026-11-22",
     "v": 3
   },
   "/countries/vietnam": {
-    "hash": "d74c49a44aacb4eb",
-    "date": "2026-11-10",
+    "hash": "97cbbee2c6baba41",
+    "date": "2026-11-22",
     "v": 3
   },
   "/country-chat-guide": {
-    "hash": "dead40a9e19bfed8",
-    "date": "2026-11-10",
+    "hash": "13eb42a987620453",
+    "date": "2026-11-22",
     "v": 3
   },
   "/de/": {
@@ -340,8 +340,8 @@
     "v": 3
   },
   "/emerald-chat-alternative": {
-    "hash": "08a2e3d612164a20",
-    "date": "2026-11-10",
+    "hash": "ee6042d0ec5197ce",
+    "date": "2026-11-22",
     "v": 3
   },
   "/es/": {
@@ -365,8 +365,8 @@
     "v": 3
   },
   "/how-it-works": {
-    "hash": "44edf55506cc9fdb",
-    "date": "2026-11-10",
+    "hash": "16e77e3bc43c3c20",
+    "date": "2026-11-22",
     "v": 3
   },
   "/id/": {
@@ -390,13 +390,13 @@
     "v": 3
   },
   "/language-chat-guide": {
-    "hash": "9bd81592ed0a79e5",
-    "date": "2026-11-10",
+    "hash": "7448baec45085d81",
+    "date": "2026-11-22",
     "v": 3
   },
   "/language-exchange": {
-    "hash": "a26747d517d98ca0",
-    "date": "2026-11-10",
+    "hash": "4a3a37d005f122e8",
+    "date": "2026-11-22",
     "v": 3
   },
   "/languages/": {
@@ -405,38 +405,38 @@
     "v": 3
   },
   "/late-night-chat": {
-    "hash": "885ac87d1b9b3b2f",
-    "date": "2026-11-10",
+    "hash": "1353d1ae7893ec58",
+    "date": "2026-11-22",
     "v": 3
   },
   "/make-friends-online": {
-    "hash": "a140284e9237a2f9",
-    "date": "2026-11-10",
+    "hash": "3469068e9696ccd0",
+    "date": "2026-11-22",
     "v": 3
   },
   "/monkey-app-alternative": {
-    "hash": "16fd4763336ff49b",
-    "date": "2026-11-10",
+    "hash": "a9b69f810d27c209",
+    "date": "2026-11-22",
     "v": 3
   },
   "/omegle-alternative": {
-    "hash": "dde3e9a0f548a023",
-    "date": "2026-11-10",
+    "hash": "6ea2e483145e3c82",
+    "date": "2026-11-22",
     "v": 3
   },
   "/ometv-alternative": {
-    "hash": "07e0b41ec4c6a340",
-    "date": "2026-11-10",
+    "hash": "f7005011b852ffdc",
+    "date": "2026-11-22",
     "v": 3
   },
   "/practice-english-speaking": {
-    "hash": "aabea70af63077e8",
-    "date": "2026-11-10",
+    "hash": "04067cef4e4bc2aa",
+    "date": "2026-11-22",
     "v": 3
   },
   "/pricing": {
-    "hash": "e701d22d0c2fa85f",
-    "date": "2026-11-16",
+    "hash": "64154984393898c3",
+    "date": "2026-11-22",
     "v": 3
   },
   "/privacy": {
@@ -450,18 +450,18 @@
     "v": 3
   },
   "/random-call": {
-    "hash": "e1106a132a356323",
-    "date": "2026-11-10",
+    "hash": "93cc885850d1a731",
+    "date": "2026-11-22",
     "v": 3
   },
   "/random-text-chat": {
-    "hash": "b33328e5395c7b72",
-    "date": "2026-11-10",
+    "hash": "db3278ac3c045a37",
+    "date": "2026-11-22",
     "v": 3
   },
   "/random-voice-chat": {
-    "hash": "39da687da1490d83",
-    "date": "2026-11-10",
+    "hash": "e9494b5fefaded61",
+    "date": "2026-11-22",
     "v": 3
   },
   "/refund": {
@@ -500,8 +500,8 @@
     "v": 3
   },
   "/resources": {
-    "hash": "105fb4a1feb7ed73",
-    "date": "2026-11-10",
+    "hash": "a5874226fc99414f",
+    "date": "2026-11-22",
     "v": 3
   },
   "/ru/": {
@@ -510,18 +510,18 @@
     "v": 3
   },
   "/safety": {
-    "hash": "0d472a955197daa7",
-    "date": "2026-11-10",
+    "hash": "fac0ee3b35c333ad",
+    "date": "2026-11-22",
     "v": 3
   },
   "/talk-to-someone": {
-    "hash": "1c3a2bc3e2d98621",
-    "date": "2026-11-10",
+    "hash": "d28c435c4b770d06",
+    "date": "2026-11-22",
     "v": 3
   },
   "/talk-to-strangers": {
-    "hash": "56188bedf95a2b0d",
-    "date": "2026-11-10",
+    "hash": "575d778919b89ce3",
+    "date": "2026-11-22",
     "v": 3
   },
   "/terms": {
@@ -540,13 +540,13 @@
     "v": 3
   },
   "/voice-chat-vs-video-chat": {
-    "hash": "f491c2c0474576f4",
-    "date": "2026-11-10",
+    "hash": "a17badd9be6e8e75",
+    "date": "2026-11-22",
     "v": 3
   },
   "/what-is-talklive": {
-    "hash": "866f6c4914198d44",
-    "date": "2026-11-09",
+    "hash": "536a481691653e92",
+    "date": "2026-11-22",
     "v": 3
   },
   "/zh/": {

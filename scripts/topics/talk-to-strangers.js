@@ -5,6 +5,10 @@
 // display, Inter to read.
 module.exports = {
   slug: 'talk-to-strangers',
+  answers: [
+    { q: "How can I talk to strangers online?", a: "Open talklive.app, tap Talk for a voice call or Chat for text, and you are matched with another adult who is searching right now. It is free, needs no account and has no video. Tap Next at any time to move on." },
+    { q: "Is it safe to talk to strangers on TalkLive?", a: "No anonymous service can verify who anyone is, so treat everyone as a stranger and share nothing personal. TalkLive is adults only, has no video, never shows your IP address, and puts Report and Block on every call and chat." },
+  ],
   name: 'Talk to Strangers',
   date: '2026-10-05',
   updated: '2026-10-06',
