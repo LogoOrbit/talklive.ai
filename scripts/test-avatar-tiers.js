@@ -58,6 +58,9 @@ async function seenAs(clientId, face) {
   await wait(150);
   other.emit('find-partner', { mode: 'talk' });
   const m = await seen;
+  // Stay past the hit-and-run window, or reusing one client for every check
+  // reads as a bot that keeps flashing in and out of matches.
+  await wait(1700);
   me.close();
   other.close();
   await wait(250);
