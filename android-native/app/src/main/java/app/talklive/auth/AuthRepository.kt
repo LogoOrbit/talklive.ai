@@ -301,9 +301,9 @@ class AuthRepository(
         if (res.optBoolean("ok")) {
             onSignedIn(res.put("sessionToken", token))
         } else {
-            // Session revoked or expired: keep the app usable as a guest.
-            prefs.edit().remove(KEY_TOKEN).apply()
-            _account.value = null
+            // Session revoked or expired (e.g. "sign out on all devices"): the
+            // account's profile leaves this phone too, and it carries on as a guest.
+            forgetLocally(_account.value)
         }
     }
 

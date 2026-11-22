@@ -769,7 +769,7 @@ let voiceCheckEnabled = false;
 let voiceView = null;
 // The server asked for a summary in the current call ('matched' with voice).
 let voiceWantedThisCall = false;
-try { voiceCheckEnabled = voiceCheckAvailable && localStorage.getItem(VOICE_CHECK_KEY) === 'on'; } catch (_) { /* storage blocked */ }
+try { voiceCheckEnabled = voiceCheckAvailable && localStorage.getItem(VOICE_CHECK_KEY) !== 'off'; } catch (_) { /* storage blocked */ }
 try { localStorage.removeItem('talklive_voice_result'); } catch (_) { /* a verdict older versions kept on the device */ }
 
 const VOICE_STATE_KEYS = {
@@ -4546,11 +4546,18 @@ socket.on('resume-session-result', ({ ok, nickname, email, profileClientId, iden
       renderAccountState();
     }
   } else {
+    // The session was revoked (signed out on all devices, password changed
+    // elsewhere): the account's profile leaves this browser with it.
+    const heldAccountProfile = !!sessionToken && /^a_/.test(getClientId() || '');
     sessionToken = null;
     accountNickname = null;
     storeAccountEmail('');
     localStorage.removeItem('talklive_session');
     localStorage.removeItem('talklive_nickname');
+    if (heldAccountProfile) {
+      forgetLocalAccount();
+      return reloadPage();
+    }
     renderAccountState();
   }
 });

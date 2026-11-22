@@ -5036,6 +5036,7 @@ function saveQuarantine(key, rec) {
   store.data.quarantine[key] = rec;
   store.save();
 }
+const INSTANT_END_MS = 1500;
 function noteMatchEnd(socketId, profile, ms) {
   if (!profile || !profile.clientId) return;
   if (ms < QUICK_END_MS && !quarantined(profile, socketId)) store.recordFeature('quick_skip');
@@ -5064,6 +5065,26 @@ function noteMatchEnd(socketId, profile, ms) {
     }
   }
   if (matchDurs.size > 20000) matchDurs.clear();
+  // Hit-and-run: a script that joins and leaves inside a second and a half,
+  // over and over (the "US bots" that flash into a chat and vanish). A person
+  // does this once by mistake, not four times in their last five matches.
+  // Per client only: an address can be a whole carrier or campus.
+  for (const [dk, need, sample] of [['c:' + profile.clientId, 4, 5]]) {
+    const key = 'f' + dk;
+    const list = matchEnds.get(key) || [];
+    list.push(ms < INSTANT_END_MS ? 1 : 0);
+    while (list.length > sample) list.shift();
+    matchEnds.set(key, list);
+    if (list.reduce((n, x) => n + x, 0) >= need) {
+      const rec = quarantine.get(dk) || { until: 0, strikes: 0 };
+      rec.strikes = Math.min(rec.strikes + 1, 6);
+      rec.until = now + Math.min(QUARANTINE_MS * 2 ** (rec.strikes - 1), QUARANTINE_MAX_MS);
+      quarantine.set(dk, rec);
+      saveQuarantine(dk, { until: rec.until, strikes: rec.strikes });
+      matchEnds.delete(key);
+      store.recordFeature('bot_quarantine');
+    }
+  }
   const keys = [['c:' + profile.clientId, QUICK_SAMPLE, QUICK_LIMIT]];
   if (ip) keys.push(['i:' + ip, IP_SAMPLE, IP_LIMIT]);
   for (const [key, sample, limit] of keys) {
@@ -5152,9 +5173,9 @@ function markMatchPositive(a, b) {
 const RESUME_GRACE_MS = 10000;
 // A pairing still in its first seconds is not worth holding the other person
 // for: they are on "Connecting..." and better off moving on.
-const RESUME_MIN_CALL_MS = 8000;
+const RESUME_MIN_CALL_MS = 3000;
 // How long a dropped call or chat is held for its person to come back.
-const PARK_HOLD_MS = Number(process.env.PARK_HOLD_MS) || 60000;
+const PARK_HOLD_MS = Number(process.env.PARK_HOLD_MS) || 120000;
 function parkedFor(oldId) {
   for (const rec of parkedPairings.values()) if (rec.oldId === oldId) return rec;
   return null;
@@ -5181,7 +5202,7 @@ function parkPairing(socketId, profile) {
   const hold = awayFor >= 0 ? Math.max(RESUME_GRACE_MS, CHAT_AWAY_DROP_MS - awayFor) : PARK_HOLD_MS;
   rec.timer = setTimeout(() => finishParked(profile.clientId, rec), hold);
   // The other side sees "offline - they might come back" until then.
-  partnerSocket.emit('partner-away', { away: true, offline: true });
+  partnerSocket.emit('partner-away', { away: true, offline: true, holdMs: hold });
   rec.timer.unref?.();
   parkedPairings.set(profile.clientId, rec);
   parkedSockets.add(socketId);
@@ -5474,8 +5495,9 @@ function voiceOn() {
 function voiceRec(clientId) {
   return voiceOn() ? store.voiceGet(clientId) : null;
 }
+// On by default: only an explicit "off" turns it off.
 function voiceEnabled(rec) {
-  return !!(rec && rec.on);
+  return !(rec && rec.on === false);
 }
 function voiceView(profile) {
   const rec = voiceRec(profile.clientId);
@@ -5531,7 +5553,7 @@ function declaredAs(clientId, wanted) {
 function setVoiceConsent(profile, on) {
   if (!profile) return;
   const rec = store.voiceGet(profile.clientId);
-  if (!!(rec && rec.on) === on) return;
+  if (voiceEnabled(rec) === on && rec) return;
   const before = voiceCheck.status(rec, profile.gender, voiceEnabled(rec));
   const next = { s: [], r: [], d: [], ...(rec || {}), on };
   if (!on) next.s = [];
@@ -6576,6 +6598,18 @@ io.on('connection', (socket) => {
         socketAuth.delete(sid);
         const other = io.sockets.sockets.get(sid);
         if (other) other.emit('signed-out', { reason: 'all-devices' });
+      }
+      // A device that was offline (or kept the profile after its session
+      // ended) still held the account's identity token, and with it the
+      // friends, chats and Plus. Revoking it means every device, app or web,
+      // comes back as a guest; signing in again hands out a fresh token.
+      const accountClientId = store.getAccountClientId(usernameLower);
+      if (accountClientId) {
+        store.bumpIdentityEpoch(accountClientId);
+        identityTokens.delete(accountClientId);
+        for (const sub of store.pushSubscriptions(accountClientId).slice()) {
+          store.removePushSubscription(accountClientId, sub && (sub.endpoint || sub));
+        }
       }
     }
     sendFriendId(socket);

@@ -910,10 +910,10 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
     const counts = { on: 0, pending: 0, confirmed: 0, unclear: 0, mismatch: 0, reviewed: 0, disputed: 0 };
     for (const rec of Object.values(store.data.voice || {})) {
       if (!rec) continue;
-      if (rec.on) counts.on++;
-      const st = voiceCheck.status(rec, rec.g, !!rec.on, now);
+      if (rec.on !== false) counts.on++;
+      const st = voiceCheck.status(rec, rec.g, rec.on !== false, now);
       if (counts[st] !== undefined) counts[st]++;
-      if (voiceCheck.disputed(rec, rec.g, !!rec.on, now)) counts.disputed++;
+      if (voiceCheck.disputed(rec, rec.g, rec.on !== false, now)) counts.disputed++;
     }
     const appeals = store.voiceAppeals().map(({ clientId, rec }) => {
       const est = voiceCheck.estimate(rec, now);

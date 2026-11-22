@@ -161,7 +161,7 @@ async function mainSuite(srv) {
 
   // --- Consent --------------------------------------------------------------
   const first = w1.views[0];
-  ok('register is answered with a voice-check view, off until the person turns it on', first && first.on === false && first.state === 'off', first);
+  ok('register is answered with a voice-check view, on by default', first && first.on === true && first.state === 'pending', first);
   ok('the view carries no estimate, only status and counts', first && !('p' in first) && !('confidence' in first) && !('label' in first));
   ok('register with voiceCheck:true turns it on (apps before 3.10)', legacy.views[0] && legacy.views[0].on === true && legacy.views[0].state === 'pending', legacy.views[0]);
 
@@ -206,7 +206,7 @@ async function mainSuite(srv) {
   calls.wchat = await pair(wchat, bchat, 'chat');
   ok('every voice call was set up', ['w1', 'wearly', 'wmuted', 'wjunk', 'wmis', 'wmen', 'wchat'].every((k) => calls[k]));
   ok('matched.voice asks a voice-check person for a summary', calls.w1.a.voice === true, calls.w1.a);
-  ok('matched.voice is absent for someone who did not turn it on', calls.w1.b.voice === undefined, calls.w1.b);
+  ok('matched.voice asks the other side too, since it is on by default', calls.w1.b.voice === true, calls.w1.b);
   ok('matched.voice is absent in a text chat', calls.wchat.a.voice === undefined, calls.wchat.a);
   ok('matched.filtered is absent when no gender filter chose the partner', calls.w1.a.filtered === undefined && calls.w1.b.filtered === undefined);
 
@@ -304,6 +304,8 @@ async function mainSuite(srv) {
   // --- Retry ----------------------------------------------------------------
   const wretry = person(srv, 'wretry', { gender: 'female' });
   await wretry.ready;
+  wretry.emit('voice-check-set', { on: false });
+  await wait(200);
   let r = await ask(wretry, 'voice-retry');
   ok('voice-retry is refused while Voice check is off', r.ok === false && r.reason === 'off', r);
   wretry.emit('voice-check-set', { on: true });

@@ -76,7 +76,7 @@ class MicMonitor(
     // The switch lives on the server, so it follows the account between the
     // website and the app; the saved copy only covers the moment before the
     // server answers.
-    private val _enabled = MutableStateFlow(prefs.getBoolean("on", false))
+    private val _enabled = MutableStateFlow(prefs.getBoolean("on", true))
     val enabled: StateFlow<Boolean> = _enabled
     private val _view = MutableStateFlow<VoiceCheckView?>(null)
     /** The server's latest view of this profile's Voice check; null until it has said. */

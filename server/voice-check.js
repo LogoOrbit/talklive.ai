@@ -279,7 +279,8 @@ function view(rec, declared, enabled, now = Date.now()) {
 /** True when there is nothing worth keeping (so the store entry can go). */
 function empty(rec, now = Date.now()) {
   if (!rec) return true;
-  return !rec.on && !fresh(rec, now).length && !rec.manual && !rec.appeal
+  // On is the default, so only an explicit "off" is worth keeping on its own.
+  return rec.on !== false && !fresh(rec, now).length && !rec.manual && !rec.appeal
     && !disputeCount(rec, now) && !(rec.r || []).some((t) => now - t < DAY);
 }
 
