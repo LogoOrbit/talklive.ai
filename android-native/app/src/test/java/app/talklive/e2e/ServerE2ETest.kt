@@ -500,7 +500,7 @@ class ServerE2ETest {
         val matched = waitFor("a matched") { a.events.filterIsInstance<ServerEvent.Matched>().lastOrNull() }
         assertTrue("the server asks a's phone for a voice summary", matched.voice)
         assertFalse("nobody filtered", matched.filtered)
-        assertFalse("b has Voice check off", b.events.filterIsInstance<ServerEvent.Matched>().last().voice)
+        assertTrue("b has Voice check on by default", b.events.filterIsInstance<ServerEvent.Matched>().last().voice)
 
         val root = generateSequence(java.io.File(System.getProperty("user.dir")).absoluteFile) { it.parentFile }
             .first { java.io.File(it, "scripts/voice/fixtures.json").exists() }
@@ -593,7 +593,7 @@ class ServerE2ETest {
         assertEquals(AuthResult.Ok, a.auth.updateNickname("Droid Tester"))
         assertEquals("Droid Tester", a.auth.account.value?.nickname)
         // The picked avatar is saved with the account (a free one: the rest are Plus).
-        val picked = listOf("fox", "panda").first { it != a.identity.animal }
+        val picked = listOf("fox", "cat").first { it != a.identity.animal }
         a.identity.animal = picked
         a.socket.register()
         Thread.sleep(500)
