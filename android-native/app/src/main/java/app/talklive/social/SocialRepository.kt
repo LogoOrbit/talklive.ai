@@ -77,6 +77,28 @@ class SocialRepository @Inject constructor(
     private val _myFriendId = MutableStateFlow<String?>(null)
     val myFriendId: StateFlow<String?> = _myFriendId
 
+    private val _myBadges = MutableStateFlow<BadgeSet?>(null)
+    /** This person's own talk-time badges (spec 3), as the server last reported them. */
+    val myBadges: StateFlow<BadgeSet?> = _myBadges
+
+    private val _myCover = MutableStateFlow<String?>(null)
+    /** This person's own profile cover (spec 4): the server's effective one, so null once Plus ends. */
+    val myCover: StateFlow<String?> = _myCover
+
+    /** Picks a cover. Null on success, else the server's reason (plus, invalid) or "network". */
+    suspend fun setCover(cover: String): String? {
+        val r = socket.askWith("set-cover", JSONObject().put("cover", cover)) ?: return "network"
+        if (!r.optBoolean("ok")) return r.optString("reason").ifBlank { "invalid" }
+        _myCover.value = r.optNullableString("cover") ?: cover
+        return null
+    }
+
+    /** Own cover and badges ride along on state-sync and the registration result when the server sends them. */
+    private fun applyOwn(o: JSONObject) {
+        if (o.has("badges")) _myBadges.value = BadgeSet.from(o.optJSONObject("badges"))
+        if (o.has("cover")) _myCover.value = o.optNullableString("cover")
+    }
+
     private val _incoming = MutableStateFlow<IncomingCall?>(null)
     val incoming: StateFlow<IncomingCall?> = _incoming
 
@@ -134,9 +156,10 @@ class SocialRepository @Inject constructor(
                 _history.value = emptyList(); _unread.value = emptyMap(); _threads.value = emptyMap(); _hasOlder.value = emptySet()
                 _typing.value = emptySet(); _myFriendId.value = null; _gates.value = emptyMap()
                 _voice.value = emptyMap(); _blocked.value = emptyList(); _activity.value = emptyList()
-                _muted.value = emptySet()
+                _muted.value = emptySet(); _myBadges.value = null; _myCover.value = null
             }
         }
+        socket.on("register-result") { a -> (a.firstOrNull() as? JSONObject)?.let { applyOwn(it) } }
         socket.on("state-sync") { a -> (a.firstOrNull() as? JSONObject)?.let { scope.launch { onStateSync(it) } } }
         socket.on("friend-id") { a -> (a.firstOrNull() as? JSONObject)?.optNullableString("friendId")?.let { _myFriendId.value = it } }
         socket.on("friend-online") { a ->
@@ -630,6 +653,7 @@ class SocialRepository @Inject constructor(
     // --- Server events -----------------------------------------------------
 
     private fun onStateSync(o: JSONObject) {
+        applyOwn(o)
         _friends.value = o.optJSONArray("friends").people().keepingReceipts(_friends.value)
         _requests.value = o.optJSONArray("friendRequests").people()
         _sent.value = o.optJSONArray("sentRequests").people().map { it.clientId }.toSet()

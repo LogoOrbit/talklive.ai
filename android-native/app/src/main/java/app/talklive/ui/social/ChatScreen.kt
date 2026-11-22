@@ -850,9 +850,19 @@ internal fun PersonSheet(
             Modifier.fillMaxWidth().verticalScroll(androidx.compose.foundation.rememberScrollState()).navigationBarsPadding().padding(horizontal = 24.dp).padding(bottom = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            PersonAvatar(person, 112.dp)
-            Spacer(Modifier.height(14.dp))
-            app.talklive.ui.components.PlusName(person.displayName, person.premium, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground)
+            // Their cover as the header, with the avatar sitting over its lower edge.
+            Box(Modifier.fillMaxWidth()) {
+                app.talklive.ui.profile.CoverBackground(
+                    app.talklive.ui.profile.effectiveCover(person.cover, true),
+                    Modifier.fillMaxWidth().height(104.dp).clip(RoundedCornerShape(22.dp)),
+                )
+                Box(Modifier.align(Alignment.BottomCenter).offset(y = 56.dp)) { PersonAvatar(person, 112.dp) }
+            }
+            Spacer(Modifier.height(70.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                app.talklive.ui.components.PlusName(person.displayName, person.premium, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground)
+                app.talklive.ui.badges.TopBadge(person.badges, 24.dp, Modifier.padding(start = 8.dp))
+            }
             app.talklive.ui.components.CopyIdChip(person.friendId, Modifier.padding(top = 8.dp))
             if (person.nickname != null && person.nickname != person.username) {
                 Text(person.username, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

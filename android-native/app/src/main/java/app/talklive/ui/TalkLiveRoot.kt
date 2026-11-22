@@ -206,6 +206,9 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     val filters by engageVm.filters.collectAsStateWithLifecycle()
     val premium by engageVm.premium.collectAsStateWithLifecycle()
     var showStreak by remember { mutableStateOf(false) }
+    var showRewards by remember { mutableStateOf(false) }
+    val rewardsVm: app.talklive.ui.rewards.RewardsViewModel = hiltViewModel()
+    val levelProgress by rewardsVm.progress.collectAsStateWithLifecycle()
     var showFilters by remember { mutableStateOf(false) }
     // The Plus page; from a free feature it offers to carry on free.
     var showPlus by remember { mutableStateOf<String?>(null) }
@@ -572,9 +575,11 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                     MainTab.Talk -> HomeScreen(
                         connected = connected,
                         visitors = visitors,
-                        animal = animal,
+                        animal = app.talklive.ui.animals.ownFace(animal, premium.ended, premium.look),
                         name = account?.nickname,
                         dark = dark,
+                        progress = levelProgress,
+                        onRewards = { showRewards = true },
                         onStart = onStart,
                         onToggleTheme = vm::toggleTheme,
                         onProfile = { tab = MainTab.Profile },
@@ -797,6 +802,8 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         }
     }
 
+    if (showRewards) app.talklive.ui.rewards.RewardsDialog { showRewards = false }
+    app.talklive.ui.rewards.UnlockCelebrationHost(rewardsVm)
     if (showStreak) engage?.let {
         app.talklive.ui.engage.StreakSheet(
             it, onDismiss = { showStreak = false }, premium = premium.active, restoring = engageVm.restoring,

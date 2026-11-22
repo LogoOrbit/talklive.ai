@@ -39,13 +39,9 @@ val FREE_FACES: Set<String> = setOf(
     "lion",
     "fox",
     "cat",
-    "dog",
-    "panda",
     "c:wizard",
     "c:pirate",
-    "c:detective",
     "c:robot",
-    "c:ninja",
 )
 
 /** Characters with a Plus scene (public/avatar-scenes.css), with their art minus the round tile the scene replaces. */

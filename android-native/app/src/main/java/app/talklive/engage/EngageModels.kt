@@ -50,6 +50,9 @@ data class Premium(
 ) {
     /** Shows the gold ring: Plus, or the invite reward. */
     val ring: Boolean get() = active || look
+
+    /** The server has said Plus is over (expired or none): Plus covers and faces stop showing. */
+    val ended: Boolean get() = !active && (state == "expired" || state == "none")
 }
 
 data class Referral(val code: String, val verified: Int, val progress: Int, val needed: Int, val rewardedHours: Int) {

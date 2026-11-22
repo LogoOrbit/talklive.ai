@@ -88,7 +88,8 @@ fun AnimalAvatar(animalId: String?, name: String?, size: Dp, modifier: Modifier 
                     .then(if (bare != null) Modifier.characterScene(a.id, animate = !reduce && size >= 56.dp) else Modifier),
                 contentAlignment = Alignment.Center,
             ) {
-                if (LocalPlusAvatar.current && !reduce) LiveFace(face, size, fill)
+                if (a.special) SpecialFaceArt(a.id, Modifier.size(size * fill), animate = size >= 32.dp)
+                else if (LocalPlusAvatar.current && !reduce) LiveFace(face, size, fill)
                 else Image(painterResource(face.icon), contentDescription = a.name, modifier = Modifier.size(size * fill))
             }
         } else {
@@ -177,7 +178,14 @@ private fun LiveFace(a: Animal, size: Dp, fill: Float = 0.82f) {
  * the website's isFree, and mirrored by the server). Only a CHANGE to one is
  * refused: whoever already wears it keeps it.
  */
-fun isPlusFace(id: String?): Boolean = id != null && id !in FREE_FACES && animalById(id) != null
+fun isPlusFace(id: String?): Boolean = id != null && id !in FREE_FACES && !isSpecialFace(id) && animalById(id) != null
+
+/**
+ * Your own face as drawn: once Plus has ended a Plus face is not shown (spec 5); the server
+ * swaps it for a free one too, and the picked face comes back if Plus does.
+ */
+fun ownFace(id: String?, plusEnded: Boolean, look: Boolean): String? =
+    if (id != null && plusEnded && !look && isPlusFace(id)) PICKER_ANIMALS[Math.abs(id.hashCode()) % 3] else id
 
 /** A free animal at random: "Surprise me" and the automatic first pick never deal a Plus face. */
 fun randomFreeAnimal(): Animal = Animals.filter { it.id in FREE_FACES }.random()
@@ -194,6 +202,9 @@ fun AnimalGrid(
     // The invite reward: one legendary face, the first one picked (null = not picked yet).
     look: Boolean = false,
     lookFace: String? = null,
+    // The account's level tier (none, silver, gold, diamond): special faces open with it, never with Plus.
+    tier: String = "none",
+    onSpecialLocked: (String) -> Unit = {},
 ) {
     // The face worn when the grid opened stays pickable: nobody loses the avatar they had.
     val held = remember { selected }
@@ -224,8 +235,10 @@ fun AnimalGrid(
     ) {
         // Spirit animals, then the website's movie characters.
         run {
-            val list = (if (tab == 0) Animals else Characters).sortedBy { isPlusFace(it.id) }
+            // Only the faces on offer (spec 1): 6 free, 10 Plus, then the 3 level faces.
+            val list = if (tab == 0) PICKER_ANIMALS.mapNotNull { animalById(it) } else PICKER_CHARACTERS.mapNotNull { animalById(it) } + SpecialFaces
             items(list, key = { it.id }) { a ->
+            val specialLocked = a.special && !(specialUnlocked(a.id, tier) || a.id == held)
             val on = a.id == selected
             val scale by animateFloatAsState(if (on) 1.06f else 1f, spring(dampingRatio = 0.5f, stiffness = 500f), label = "s")
             val ring by animateColorAsState(if (on) a.color else Color.Transparent, label = "ring")
@@ -236,20 +249,23 @@ fun AnimalGrid(
                     .then(if (isPlusFace(a.id)) Modifier.border(1.5.dp, app.talklive.ui.components.PlusGold.copy(alpha = 0.7f), RoundedCornerShape(20.dp)) else Modifier)
                     .clickable(remember { MutableInteractionSource() }, indication = null) {
                         haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        if (isPlusFace(a.id) && !unlocked(a.id)) onLocked() else onSelect(a.id)
+                        if (specialLocked) onSpecialLocked(a.id)
+                        else if (isPlusFace(a.id) && !unlocked(a.id)) onLocked() else onSelect(a.id)
                     }
                     .padding(vertical = 10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Box {
-                    Image(painterResource(a.icon), a.name, Modifier.fillMaxWidth(0.72f).aspectRatio(1f))
+                    if (a.special) SpecialFaceArt(a.id, Modifier.fillMaxWidth(0.72f).aspectRatio(1f).graphicsLayer { alpha = if (specialLocked) 0.45f else 1f }, animate = !specialLocked)
+                    else Image(painterResource(a.icon), a.name, Modifier.fillMaxWidth(0.72f).aspectRatio(1f))
+                    if (specialLocked) androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Lock, null, tint = app.talklive.ui.theme.GoldText, modifier = Modifier.align(Alignment.TopEnd).size(14.dp))
                     if (isPlusFace(a.id)) Box(Modifier.align(Alignment.TopEnd)) {
                         if (unlocked(a.id)) app.talklive.ui.components.PlusGem(14.dp)
                         else androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Lock, null, tint = app.talklive.ui.theme.GoldText, modifier = Modifier.size(14.dp))
                     }
                 }
                 Text(
-                    a.name,
+                    if (specialLocked) stringResource(when (SPECIAL_TIER[a.id]) { "silver" -> R.string.reach_silver; "gold" -> R.string.reach_gold; else -> R.string.reach_diamond }) else a.name,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,

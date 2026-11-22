@@ -374,6 +374,7 @@ private fun FriendRow(p: Person, modifier: Modifier, onCall: () -> Unit, onChat:
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 app.talklive.ui.components.PlusName(p.displayName, p.premium, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                app.talklive.ui.badges.TopBadge(p.badges, 16.dp, Modifier.padding(start = 6.dp))
                 if (p.pinned) {
                     Spacer(Modifier.width(6.dp))
                     Icon(Icons.Rounded.PushPin, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)

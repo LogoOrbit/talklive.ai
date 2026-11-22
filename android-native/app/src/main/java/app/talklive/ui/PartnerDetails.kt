@@ -1,5 +1,7 @@
 package app.talklive.ui
 
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -77,10 +79,19 @@ fun PartnerSheet(
             Modifier.fillMaxWidth().verticalScroll(androidx.compose.foundation.rememberScrollState()).navigationBarsPadding().padding(horizontal = 24.dp).padding(bottom = 24.dp),
             horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
         ) {
-            app.talklive.ui.components.PlusRing(p.premium || p.ring, 112.dp, alive = p.premium) { app.talklive.ui.animals.AnimalAvatar(p.animal, p.username, 112.dp) }
-            androidx.compose.foundation.layout.Spacer(Modifier.height(14.dp))
+            androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth()) {
+                app.talklive.ui.profile.CoverBackground(
+                    app.talklive.ui.profile.effectiveCover(p.cover, true),
+                    Modifier.fillMaxWidth().height(104.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(22.dp)),
+                )
+                androidx.compose.foundation.layout.Box(Modifier.align(androidx.compose.ui.Alignment.BottomCenter).offset(y = 56.dp)) {
+                    app.talklive.ui.components.PlusRing(p.premium || p.ring, 112.dp, alive = p.premium) { app.talklive.ui.animals.AnimalAvatar(p.animal, p.username, 112.dp) }
+                }
+            }
+            androidx.compose.foundation.layout.Spacer(Modifier.height(70.dp))
             androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 androidx.compose.material3.Text(p.username, style = androidx.compose.material3.MaterialTheme.typography.headlineSmall, color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground)
+                app.talklive.ui.badges.TopBadge(p.badges, 24.dp, Modifier.padding(start = 8.dp))
                 if (p.premium) { androidx.compose.foundation.layout.Spacer(androidx.compose.ui.Modifier.size(8.dp)); app.talklive.ui.components.PlusGem(20.dp) }
             }
             app.talklive.ui.animals.animalById(p.animal)?.let {

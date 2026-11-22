@@ -3,8 +3,28 @@ package app.talklive.social
 import app.talklive.net.optNullableString
 import org.json.JSONObject
 
-/** "a:fox" (the server's avatar field) to "fox". */
-internal fun animalOf(avatar: String?): String? = avatar?.takeIf { it.startsWith("a:") }?.substring(2)
+/** "a:fox" (the server's avatar field) to "fox"; characters ("c:wizard") keep their prefix, as in the app's own ids. */
+internal fun animalOf(avatar: String?): String? = when {
+    avatar == null -> null
+    avatar.startsWith("a:") -> avatar.substring(2)
+    avatar.startsWith("c:") -> avatar
+    else -> null
+}
+
+/** Talk-time badges as the server reports them (spec 3): the one shown by the name, all earned ids, hours talked. */
+data class BadgeSet(val top: String?, val earned: List<String>, val hours: Double) {
+    companion object {
+        /** Null when the server sent none (older server): nothing is shown. */
+        fun from(o: JSONObject?): BadgeSet? {
+            if (o == null) return null
+            val arr = o.optJSONArray("earned")
+            val earned = if (arr == null) emptyList() else (0 until arr.length()).map { arr.optString(it) }.filter { it.isNotBlank() }
+            val top = if (o.isNull("top")) null else o.optString("top").takeIf { it.isNotBlank() }
+            val hours = o.optDouble("hours", 0.0).let { if (it.isNaN()) 0.0 else it }
+            return BadgeSet(top ?: earned.lastOrNull(), earned, hours)
+        }
+    }
+}
 
 data class LastMessage(
     val mine: Boolean, val text: String, val gif: Boolean, val voice: Boolean, val ts: Long, val seen: Boolean,
@@ -70,6 +90,10 @@ data class Person(
     val usualTo: Int? = null,
     /** This user asked to be told when they come online (the bell). */
     val alert: Boolean = false,
+    /** Their profile cover id (spec 4), already the effective one: null for none. */
+    val cover: String? = null,
+    /** Their talk-time badges (spec 3); null while the server sends none. */
+    val badges: BadgeSet? = null,
 ) {
     val displayName: String get() = nickname?.takeIf { it.isNotBlank() } ?: username.ifBlank { "Stranger" }
     val canMessage: Boolean get() = dm == "open" || dm == "one"
@@ -94,6 +118,8 @@ data class Person(
             usualFrom = o.optJSONObject("usual")?.optInt("from"),
             usualTo = o.optJSONObject("usual")?.optInt("to"),
             alert = o.optBoolean("alert"),
+            cover = o.optNullableString("cover"),
+            badges = BadgeSet.from(o.optJSONObject("badges")),
         )
     }
 }

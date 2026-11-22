@@ -16,6 +16,9 @@ data class Partner(
     val friendId: String? = null,
     /** Gold ring: Plus or the invite reward (premium is Plus itself). */
     val ring: Boolean = false,
+    /** Their profile cover (spec 4) and talk-time badges (spec 3), when the server sends them. */
+    val cover: String? = null,
+    val badges: app.talklive.social.BadgeSet? = null,
 ) {
     companion object {
         fun from(json: JSONObject?) = Partner(
@@ -30,6 +33,8 @@ data class Partner(
             films = app.talklive.engage.Film.list(json?.optJSONArray("films")),
             friendId = json?.optNullableString("friendId"),
             ring = json?.optBoolean("ring") ?: false,
+            cover = json?.optNullableString("cover"),
+            badges = app.talklive.social.BadgeSet.from(json?.optJSONObject("badges")),
             interests = json?.optJSONArray("interests")?.let { a -> (0 until a.length()).map { a.optString(it) }.filter { it.isNotBlank() } }.orEmpty(),
         )
     }

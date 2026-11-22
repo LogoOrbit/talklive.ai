@@ -13,7 +13,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class ProfileSheet { Delete, Edit, Animal, Nickname, Email, Password, Blocked, FriendId }
+enum class ProfileSheet { Delete, Animal, Nickname, Email, Password, Blocked, FriendId }
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
@@ -25,6 +25,7 @@ class ProfileViewModel @Inject constructor(
     private val privacy: app.talklive.data.PrivacyStore,
     private val socket: app.talklive.net.TalkSocket,
     private val social: app.talklive.social.SocialRepository,
+    progressRepo: app.talklive.progress.ProgressRepository,
     val notif: app.talklive.data.NotifSettings,
 ) : ViewModel() {
     val hideStatus = privacy.hideStatus
@@ -37,6 +38,15 @@ class ProfileViewModel @Inject constructor(
     val acceptCalls = privacy.acceptCalls
     val blocked = social.blocked
     val myFriendId = social.myFriendId
+    val myBadges = social.myBadges
+    val myCover = social.myCover
+    /** Level, points and tier (null until the server has sent them). */
+    val progress = progressRepo.progress
+
+    /** Picks a cover; [onResult] gets null on success or the server's reason (plus, invalid, network). */
+    fun setCover(id: String, onResult: (String?) -> Unit) {
+        viewModelScope.launch { onResult(social.setCover(id)) }
+    }
 
     fun setHideStatus(v: Boolean) {
         privacy.setHideStatus(v)

@@ -113,6 +113,7 @@ fun ChatsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalkin
                     PersonAvatar(c.person, 44.dp)
                     Spacer(Modifier.width(12.dp))
                     app.talklive.ui.components.PlusName(c.person.displayName, c.person.premium, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
+                    app.talklive.ui.badges.TopBadge(c.person.badges, 18.dp, Modifier.padding(start = 6.dp))
                 }
                 @Composable
                 fun item(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, color: Color = MaterialTheme.colorScheme.onSurface, onClick: () -> Unit) =

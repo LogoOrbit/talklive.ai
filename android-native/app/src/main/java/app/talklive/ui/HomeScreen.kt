@@ -92,6 +92,9 @@ fun HomeScreen(
     plusCard: app.talklive.ui.engage.PlusCardUi? = null,
     onPlusCard: () -> Unit = {},
     onPlusCardClose: () -> Unit = {},
+    // Points and level (null until the server sends them): a small chip opens Rewards.
+    progress: app.talklive.progress.Progress? = null,
+    onRewards: () -> Unit = {},
 ) {
     Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 24.dp, vertical = 16.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -110,6 +113,8 @@ fun HomeScreen(
                 }
                 Spacer(Modifier.width(6.dp))
             }
+            app.talklive.ui.rewards.LevelChip(progress, onRewards)
+            if (progress != null) Spacer(Modifier.width(6.dp))
             app.talklive.ui.engage.StreakChip(engage, onStreak)
             IconButton(onClick = onToggleTheme) {
                 Icon(
