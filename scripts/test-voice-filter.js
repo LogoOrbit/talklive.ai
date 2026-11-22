@@ -561,7 +561,7 @@ async function purgeSuite(srv) {
   if (!made.ok) return ok('account deletion: signup works', false, made);
   sock.emit('register', { clientId: made.profileClientId, identityToken: made.identityToken, nickname: 'vfpurge', gender: 'female' });
   await once('register-result');
-  sock.emit('voice-check-set', { on: true });
+  sock.emit('voice-check-set', { on: false });
   await wait(1200);
   const docFile = path.join(srv.dataDir, 'owner-data.json');
   const has = () => { try { return !!(JSON.parse(fs.readFileSync(docFile, 'utf8')).voice || {})[made.profileClientId]; } catch (_) { return null; } };
