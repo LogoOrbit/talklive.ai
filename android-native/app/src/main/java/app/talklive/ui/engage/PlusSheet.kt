@@ -114,7 +114,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
 
 /** What the person was doing when Plus opened, so the page can speak to it. */
-enum class PlusReason { GenderFilter, Countries, Interests, LikedYou, StreakRestore, Avatar, Theme, History, Priority, Generic }
+enum class PlusReason { GenderFilter, Countries, Interests, LikedYou, StreakRestore, Avatar, Theme, History, Priority, Cover, Generic }
 
 /** A [reason], and the number its headline uses when it has one (people who liked you, days of a lost streak). */
 data class PlusWhy(val reason: PlusReason = PlusReason.Generic, val count: Int = 0)
@@ -514,6 +514,7 @@ fun plusWhyTitle(why: PlusWhy): Int = when (why.reason) {
     PlusReason.Theme -> R.string.plus_why_theme
     PlusReason.History -> R.string.plus_why_history
     PlusReason.Priority -> R.string.plus_why_priority
+    PlusReason.Cover -> R.string.plus_why_cover
     PlusReason.Generic -> R.string.plus_get
 }
 
@@ -533,6 +534,7 @@ private fun WhyHeader(why: PlusWhy) {
         PlusReason.Theme -> stringResource(R.string.plus_why_theme) to stringResource(R.string.plus_why_theme_body)
         PlusReason.History -> stringResource(R.string.plus_why_history) to stringResource(R.string.plus_why_history_body)
         PlusReason.Priority -> stringResource(R.string.plus_why_priority) to stringResource(R.string.plus_why_priority_body)
+        PlusReason.Cover -> stringResource(R.string.plus_why_cover) to stringResource(R.string.plus_why_cover_body)
     }
     Column(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)

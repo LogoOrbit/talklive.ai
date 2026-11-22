@@ -26,7 +26,7 @@ import kotlin.math.sin
  */
 @Singleton
 class Sounds @Inject constructor(@ApplicationContext private val context: Context) {
-    enum class Fx { Tap, Pop, PopSoft, Connect, Hangup, Message, Send, Turn, Move, Win, Invite, FriendAdded }
+    enum class Fx { Tap, Pop, PopSoft, Connect, Hangup, Message, Send, Turn, Move, Win, Lose, Draw, Invite, FriendAdded }
 
     /** [hz] for [dur] seconds at [vol], starting at [delay]. voice: b bell, s soft, p pluck, u bubble gliding to [hzTo]. */
     private data class Note(val hz: Double, val dur: Double, val vol: Double, val delay: Double = 0.0, val voice: Char = 'b', val hzTo: Double = 0.0)
@@ -65,6 +65,8 @@ class Sounds @Inject constructor(@ApplicationContext private val context: Contex
         Fx.Turn -> listOf(Note(784.0, 0.1, 0.18, voice = 's'), Note(1047.0, 0.2, 0.18, 0.09, 's'))
         Fx.Move -> listOf(Note(700.0, 0.045, 0.22, voice = 'p'))
         Fx.Win -> listOf(Note(523.0, 0.12, 0.2), Note(659.0, 0.12, 0.2, 0.09), Note(784.0, 0.12, 0.2, 0.18), Note(1047.0, 0.42, 0.22, 0.27))
+        Fx.Lose -> listOf(Note(440.0, 0.14, 0.2, voice = 's'), Note(392.0, 0.14, 0.2, 0.12, 's'), Note(294.0, 0.4, 0.2, 0.24, 's'))
+        Fx.Draw -> listOf(Note(523.0, 0.14, 0.18, voice = 's'), Note(523.0, 0.3, 0.16, 0.16, 's'))
         Fx.Invite -> listOf(Note(587.0, 0.12, 0.2), Note(880.0, 0.28, 0.2, 0.1))
         Fx.FriendAdded -> listOf(Note(587.0, 0.1, 0.18), Note(784.0, 0.1, 0.18, 0.08), Note(988.0, 0.1, 0.18, 0.16), Note(1175.0, 0.4, 0.2, 0.24))
     }

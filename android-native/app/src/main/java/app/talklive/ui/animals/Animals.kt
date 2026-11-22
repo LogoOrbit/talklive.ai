@@ -4,7 +4,7 @@ package app.talklive.ui.animals
 import androidx.compose.ui.graphics.Color
 import app.talklive.R
 
-data class Animal(val id: String, val name: String, val trait: String, val color: Color, val icon: Int)
+data class Animal(val id: String, val name: String, val trait: String, val color: Color, val icon: Int, val special: Boolean = false)
 
 /** The spirit animals, in the website's picker order. */
 val Animals: List<Animal> = listOf(
@@ -40,6 +40,6 @@ val Animals: List<Animal> = listOf(
     Animal("hedgehog", "Hedgehog", "Shy but sweet", Color(0xFFA16207), R.drawable.animal_hedgehog),
 )
 
-private val byId = (Animals + Characters).associateBy { it.id }
+private val byId = (Animals + Characters + SpecialFaces).associateBy { it.id }
 
 fun animalById(id: String?): Animal? = id?.let { byId[it] }

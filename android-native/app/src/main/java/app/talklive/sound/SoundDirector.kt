@@ -85,7 +85,7 @@ class SoundDirector @Inject constructor(
                 lastStage = g.stage
                 val b = g.board ?: run { lastTurn = -1; lastOver = false; return@collect }
                 when {
-                    b.over && !lastOver -> sounds.play(if (b.winner == g.me) Sounds.Fx.Win else Sounds.Fx.Move)
+                    b.over && !lastOver -> sounds.play(when (b.winner) { g.me -> Sounds.Fx.Win; -1 -> Sounds.Fx.Draw; else -> Sounds.Fx.Lose })
                     !b.over && lastTurn != -1 && b.turn != lastTurn -> sounds.play(if (b.turn == g.me) Sounds.Fx.Turn else Sounds.Fx.Move)
                 }
                 lastTurn = b.turn

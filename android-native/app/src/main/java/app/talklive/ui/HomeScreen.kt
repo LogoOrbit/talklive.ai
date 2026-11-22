@@ -97,6 +97,9 @@ fun HomeScreen(
     // Pull down to refresh: reconnect and fetch friends and state again.
     refreshing: Boolean = false,
     onRefresh: () -> Unit = {},
+    // Points and level (null until the server sends them): a small chip opens Rewards.
+    progress: app.talklive.progress.Progress? = null,
+    onRewards: () -> Unit = {},
 ) {
     // The page is one screen tall; it sits in a scroller of exactly that height so a pull-down gesture has something to pull.
     androidx.compose.material3.pulltorefresh.PullToRefreshBox(isRefreshing = refreshing, onRefresh = onRefresh, modifier = Modifier.fillMaxSize()) {
@@ -120,6 +123,8 @@ fun HomeScreen(
                 }
                 Spacer(Modifier.width(6.dp))
             }
+            app.talklive.ui.rewards.LevelChip(progress, onRewards)
+            if (progress != null) Spacer(Modifier.width(6.dp))
             app.talklive.ui.engage.StreakChip(engage, onStreak)
             IconButton(onClick = onToggleTheme) {
                 Icon(
