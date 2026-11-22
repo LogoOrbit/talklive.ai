@@ -113,3 +113,19 @@ scrolls the home page, a "From TalkLive" section shows posts (newest/pinned
 first) in a Facebook-style card: text/image, reaction bar with counts per type
 and total, comment count, comments list, comment box (or "Sign in with a
 verified account to comment"). Reacting/commenting updates counts live.
+
+## 8. Round 2 changes (Nov 22)
+
+**Free faces (replaces §1 lists):**
+- Free animals (5): `a:cat`, `a:fox`, `a:panda`, `a:rabbit`, `a:dog`
+- Free characters (5): `c:wizard`, `c:pirate`, `c:robot`, `c:astronaut`, `c:artist`
+- Plus (picker, 5+5): animals `a:lion`, `a:raccoon`, `a:giraffe` + 2 most detailed others; characters `c:detective`, `c:ninja`, `c:warrior`, `c:gamer` + 1 most detailed other. Same lists on server, web, Android.
+- Anyone without Plus currently wearing a Plus face (account record, stored settings, live profile) is switched to a free face: animal -> `a:cat`, character -> `c:wizard`. One-time migration at boot plus the existing per-register check.
+
+**History:** call and chat history (recent people) and the stranger conversations reachable from it are kept 30 days. UI shows one short line: "Kept for 30 days".
+
+**Likes = mutual match:**
+- `like-partner` `{ clientId }` -> ack `{ ok, matched }`. Only for someone in your recent history (or current partner). One like per pair, idempotent.
+- When both have liked each other: both get `like-match` `{ clientId, username, avatar, cover, badges }`; the server makes them friends (if not already, and not blocked) and the UI shows "It's a match!" with a "Call again" action.
+- `likes-summary` -> ack `{ count, matches, people }`: `count` = likes received in the last 30 days not yet matched; `people` = `[{ clientId, username, avatar, ts }]` only for Plus (empty list otherwise, UI shows blurred faces + "See who with Plus"). Push `likes` `{ count }` when it changes.
+- Likes received in the last 7 days give a small match-priority boost (reputation / ranking).
