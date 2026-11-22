@@ -5,6 +5,9 @@
 // commands. JetBrains Mono for display, Inter to read.
 module.exports = {
   slug: 'random-text-chat',
+  answers: [
+    { q: "What is random text chat?", a: "Random text chat pairs you with one stranger to type back and forth, with no microphone and no camera. On TalkLive you tap Chat, are matched with another adult within seconds, and need no account." },
+  ],
   name: 'Random Text Chat',
   date: '2026-10-05',
   about: { '@type': 'Thing', name: 'Random text chat' },

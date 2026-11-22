@@ -14,6 +14,10 @@ function wave(n, seed) {
 
 module.exports = {
   slug: 'random-voice-chat',
+  answers: [
+    { q: "What is random voice chat?", a: "Random voice chat connects you by live audio call with one stranger chosen at random. On TalkLive you tap Talk, are paired with another adult within seconds, and speak with no camera, no account and no recording." },
+    { q: "How does a random voice call work?", a: "Audio travels between the two browsers over encrypted WebRTC. TalkLive matches you and sets up the connection but does not record the audio, and your match never sees your IP address." },
+  ],
   name: 'Random Voice Chat',
   date: '2026-10-05',
   about: { '@type': 'Thing', name: 'Random voice chat' },

@@ -5,6 +5,10 @@
 // for labels, Literata to read.
 module.exports = {
   slug: 'how-it-works',
+  answers: [
+    { q: "How does TalkLive work?", a: "You tap Talk or Chat and TalkLive pairs you with another adult who is searching at the same moment. A voice call then runs directly between the two browsers over encrypted WebRTC, through a relay where needed. The server handles matching and set-up only, and call audio is never recorded." },
+    { q: "What does TalkLive keep?", a: "Call audio is not stored. Random-chat text is kept in a moderation log capped at 5,000 entries, and direct-message conversations keep their newest 200 messages." },
+  ],
   name: 'How TalkLive Works',
   date: '2026-10-05',
   about: { '@type': 'Thing', name: 'How TalkLive matching and calls work' },

@@ -4,9 +4,30 @@
 // better pick) and its own colours; the structure - a plain comparison, an
 // honest "stay with it if" box and a short FAQ - is the same on all of them.
 // Space Grotesk for display, Inter to read.
+// Every guide's table answers the same five questions, in the same order,
+// so the pages are comparable and an answer engine can lift a row. A guide's
+// own rows still lead; any of these it does not already cover are added.
+const STANDARD = [
+  { re: /audio/i, row: (o) => ['Audio-only calls', o.audio || 'No audio-only mode: video or text', 'Yes: voice call with no camera, or text chat'] },
+  { re: /account|sign/i, row: () => ['Sign-up', 'Check its own site', 'None needed'] },
+  { re: /moderat|safety|report/i, row: (o) => ['Moderation', o.moderation || 'Its own report and moderation tools', 'Report and Block on every call, automated spam checks, repeat offenders removed, 18+ only'] },
+  { re: /price|cost|free/i, row: () => ['Price', 'Free to use, with paid extras', 'Free, with an optional Plus plan'] },
+  { re: /\bapps?\b|platform|install/i, row: (o) => ['App', o.appRow || 'Website and mobile apps', 'Works in the browser; installable; Android app'] },
+];
+function tableRows(o) {
+  const have = o.rows.map((r) => r[0]);
+  // The "Camera" row already says video; "How you talk" covers the call format.
+  const extra = STANDARD.filter((st) => !have.some((label) => st.re.test(label))).map((st) => st.row(o));
+  return o.rows.concat(extra);
+}
+
 function make(o) {
   const k = o.key;
+  const rows = tableRows(o);
   return {
+    answers: [
+      { q: `What is a good ${o.app} alternative?`, a: `TalkLive is a free ${o.app} alternative for adults that works by voice or text instead of video. Tap Talk or Chat, get matched with one stranger in seconds, and use it with no account, no camera and no phone number.` },
+    ],
     slug: o.slug,
     name: `${o.app} Alternative`,
     date: '2026-11-10',
@@ -35,6 +56,8 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--paper);color:var(--
 .${k}-table th,.${k}-table td{padding:13px 16px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
 .${k}-table thead th{background:var(--ink);color:#fff;font:700 14px/1.2 "Space Grotesk",sans-serif}
 .${k}-table td:last-child{font-weight:600;background:${o.tint}}
+.${k}-steps{margin:0 0 1em;padding-left:1.3em;max-width:740px;font-size:17.5px;line-height:1.65}
+.${k}-steps li{margin:0 0 .6em}
 .${k}-stay{background:#fff;border:2px solid var(--ink);padding:20px 22px;margin:22px 0;font-size:16.5px;line-height:1.6}
 .${k}-stay b{display:block;font:700 20px/1.2 "Space Grotesk",sans-serif;margin-bottom:6px}
 .c-faq{max-width:900px;margin:40px auto 0;padding:0 20px}
@@ -59,13 +82,19 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--paper);color:var(--
   <section class="${k}-sec"><h2>Why people look for something else</h2>${o.why.map((p) => `<p>${p}</p>`).join('')}</section>
   <section class="${k}-sec">
     <h2>${o.app} and TalkLive, side by side</h2>
-    <div class="table-scroll"><table class="${k}-table"><thead><tr><th></th><th>${o.app}</th><th>TalkLive</th></tr></thead><tbody>${o.rows
+    <div class="table-scroll"><table class="${k}-table"><thead><tr><th></th><th>${o.app}</th><th>TalkLive</th></tr></thead><tbody>${rows
     .map(([a, b, d]) => `<tr><th scope="row">${a}</th><td>${b}</td><td>${d}</td></tr>`).join('')}</tbody></table></div>
     <p>Details about other services change. Check ${o.app}'s own site for what it offers today.</p>
     <div class="${k}-stay"><b>Stay with ${o.app} if</b>${o.stay}</div>
   </section>
-  <section class="${k}-sec"><h2>How TalkLive works</h2>
-    <p>Open the site or the Android app and tap Talk for a voice call, or Chat for text. You are paired with one other adult, usually within seconds. There is no camera at any point, no account to create and no phone number to give. Calls are never recorded and go through a relay, so the other person does not see your IP address.</p>
+  <section class="${k}-sec"><h2>How to switch from ${o.app} to TalkLive</h2>
+    <ol class="${k}-steps">
+      <li><b>Open talklive.app</b> in any browser on your phone or computer, or install the Android app. Nothing to sign up for.</li>
+      <li><b>Pick Talk or Chat.</b> Talk is a voice call with the camera off. Chat is text only. Optionally add an interest or a preferred country first.</li>
+      <li><b>Say hello.</b> You are paired with one other adult, usually within seconds. Not for you? One tap moves you on.</li>
+      <li><b>Keep the good ones.</b> Add someone as a friend and call or message them later, without swapping numbers.</li>
+    </ol>
+    <p>Calls are never recorded and go through a relay, so the other person does not see your IP address.</p>
     <p>If the conversation is not for you, one tap moves you on. Report and Block are on every call and chat, and our <a href="/safety">safety page</a> explains what happens when you use them. If you click with someone, add them as a friend and call or message them later without swapping numbers.</p>
   </section>
 </div>

@@ -5,6 +5,10 @@
 // verdict boxes. Archivo Black for display, Manrope to read.
 module.exports = {
   slug: 'omegle-alternative',
+  answers: [
+    { q: "What is the best Omegle alternative?", a: "TalkLive is a free Omegle alternative for adults that works by voice or text, with no camera and no account. It is independent of Omegle and has no video at all." },
+    { q: "Is Omegle still open?", a: "No. Omegle's founder closed it on 8 November 2023. Sites that use the Omegle name today are not run by the original team." },
+  ],
   name: 'Omegle Alternative',
   date: '2026-10-05',
   about: { '@type': 'Thing', name: 'Alternatives to Omegle' },
@@ -53,6 +57,8 @@ body{font-family:"Manrope",system-ui,sans-serif;background:var(--paper)}
 .om-table th,.om-table td{padding:13px 16px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
 .om-table thead th{background:var(--ink);color:#fff;font:400 14px/1.2 "Archivo Black",sans-serif}
 .om-table td:last-child{background:#eef5ff;font-weight:700}
+.om-steps{margin:0 0 1em;padding-left:1.3em;max-width:760px;font-size:18px;line-height:1.65}
+.om-steps li{margin:0 0 .6em}
 .om-verdict{background:var(--ink);color:#fff;border-radius:14px;padding:24px 26px;margin:24px 0}
 .om-verdict h3{font:400 22px/1.2 "Archivo Black",sans-serif;margin:0 0 8px}
 .om-verdict p{color:#d2dbe3;font-size:16.5px;margin:0}
@@ -131,9 +137,23 @@ body{font-family:"Manrope",system-ui,sans-serif;background:var(--paper)}
           <tr><th scope="row">Matching by interest</th><td>Interest tags</td><td>Interests and country preferences</td></tr>
           <tr><th scope="row">Finding someone again</th><td>Not possible</td><td>Add as a friend and call back</td></tr>
           <tr><th scope="row">Blocking a person</th><td>Disconnect only</td><td>Block on every screen; never matched again</td></tr>
+          <tr><th scope="row">Audio-only calls</th><td>No: text or video</td><td>Yes: voice call with no camera</td></tr>
+          <tr><th scope="row">Moderation</th><td>Moderated, but its founder said fighting misuse had become unsustainable</td><td>Report and Block on every call, automated spam checks, repeat offenders removed, 18+ only</td></tr>
+          <tr><th scope="row">Price</th><td>Free</td><td>Free, with an optional Plus plan</td></tr>
+          <tr><th scope="row">App</th><td>Website only</td><td>Browser, installable web app and an Android app</td></tr>
         </tbody>
       </table>
     </div>
+  </section>
+
+  <section class="om-sec">
+    <h2>How to start on TalkLive</h2>
+    <ol class="om-steps">
+      <li><b>Open talklive.app</b> on your phone or computer. There is nothing to install and no account to make.</li>
+      <li><b>Tap Talk or Chat.</b> Talk is a voice call, Chat is text. You can add an interest or a preferred country first.</li>
+      <li><b>Say hello.</b> You are paired with one other adult, usually within seconds. Tap Next to move on, or Report and Block if something is wrong.</li>
+      <li><b>Keep the good ones.</b> Add someone as a friend to call or message them later.</li>
+    </ol>
   </section>
 
   <section class="om-sec">
