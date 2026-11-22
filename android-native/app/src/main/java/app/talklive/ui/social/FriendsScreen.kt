@@ -108,11 +108,13 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
         val sentNow by vm.sent.collectAsStateWithLifecycle()
         val friend = friendsNow.any { it.clientId == p.clientId }
         val incomingNow by vm.requests.collectAsStateWithLifecycle()
+        val likedNow by vm.liked.collectAsStateWithLifecycle()
         PersonSheet(
             p, isFriend = friend, onCall = { vm.call(p) }, onMessage = { onOpenChat(p.clientId) },
             requested = p.clientId in sentNow, onAddFriend = { vm.sendRequest(p.clientId) },
             incomingRequest = incomingNow.any { it.clientId == p.clientId }, onAccept = { vm.respond(p.clientId, true) },
             canCall = friend || p.mode == "talk",
+            onLike = if (!friend) ({ vm.likePartner(p.clientId) }) else null, liked = p.clientId in likedNow,
         ) { profileOf = null }
     }
     val friends by vm.friends.collectAsStateWithLifecycle()
@@ -166,13 +168,17 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
 
         var refreshing by remember { mutableStateOf(false) }
         val refreshScope = rememberCoroutineScope()
-        androidx.compose.material3.pulltorefresh.PullToRefreshBox(
-            isRefreshing = refreshing,
+        app.talklive.ui.components.SlidePullToRefresh(
+            refreshing = refreshing,
             onRefresh = { refreshing = true; refreshScope.launch { vm.refresh(); refreshing = false } },
             modifier = Modifier.weight(1f),
         ) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 16.dp)) {
             item(key = "notify") { NotificationsBanner() }
+            item(key = "likes") {
+                val likes by vm.likes.collectAsStateWithLifecycle()
+                LikesRow(likes, onPerson = { profileOf = it }, onPlus = onPlus)
+            }
             if (requests.isNotEmpty()) {
                 item { SectionLabel(stringResource(R.string.friend_requests, requests.size)) }
                 items(requests, key = { "r" + it.clientId }) { p ->
@@ -181,6 +187,13 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
             }
             // Who you met at random, split by how: voice calls (call them back)
             // and text chats, so each is easy to find again.
+            if (met.isNotEmpty()) item(key = "kept30") {
+                Text(
+                    stringResource(R.string.history_kept_30),
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    modifier = Modifier.padding(start = 24.dp, top = 12.dp),
+                )
+            }
             val talked = met.filter { it.mode == "talk" }.take(10)
             val chatted = met.filter { it.mode != "talk" }
             if (talked.isNotEmpty()) {

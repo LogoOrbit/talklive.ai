@@ -8,13 +8,13 @@ import org.json.JSONObject
  * "c:wizard" is a character (its id keeps the "c:" prefix, see ui/animals/Characters.kt),
  * and a bare id is taken as is.
  */
-internal fun animalOf(avatar: String?): String? {
+fun animalOf(avatar: String?): String? {
     val a = avatar?.trim()?.takeIf { it.isNotEmpty() } ?: return null
     return if (a.startsWith("a:")) a.substring(2).ifEmpty { null } else a
 }
 
 /** Talk-time badges as the server reports them (spec 3): the one shown by the name, all earned ids, hours talked. */
-data class BadgeSet(val top: String?, val earned: List<String>, val hours: Double) {
+data class BadgeSet(val top: String?, val earned: List<String>, val hours: Double, val rank: Int? = null) {
     companion object {
         /** Null when the server sent none (older server): nothing is shown. */
         fun from(o: JSONObject?): BadgeSet? {
@@ -23,7 +23,8 @@ data class BadgeSet(val top: String?, val earned: List<String>, val hours: Doubl
             val earned = if (arr == null) emptyList() else (0 until arr.length()).map { arr.optString(it) }.filter { it.isNotBlank() }
             val top = if (o.isNull("top")) null else o.optString("top").takeIf { it.isNotBlank() }
             val hours = o.optDouble("hours", 0.0).let { if (it.isNaN()) 0.0 else it }
-            return BadgeSet(top ?: earned.lastOrNull(), earned, hours)
+            val rank = if (o.isNull("rank")) null else o.optInt("rank", 0).takeIf { it in 1..5 }
+            return BadgeSet(top ?: earned.lastOrNull(), earned, hours, rank)
         }
     }
 }
@@ -217,3 +218,6 @@ data class ActivityItem(val id: String, val type: String, val fromClientId: Stri
 
 /** A conversation's disappearing-messages setting, as this person sees it. */
 data class Disappearing(val on: Boolean, val byMe: Boolean = false, val byName: String? = null)
+
+/** Likes (spec 8): how many people liked you, how many became matches, and (Plus only) who. */
+data class LikesSummary(val count: Int = 0, val matches: Int = 0, val people: List<Person> = emptyList())

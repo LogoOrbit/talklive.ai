@@ -13,6 +13,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.verticalScroll
+import app.talklive.ui.components.fadeBottomEdge
+import app.talklive.ui.components.verticalScrollbar
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -336,10 +340,19 @@ private fun DrawScope.fireflies(p: Float) {
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun CoverPicker(current: String?, plus: Boolean, onPick: (String) -> Unit, onLocked: () -> Unit, modifier: Modifier = Modifier) {
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    // Two rows and a half-visible third, faded out at the bottom, with a scrollbar: more is clearly below.
+    val scroll = androidx.compose.foundation.rememberScrollState()
+    Column(
+        modifier.fillMaxWidth().height(236.dp)
+            .verticalScrollbar(scroll, thickness = 5.dp)
+            .fadeBottomEdge(scroll)
+            .verticalScroll(scroll),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
         CoverGroup(R.string.cover_group_colors, SOLID_COVERS, current, plus, onPick, onLocked)
         CoverGroup(R.string.cover_group_gradients, GRADIENT_COVERS, current, plus, onPick, onLocked)
         CoverGroup(R.string.cover_group_plus, PLUS_COVERS, current, plus, onPick, onLocked)
+        Spacer(Modifier.height(30.dp))
     }
 }
 

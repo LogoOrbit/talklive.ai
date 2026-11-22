@@ -54,8 +54,8 @@ fun tierRank(tier: String?): Int = when (tier) { "silver" -> 1; "gold" -> 2; "di
 fun specialUnlocked(id: String, tier: String?): Boolean = tierRank(tier) >= tierRank(SPECIAL_TIER[id])
 
 /** The animals and characters the pickers offer, in order: the free ones first, then the Plus ones (spec 1). */
-val PICKER_ANIMALS: List<String> = listOf("lion", "fox", "cat", "panda", "dog", "raccoon", "giraffe", "rabbit")
-val PICKER_CHARACTERS: List<String> = listOf("c:wizard", "c:pirate", "c:robot", "c:detective", "c:ninja", "c:warrior", "c:gamer", "c:artist")
+val PICKER_ANIMALS: List<String> = listOf("cat", "fox", "rabbit", "panda", "dog", "lion", "raccoon", "giraffe", "unicorn", "dragon")
+val PICKER_CHARACTERS: List<String> = listOf("c:wizard", "c:queen", "c:pirate", "c:robot", "c:artist", "c:detective", "c:ninja", "c:warrior", "c:gamer", "c:astronaut")
 
 private const val PERIOD_MS = 6000
 private const val STILL = 0.12f

@@ -63,6 +63,12 @@ class SocialViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     fun person(id: String): Person? = repo.person(id)
+    fun knownFace(id: String): String? = repo.knownFace(id)
+    val likes = repo.likes
+    val liked = repo.liked
+    val likeMatches = repo.likeMatches
+    fun likePartner(id: String) = repo.likePartner(id)
+    fun refreshLikes() = repo.refreshLikes()
     fun sendRequest(id: String, friendId: String? = null) = repo.sendRequest(id, friendId)
     fun removeFromHistory(id: String) = repo.removeFromHistory(id)
     fun sendGif(to: String, g: app.talklive.social.Gif) = repo.sendGif(to, g)

@@ -185,7 +185,10 @@ fun isPlusFace(id: String?): Boolean = id != null && id !in FREE_FACES && !isSpe
  * swaps it for a free one too, and the picked face comes back if Plus does.
  */
 fun ownFace(id: String?, plusEnded: Boolean, look: Boolean): String? =
-    if (id != null && plusEnded && !look && isPlusFace(id)) PICKER_ANIMALS[Math.abs(id.hashCode()) % 3] else id
+    if (id != null && plusEnded && !look && isPlusFace(id)) freeFaceFor(id) else id
+
+/** The free face a Plus face falls back to: a character becomes the wizard, an animal the cat (spec 8). */
+fun freeFaceFor(id: String?): String = if (id != null && id.startsWith("c:")) "c:wizard" else "cat"
 
 /** A free animal at random: "Surprise me" and the automatic first pick never deal a Plus face. */
 fun randomFreeAnimal(): Animal = Animals.filter { it.id in FREE_FACES }.random()
@@ -235,7 +238,7 @@ fun AnimalGrid(
     ) {
         // Spirit animals, then the website's movie characters.
         run {
-            // Only the faces on offer (spec 1): 6 free, 10 Plus, then the 3 level faces.
+            // Only the faces on offer (spec 8): 5 free + 5 Plus in each family, then the 3 level faces.
             val list = if (tab == 0) PICKER_ANIMALS.mapNotNull { animalById(it) } else PICKER_CHARACTERS.mapNotNull { animalById(it) } + SpecialFaces
             items(list, key = { it.id }) { a ->
             val specialLocked = a.special && !(specialUnlocked(a.id, tier) || a.id == held)

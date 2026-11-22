@@ -100,43 +100,43 @@ fun HomeScreen(
     // Points and level (null until the server sends them): a small chip opens Rewards.
     progress: app.talklive.progress.Progress? = null,
     onRewards: () -> Unit = {},
+    // TalkLive's latest post (fetched once per app open), shown under the call buttons; tapping opens the news.
+    latestPost: app.talklive.posts.Post? = null,
+    onNews: () -> Unit = {},
 ) {
     // The page is one screen tall; it sits in a scroller of exactly that height so a pull-down gesture has something to pull.
-    androidx.compose.material3.pulltorefresh.PullToRefreshBox(isRefreshing = refreshing, onRefresh = onRefresh, modifier = Modifier.fillMaxSize()) {
+    app.talklive.ui.components.SlidePullToRefresh(refreshing = refreshing, onRefresh = onRefresh, modifier = Modifier.fillMaxSize()) {
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
     val pageHeight = maxHeight
+    val pageWidth = maxWidth
     Column(Modifier.fillMaxSize().verticalScroll(androidx.compose.foundation.rememberScrollState())) {
     Column(Modifier.fillMaxWidth().height(pageHeight).statusBarsPadding().padding(horizontal = 24.dp, vertical = 16.dp)) {
+        // Adaptive top bar: the title ellipsizes, the word "Plus" and the theme button drop out on narrow
+        // phones, so nothing overlaps from 320dp up.
+        val roomy = pageWidth >= 400.dp
+        val showTheme = pageWidth >= 360.dp
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Image(painterResource(R.drawable.logo), null, Modifier.size(32.dp))
-            Spacer(Modifier.size(10.dp))
-            Text("TalkLive", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
-            Spacer(Modifier.weight(1f))
-            if (!premium) {
-                Row(
-                    Modifier.clip(CircleShape).background(app.talklive.ui.components.BrandGradient).tapOnce(windowMs = 700, onClick = onPlus).padding(horizontal = 10.dp, vertical = 5.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    app.talklive.ui.components.PlusGem(14.dp)
-                    Spacer(Modifier.width(5.dp))
-                    Text("Plus", color = androidx.compose.ui.graphics.Color.White, style = MaterialTheme.typography.labelMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                }
-                Spacer(Modifier.width(6.dp))
-            }
-            app.talklive.ui.rewards.LevelChip(progress, onRewards)
-            if (progress != null) Spacer(Modifier.width(6.dp))
-            app.talklive.ui.engage.StreakChip(engage, onStreak)
-            IconButton(onClick = onToggleTheme) {
+            Spacer(Modifier.size(8.dp))
+            Text(
+                "TalkLive", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1, softWrap = false, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            StatusChip(premium, progress, roomy, onPlus, onRewards)
+            if (showTheme) IconButton(onClick = onToggleTheme) {
                 Icon(
                     if (dark) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
                     contentDescription = stringResource(if (dark) R.string.light_mode else R.string.dark_mode),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-            }
+            } else Spacer(Modifier.width(10.dp))
             app.talklive.ui.components.PlusRing(premium || ring, 36.dp, alive = premium) {
                 AnimalAvatar(animal, name, 36.dp, Modifier.clip(CircleShape).clickable(onClick = onProfile))
             }
         }
+        // Streak and the countries online now: one slim row of small chips.
+        QuickChips(engage, onStreak, online, connected, onFindIn)
 
         // The orb takes whatever height is left and shrinks to fit it, so on a
         // short phone the buttons below never get squeezed.
@@ -177,9 +177,7 @@ fun HomeScreen(
             }
         }
         Spacer(Modifier.height(18.dp))
-        val placed = remember(online) { online.filter { it.countryCode != null } }
-        if (placed.size >= 3) OnlineNow(placed, enabled = connected, onFindIn = onFindIn)
-        else HowItWorks(mode == app.talklive.call.CallMode.Chat)
+        HowItWorks(mode == app.talklive.call.CallMode.Chat)
         if (plusCard != null && !premium) {
             Spacer(Modifier.height(14.dp))
             app.talklive.ui.engage.PlusMomentCard(plusCard, onTap = onPlusCard, onDismiss = onPlusCardClose)
@@ -219,8 +217,70 @@ fun HomeScreen(
             icon = if (mode == app.talklive.call.CallMode.Chat) Icons.AutoMirrored.Rounded.Chat else Icons.Rounded.Mic,
         )
     }
+    // Below the page: scroll a little to find the latest news from TalkLive.
+    if (latestPost != null) Box(Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 24.dp)) {
+        app.talklive.ui.posts.LatestPostCard(latestPost, onClick = onNews)
     }
     }
+    }
+    }
+}
+
+/** One pill for Plus and level: the gem side opens Plus (free accounts), the star side opens Rewards. */
+@Composable
+private fun StatusChip(premium: Boolean, progress: app.talklive.progress.Progress?, wide: Boolean, onPlus: () -> Unit, onRewards: () -> Unit) {
+    if (premium && progress == null) return
+    Row(Modifier.padding(end = 4.dp).clip(CircleShape), verticalAlignment = Alignment.CenterVertically) {
+        if (!premium) Row(
+            Modifier.background(app.talklive.ui.components.BrandGradient).tapOnce(windowMs = 700, onClick = onPlus).padding(horizontal = 9.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            app.talklive.ui.components.PlusGem(14.dp)
+            if (wide) {
+                Spacer(Modifier.width(4.dp))
+                Text("Plus", color = Color.White, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, maxLines = 1)
+            }
+        }
+        if (progress != null) Row(
+            Modifier.background(MaterialTheme.colorScheme.surface).clickable(onClick = onRewards).padding(horizontal = 9.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(androidx.compose.material.icons.Icons.Rounded.Star, null, tint = app.talklive.ui.rewards.tierColor(progress.tier), modifier = Modifier.size(15.dp))
+            Spacer(Modifier.width(3.dp))
+            Text(stringResource(R.string.level_chip, progress.level), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
+        }
+    }
+}
+
+/** The streak and up to three countries with people online, as small chips in one scrolling row. */
+@Composable
+private fun QuickChips(
+    engage: app.talklive.engage.Engage?, onStreak: () -> Unit,
+    online: List<app.talklive.net.OnlinePerson>, enabled: Boolean, onFindIn: (String) -> Unit,
+) {
+    val countries = remember(online) {
+        online.mapNotNull { it.countryCode }.groupingBy { it }.eachCount().entries.sortedByDescending { it.value }.take(4)
+    }
+    val hasStreak = (engage?.streak?.let { it.count > 0 || it.best > 0 }) == true
+    if (!hasStreak && countries.isEmpty()) return
+    androidx.compose.foundation.lazy.LazyRow(
+        Modifier.fillMaxWidth().padding(top = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (hasStreak) item(key = "streak") { app.talklive.ui.engage.StreakChip(engage, onStreak) }
+        items(countries.size, key = { countries[it].key }) { i ->
+            val c = countries[i]
+            Surface(
+                onClick = { onFindIn(c.key) }, enabled = enabled, shape = CircleShape, color = MaterialTheme.colorScheme.surface,
+            ) {
+                Row(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(app.talklive.ui.social.flag(c.key) ?: "\uD83C\uDF0D", style = MaterialTheme.typography.labelLarge)
+                    Spacer(Modifier.width(4.dp))
+                    Text(c.value.toString(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
     }
 }
 

@@ -25,6 +25,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.DarkMode
@@ -124,6 +125,7 @@ fun ProfileScreen(
     val context = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
     var youSheet by remember { mutableStateOf<String?>(null) }
+    var myProfileOpen by rememberSaveable { mutableStateOf(false) }
     // Why the Plus page was opened, for its headline.
     var plusWhy by remember { mutableStateOf(app.talklive.ui.engage.PlusWhy()) }
     val plusNow by engageVm.premium.collectAsStateWithLifecycle()
@@ -197,67 +199,11 @@ fun ProfileScreen(
                 }
             }
 
-            Section(stringResource(R.string.section_cover)) {
-                app.talklive.ui.profile.CoverPicker(
-                    current = shownCover, plus = premium.active,
-                    onPick = { id ->
-                        vm.setCover(id) { r ->
-                            if (r == null) vm.saved = context.getString(R.string.cover_saved)
-                            else if (r == "plus") { plusWhy = app.talklive.ui.engage.PlusWhy(app.talklive.ui.engage.PlusReason.Cover); youSheet = "plus-locked" }
-                            else vm.saved = context.getString(R.string.cover_error)
-                        }
-                    },
-                    onLocked = { plusWhy = app.talklive.ui.engage.PlusWhy(app.talklive.ui.engage.PlusReason.Cover); youSheet = "plus-locked" },
-                    modifier = Modifier.padding(16.dp),
-                )
+            // One row for everything personal; the details live on their own screen.
+            Spacer(Modifier.height(16.dp))
+            Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface) {
+                SettingRow(Icons.Rounded.Person, stringResource(R.string.my_profile), stringResource(R.string.my_profile_desc)) { myProfileOpen = true }
             }
-
-            Section(stringResource(R.string.section_about)) {
-                SettingRow(Icons.Rounded.Person, stringResource(R.string.display_name), account?.nickname ?: stringResource(R.string.not_set)) {
-                    if (account != null) vm.open(ProfileSheet.Nickname) else onSignIn()
-                }
-                // Tap to copy your ID (with a little "Copied" moment); accounts edit it with the pencil.
-                var idCopied by remember { mutableStateOf(false) }
-                LaunchedEffect(idCopied) { if (idCopied) { kotlinx.coroutines.delay(1600); idCopied = false } }
-                val clip = androidx.compose.ui.platform.LocalClipboardManager.current
-                val friendIdNow by vm.myFriendId.collectAsStateWithLifecycle()
-                SettingRow(
-                    Icons.Rounded.Tag, stringResource(R.string.your_friend_id),
-                    if (idCopied) stringResource(R.string.copied) else friendIdNow ?: "…",
-                    onClick = { friendIdNow?.let { clip.setText(androidx.compose.ui.text.AnnotatedString(it)); idCopied = true } },
-                    trailing = {
-                        if (account != null) androidx.compose.material3.IconButton(onClick = { vm.open(ProfileSheet.FriendId) }) { Icon(Icons.Rounded.Edit, stringResource(R.string.edit), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
-                        else androidx.compose.animation.Crossfade(idCopied, label = "c") { c -> Icon(if (c) Icons.Rounded.Check else Icons.Rounded.ContentCopy, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    },
-                )
-                val myGender by engageVm.myGender.collectAsStateWithLifecycle()
-                val ageGroup by engageVm.ageGroup.collectAsStateWithLifecycle()
-                val flags by engageVm.flags.collectAsStateWithLifecycle()
-                SettingRow(Icons.Rounded.Face, stringResource(R.string.i_am), genderLabel(myGender)) { youSheet = "gender" }
-                SettingRow(Icons.Rounded.Cake, stringResource(R.string.age_group), if (ageGroup == "unspecified") stringResource(R.string.gender_unspecified) else ageGroup) { youSheet = "age" }
-                if ("voiceCheck" in flags) {
-                    val voiceOn by engageVm.voiceCheck.collectAsStateWithLifecycle()
-                    val voiceView by engageVm.voiceView.collectAsStateWithLifecycle()
-                    VoiceCheckRow(
-                        on = voiceOn, view = voiceView,
-                        onSwitch = { engageVm.setVoiceCheck(it) },
-                        onRetry = { scope.launch { vm.saved = context.getString(if (engageVm.retryVoice()) R.string.voice_retry_done else R.string.voice_retry_limit) } },
-                        onAppeal = { scope.launch { vm.saved = context.getString(if (engageVm.appealVoice()) R.string.voice_appeal_sent else R.string.voice_appeal_later) } },
-                    )
-                }
-            }
-
-            Section(stringResource(R.string.section_badges)) {
-                Column(Modifier.fillMaxWidth().padding(16.dp)) {
-                    Text(
-                        stringResource(R.string.badges_body, String.format(java.util.Locale.getDefault(), "%.1f", myBadges?.hours ?: 0.0)),
-                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    BadgeShelf(myBadges, Modifier.fillMaxWidth())
-                }
-            }
-
             val engage by engageVm.engage.collectAsStateWithLifecycle()
             val films by engageVm.films.collectAsStateWithLifecycle()
             // Plus, as a card of its own rather than one more row.
@@ -287,13 +233,112 @@ fun ProfileScreen(
                     Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = androidx.compose.ui.graphics.Color.White)
                 }
             }
-            Section(stringResource(R.string.section_you)) {
-                SettingRow(
-                    Icons.Rounded.Star, stringResource(R.string.rewards_title),
-                    progress?.let { stringResource(R.string.rewards_summary, it.level, it.points) } ?: stringResource(R.string.rewards_row_body),
-                ) { youSheet = "rewards" }
-                SettingRow(Icons.Rounded.Public, stringResource(R.string.passport), stringResource(R.string.passport_count, engage?.passport?.size ?: 0)) { youSheet = "passport" }
+            Section(stringResource(R.string.section_help)) {
+                SettingRow(Icons.Rounded.Feedback, stringResource(R.string.news_title), stringResource(R.string.news_row_desc)) { youSheet = "news" }
                 SettingRow(Icons.Rounded.CardGiftcard, stringResource(R.string.invite_title), null) { youSheet = "invite" }
+            }
+            if (myProfileOpen) androidx.compose.ui.window.Dialog(
+                onDismissRequest = { myProfileOpen = false },
+                properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+            ) {
+                Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                    Box(Modifier.fillMaxSize()) {
+                        Column(Modifier.fillMaxSize().statusBarsPadding()) {
+                            Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                androidx.compose.material3.IconButton(onClick = { myProfileOpen = false }) {
+                                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.back), tint = MaterialTheme.colorScheme.onBackground)
+                                }
+                                Text(stringResource(R.string.my_profile), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
+                            }
+                            Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
+                                Section(stringResource(R.string.section_avatar)) {
+                                    SettingRow(Icons.Rounded.Face, stringResource(R.string.change_avatar), animalById(shownFace)?.name) { vm.open(ProfileSheet.Animal) }
+                                }
+                Section(stringResource(R.string.section_cover)) {
+                    app.talklive.ui.profile.CoverPicker(
+                        current = shownCover, plus = premium.active,
+                        onPick = { id ->
+                            vm.setCover(id) { r ->
+                                if (r == null) vm.saved = context.getString(R.string.cover_saved)
+                                else if (r == "plus") { plusWhy = app.talklive.ui.engage.PlusWhy(app.talklive.ui.engage.PlusReason.Cover); youSheet = "plus-locked" }
+                                else vm.saved = context.getString(R.string.cover_error)
+                            }
+                        },
+                        onLocked = { plusWhy = app.talklive.ui.engage.PlusWhy(app.talklive.ui.engage.PlusReason.Cover); youSheet = "plus-locked" },
+                        modifier = Modifier.padding(16.dp),
+                    )
+                }
+
+                Section(stringResource(R.string.section_about)) {
+                    SettingRow(Icons.Rounded.Person, stringResource(R.string.display_name), account?.nickname ?: stringResource(R.string.not_set)) {
+                        if (account != null) vm.open(ProfileSheet.Nickname) else onSignIn()
+                    }
+                    // Tap to copy your ID (with a little "Copied" moment); accounts edit it with the pencil.
+                    var idCopied by remember { mutableStateOf(false) }
+                    LaunchedEffect(idCopied) { if (idCopied) { kotlinx.coroutines.delay(1600); idCopied = false } }
+                    val clip = androidx.compose.ui.platform.LocalClipboardManager.current
+                    val friendIdNow by vm.myFriendId.collectAsStateWithLifecycle()
+                    SettingRow(
+                        Icons.Rounded.Tag, stringResource(R.string.your_friend_id),
+                        if (idCopied) stringResource(R.string.copied) else friendIdNow ?: "…",
+                        onClick = { friendIdNow?.let { clip.setText(androidx.compose.ui.text.AnnotatedString(it)); idCopied = true } },
+                        trailing = {
+                            if (account != null) androidx.compose.material3.IconButton(onClick = { vm.open(ProfileSheet.FriendId) }) { Icon(Icons.Rounded.Edit, stringResource(R.string.edit), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                            else androidx.compose.animation.Crossfade(idCopied, label = "c") { c -> Icon(if (c) Icons.Rounded.Check else Icons.Rounded.ContentCopy, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        },
+                    )
+                    val myGender by engageVm.myGender.collectAsStateWithLifecycle()
+                    val ageGroup by engageVm.ageGroup.collectAsStateWithLifecycle()
+                    val flags by engageVm.flags.collectAsStateWithLifecycle()
+                    SettingRow(Icons.Rounded.Face, stringResource(R.string.i_am), genderLabel(myGender)) { youSheet = "gender" }
+                    SettingRow(Icons.Rounded.Cake, stringResource(R.string.age_group), if (ageGroup == "unspecified") stringResource(R.string.gender_unspecified) else ageGroup) { youSheet = "age" }
+                    if ("voiceCheck" in flags) {
+                        val voiceOn by engageVm.voiceCheck.collectAsStateWithLifecycle()
+                        val voiceView by engageVm.voiceView.collectAsStateWithLifecycle()
+                        VoiceCheckRow(
+                            on = voiceOn, view = voiceView,
+                            onSwitch = { engageVm.setVoiceCheck(it) },
+                            onRetry = { scope.launch { vm.saved = context.getString(if (engageVm.retryVoice()) R.string.voice_retry_done else R.string.voice_retry_limit) } },
+                            onAppeal = { scope.launch { vm.saved = context.getString(if (engageVm.appealVoice()) R.string.voice_appeal_sent else R.string.voice_appeal_later) } },
+                        )
+                    }
+                }
+
+                Section(stringResource(R.string.section_badges)) {
+                    Column(Modifier.fillMaxWidth().padding(16.dp)) {
+                        Text(
+                            stringResource(R.string.badges_body, String.format(java.util.Locale.getDefault(), "%.1f", myBadges?.hours ?: 0.0)),
+                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        BadgeShelf(myBadges, Modifier.fillMaxWidth())
+                        val badgesHidden by vm.badgesHidden.collectAsStateWithLifecycle()
+                        Spacer(Modifier.height(8.dp))
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(stringResource(R.string.show_badges), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                                Text(stringResource(R.string.show_badges_desc), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Switch(
+                                checked = !badgesHidden,
+                                onCheckedChange = { on -> vm.setShowBadges(on) { ok -> if (!ok) vm.saved = context.getString(R.string.t_couldnt_send) } },
+                                colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary),
+                            )
+                        }
+                    }
+                }
+                Section(stringResource(R.string.section_you)) {
+                    SettingRow(
+                        Icons.Rounded.Star, stringResource(R.string.rewards_title),
+                        progress?.let { stringResource(R.string.rewards_summary, it.level, it.points) } ?: stringResource(R.string.rewards_row_body),
+                    ) { youSheet = "rewards" }
+                    SettingRow(Icons.Rounded.Public, stringResource(R.string.passport), stringResource(R.string.passport_count, engage?.passport?.size ?: 0)) { youSheet = "passport" }
+                }
+                            }
+                        }
+                        SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
+                    }
+                }
             }
             when (youSheet) {
                 "passport" -> engage?.let { app.talklive.ui.engage.StreakSheet(it, onDismiss = { youSheet = null }, premium = premium.active, restoring = engageVm.restoring, onRestore = engageVm::restoreStreak, onPlus = { plusWhy = it; youSheet = "plus-locked" }) } ?: run { youSheet = null }
@@ -303,6 +348,10 @@ fun ProfileScreen(
                 "notifications" -> NotificationSettingsSheet(vm.notif) { youSheet = null }
                 "feedback" -> app.talklive.ui.engage.FeedbackSheet(onSend = { engageVm.sendFeedback(it); vm.saved = context.getString(R.string.feedback_thanks) }) { youSheet = null }
                 "problem" -> app.talklive.ui.engage.FeedbackSheet(problem = true, onSend = { engageVm.sendFeedback(it, problem = true); vm.saved = context.getString(R.string.problem_thanks) }) { youSheet = null }
+                "news" -> androidx.compose.ui.window.Dialog(
+                    onDismissRequest = { youSheet = null },
+                    properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+                ) { app.talklive.ui.posts.NewsScreen(hiltViewModel(), onBack = { youSheet = null }) }
                 "support" -> androidx.compose.ui.window.Dialog(
                     onDismissRequest = { youSheet = null },
                     properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),

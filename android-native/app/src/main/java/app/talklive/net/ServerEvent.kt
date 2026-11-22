@@ -26,7 +26,8 @@ data class Partner(
             username = json?.optString("username")?.takeIf { it.isNotBlank() } ?: "Stranger",
             country = json?.optNullableString("country"),
             countryCode = json?.optNullableString("countryCode"),
-            animal = json?.optNullableString("animal"),
+            // The picture they show (a:fox, c:wizard, ...) first, then the plain spirit animal.
+            animal = app.talklive.social.animalOf(json?.optNullableString("avatar") ?: json?.optNullableString("animal")),
             premium = json?.optBoolean("premium") ?: false,
             timezone = json?.optNullableString("timezone"),
             lang = json?.optNullableString("lang"),

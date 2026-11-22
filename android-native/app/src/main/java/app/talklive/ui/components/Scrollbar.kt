@@ -11,7 +11,11 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -41,3 +45,21 @@ fun Modifier.verticalScrollbar(state: ScrollState, color: Color = Color.Unspecif
         }
     }
 }
+
+/**
+ * Fades the bottom edge of a scrolling area out while there is more below, so the next
+ * row shows half-visible and people know to scroll. Put it BEFORE `verticalScroll(state)`.
+ */
+fun Modifier.fadeBottomEdge(state: ScrollState, height: Dp = 44.dp): Modifier =
+    this.graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen).drawWithContent {
+        drawContent()
+        if (state.value < state.maxValue) {
+            val h = height.toPx().coerceAtMost(size.height)
+            drawRect(
+                brush = Brush.verticalGradient(listOf(Color.Black, Color.Transparent), startY = size.height - h, endY = size.height),
+                topLeft = Offset(0f, size.height - h),
+                size = Size(size.width, h),
+                blendMode = BlendMode.DstIn,
+            )
+        }
+    }

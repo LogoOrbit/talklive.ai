@@ -94,7 +94,20 @@ class SocialRepository @Inject constructor(
     }
 
     /** Own cover and badges ride along on state-sync and the registration result when the server sends them. */
+    private val _badgesHidden = MutableStateFlow(false)
+    /** The owner chose to hide their badges from other people (spec 9); they still see their own. */
+    val badgesHidden: StateFlow<Boolean> = _badgesHidden
+
+    /** "Show badges on my profile": true on success. */
+    suspend fun setShowBadges(on: Boolean): Boolean {
+        val r = socket.askWith("show-badges", JSONObject().put("on", on)) ?: return false
+        if (!r.optBoolean("ok")) return false
+        _badgesHidden.value = !r.optBoolean("on", on)
+        return true
+    }
+
     private fun applyOwn(o: JSONObject) {
+        if (o.has("badgesHidden")) _badgesHidden.value = o.optBoolean("badgesHidden")
         if (o.has("badges")) _myBadges.value = BadgeSet.from(o.optJSONObject("badges"))
         if (o.has("cover")) _myCover.value = o.optNullableString("cover")
     }
@@ -145,6 +158,43 @@ class SocialRepository @Inject constructor(
 
     private companion object { const val PAGE = 40 }
 
+    /** Faces seen for people (by client id), so a chat opened before the lists load still shows their avatar. */
+    private val faces = java.util.concurrent.ConcurrentHashMap<String, String>()
+    fun knownFace(clientId: String): String? = faces[clientId]
+
+    private val _likes = MutableStateFlow(LikesSummary())
+    /** Likes received (spec 8); [LikesSummary.people] is filled for Plus only. */
+    val likes: StateFlow<LikesSummary> = _likes
+
+    private val _liked = MutableStateFlow<Set<String>>(emptySet())
+    /** People this phone liked in this session. */
+    val liked: StateFlow<Set<String>> = _liked
+
+    private val _likeMatches = MutableSharedFlow<Person>(extraBufferCapacity = 4)
+    /** Someone who liked you back: "It's a match!". */
+    val likeMatches: SharedFlow<Person> = _likeMatches
+
+    /** Likes someone from recent history or the current partner; a mutual like becomes a match (the server sends like-match). */
+    fun likePartner(clientId: String) {
+        if (clientId.isBlank() || clientId in _liked.value) return
+        _liked.update { it + clientId }
+        scope.launch {
+            val r = socket.askWith("like-partner", JSONObject().put("clientId", clientId))
+            if (r == null || !r.optBoolean("ok")) {
+                _liked.update { it - clientId }
+                _toasts.tryEmit(UiText.Res(R.string.t_couldnt_send))
+            } else if (!r.optBoolean("matched")) _toasts.tryEmit(UiText.Res(R.string.like_sent))
+        }
+    }
+
+    /** Asks the server how many people liked you (and, for Plus, who). */
+    fun refreshLikes() {
+        scope.launch {
+            val r = socket.ask("likes-summary") ?: return@launch
+            _likes.value = LikesSummary(r.optInt("count"), r.optInt("matches"), r.optJSONArray("people").people())
+        }
+    }
+
     private val typingJobs = mutableMapOf<String, Job>()
     private var lastTypingSent = 0L
     private val random = SecureRandom()
@@ -161,6 +211,23 @@ class SocialRepository @Inject constructor(
         }
         socket.on("register-result") { a -> (a.firstOrNull() as? JSONObject)?.let { applyOwn(it) } }
         socket.on("state-sync") { a -> (a.firstOrNull() as? JSONObject)?.let { scope.launch { onStateSync(it) } } }
+        socket.on("like-match") { a ->
+            val o = a.firstOrNull() as? JSONObject ?: return@on
+            val who = Person.from(o)
+            if (who.clientId.isBlank()) return@on
+            scope.launch {
+                _likeMatches.emit(if (who.animal == null) who.copy(animal = faces[who.clientId]) else who)
+                _likes.update { it.copy(count = (it.count - 1).coerceAtLeast(0), matches = it.matches + 1, people = it.people.filterNot { p -> p.clientId == who.clientId }) }
+                // The server made them friends: fetch the lists again.
+                refreshLikes()
+                runCatching { refresh() }
+            }
+        }
+        socket.on("likes") { a ->
+            val o = a.firstOrNull() as? JSONObject ?: return@on
+            _likes.update { it.copy(count = o.optInt("count", it.count)) }
+            refreshLikes()
+        }
         socket.on("friend-id") { a -> (a.firstOrNull() as? JSONObject)?.optNullableString("friendId")?.let { _myFriendId.value = it } }
         socket.on("friend-online") { a ->
             val id = (a.firstOrNull() as? JSONObject)?.optString("clientId") ?: return@on
@@ -309,12 +376,20 @@ class SocialRepository @Inject constructor(
             )
         }
         // A friend call that connects arrives as a normal match.
-        scope.launch { socket.events.collect { e -> if (e is ServerEvent.Matched) { _outgoing.value = null; _incoming.value = null } } }
+        scope.launch {
+            socket.events.collect { e ->
+                if (e is ServerEvent.Matched) {
+                    _outgoing.value = null; _incoming.value = null
+                    e.partner.animal?.let { faces[e.partner.clientId] = it }
+                }
+            }
+        }
         // Messages that were still sending when the connection dropped go again.
         scope.launch {
             socket.events.collect { e ->
                 if (e != ServerEvent.Registered) return@collect
                 ackedIds.clear()
+                refreshLikes()
                 val since = changesSince
                 changesSince = socket.serverNow
                 if (since > 0) socket.emit("get-friend-changes", JSONObject().put("since", since))
@@ -855,8 +930,12 @@ class SocialRepository @Inject constructor(
         return "a" + (1..15).map { chars[random.nextInt(chars.length)] }.joinToString("")
     }
 
+    /** People from the server; one whose picture is missing keeps the face seen before, and every face seen is remembered. */
     private fun JSONArray?.people(): List<Person> =
-        if (this == null) emptyList() else (0 until length()).mapNotNull { optJSONObject(it)?.let(Person::from) }
+        if (this == null) emptyList() else (0 until length()).mapNotNull { optJSONObject(it)?.let(Person::from) }.map { p ->
+            val a = p.animal
+            if (a != null) { faces[p.clientId] = a; p } else faces[p.clientId]?.let { p.copy(animal = it) } ?: p
+        }
 
     private fun JSONArray?.strings(): List<String> =
         if (this == null) emptyList() else (0 until length()).map { optString(it) }
