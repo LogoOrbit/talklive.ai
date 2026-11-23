@@ -12433,7 +12433,7 @@ socket.on('friend-online', ({ clientId, username, countryCode, country } = {}) =
 // a call, so it loads once the page is up and stays out of the first paint.
 window.addEventListener('load', () => {
   const s = document.createElement('script');
-  s.src = '/engage.js?v=7274928180';
+  s.src = '/engage.js?v=a6b9c5922e';
   s.async = true;
   document.head.appendChild(s);
 });

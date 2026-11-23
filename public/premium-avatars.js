@@ -138,7 +138,8 @@
     if (!f.scene) {
       var k = Kit();
       var tree = f.build(k);
-      f.scene = { defs: k.defs, tree: Array.isArray(tree) ? k.G(tree) : tree };
+      // Everything stays inside the round tile, whatever box the face is shown in.
+      f.scene = { defs: k.defs, tree: k.G([Array.isArray(tree) ? k.G(tree) : tree], { clip: ell(64, 64, 64, 64) }) };
     }
     return f.scene;
   }
