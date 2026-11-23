@@ -6552,7 +6552,9 @@ function validId(id) {
 const FRIEND_ID_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O or 1/I/L
 const ACCOUNT_FRIEND_ID_LENGTH = 8;
 const GUEST_FRIEND_ID_LENGTH = 6;
-const GUEST_FRIEND_ID_GRACE_MS = 2 * 60000;
+// Long enough for a phone to sit in the background or lose signal without its
+// temporary ID changing under someone who has just been given it.
+const GUEST_FRIEND_ID_GRACE_MS = 10 * 60000;
 const guestFriendIds = new Map(); // clientId -> canonical guest code
 const guestFriendIdOwners = new Map(); // canonical guest code -> clientId
 const guestFriendIdTimers = new Map(); // clientId -> release Timeout
@@ -8972,7 +8974,13 @@ io.on('connection', (socket) => {
     const targetClientId = clientIdForFriendId(code);
     if (targetClientId === me.clientId) return reply({ ok: false, self: true, error: 'That is your own ID.' });
     if (!targetClientId || isBlockedPair(me.clientId, targetClientId) || ageAssurance.isRestricted(targetClientId)) {
-      return reply({ ok: false, error: 'No one has that ID right now.' });
+      // A guest ID is temporary: it changes when its owner reopens the app or
+      // has been offline a while, so a miss is usually a stale ID. The same
+      // words are used whatever the reason (including a block), so a search
+      // never tells anyone why.
+      return reply({ ok: false, error: isGuestFriendId(code)
+        ? 'That guest ID is not active right now. Guest IDs change when someone reopens the app. Ask for their current ID, or add them from your call or History.'
+        : 'No one has that ID right now.' });
     }
     store.recordFeature('friend_id_search');
     const snap = snapshotOf(targetClientId, me.clientId);
