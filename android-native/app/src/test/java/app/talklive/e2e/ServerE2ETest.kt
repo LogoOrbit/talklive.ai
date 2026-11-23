@@ -593,7 +593,7 @@ class ServerE2ETest {
         assertEquals(AuthResult.Ok, a.auth.updateNickname("Droid Tester"))
         assertEquals("Droid Tester", a.auth.account.value?.nickname)
         // The picked avatar is saved with the account (a free one: the rest are Plus).
-        val picked = listOf("fox", "cat").first { it != a.identity.animal }
+        val picked = listOf("owl", "penguin").first { it != a.identity.animal }
         a.identity.animal = picked
         a.socket.register()
         Thread.sleep(500)
