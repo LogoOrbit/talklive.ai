@@ -636,7 +636,6 @@ const posts = createPosts({
   },
 });
 app.use('/api/posts', posts.router);
-require('./news-seed').seedNews(store);
 // Photos uploaded with posts and news from the dashboard.
 app.use('/media/u', mediaHandler);
 
@@ -10639,6 +10638,8 @@ function warnIfStorageIsEphemeral() {
 // Wait for the store (Postgres or file) to load before accepting traffic so
 // bans, maintenance mode and admin credentials apply from the first request.
 store.ready.then(() => {
+  // Built-in news items (server/news-seed.js): after the store has loaded, or the load would replace them.
+  try { require('./news-seed').seedNews(store); } catch (e) { console.error('[news-seed]', e.message); }
   // Durable identity secret before anything can register.
   if (!process.env.IDENTITY_SECRET) IDENTITY_SECRET = store.getOrCreateSecret('identity');
   else {
