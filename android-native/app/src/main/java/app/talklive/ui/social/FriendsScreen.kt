@@ -1,5 +1,7 @@
 package app.talklive.ui.social
 
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Archive
 import androidx.compose.foundation.verticalScroll
 import app.talklive.ui.components.tapOnce
 import androidx.compose.material.icons.rounded.Lock
