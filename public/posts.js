@@ -53,7 +53,15 @@
   function typeName(k) { return tr('reaction_' + k, NAME[k]); }
   // The team's avatar: a clean person silhouette on a calm brand-blue disc.
   var LOGO = '<svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="tlpg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b4a66"/><stop offset="1" stop-color="#1f2a40"/></linearGradient></defs><circle cx="16" cy="16" r="16" fill="url(#tlpg)"/><circle cx="16" cy="12.500" r="5" fill="#cfe0ff"/><path d="M6.500 27c.4-5.200 4.300-8.300 9.500-8.300s9.100 3.100 9.500 8.300A15.900 15.900 0 0 1 16 32a15.900 15.900 0 0 1-9.500-5z" fill="#cfe0ff"/></svg>';
-  var PIN = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M14.500 3.500 20.500 9.500l-1.600 1.100-2.200-.4-3.700 3.700.4 4.200-1.400 1.400-3.600-3.600L3.800 20.200 3 19.400l4.900-4.600L4.300 11.200l1.400-1.400 4.200.4 3.700-3.700-.4-2.200z"/></svg>';
+  // A custom pushpin: domed brand-blue head with a highlight, a collar and a
+  // silver needle, tilted like it was just pressed in.
+  var PIN = '<svg viewBox="0 0 24 24" aria-hidden="true"><defs>'
+    + '<linearGradient id="tlPinHead" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5aa2ff"/><stop offset="1" stop-color="#1f5fd6"/></linearGradient>'
+    + '<linearGradient id="tlPinNeedle" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e5e9f0"/><stop offset="1" stop-color="#8b95a7"/></linearGradient></defs>'
+    + '<path d="M11.2 14.6 12 22.4l.8-7.8z" fill="url(#tlPinNeedle)"/>'
+    + '<path d="M8.2 13.2h7.6c.5 0 .8-.5.6-.9l-1.3-2.4H8.9l-1.3 2.4c-.2.4.1.9.6.9z" fill="#174bb0"/>'
+    + '<path d="M9 9.9 8.4 4.6C8.3 3.7 9 3 9.9 3h4.2c.9 0 1.6.7 1.5 1.6L15 9.9z" fill="url(#tlPinHead)"/>'
+    + '<path d="M10.3 4.4c.6-.3 1.4-.3 1.9 0l-.4 4.3h-1.2z" fill="#fff" opacity=".45"/></svg>';
 
   var CSS = '.tl-posts{width:100%;max-width:none;align-self:stretch;box-sizing:border-box;margin:18px auto 0;padding:0;text-align:start;contain:layout}.tl-posts[hidden]{display:none}'
     + '.tl-posts-title{margin:0 0 10px;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}'
@@ -63,7 +71,7 @@
     + '.tl-post-who{display:flex;flex-direction:column;min-width:0}.tl-post-who strong{font-size:15px;display:flex;align-items:center;gap:6px}'
     + '.tl-post-who small{color:var(--muted);font-size:12.5px}'
     + '.tl-post-tag{display:inline-block;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:#fff;background:linear-gradient(135deg,#2a6fe8,#00a8cc)}'
-    + '.tl-post-pin{display:inline-flex;width:16px;height:16px;color:#f5a623;transform:rotate(30deg)}.tl-post-pin svg{width:100%;height:100%}'
+    + '.tl-post-pin{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;margin-inline-start:4px;border-radius:50%;background:rgba(42,111,232,.14);transform:rotate(28deg);filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}.tl-post-pin svg{width:15px;height:15px}'
     + '.tl-post-text{margin:6px 14px 10px;font-size:15.5px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}'
     + '.tl-post-img{display:block;width:100%;max-height:480px;object-fit:cover;background:var(--bg-glow)}'
     + '.tl-post-stats{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;color:var(--muted);font-size:13.5px}'

@@ -12423,7 +12423,7 @@ window.addEventListener('load', () => {
 {
   const section = document.getElementById('tlPosts');
   if (section) {
-    const go = () => loadLazyScript('posts', '/posts.js?v=6435ed5dff').then(() => window.TalkLivePosts.mount(section), () => {});
+    const go = () => loadLazyScript('posts', '/posts.js?v=91c502c8fd').then(() => window.TalkLivePosts.mount(section), () => {});
     window.addEventListener('load', () => { (window.requestIdleCallback || ((f) => setTimeout(f, 300)))(go, { timeout: 2500 }); });
   }
 }
