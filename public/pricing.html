@@ -191,8 +191,8 @@ details.more summary::after { content: " +"; } details.more[open] summary::after
         </details>
       </div>
       <div class="grow"></div>
-      <a id="plusBtn" class="cta primary" href="https://play.google.com/store/apps/details?id=app.talklive" rel="noopener" data-app-link>Get Plus in the Android app</a>
-      <p class="cta-note">Web checkout is coming soon. Your Plus unlocks here when you sign in with the same account.</p>
+      <button type="button" id="plusBtn" class="cta primary">Notify me when Plus launches</button>
+      <p class="cta-note">Plus and passes will be sold only in the TalkLive Android app, which is coming soon to Google Play. Once you buy, Plus unlocks here too when you sign in with the same account.</p>
     </div>
   </section>
 
@@ -205,7 +205,7 @@ details.more summary::after { content: " +"; } details.more[open] summary::after
   <section class="faq" aria-labelledby="faq-h">
     <h2 id="faq-h" class="sr-only">Questions</h2>
     <details><summary>What is the difference between Plus and a pass?</summary><p>They unlock exactly the same things. Plus is billed monthly or yearly, in your own currency, and renews until you cancel. A pass is a one-time payment for 1, 7 or 15 days and then simply ends. Prices are set per country by Google Play.</p></details>
-    <details><summary>How do I buy?</summary><p>Open the TalkLive Android app, tap Plus and choose a plan or a pass. You pay through Google Play. Your Plus works on the website too when you sign in with the same account.</p></details>
+    <details><summary>How do I buy?</summary><p>Plus and passes will be sold only in the TalkLive Android app, through Google Play. The app is not on Google Play yet: tap "Notify me when Plus launches" and we will email you the day it is. Your Plus will work on the website too when you sign in with the same account.</p></details>
     <details><summary>How do I cancel Plus?</summary><p>In Google Play: Payments &amp; subscriptions, Subscriptions, TalkLive. You keep Plus until the end of the month or year you paid for.</p></details>
     <details><summary>Can I buy a pass while I have Plus?</summary><p>Yes. The days are added on top, so you never lose time you paid for.</p></details>
     <details><summary>Refunds</summary><p>Purchases go through Google Play, so refunds follow Google Play's rules. The <a href="/refund">Refund Policy</a> explains the details, and <a href="/contact">support</a> is happy to help.</p></details>
@@ -319,9 +319,27 @@ details.more summary::after { content: " +"; } details.more[open] summary::after
       if (chip && it.compareAt) { chip.hidden = false; chip.textContent = 'Save ' + it.compareAt.savePercent + '%'; chip.title = it.compareAt.basisLabel; }
     });
   }).catch(function () {});
-  // The website does not sell Plus yet; the buttons are disabled and the Play links count as the click.
-  [].forEach.call(document.querySelectorAll('[data-app-link], #appBannerBtn'), function (a) {
-    a.addEventListener('click', function () { track('premium_app_download_click'); });
+  // Plus is sold only in the Android app, which is not on Google Play yet, so
+  // the button opens the launch waitlist (plus-app-popup.js) instead of a
+  // store link that would 404.
+  var popupLoad = null;
+  function openWaitlist() {
+    if (window.TalkLivePlusPopup) { window.TalkLivePlusPopup.open(); return; }
+    if (!popupLoad) {
+      popupLoad = new Promise(function (resolve, reject) {
+        var sc = document.createElement('script');
+        sc.src = '/plus-app-popup.js?v=9b689db10e';
+        sc.onload = resolve;
+        sc.onerror = function () { popupLoad = null; reject(new Error('popup')); };
+        document.head.appendChild(sc);
+      });
+    }
+    popupLoad.then(function () { window.TalkLivePlusPopup.open(); }).catch(function () {});
+  }
+  window.trackGrowthEvent = window.trackGrowthEvent || track;
+  plusBtn.addEventListener('click', function () {
+    if (plusBtn.getAttribute('aria-disabled') === 'true') return;
+    openWaitlist();
   });
 
   // The true state of Plus on this profile, as the server reports it.
@@ -346,10 +364,9 @@ details.more summary::after { content: " +"; } details.more[open] summary::after
       manage.hidden = d.source !== 'play';
       plusBtn.textContent = 'Plus is active';
       plusBtn.setAttribute('aria-disabled', 'true');
-      plusBtn.removeAttribute('href');
     } else if (d.state === 'expired' && d.expiresAt) {
       title.textContent = 'Your Plus ended on ' + when(d.expiresAt);
-      body.textContent = 'You can get it again in the Android app.';
+      body.textContent = 'Plus will be on sale again when the Android app launches on Google Play.';
       manage.hidden = true;
     } else return;
     box.hidden = false;

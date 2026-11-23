@@ -1338,8 +1338,7 @@ if (document.getElementById('interestQuick')) {
   document.getElementById('interestQuick').addEventListener('click', (e) => {
     const chip = e.target.closest('.tl-quick-chip');
     if (!chip) return;
-    selectedInterests.add(chip.dataset.interest);
-    renderInterestTags();
+    tryAddInterest(chip.dataset.interest);
   });
 }
 // The first readout is deliberately NOT here. It reads isPremiumUser and
@@ -1347,8 +1346,42 @@ if (document.getElementById('interestQuick')) {
 // file, so it is run from there - after everything it depends on exists.
 
 // --- Custom interest tags (free text, no suggestions) ---
+// Free: 2 interest tags (the server matches on only that many); Plus: up to 10.
+// Every way of adding one goes through tryAddInterest, so a third tag on Free
+// is refused with the upsell instead of being shown and then quietly ignored.
+function interestCap() {
+  return isPremiumUser ? 10 : (freeLimits.interests || 2);
+}
+function tryAddInterest(value) {
+  if (!value) return false;
+  const cap = interestCap();
+  if (!selectedInterests.has(value) && selectedInterests.size >= cap) {
+    if (!isPremiumUser) showPremiumUpsell(t('premiumInterestLimit', { n: cap }), 'interests');
+    renderInterestTags();
+    return false;
+  }
+  selectedInterests.add(value);
+  renderInterestTags();
+  return true;
+}
+function renderInterestCapNote() {
+  let note = document.getElementById('interestCapNote');
+  if (!note) {
+    note = document.createElement('p');
+    note.id = 'interestCapNote';
+    note.className = 'tl-filter-cap-note';
+    note.setAttribute('aria-live', 'polite');
+    note.style.cssText = 'margin:6px 0 0;font-size:12.5px;color:var(--muted,#8a90a8)';
+    interestTagsEl.insertAdjacentElement('afterend', note);
+  }
+  const cap = interestCap();
+  const n = selectedInterests.size;
+  note.hidden = isPremiumUser && n < cap;
+  note.textContent = isPremiumUser ? t('interestCapPlus', { n, cap }) : t('interestCapFree', { n: Math.min(n, cap), cap });
+}
 function renderInterestTags() {
   if (filtersReady) syncFilterReadout();
+  if (filtersReady) renderInterestCapNote();
   interestTagsEl.innerHTML = '';
   selectedInterests.forEach((interest) => {
     const tag = document.createElement('span');
@@ -1364,16 +1397,7 @@ function renderInterestTags() {
 
 function addInterestFromInput() {
   const value = interestInput.value.trim();
-  if (!value) return;
-  // Free: 2 interest tags (the server keeps only that many); Plus: up to 10.
-  const interestCap = isPremiumUser ? 10 : (freeLimits.interests || 2);
-  if (!selectedInterests.has(value) && selectedInterests.size >= interestCap) {
-    if (!isPremiumUser) showPremiumUpsell(t('premiumInterestLimit', { n: interestCap }), 'interests');
-    return;
-  }
-  selectedInterests.add(value);
-  interestInput.value = '';
-  renderInterestTags();
+  if (tryAddInterest(value)) interestInput.value = '';
 }
 
 interestInput.addEventListener('keydown', (e) => {
@@ -1852,7 +1876,7 @@ function closeQuickSettings() {
 // page over its size budget); it is fetched once the page is idle, or on the
 // first tap of the gear if that comes sooner.
 // It also brings settings.css, which the screen waits for (html.tl-set-css).
-var SETTINGS_PANEL_SRC = '/settings-panel.js?v=4baf9ad904';
+var SETTINGS_PANEL_SRC = '/settings-panel.js?v=0484df464a';
 // Top 3 films on profiles (fav-films.js), loaded when a profile first opens.
 var filmsLoading = null;
 function withFilms(cb) {
@@ -2926,7 +2950,7 @@ function openShop() {
 if (settingsShopRow) settingsShopRow.addEventListener('click', openShop);
 {
   const link = document.getElementById('shopAppLink');
-  if (link) link.addEventListener('click', () => trackGrowthEvent('premium_upsell_click'));
+  if (link) link.addEventListener('click', () => { trackGrowthEvent('premium_upsell_click'); openPlusPopup(); });
 }
 if (closeShopBtn) closeShopBtn.addEventListener('click', () => closeModal(shopModal));
 
@@ -3069,6 +3093,15 @@ function currentDisplayName() {
   return accountNickname || tempUsername || '';
 }
 
+// The result of Save, said right under the field: a toast alone was easy to
+// miss (or hidden behind the settings screen), which read as "nothing happened".
+function setNameStatus(text, tone) {
+  const el = document.getElementById('tempNameStatus');
+  if (!el) return;
+  el.textContent = text || '';
+  el.style.color = tone === 'error' ? 'var(--danger, #ff6b6b)' : tone === 'success' ? 'var(--green, #2ed47a)' : '';
+}
+
 function syncSaveNameBtn() {
   if (!saveTempNameBtn || !tempUsernameInput) return;
   const val = tempUsernameInput.value.trim();
@@ -3087,7 +3120,7 @@ function renderSettingsIdentity() {
 }
 
 if (tempUsernameInput) {
-  tempUsernameInput.addEventListener('input', syncSaveNameBtn);
+  tempUsernameInput.addEventListener('input', () => { setNameStatus(''); syncSaveNameBtn(); });
   // Enter saves, the same as tapping the button next to it.
   tempUsernameInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && saveTempNameBtn && !saveTempNameBtn.disabled) {
@@ -3108,19 +3141,33 @@ if (saveTempNameBtn) {
     // everyone who met this user; say what is wrong before anything is sent.
     const nick = window.TalkLiveNickname ? window.TalkLiveNickname.check(tempUsernameInput.value) : { ok: true, value: tempUsernameInput.value.trim() };
     if (!nick.ok) {
+      setNameStatus(t(nick.error), 'error');
       showToast(t(nick.error), 'error');
       tempUsernameInput.focus();
       return;
     }
     const val = nick.value;
-    if (val === currentDisplayName()) return;
+    if (val === currentDisplayName()) { setNameStatus(t('nameSavedInline'), 'success'); return; }
     tempUsernameInput.value = val;
     vibrate(15);
     if (accountNickname) {
       // Signed in: the account owns the name, so the server has to agree.
       nicknameSaveFromSettings = true;
       saveTempNameBtn.disabled = true;
+      setNameStatus(t('nameSaving'));
+      if (!socket.connected) {
+        nicknameSaveFromSettings = false;
+        setNameStatus(t('errNoConnection'), 'error');
+        syncSaveNameBtn();
+        return;
+      }
       socket.emit('update-nickname', { nickname: val });
+      setTimeout(() => {
+        if (!nicknameSaveFromSettings) return;
+        nicknameSaveFromSettings = false;
+        setNameStatus(t('errNoServerReply'), 'error');
+        syncSaveNameBtn();
+      }, 10000);
       return;
     }
     tempUsername = val;
@@ -3128,6 +3175,7 @@ if (saveTempNameBtn) {
     // Push it to the server for the current/next match.
     registerProfile();
     showToast(t('tempNameSaved'), 'success');
+    setNameStatus(t('nameSavedInline'), 'success');
     renderSettingsProfileRow();
     renderLinkProfilePrompts();
     // Grey the button out until the name is edited again.
@@ -3910,7 +3958,7 @@ function myProfileIsOpen() { return !!(window.TalkLiveProfile && window.TalkLive
 function renderMyProfileCard() { if (window.TalkLiveProfile) window.TalkLiveProfile.render(); }
 function withProfileUi(cb) {
   if (window.TalkLiveProfile) { cb(window.TalkLiveProfile); return; }
-  loadLazyScript('profile', '/profile-ui.js?v=db78d3fd70')
+  loadLazyScript('profile', '/profile-ui.js?v=cb8ecf71c2')
     .then(() => window.TalkLiveProfile.ready)
     .then(() => cb(window.TalkLiveProfile), () => showToast(t('errNoConnection'), 'warn'));
 }
@@ -4638,6 +4686,7 @@ socket.on('update-nickname-result', ({ ok, nickname, error, errorKey }) => {
     if (errorKey) error = t(errorKey);
     if (fromSettings) {
       showToast(error || t('statusNicknameUpdated'), error ? 'error' : 'success');
+      setNameStatus(error || t('nameSavedInline'), error ? 'error' : 'success');
       syncSaveNameBtn();
       return;
     }
@@ -4647,7 +4696,7 @@ socket.on('update-nickname-result', ({ ok, nickname, error, errorKey }) => {
   localStorage.setItem('talklive_nickname', nickname);
   renderAccountState();
   renderSettingsProfileRow();
-  if (fromSettings) showToast(t('tempNameSaved'), 'success');
+  if (fromSettings) { showToast(t('tempNameSaved'), 'success'); setNameStatus(t('nameSavedInline'), 'success'); }
   else showAccountStatus(t('statusNicknameUpdated'), 'success');
 });
 
@@ -9400,6 +9449,7 @@ callMainBtn.addEventListener('click', () => {
   } else if (mode === 'loading') {
     // Cancel an in-progress search/connection.
     cancelOutgoingCallBack();
+    searchCancelledAt = Date.now();
     socket.emit('leave');
     goIdleOnCallScreen();
   } else {
@@ -10091,6 +10141,7 @@ window.addEventListener('popstate', async () => {
   // as though someone were on the line.
   if (callState === 'searching' && !callPanel.classList.contains('hidden')) {
     cancelOutgoingCallBack();
+    searchCancelledAt = Date.now();
     socket.emit('leave');
     resetUI();
     primeBackGuard();
@@ -10974,7 +11025,11 @@ function sendAdsConversion() {
   window.gtag('event', 'conversion', { send_to: 'AW-18500257801/LPruCP3u4ZQdEImQzvVE' });
 }
 
+// A match the server made while the Cancel was on its way: the server takes it
+// back (undoCancelledPairing), so it is not shown either.
+let searchCancelledAt = 0;
 socket.on('matched', async ({ initiator, partner, rematched, callback, samePersonality, sameFilms, filtered, voice, pairId }) => {
+  if (!callback && !isSearching && Date.now() - searchCancelledAt < 3000) return;
   markSearchAcked();
   // The server picks which calls to listen to for Voice check, and says when
   // this person's own gender filter chose the partner.
@@ -12139,6 +12194,7 @@ let freeLimits = { countries: 2, interests: 2 };
 // in renderChips); this is just the first paint.
 filtersReady = true;
 syncFilterReadout();
+renderInterestCapNote();
 updateFiltersBadge();
 renderFilterPresets();
 { const hs = document.getElementById('homeFilterSummary'); if (hs) hs.addEventListener('click', () => { const b = document.getElementById('filtersBtn'); if (b) b.click(); }); }
@@ -12187,12 +12243,15 @@ function dropLockedFilters() {
   const cap = freeLimits.countries;
   const inc = appliedFilters.includeCountries || [];
   const exc = appliedFilters.excludeCountries || [];
+  const ints = appliedFilters.interests || [];
+  const intCap = freeLimits.interests || 2;
   const genderLocked = appliedFilters.prefGender && appliedFilters.prefGender !== 'any';
-  if (!genderLocked && inc.length <= cap && exc.length <= cap) return;
+  if (!genderLocked && inc.length <= cap && exc.length <= cap && ints.length <= intCap) return;
   appliedFilters = Object.assign({}, appliedFilters, {
     prefGender: 'any',
     includeCountries: inc.slice(0, cap),
     excludeCountries: exc.slice(0, cap),
+    interests: ints.slice(0, intCap),
   });
   persistAppliedFilters();
   syncFilterDraftUiFromApplied();
@@ -12203,7 +12262,7 @@ function updatePremiumUi() {
   // "👑 Premium" locks/hints show only on the free tier.
   document.querySelectorAll('.premium-lock').forEach((el) => el.classList.toggle('hidden', isPremiumUser));
   document.documentElement.classList.toggle('tl-free', !isPremiumUser);
-  if (filtersReady) syncFilterReadout();
+  if (filtersReady) { syncFilterReadout(); renderInterestCapNote(); }
 }
 updatePremiumUi();
 
@@ -12218,22 +12277,21 @@ window.addEventListener('load', () => setTimeout(() => {
 
 // The one Plus popup (public/plus-app-popup.js, lazy-loaded): every locked
 // feature on the site opens it and nothing else. Plus is sold only in the
-// Android app, so the popup is "Get TalkLive Plus in the Android app".
-const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=app.talklive';
+// Android app (not on Google Play yet), so the popup is a launch waitlist.
 let plusPopupLoad = null;
 function openPlusPopup() {
   if (window.TalkLivePlusPopup) { window.TalkLivePlusPopup.open(); return; }
   if (!plusPopupLoad) {
     plusPopupLoad = new Promise((resolve, reject) => {
       const s = document.createElement('script');
-      s.src = '/plus-app-popup.js?v=c7e9f97074';
+      s.src = '/plus-app-popup.js?v=9b689db10e';
       s.async = true;
       s.onload = resolve;
       s.onerror = () => { plusPopupLoad = null; reject(new Error('plus popup')); };
       document.head.appendChild(s);
     });
   }
-  plusPopupLoad.then(() => window.TalkLivePlusPopup.open()).catch(() => { window.open(PLAY_STORE_URL, '_blank', 'noopener'); });
+  plusPopupLoad.then(() => window.TalkLivePlusPopup.open()).catch(() => { location.href = '/pricing'; });
 }
 window.tlPlusPopup = openPlusPopup;
 // Message and perk are kept by the callers; the popup is the same for all.
