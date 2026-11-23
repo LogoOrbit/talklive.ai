@@ -1442,12 +1442,12 @@ summary:active {
  * buttons - no more. The gear moves into the More menu, and the visitor count steps aside while a
  * conversation is on so the stranger's name is not cut to one letter.
  */
-.nav-menu-item.nav-menu-phone { display: none; }
+.nav-btn.settings-btn { display: none; }
 @media (max-width: 560px) {
-  .nav-btn.settings-btn { display: none; }
-  .nav-menu .nav-menu-item.nav-menu-phone { display: flex; }
   .topbar.nav.connected .nav-live { display: none; }
 }
+/* Games and question ideas are not offered from the menu. */
+#gameBtn, #icebreakBtn { display: none !important; }
 
 /* Phone transcript: the animal opener reads as a quiet caption like the other
    system lines, and system lines drop their timestamp - it wrapped the text
@@ -1456,12 +1456,6 @@ summary:active {
   .msg.system.system-animal { font-size: 13px; font-weight: 500; color: var(--muted); }
   .msg.system.system-animal-match { font-size: 13px; }
   .msg.system .msg-time { display: none; }
-}
-
-/* Reminder dot on the "Play a game" menu row (see setGameNudge in chat.js). */
-#gameBtn.game-nudge::after {
-  content: ''; width: 8px; height: 8px; margin-left: auto; border-radius: 50%;
-  background: var(--accent); flex: 0 0 auto;
 }
 
 /* ===========================================================================
