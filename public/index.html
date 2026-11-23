@@ -61,7 +61,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
      does so with its own `tl-` class names so nothing above can reach it. -->
-<link rel="stylesheet" href="ui.css?v=439264fdc4" />
+<link rel="stylesheet" href="ui.css?v=509087af79" />
 <link rel="stylesheet" href="auth.css?v=aae37ee102" />
 <!-- The top bar, shared with /chat. Loaded after everything else because it
      owns the header outright: one button language, one radius, one focus ring
@@ -1150,6 +1150,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           </section>
           <!-- Streak, countries and likes: one compact row of small chips,
                filled by engage.js. Reserved here so the page does not jump. -->
+          <a class="tl-news-btn" href="/news"><i class="ti ti-news" aria-hidden="true"></i><span>What’s new on TalkLive? Read the news</span><i class="ti ti-chevron-right" aria-hidden="true"></i></a>
           <section class="tl-engage" id="tlEngage"></section>
 
           <p class="consent-line">
