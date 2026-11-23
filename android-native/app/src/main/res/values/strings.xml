@@ -876,6 +876,9 @@
     <string name="cover_group_colors">Colours</string>
     <string name="cover_group_gradients">Gradients</string>
     <string name="cover_group_plus">Plus, animated</string>
+    <string name="cover_group_cinematic">Cinematic</string>
+    <string name="cover_group_pixel">Pixel art</string>
+    <string name="cover_animated_note">Animated</string>
     <string name="cover_ocean">Ocean</string>
     <string name="cover_sky">Sky</string>
     <string name="cover_mint">Mint</string>
@@ -1041,5 +1044,13 @@
     <string name="story_max_gifs">Up to %1$d GIFs</string>
     <string name="story_seen_by">Seen by</string>
     <string name="story_delete">Delete</string>
+    <string name="story_posting">Posting…</string>
+    <string name="story_posted">Posted</string>
+    <string name="story_failed_short">Not posted</string>
+    <string name="story_retry">Try again</string>
+    <string name="story_leave_title">Discard this story?</string>
+    <string name="story_leave_body">Your story is not posted yet. Keep editing, or discard it.</string>
+    <string name="story_keep_editing">Continue editing</string>
+    <string name="story_discard">Discard story</string>
     <string name="story_no_views">No one yet</string>
 </resources>

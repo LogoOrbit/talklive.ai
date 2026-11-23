@@ -189,7 +189,7 @@ private fun EditProfileContent(
                         onPick = { coverSel = it; error = null },
                         onLocked = { },
                         previewLocked = true,
-                        height = 320.dp,
+                        height = 420.dp,
                     )
                 }
                 EditTab.Name -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {

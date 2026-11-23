@@ -1,0 +1,200 @@
+[
+ {
+  "id": "cin:misty",
+  "kind": "cin",
+  "file": "misty",
+  "name": "Misty Ranges"
+ },
+ {
+  "id": "cin:pines",
+  "kind": "cin",
+  "file": "pines",
+  "name": "Cathedral Pines"
+ },
+ {
+  "id": "cin:tide",
+  "kind": "cin",
+  "file": "tide",
+  "name": "Moonlit Tide"
+ },
+ {
+  "id": "cin:peak",
+  "kind": "cin",
+  "file": "peak",
+  "name": "Lone Peak"
+ },
+ {
+  "id": "plus:cin-nebula",
+  "kind": "cin",
+  "file": "nebula",
+  "name": "Orion Drift"
+ },
+ {
+  "id": "plus:cin-ringed",
+  "kind": "cin",
+  "file": "ringed",
+  "name": "Ringed Horizon"
+ },
+ {
+  "id": "plus:cin-aurora",
+  "kind": "cin",
+  "file": "aurora",
+  "name": "Northern Veil"
+ },
+ {
+  "id": "plus:cin-dunes",
+  "kind": "cin",
+  "file": "dunes",
+  "name": "Desert Dusk"
+ },
+ {
+  "id": "plus:cin-silk",
+  "kind": "cin",
+  "file": "silk",
+  "name": "Silk Waves"
+ },
+ {
+  "id": "plus:cin-prism",
+  "kind": "cin",
+  "file": "prism",
+  "name": "Prism Light"
+ },
+ {
+  "id": "plus:cin-brutalist",
+  "kind": "cin",
+  "file": "brutalist",
+  "name": "Brutalist Dawn"
+ },
+ {
+  "id": "plus:cin-skyline",
+  "kind": "cin",
+  "file": "skyline",
+  "name": "Skyline 2099"
+ },
+ {
+  "id": "plus:cin-rain",
+  "kind": "cin",
+  "file": "rain",
+  "name": "Rain City"
+ },
+ {
+  "id": "plus:cin-alley",
+  "kind": "cin",
+  "file": "alley",
+  "name": "Neon Alley"
+ },
+ {
+  "id": "plus:cin-isles",
+  "kind": "cin",
+  "file": "isles",
+  "name": "Floating Isles"
+ },
+ {
+  "id": "plus:cin-golden",
+  "kind": "cin",
+  "file": "golden",
+  "name": "Golden Sea"
+ },
+ {
+  "id": "plus:cin-eclipse",
+  "kind": "cin",
+  "file": "eclipse",
+  "name": "Eclipse"
+ },
+ {
+  "id": "pix:voyage",
+  "kind": "pix",
+  "file": "voyage",
+  "name": "Isle Voyage"
+ },
+ {
+  "id": "pix:village",
+  "kind": "pix",
+  "file": "village",
+  "name": "Night Village"
+ },
+ {
+  "id": "pix:hills",
+  "kind": "pix",
+  "file": "hills",
+  "name": "Sunset Hills"
+ },
+ {
+  "id": "pix:cabin",
+  "kind": "pix",
+  "file": "cabin",
+  "name": "Snow Cabin"
+ },
+ {
+  "id": "plus:pix-metropolis",
+  "kind": "pix",
+  "file": "metropolis",
+  "name": "Neon Metropolis"
+ },
+ {
+  "id": "plus:pix-synth",
+  "kind": "pix",
+  "file": "synth",
+  "name": "Synth Horizon"
+ },
+ {
+  "id": "plus:pix-fireflies",
+  "kind": "pix",
+  "file": "fireflies",
+  "name": "Firefly Woods"
+ },
+ {
+  "id": "plus:pix-planetrise",
+  "kind": "pix",
+  "file": "planetrise",
+  "name": "Planet Rise"
+ },
+ {
+  "id": "plus:pix-rainstreet",
+  "kind": "pix",
+  "file": "rainstreet",
+  "name": "Rain Street"
+ },
+ {
+  "id": "plus:pix-arcade",
+  "kind": "pix",
+  "file": "arcade",
+  "name": "Arcade Night"
+ },
+ {
+  "id": "plus:pix-peaks",
+  "kind": "pix",
+  "file": "peaks",
+  "name": "Starry Peaks"
+ },
+ {
+  "id": "plus:pix-kingdom",
+  "kind": "pix",
+  "file": "kingdom",
+  "name": "Crystal Kingdom"
+ },
+ {
+  "id": "plus:pix-oasis",
+  "kind": "pix",
+  "file": "oasis",
+  "name": "Desert Oasis"
+ },
+ {
+  "id": "plus:pix-temple",
+  "kind": "pix",
+  "file": "temple",
+  "name": "Cherry Temple"
+ },
+ {
+  "id": "plus:pix-deepsea",
+  "kind": "pix",
+  "file": "deepsea",
+  "name": "Deep Sea"
+ },
+ {
+  "id": "plus:pix-volcano",
+  "kind": "pix",
+  "file": "volcano",
+  "name": "Volcano Isle"
+ }
+]

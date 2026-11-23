@@ -29,6 +29,20 @@
   var BY_ID = {};
   LIST.forEach(function (c) { BY_ID[c.id] = c; });
 
+  // Art covers (tools/covers): a painted scene or a pixel-art scene, each with
+  // its own live layer on top (ART_FX). The first of each collection are free.
+  var ART = [['cin:misty', 'cin', 'misty', 'Misty Ranges'], ['cin:pines', 'cin', 'pines', 'Cathedral Pines'], ['cin:tide', 'cin', 'tide', 'Moonlit Tide'], ['cin:peak', 'cin', 'peak', 'Lone Peak'], ['plus:cin-nebula', 'cin', 'nebula', 'Orion Drift'], ['plus:cin-ringed', 'cin', 'ringed', 'Ringed Horizon'], ['plus:cin-aurora', 'cin', 'aurora', 'Northern Veil'], ['plus:cin-dunes', 'cin', 'dunes', 'Desert Dusk'], ['plus:cin-silk', 'cin', 'silk', 'Silk Waves'], ['plus:cin-prism', 'cin', 'prism', 'Prism Light'], ['plus:cin-brutalist', 'cin', 'brutalist', 'Brutalist Dawn'], ['plus:cin-skyline', 'cin', 'skyline', 'Skyline 2099'], ['plus:cin-rain', 'cin', 'rain', 'Rain City'], ['plus:cin-alley', 'cin', 'alley', 'Neon Alley'], ['plus:cin-isles', 'cin', 'isles', 'Floating Isles'], ['plus:cin-golden', 'cin', 'golden', 'Golden Sea'], ['plus:cin-eclipse', 'cin', 'eclipse', 'Eclipse'], ['pix:voyage', 'pix', 'voyage', 'Isle Voyage'], ['pix:village', 'pix', 'village', 'Night Village'], ['pix:hills', 'pix', 'hills', 'Sunset Hills'], ['pix:cabin', 'pix', 'cabin', 'Snow Cabin'], ['plus:pix-metropolis', 'pix', 'metropolis', 'Neon Metropolis'], ['plus:pix-synth', 'pix', 'synth', 'Synth Horizon'], ['plus:pix-fireflies', 'pix', 'fireflies', 'Firefly Woods'], ['plus:pix-planetrise', 'pix', 'planetrise', 'Planet Rise'], ['plus:pix-rainstreet', 'pix', 'rainstreet', 'Rain Street'], ['plus:pix-arcade', 'pix', 'arcade', 'Arcade Night'], ['plus:pix-peaks', 'pix', 'peaks', 'Starry Peaks'], ['plus:pix-kingdom', 'pix', 'kingdom', 'Crystal Kingdom'], ['plus:pix-oasis', 'pix', 'oasis', 'Desert Oasis'], ['plus:pix-temple', 'pix', 'temple', 'Cherry Temple'], ['plus:pix-deepsea', 'pix', 'deepsea', 'Deep Sea'], ['plus:pix-volcano', 'pix', 'volcano', 'Volcano Isle']];
+  var ART_FX = {"misty": "drift fog:0.6 motes", "pines": "drift motes fog:0.86", "tide": "drift twinkle:0.5 glints:0.62:0.98:0.06:0.4", "peak": "drift snow", "nebula": "drift twinkle:1 shoot", "ringed": "drift twinkle:1 shoot", "aurora": "drift twinkle:0.55 shoot", "dunes": "drift dust", "silk": "drift2", "prism": "drift sparkle", "brutalist": "drift dust", "skyline": "drift twinkle:0.45 traffic", "rain": "drift rain", "alley": "drift rain fog:0.6", "isles": "drift motes", "golden": "drift glints:0.57:1:0.5:0.95", "eclipse": "drift twinkle:1 shoot", "voyage": "glints:0.68:1:0:1", "village": "twinkle:0.5 shoot", "hills": "motes", "cabin": "snow", "metropolis": "twinkle:0.45 traffic", "synth": "twinkle:0.4 shoot", "fireflies": "fireflies twinkle:0.3", "planetrise": "twinkle:1 shoot", "rainstreet": "rain", "arcade": "sparkle", "peaks": "twinkle:0.6 shoot", "kingdom": "twinkle:0.55 sparkle", "oasis": "glints:0.78:0.85:0.66:0.88 dust", "temple": "petals", "deepsea": "bubbles", "volcano": "embers:0.727:0.32"};
+  var ART_V = '1';
+  var ART_BY = {};
+  ART.forEach(function (a) {
+    var c = { id: a[0], kind: 'art', art: a[1], file: a[2], name: a[3], fx: ART_FX[a[2]] || '' };
+    LIST.push(c); BY_ID[c.id] = c; ART_BY[c.id] = c;
+  });
+  function artUrl(c, thumb) {
+    return '/covers/' + c.art + '/' + (thumb && c.art === 'cin' ? 't/' : '') + c.file + (c.art === 'cin' ? '.webp' : '.png') + '?v=' + ART_V;
+  }
+
   function svgUri(svg) { return 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")'; }
 
   // A sakura petal tile: a few petals at different angles.
@@ -116,17 +130,35 @@
       + '@keyframes tlcvFly{0%{background-position:0 0}100%{background-position:40px -30px}}@keyframes tlcvFly2{0%{background-position:0 0}100%{background-position:-36px 34px}}'
       + '@keyframes tlcvBlink{0%,100%{opacity:.35}45%{opacity:1}}';
 
+    // Art covers: the picture, a slow camera drift over it, and a canvas of moving light on top.
+    s += '.tl-cv>.tl-cv-art{inset:0;background-size:cover;background-position:center;will-change:transform}'
+      + '.tl-cv>.tl-cv-art.px{image-rendering:pixelated;image-rendering:crisp-edges}'
+      + '.tl-cv>.tl-cv-art.drift{animation:tlcvDrift 38s ease-in-out infinite alternate}'
+      + '.tl-cv>.tl-cv-art.drift2{animation:tlcvDrift2 26s ease-in-out infinite alternate}'
+      + '.tl-cv>canvas.tl-cv-fx{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;z-index:1}'
+      + '.tl-cv>canvas.tl-cv-fx.px{image-rendering:pixelated;image-rendering:crisp-edges}'
+      + '@keyframes tlcvDrift{0%{transform:scale(1.06) translate(-1.6%,.6%)}100%{transform:scale(1.13) translate(1.6%,-1.2%)}}'
+      + '@keyframes tlcvDrift2{0%{transform:scale(1.1) translate(-3%,1%)}100%{transform:scale(1.18) translate(3%,-2%)}}';
     s += '@media (prefers-reduced-motion:reduce){.tl-cv>i{animation:none!important}}';
 
     // The picker: swatches in one scrollable box, a lock on scenes you cannot use yet.
     s += '.tl-cvp{display:grid;gap:10px}.tl-cvp-boxwrap{position:relative}'
       + '.tl-cvp{position:relative}'
-      + '.tl-cvp-box{max-height:152px;overflow-y:auto;overscroll-behavior:contain;padding:2px 10px 2px 2px;scrollbar-width:thin;scrollbar-color:var(--accent-2,#00d4ff) rgba(128,128,160,.25)}'
+      + '.tl-cvp-box{max-height:340px;overflow-y:auto;overscroll-behavior:contain;padding:2px 10px 2px 2px;scrollbar-width:thin;scrollbar-color:var(--accent-2,#00d4ff) rgba(128,128,160,.25)}'
       + '.tl-cvp-box::-webkit-scrollbar{width:7px;-webkit-appearance:none}'
       + '.tl-cvp-box::-webkit-scrollbar-track{background:rgba(128,128,160,.22);border-radius:99px}'
       + '.tl-cvp-box::-webkit-scrollbar-thumb{background:var(--accent-2,#00d4ff);border-radius:99px}'
-      + '.tl-cvp:not(.is-end)::after{content:"";position:absolute;left:0;right:12px;top:98px;height:56px;pointer-events:none;background:linear-gradient(180deg,transparent,var(--cvp-fade,var(--bg-2,#141a2b)) 92%)}'
+      + '.tl-cvp-boxwrap:not(.is-end)::after{content:"";position:absolute;left:0;right:12px;bottom:0;height:56px;pointer-events:none;background:linear-gradient(180deg,transparent,var(--cvp-fade,var(--bg-2,#141a2b)) 92%)}'
       + '.tl-cvp-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px}'
+      + '.tl-cvp-row.art{grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px}'
+      + '.tl-cvp-row.art .tl-cvp-opt{height:auto;aspect-ratio:16/9;border-radius:14px}'
+      + '.tl-cvp-row.art .tl-cvp-opt .tl-cv{border-radius:12px}'
+      + '.tl-cvp-h{margin:14px 2px 8px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted,#8a90a8)}'
+      + '.tl-cvp-h:first-child{margin-top:2px}'
+      + '.tl-cvp-h small{font-weight:600;text-transform:none;letter-spacing:0;margin-left:6px;opacity:.8}'
+      + '.tl-cvp-opt .tl-cvp-check{position:absolute;right:6px;bottom:6px;z-index:2;width:20px;height:20px;border-radius:50%;background:var(--accent,#2a6fe8);color:#fff;display:none;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.4)}'
+      + '.tl-cvp-opt.selected .tl-cvp-check{display:grid}.tl-cvp-opt .tl-cvp-check svg{width:12px;height:12px}'
+      + '.tl-cvp-opt{transition:transform .15s,border-color .15s}.tl-cvp-opt:active{transform:scale(.97)}'
       + '.tl-cvp-opt{position:relative;border:2px solid transparent;border-radius:12px;padding:0;height:52px;cursor:pointer;background:none;overflow:hidden;outline-offset:2px}'
       + '.tl-cvp-opt .tl-cv{position:absolute;inset:0;border-radius:10px}'
       + '.tl-cvp-opt.selected{border-color:var(--accent-2,#00d4ff);box-shadow:0 0 0 2px rgba(0,212,255,.25)}'
@@ -350,10 +382,216 @@
   }
   if (typeof MutationObserver !== 'undefined' && typeof document !== 'undefined') {
     new MutationObserver(function (list) {
-      for (var i = 0; i < list.length; i++) if (list[i].addedNodes.length) { pxMount(document.body); return; }
+      for (var i = 0; i < list.length; i++) if (list[i].addedNodes.length) { pxMount(document.body); fxMount(document.body); return; }
     }).observe(document.documentElement, { childList: true, subtree: true });
   }
+  // --- live layer for art covers -------------------------------------------
+  function hashStr(str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function rng(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  var TAU = Math.PI * 2;
+  // Particles for one effect, made once per canvas from a seed, so a cover moves the same way every time.
+  function makeFx(token, id, pix) {
+    var parts = token.split(':'), kind = parts[0], a = parts.slice(1).map(Number);
+    var r = rng(hashStr(id + kind)), n = 0;
+    var N = { twinkle: pix ? 36 : 80, rain: pix ? 70 : 200, snow: pix ? 60 : 130, fireflies: 22, petals: pix ? 26 : 40, bubbles: pix ? 22 : 30,
+      embers: pix ? 22 : 34, glints: pix ? 30 : 70, motes: pix ? 16 : 34, dust: pix ? 18 : 40, sparkle: pix ? 10 : 16, traffic: pix ? 6 : 9, fog: 4, shoot: 1 }[kind];
+    if (!N) return null;
+    var list = [];
+    for (n = 0; n < N; n++) list.push({ x: r(), y: r(), s: 0.5 + r(), p: r() * TAU, k: r() });
+    return { kind: kind, a: a, list: list, r: r };
+  }
+  function drawFx(g, w, h, t, fx, pix) {
+    var u = pix ? 1 : Math.max(1, w / 640);
+    var dot = function (x, y, size, color) {
+      if (pix) { g.fillStyle = color; g.fillRect(Math.round(x), Math.round(y), size, size); }
+      else { g.fillStyle = color; g.beginPath(); g.arc(x, y, size * u, 0, TAU); g.fill(); }
+    };
+    var L = fx.list, i, q, a, x, y;
+    switch (fx.kind) {
+      case 'twinkle':
+        for (i = 0; i < L.length; i++) {
+          q = L[i]; a = Math.sin(t * (0.8 + q.s * 1.6) + q.p);
+          if (a < 0.25) continue;
+          x = q.x * w; y = q.y * h * (fx.a[0] || 1);
+          dot(x, y, pix ? 1 : 0.7 + a * 0.6, 'rgba(255,255,255,' + (a * 0.9).toFixed(3) + ')');
+          if (a > 0.93 && q.k < 0.35) { // a brief four-point sparkle
+            var c = 'rgba(255,255,255,' + ((a - 0.9) * 6).toFixed(3) + ')';
+            if (pix) { dot(x - 1, y, 1, c); dot(x + 1, y, 1, c); dot(x, y - 1, 1, c); dot(x, y + 1, 1, c); }
+            else { g.strokeStyle = c; g.lineWidth = u * 0.6; g.beginPath(); g.moveTo(x - 4 * u, y); g.lineTo(x + 4 * u, y); g.moveTo(x, y - 4 * u); g.lineTo(x, y + 4 * u); g.stroke(); }
+          }
+        }
+        break;
+      case 'shoot': {
+        var cyc = Math.floor(t / 7), ph = (t / 7) - cyc;
+        if (ph > 0.14) break;
+        var rr = rng(cyc * 7919 + 13);
+        var sx = (0.3 + rr() * 0.65) * w, sy = rr() * h * 0.35, len = (pix ? 18 : 140 * u);
+        var pr = ph / 0.14, hx = sx - pr * w * 0.35, hy = sy + pr * h * 0.22;
+        for (i = 0; i < (pix ? 14 : 1); i++) {
+          if (pix) { dot(hx + i, hy - i * 0.6, 1, 'rgba(255,255,255,' + (1 - i / 14).toFixed(2) + ')'); }
+        }
+        if (!pix) {
+          var gr = g.createLinearGradient(hx, hy, hx + len, hy - len * 0.6);
+          gr.addColorStop(0, 'rgba(255,255,255,' + (1 - pr) + ')'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+          g.strokeStyle = gr; g.lineWidth = 1.4 * u; g.beginPath(); g.moveTo(hx, hy); g.lineTo(hx + len, hy - len * 0.6); g.stroke();
+        }
+        break;
+      }
+      case 'rain':
+        g.strokeStyle = pix ? '#9fb2d1' : 'rgba(205,220,240,.32)'; g.lineWidth = pix ? 1 : 1.1 * u; g.beginPath();
+        for (i = 0; i < L.length; i++) {
+          q = L[i]; y = ((q.y + t * (0.9 + q.s * 0.7)) % 1.1 - 0.05) * h; x = (q.x * w + y * 0.2) % w;
+          if (pix) { dot(x, y, 1, q.k < 0.5 ? '#9fb2d1' : '#5a6b8a'); dot(x + 0.5, y + 1, 1, '#5a6b8a'); }
+          else { g.moveTo(x, y); g.lineTo(x + 4 * u, y + (14 + q.k * 16) * u); }
+        }
+        if (!pix) g.stroke();
+        break;
+      case 'snow':
+        for (i = 0; i < L.length; i++) {
+          q = L[i]; y = ((q.y + t * 0.05 * q.s) % 1) * h; x = (q.x + Math.sin(t * 0.7 + q.p) * 0.012) * w;
+          dot(x, y, pix ? 1 : 0.8 + q.k * 1.6, 'rgba(255,255,255,' + (0.55 + q.k * 0.45).toFixed(2) + ')');
+        }
+        break;
+      case 'fireflies':
+        for (i = 0; i < L.length; i++) {
+          q = L[i]; a = Math.max(0, Math.sin(t * (1 + q.s) + q.p));
+          if (a < 0.1) continue;
+          x = (q.x + Math.sin(t * 0.3 * q.s + q.p) * 0.04) * w; y = (0.4 + q.y * 0.55 + Math.cos(t * 0.25 + q.p) * 0.03) * h;
+          dot(x, y, 1, 'rgba(245,243,154,' + a.toFixed(2) + ')');
+          var hc = 'rgba(198,230,106,' + (a * 0.45).toFixed(2) + ')';
+          if (pix) { dot(x - 1, y, 1, hc); dot(x + 1, y, 1, hc); dot(x, y - 1, 1, hc); dot(x, y + 1, 1, hc); }
+        }
+        break;
+      case 'petals':
+        for (i = 0; i < L.length; i++) {
+          q = L[i]; x = ((q.x + t * 0.025 * q.s) % 1) * w; y = ((q.y + t * 0.045 * q.s) % 1) * h;
+          var pc = ['#ff9bbb', '#ffc2d4', '#e8638f'][i % 3];
+          if (pix) { dot(x, y, 1, pc); if (Math.sin(t * 3 + q.p) > 0) dot(x + 1, y, 1, pc); }
+          else { g.save(); g.translate(x, y); g.rotate(t * q.s + q.p); g.fillStyle = pc; g.beginPath(); g.ellipse(0, 0, 4 * u, 2 * u, 0, 0, TAU); g.fill(); g.restore(); }
+        }
+        break;
+      case 'bubbles':
+        for (i = 0; i < L.length; i++) {
+          q = L[i]; y = (1 - ((q.y + t * 0.05 * q.s) % 1)) * h; x = (q.x + Math.sin(t * 1.2 + q.p) * 0.01) * w;
+          if (pix) { dot(x, y, q.k < 0.3 ? 2 : 1, '#bff3ff'); }
+          else { g.strokeStyle = 'rgba(191,243,255,.6)'; g.lineWidth = u; g.beginPath(); g.arc(x, y, (1.5 + q.k * 3) * u, 0, TAU); g.stroke(); }
+        }
+        break;
+      case 'embers':
+        for (i = 0; i < L.length; i++) {
+          q = L[i]; var life = (t * 0.18 * q.s + q.k) % 1;
+          x = ((fx.a[0] || 0.5) + (q.x - 0.5) * 0.18 * life + Math.sin(t * 2 + q.p) * 0.006) * w;
+          y = ((fx.a[1] || 0.4) - life * 0.4) * h;
+          dot(x, y, pix ? 1 : 1.2, (q.k < 0.5 ? 'rgba(255,179,71,' : 'rgba(255,224,138,') + (1 - life).toFixed(2) + ')');
+        }
+        break;
+      case 'glints': {
+        var y0 = fx.a[0] || 0.6, y1 = fx.a[1] || 1, x0 = fx.a[2] || 0, x1 = fx.a.length > 3 ? fx.a[3] : 1;
+        for (i = 0; i < L.length; i++) {
+          q = L[i]; a = Math.pow(Math.max(0, Math.sin(t * (1.5 + q.s * 2) + q.p)), 4);
+          if (a < 0.05) continue;
+          x = (x0 + q.x * (x1 - x0)) * w; y = (y0 + q.y * (y1 - y0)) * h;
+          g.fillStyle = 'rgba(255,244,214,' + (a * (pix ? 1 : 0.6)).toFixed(2) + ')';
+          var gl = pix ? 2 + Math.round(q.k * 3) : (3 + q.k * 8) * u;
+          g.fillRect(pix ? Math.round(x) : x, pix ? Math.round(y) : y, gl, pix ? 1 : 1.4 * u);
+        }
+        break;
+      }
+      case 'motes':
+      case 'dust':
+        for (i = 0; i < L.length; i++) {
+          q = L[i]; var sp = fx.kind === 'dust' ? 0.03 : 0.008;
+          x = ((q.x + t * sp * q.s) % 1) * w; y = (q.y + Math.sin(t * 0.4 + q.p) * 0.02) * h;
+          a = 0.25 + 0.35 * (0.5 + 0.5 * Math.sin(t + q.p));
+          dot(x, y, pix ? 1 : 1 + q.k * 1.5, (fx.kind === 'dust' ? 'rgba(255,214,160,' : 'rgba(255,250,225,') + a.toFixed(2) + ')');
+        }
+        break;
+      case 'sparkle':
+        for (i = 0; i < L.length; i++) {
+          q = L[i]; a = Math.pow(Math.max(0, Math.sin(t * (1.2 + q.s) + q.p)), 10);
+          if (a < 0.1) continue;
+          x = q.x * w; y = q.y * h;
+          var sc = 'rgba(255,255,255,' + a.toFixed(2) + ')';
+          if (pix) { dot(x, y, 1, sc); if (a > 0.5) { dot(x - 1, y, 1, sc); dot(x + 1, y, 1, sc); dot(x, y - 1, 1, sc); dot(x, y + 1, 1, sc); } }
+          else { var z = (3 + q.k * 6) * u * a; g.strokeStyle = sc; g.lineWidth = u; g.beginPath(); g.moveTo(x - z, y); g.lineTo(x + z, y); g.moveTo(x, y - z); g.lineTo(x, y + z); g.stroke(); dot(x, y, 1.2, sc); }
+        }
+        break;
+      case 'traffic':
+        for (i = 0; i < L.length; i++) {
+          q = L[i]; var dir = q.k < 0.5 ? 1 : -1;
+          x = (((q.x + t * 0.04 * q.s * dir) % 1) + 1) % 1 * w; y = (0.18 + q.y * 0.3) * h;
+          var tc = q.k < 0.5 ? '34,211,238' : '244,114,182';
+          if (pix) { dot(x, y, 2, 'rgb(' + tc + ')'); dot(x - dir * 2, y, 1, 'rgba(' + tc + ',.5)'); }
+          else {
+            var tg = g.createLinearGradient(x, y, x - dir * 40 * u, y);
+            tg.addColorStop(0, 'rgba(' + tc + ',.95)'); tg.addColorStop(1, 'rgba(' + tc + ',0)');
+            g.strokeStyle = tg; g.lineWidth = 1.6 * u; g.beginPath(); g.moveTo(x, y); g.lineTo(x - dir * 40 * u, y); g.stroke();
+          }
+        }
+        break;
+      case 'fog':
+        if (pix) break;
+        for (i = 0; i < L.length; i++) {
+          q = L[i]; x = (((q.x + t * 0.006 * q.s) % 1.4) - 0.2) * w; y = (fx.a[0] || 0.6) * h + (q.y - 0.5) * h * 0.12;
+          var fr = (0.25 + q.k * 0.25) * w;
+          var fg = g.createRadialGradient(x, y, 0, x, y, fr);
+          fg.addColorStop(0, 'rgba(255,255,255,.10)'); fg.addColorStop(1, 'rgba(255,255,255,0)');
+          g.fillStyle = fg; g.save(); g.translate(x, y); g.scale(1, 0.25); g.translate(-x, -y); g.beginPath(); g.arc(x, y, fr, 0, TAU); g.fill(); g.restore();
+        }
+        break;
+    }
+  }
+  var fxLive = [], fxRaf = 0, fxLast = 0, fxStart = Date.now();
+  function fxFrame(now) {
+    fxRaf = 0;
+    fxLive = fxLive.filter(function (c) { return c.isConnected; });
+    if (!fxLive.length) return;
+    fxRaf = global.requestAnimationFrame(fxFrame);
+    if (document.hidden || now - fxLast < 33) return;
+    fxLast = now;
+    var t = (Date.now() - fxStart) / 1000;
+    fxLive.forEach(function (cv) {
+      if (!cv.offsetParent && cv.getClientRects().length === 0) return; // off-screen / hidden
+      var pix = cv._fxPix;
+      if (pix && Math.floor(t * 8) === cv._fxStep) return; // pixel art steps 8 times a second
+      cv._fxStep = Math.floor(t * 8);
+      paintFx(cv, pix ? Math.floor(t * 8) / 8 : t);
+    });
+  }
+  function paintFx(cv, t) {
+    var pix = cv._fxPix, w, h;
+    if (pix) { w = 256; h = 144; }
+    else {
+      var dpr = Math.min(2, global.devicePixelRatio || 1);
+      w = Math.max(1, Math.round((cv.clientWidth || 320) * dpr)); h = Math.max(1, Math.round((cv.clientHeight || 180) * dpr));
+    }
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    var g = cv.getContext('2d');
+    if (!g) return;
+    g.clearRect(0, 0, w, h);
+    cv._fx.forEach(function (fx) { drawFx(g, w, h, t, fx, pix); });
+  }
+  function fxMount(root) {
+    if (!root || !root.querySelectorAll) return;
+    Array.prototype.slice.call(root.querySelectorAll('canvas.tl-cv-fx:not([data-on])')).forEach(function (cv) {
+      cv.setAttribute('data-on', '1');
+      var c = ART_BY[cv.dataset.art];
+      if (!c) return;
+      cv._fxPix = c.art === 'pix';
+      cv._fx = c.fx.split(' ').map(function (tk) { return makeFx(tk, c.id, cv._fxPix); }).filter(Boolean);
+      var still = cv.closest('.tl-cvp-opt') || pxReduced();
+      paintFx(cv, 12.3);
+      if (!still) { fxLive.push(cv); if (!fxRaf && global.requestAnimationFrame) fxRaf = global.requestAnimationFrame(fxFrame); }
+    });
+  }
+  function artLayers(c, thumb) {
+    var drift = c.art === 'cin' && !thumb ? (c.fx.indexOf('drift2') >= 0 ? ' drift2' : c.fx.indexOf('drift') >= 0 ? ' drift' : '') : '';
+    return '<i class="tl-cv-l tl-cv-art' + (c.art === 'pix' ? ' px' : '') + drift + '" style="background-image:url(\'' + artUrl(c, thumb) + '\')"></i>'
+      + (thumb ? '' : '<canvas class="tl-cv-l tl-cv-fx' + (c.art === 'pix' ? ' px' : '') + '" data-art="' + c.id + '" aria-hidden="true"></canvas>');
+  }
+
   function layersFor(id) {
+    if (ART_BY[id]) return artLayers(ART_BY[id], false);
     if (isPx(id)) return '<canvas class="tl-cv-l tl-cv-px" data-px="' + id + '" aria-hidden="true"></canvas>';
     return '<i class="tl-cv-l a"></i><i class="tl-cv-l b"></i><i class="tl-cv-l c"></i>';
   }
@@ -385,12 +623,14 @@
     ensureCss();
     var valid = isValid(id) ? id : '';
     el.classList.add('tl-cv');
-    if ((el.dataset.cv || '') === valid && !!el.querySelector(':scope>.tl-cv-l') === isPlus(valid)) return;
+    var layered = isPlus(valid) || !!ART_BY[valid];
+    if ((el.dataset.cv || '') === valid && !!el.querySelector(':scope>.tl-cv-l') === layered) return;
     el.dataset.cv = valid;
     Array.prototype.slice.call(el.querySelectorAll(':scope>.tl-cv-l')).forEach(function (n) { n.remove(); });
-    if (isPlus(valid)) {
+    if (layered) {
       el.insertAdjacentHTML('afterbegin', layersFor(valid));
       pxMount(el);
+      fxMount(el);
     }
     if (!valid) delete el.dataset.cv;
   }
@@ -402,21 +642,35 @@
     return fallback;
   }
 
+  var GROUPS = [
+    { key: 'coverGroupCinematic', name: 'Cinematic', note: 'Animated', art: true, test: function (c) { return c.kind === 'art' && c.art === 'cin'; } },
+    { key: 'coverGroupPixel', name: 'Pixel art', note: 'Animated', art: true, test: function (c) { return c.kind === 'art' && c.art === 'pix'; } },
+    { key: 'coverGroupScenes', name: 'Living scenes', note: 'Plus', test: function (c) { return c.kind === 'plus'; } },
+    { key: 'coverGroupGradients', name: 'Gradients', test: function (c) { return c.kind === 'grad'; } },
+    { key: 'coverGroupColours', name: 'Colours', test: function (c) { return c.kind === 'solid'; } },
+  ];
+
   // Swatch markup; the caller wires clicks on [data-cover].
   function picker(selected, hasPlus) {
     ensureCss();
+    var CHECK = '<span class="tl-cvp-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>';
     function opt(c) {
-      var locked = c.kind === 'plus' && !hasPlus;
-      var layers = c.kind === 'plus' ? layersFor(c.id) : '';
+      var locked = isPlus(c.id) && !hasPlus;
+      // Art tiles show a light thumbnail; the full picture and its motion are on the card above.
+      var layers = c.kind === 'art' ? artLayers(c, true) : c.kind === 'plus' ? layersFor(c.id) : '';
       return '<button type="button" class="tl-cvp-opt' + (selected === c.id ? ' selected' : '') + (locked ? ' is-locked' : '') + '" data-cover="' + c.id + '"'
         + ' aria-pressed="' + (selected === c.id ? 'true' : 'false') + '" aria-label="' + esc(nameOf(c.id) + (locked ? ' (Plus)' : '')) + '">'
         + '<span class="tl-cv" data-cv="' + c.id + '">' + layers + '</span><span class="tl-cvp-name">' + esc(nameOf(c.id)) + '</span>'
-        + (locked ? '<span class="tl-cvp-lock">' + LOCK + '</span>' : '') + '</button>';
+        + (locked ? '<span class="tl-cvp-lock">' + LOCK + '</span>' : '') + CHECK + '</button>';
     }
     // One scrollable grid: two rows show, a half row peeks under a fade and a
     // visible scrollbar says there is more. Plus scenes come last.
     return '<div class="tl-cvp">'
-      + '<div class="tl-cvp-box" data-cvp-box><div class="tl-cvp-row">' + LIST.map(opt).join('') + '</div></div>'
+      + '<div class="tl-cvp-boxwrap"><div class="tl-cvp-box" data-cvp-box>' + GROUPS.map(function (gr) {
+        var items = LIST.filter(gr.test);
+        return '<div class="tl-cvp-h">' + esc(label(gr.key, gr.name)) + (gr.note ? '<small>' + esc(label(gr.key + 'Note', gr.note)) + '</small>' : '') + '</div>'
+          + '<div class="tl-cvp-row' + (gr.art ? ' art' : '') + '">' + items.map(opt).join('') + '</div>';
+      }).join('') + '</div></div>'
       + (hasPlus ? '' : '<div class="tl-cvp-plus"><span>' + esc(label('coverAnimated', 'Animated, with Plus')) + '</span>'
         + '<button type="button" class="tl-cvp-up" data-cover-upsell="1">' + esc(label('coverGetPlus', 'Get Plus')) + '</button></div>')
       + '</div>';
@@ -434,5 +688,5 @@
     }, true);
   }
 
-  global.TalkLiveCovers = { list: LIST, isValid: isValid, isPlus: isPlus, name: nameOf, apply: apply, picker: picker, ensureCss: ensureCss, mountPixels: pxMount, PX: PX };
+  global.TalkLiveCovers = { list: LIST, isValid: isValid, isPlus: isPlus, name: nameOf, apply: apply, picker: picker, ensureCss: ensureCss, mountPixels: pxMount, mountFx: fxMount, PX: PX };
 }(window));

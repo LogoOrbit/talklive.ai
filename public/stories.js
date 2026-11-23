@@ -90,6 +90,19 @@
     + '.tl-st-grid{overflow-y:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.tl-st-grid img{width:100%;height:90px;object-fit:cover;border-radius:8px;cursor:pointer;background:#fff1}'
     + '.tl-st-emo{overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:4px}.tl-st-emo button{border:0;background:none;font-size:26px;cursor:pointer;padding:4px;border-radius:8px}.tl-st-emo button:hover{background:#fff1}'
     + '.tl-st-err{position:absolute;left:50%;top:70px;transform:translateX(-50%);z-index:6;background:#dc2626;color:#fff;padding:8px 14px;border-radius:999px;font-weight:700;font-size:14px}'
+    + '.tl-st-prog{position:absolute;left:-3px;top:-3px;width:68px;height:68px;transform:rotate(-90deg);pointer-events:none;overflow:visible}'
+    + '.tl-st-prog circle{fill:none;stroke-width:3}.tl-st-prog .trk{stroke:var(--line,rgba(255,255,255,.18))}'
+    + '.tl-st-prog .bar{stroke:var(--accent,#2a6fe8);stroke-linecap:round;transition:stroke-dashoffset .65s cubic-bezier(.2,.8,.2,1),stroke .3s}'
+    + '.tl-st-prog.failed .bar{stroke:#ef4444}.tl-st-prog.done .bar{stroke:url(#tlStGrad)}'
+    + '.tl-st-prog .spin{stroke:rgba(255,255,255,.75);stroke-linecap:round;transform-origin:34px 34px;animation:tlStSpin 1.4s linear infinite}'
+    + '@keyframes tlStSpin{to{transform:rotate(360deg)}}'
+    + '.tl-st-item.failed .tl-st-name{color:#ef4444}.tl-st-plus.retry{background:#ef4444}'
+    + '@media (prefers-reduced-motion:reduce){.tl-st-prog .bar{transition:none}.tl-st-prog .spin{display:none}}'
+    + '.tl-st-confirm{position:absolute;inset:0;z-index:9;background:rgba(0,0,0,.6);display:grid;place-items:center;padding:20px}'
+    + '.tl-st-confirm>div{background:var(--bg-2,#141a2b);color:var(--text,#f2f4ff);border-radius:20px;padding:22px 20px 16px;max-width:320px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.5)}'
+    + '.tl-st-confirm h3{margin:0 0 6px;font-size:18px}.tl-st-confirm p{margin:0 0 16px;opacity:.75;font-size:14px;line-height:1.4}'
+    + '.tl-st-confirm .row{display:flex;flex-direction:column;gap:8px}.tl-st-confirm button{border:0;border-radius:12px;padding:12px;font:inherit;font-weight:800;cursor:pointer}'
+    + '.tl-st-confirm .keep{background:var(--accent,#2a6fe8);color:#fff}.tl-st-confirm .drop{background:transparent;color:#ef4444}'
     + '.tl-st-list{position:absolute;left:0;right:0;bottom:0;max-height:50%;overflow:auto;z-index:6;background:#111827f5;border-radius:18px 18px 0 0;padding:14px}.tl-st-list h3{margin:0 0 10px;font-size:16px}.tl-st-list div{padding:6px 0;opacity:.9}';
 
   function injectCss() {
@@ -128,17 +141,90 @@
     return row;
   }
 
+  // --- drafts: kept on this device until posted or discarded ----------------
+  var DRAFT_KEY = 'tl_story_draft';
+  function loadDraft() {
+    try { var d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); return d && ((d.text && d.text.trim()) || (d.gifs && d.gifs.length)) ? d : null; } catch (e) { return null; }
+  }
+  function saveDraft(d) {
+    try { if (!d.text.trim() && !d.gifs.length) localStorage.removeItem(DRAFT_KEY); else localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); } catch (e) { /* storage blocked */ }
+  }
+  function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* storage blocked */ } }
+
+  // --- posting: the ring around "Your story" follows the real steps ---------
+  //   waiting (no connection yet) -> sending (asked the server) -> saved (it
+  //   answered) -> published (it is in the fetched list) | failed (tap to retry).
+  var STAGE_P = { waiting: 0.08, sending: 0.45, saved: 0.85, published: 1, failed: 1 };
+  var upload = null, lastP = 0;
+  function setUpload(u) { upload = u; render(); }
+  function waitConnected(ms) {
+    return new Promise(function (res) {
+      if (S.connected) { res(true); return; }
+      var tm = setTimeout(function () { S.off('connect', on); res(false); }, ms);
+      function on() { clearTimeout(tm); S.off('connect', on); setTimeout(function () { res(true); }, 700); }
+      S.on('connect', on);
+    });
+  }
+  function publish(data) {
+    setUpload({ stage: 'waiting', data: data });
+    waitConnected(15000).then(function (ok) {
+      if (!ok) { setUpload({ stage: 'failed', data: data, error: tr('storyNoConnection', 'No connection') }); return; }
+      setUpload({ stage: 'sending', data: data });
+      ask('story-post', { text: data.text.trim(), bg: data.bg, gifs: data.gifs }).then(function (r) {
+        if (!r || !r.ok) { setUpload({ stage: 'failed', data: data, error: (r && r.error) || tr('storyFailed', 'Could not post. Try again.') }); return; }
+        setUpload({ stage: 'saved', data: data });
+        var id = r.id;
+        ask('stories-get').then(function (f) {
+          if (f && f.ok) people = f.people || [];
+          var me = people.find(function (p) { return p.mine; });
+          var there = !!(me && me.stories.some(function (st) { return st.id === id; }));
+          clearDraft();
+          setUpload({ stage: 'published', data: data, there: there });
+          setTimeout(function () { if (upload && upload.stage === 'published') { upload = null; lastP = 0; render(); } }, 1400);
+        });
+      });
+    });
+  }
+  function progressSvg() {
+    if (!upload) return '';
+    var C = 2 * Math.PI * 31, p = STAGE_P[upload.stage] || 0;
+    var busy = upload.stage === 'waiting' || upload.stage === 'sending' || upload.stage === 'saved';
+    var cls = upload.stage === 'failed' ? ' failed' : upload.stage === 'published' ? ' done' : '';
+    var svg = '<svg class="tl-st-prog' + cls + '" viewBox="0 0 68 68" aria-hidden="true">'
+      + '<defs><linearGradient id="tlStGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f59e0b"/><stop offset=".5" stop-color="#ec4899"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs>'
+      + '<circle class="trk" cx="34" cy="34" r="31"/>'
+      + '<circle class="bar" cx="34" cy="34" r="31" stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + (C * (1 - lastP)).toFixed(1) + '" data-to="' + (C * (1 - p)).toFixed(1) + '"/>'
+      + (busy ? '<circle class="spin" cx="34" cy="34" r="31" stroke-dasharray="22 ' + (C - 22).toFixed(1) + '"/>' : '')
+      + '</svg>';
+    lastP = p;
+    return svg;
+  }
+
   function render() {
     var r = ensureRow();
     if (!r) return;
     r.innerHTML = '';
     var me = people.find(function (p) { return p.mine; });
     var meHas = me && me.stories.length;
-    var mine = el('button', 'tl-st-item');
+    var failed = upload && upload.stage === 'failed';
+    var busy = upload && !failed && upload.stage !== 'published';
+    var mine = el('button', 'tl-st-item' + (failed ? ' failed' : ''));
     mine.type = 'button';
-    mine.innerHTML = '<span class="tl-st-ring ' + (meHas ? 'seen' : 'none') + '"><span class="tl-st-av">' + face(me && me.avatar, 56) + '</span><span class="tl-st-plus">+</span></span>'
-      + '<span class="tl-st-name">' + esc(tr('yourStory', 'Your story')) + '</span>';
-    mine.addEventListener('click', function () { if (meHas) openViewer(people.indexOf(me), 0); else openComposer(); });
+    var label = !upload ? tr('yourStory', 'Your story') : failed ? tr('storyNotPosted', 'Not posted') : upload.stage === 'published' ? tr('storyPosted', 'Posted') : tr('storyPosting', 'Posting…');
+    mine.innerHTML = '<span class="tl-st-ring ' + (upload ? 'none' : meHas ? 'seen' : 'none') + '">' + progressSvg() + '<span class="tl-st-av">' + face(me && me.avatar, 56) + '</span>'
+      + (busy ? '' : '<span class="tl-st-plus' + (failed ? ' retry' : '') + '">' + (failed ? '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg>' : '+') + '</span>') + '</span>'
+      + '<span class="tl-st-name">' + esc(label) + '</span>';
+    if (failed) mine.title = upload.error || '';
+    mine.addEventListener('click', function () {
+      if (failed) { publish(upload.data); return; }
+      if (busy) return;
+      if (meHas) openViewer(people.indexOf(me), 0); else openComposer();
+    });
+    // The ring moves from where it was to the new step.
+    requestAnimationFrame(function () {
+      var bar = mine.querySelector('.tl-st-prog .bar');
+      if (bar) bar.setAttribute('stroke-dashoffset', bar.getAttribute('data-to'));
+    });
     r.appendChild(mine);
     people.forEach(function (p, i) {
       if (p.mine || !p.stories.length) return;
@@ -281,15 +367,46 @@
   // --- composer ------------------------------------------------------------
   function openComposer() {
     var m = modal();
-    var bg = BG_KEYS[Math.floor(Math.random() * BG_KEYS.length)];
+    var draft = loadDraft();
+    var bg = draft && BGS[draft.bg] ? draft.bg : BG_KEYS[Math.floor(Math.random() * BG_KEYS.length)];
     var gifs = [];
+    function keep() { saveDraft({ text: ta.value, bg: bg, gifs: gifs }); }
+    // Back (browser or phone), Esc and the X all ask before anything is lost.
+    var pushed = false, closed = false;
+    try { history.pushState({ tlStory: 1 }, ''); pushed = true; } catch (e) { /* no history */ }
+    function onPop() { if (closed) return; pushed = false; requestClose(); }
+    function onKey(e) { if (e.key === 'Escape') { e.preventDefault(); requestClose(); } }
+    window.addEventListener('popstate', onPop);
+    document.addEventListener('keydown', onKey);
+    function done() {
+      closed = true;
+      window.removeEventListener('popstate', onPop);
+      document.removeEventListener('keydown', onKey);
+      if (pushed) { pushed = false; try { history.back(); } catch (e) { /* fine */ } }
+      closeModal(m);
+    }
+    function requestClose() {
+      if (picker) { closePicker(); if (!pushed) { try { history.pushState({ tlStory: 1 }, ''); pushed = true; } catch (e) { /* fine */ } } return; }
+      if (!ta.value.trim() && !gifs.length) { clearDraft(); done(); return; }
+      if (frame.querySelector('.tl-st-confirm')) return;
+      var c = el('div', 'tl-st-confirm', '<div><h3>' + esc(tr('storyLeaveTitle', 'Discard this story?')) + '</h3><p>' + esc(tr('storyLeaveBody', 'Your story is not posted yet. Keep editing, or discard it.')) + '</p>'
+        + '<div class="row"><button type="button" class="keep">' + esc(tr('storyKeepEditing', 'Continue editing')) + '</button><button type="button" class="drop">' + esc(tr('storyDiscard', 'Discard story')) + '</button></div></div>');
+      c.querySelector('.keep').addEventListener('click', function () {
+        c.remove();
+        if (!pushed) { try { history.pushState({ tlStory: 1 }, ''); pushed = true; } catch (e) { /* fine */ } }
+        ta.focus();
+      });
+      c.querySelector('.drop').addEventListener('click', function () { clearDraft(); done(); });
+      frame.appendChild(c);
+      c.querySelector('.keep').focus();
+    }
     var frame = el('div', 'tl-st-frame');
     frame.style.background = BGS[bg];
     var top = el('div', 'tl-st-top');
     var who = el('div', 'tl-st-who', '<span>' + esc(tr('newStory', 'New story')) + '</span>');
     var x = el('button', 'tl-st-close', '&times;');
     x.type = 'button'; x.setAttribute('aria-label', tr('close', 'Close'));
-    x.addEventListener('click', function () { closeModal(m); });
+    x.addEventListener('click', function () { requestClose(); });
     who.appendChild(x);
     top.appendChild(who);
     frame.appendChild(top);
@@ -298,6 +415,8 @@
     ta.maxLength = MAX_TEXT;
     ta.rows = 3;
     ta.placeholder = tr('storyPlaceholder', 'Type something…');
+    ta.value = draft ? String(draft.text || '').slice(0, MAX_TEXT) : '';
+    ta.addEventListener('input', keep);
     frame.appendChild(ta);
 
     var tools = el('div', 'tl-st-tools');
@@ -314,7 +433,7 @@
       b.style.background = BGS[k];
       b.setAttribute('aria-label', k);
       b.addEventListener('click', function () {
-        bg = k; frame.style.background = BGS[k];
+        bg = k; frame.style.background = BGS[k]; keep();
         Array.prototype.forEach.call(sw.children, function (c) { c.classList.toggle('on', c === b); });
       });
       sw.appendChild(b);
@@ -333,15 +452,15 @@
     }
 
     // A GIF on the story: drag to place, × to remove.
-    function placeGif(g) {
+    function placeGif(g, restore) {
       if (gifs.length >= MAX_GIFS) { flash(tr('storyMaxGifs', 'Up to {n} GIFs', { n: MAX_GIFS })); return; }
-      var item = { url: g.url, preview: g.preview, w: g.w, h: g.h, x: 0.3 + Math.random() * 0.4, y: 0.25 + Math.random() * 0.5 };
+      var item = { url: g.url, preview: g.preview, w: g.w, h: g.h, x: restore ? g.x : 0.3 + Math.random() * 0.4, y: restore ? g.y : 0.25 + Math.random() * 0.5 };
       gifs.push(item);
       var w = el('div', 'tl-st-gif');
       w.style.left = (item.x * 100) + '%'; w.style.top = (item.y * 100) + '%';
       var img = document.createElement('img'); img.src = g.url; img.alt = 'GIF';
       var rm = el('button', 'tl-st-gx', '&times;'); rm.type = 'button';
-      rm.addEventListener('click', function (e) { e.stopPropagation(); gifs.splice(gifs.indexOf(item), 1); w.remove(); });
+      rm.addEventListener('click', function (e) { e.stopPropagation(); gifs.splice(gifs.indexOf(item), 1); w.remove(); keep(); });
       w.appendChild(img); w.appendChild(rm);
       w.addEventListener('pointerdown', function (e) {
         if (e.target === rm) return;
@@ -353,12 +472,14 @@
           item.y = Math.min(1, Math.max(0, (ev.clientY - rect.top) / rect.height));
           w.style.left = (item.x * 100) + '%'; w.style.top = (item.y * 100) + '%';
         }
-        function up() { w.removeEventListener('pointermove', move); w.removeEventListener('pointerup', up); }
+        function up() { w.removeEventListener('pointermove', move); w.removeEventListener('pointerup', up); keep(); }
         w.addEventListener('pointermove', move);
         w.addEventListener('pointerup', up);
       });
       frame.insertBefore(w, ta);
+      if (!restore) keep();
     }
+    if (draft && Array.isArray(draft.gifs)) draft.gifs.slice(0, MAX_GIFS).forEach(function (g) { placeGif(g, true); });
 
     var picker = null;
     function closePicker() { if (picker) { picker.remove(); picker = null; } }
@@ -413,13 +534,11 @@
     post.addEventListener('click', function () {
       var text = ta.value.trim();
       if (!text && !gifs.length) { flash(tr('storyEmpty', 'Write something or add a GIF')); return; }
-      post.disabled = true;
-      ask('story-post', { text: text, bg: bg, gifs: gifs }).then(function (r) {
-        post.disabled = false;
-        if (!r || !r.ok) { flash((r && r.error) || tr('storyFailed', 'Could not post. Try again.')); return; }
-        closeModal(m);
-        refresh();
-      });
+      // The composer closes at once; the ring on "Your story" carries the post through.
+      var data = { text: ta.value, bg: bg, gifs: gifs.slice() };
+      saveDraft(data);
+      done();
+      publish(data);
     });
   }
 

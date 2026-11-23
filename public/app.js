@@ -3848,7 +3848,7 @@ function withBadges(cb) {
 }
 function withCovers(cb) {
   if (window.TalkLiveCovers) { cb(window.TalkLiveCovers); return; }
-  loadLazyScript('covers', '/covers.js?v=e2b0bed94f').then(() => cb(window.TalkLiveCovers), () => {});
+  loadLazyScript('covers', '/covers.js?v=58d3636e71').then(() => cb(window.TalkLiveCovers), () => {});
 }
 var myCover = null;
 var myBadges = null;
@@ -12341,7 +12341,7 @@ socket.on('friend-online', ({ clientId, username, countryCode, country } = {}) =
 // a call, so it loads once the page is up and stays out of the first paint.
 window.addEventListener('load', () => {
   const s = document.createElement('script');
-  s.src = '/engage.js?v=0bf3a7e03c';
+  s.src = '/engage.js?v=62847182da';
   s.async = true;
   document.head.appendChild(s);
 });

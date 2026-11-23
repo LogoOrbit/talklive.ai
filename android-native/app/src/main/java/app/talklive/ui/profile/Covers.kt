@@ -74,7 +74,7 @@ val PLUS_COVERS = listOf(
     CoverDef("plus:pxcity", R.string.cover_pxcity), CoverDef("plus:pxdrive", R.string.cover_pxdrive), CoverDef("plus:pxforest", R.string.cover_pxforest),
     CoverDef("plus:pxspace", R.string.cover_pxspace), CoverDef("plus:pxsea", R.string.cover_pxsea),
 )
-private val ALL_COVERS = (SOLID_COVERS + GRADIENT_COVERS + PLUS_COVERS).map { it.id }.toSet()
+private val ALL_COVERS = (SOLID_COVERS + GRADIENT_COVERS + PLUS_COVERS).map { it.id }.toSet() + ART_COVERS.map { it.id }
 
 fun isPlusCover(id: String?): Boolean = id != null && id.startsWith("plus:")
 
@@ -113,6 +113,7 @@ fun CoverBackground(cover: String?, modifier: Modifier = Modifier, animate: Bool
     val id = cover?.takeIf { it in ALL_COVERS }
     when {
         id == null -> Box(modifier.background(BrandGradient))
+        artCover(id) != null -> ArtCover(artCover(id)!!, modifier, animate)
         id.startsWith("solid:") -> Box(modifier.background(solidColor(id)))
         id.startsWith("grad:") -> Box(modifier.background(gradientBrush(id)))
         isPixelCover(id) -> PixelCover(id, modifier, animate)
@@ -368,9 +369,12 @@ fun CoverPicker(current: String?, plus: Boolean, onPick: (String) -> Unit, onLoc
             .verticalScroll(scroll),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        CoverGroup(R.string.cover_group_colors, SOLID_COVERS, current, plus, onPick, onLocked, previewLocked)
-        CoverGroup(R.string.cover_group_gradients, GRADIENT_COVERS, current, plus, onPick, onLocked, previewLocked)
+        // Art first: the cinematic and pixel-art collections, then the living scenes and the plain ones.
+        ArtCoverGroup(R.string.cover_group_cinematic, CINEMATIC_COVERS, current, plus, onPick, onLocked, previewLocked)
+        ArtCoverGroup(R.string.cover_group_pixel, PIXEL_ART_COVERS, current, plus, onPick, onLocked, previewLocked)
         CoverGroup(R.string.cover_group_plus, PLUS_COVERS, current, plus, onPick, onLocked, previewLocked)
+        CoverGroup(R.string.cover_group_gradients, GRADIENT_COVERS, current, plus, onPick, onLocked, previewLocked)
+        CoverGroup(R.string.cover_group_colors, SOLID_COVERS, current, plus, onPick, onLocked, previewLocked)
         Spacer(Modifier.height(30.dp))
     }
 }

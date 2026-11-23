@@ -187,6 +187,7 @@ fun FriendsScreen(
                 style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onBackground,
             )
             Spacer(Modifier.weight(1f))
+            if (inFriends) LikesButton(likes, onPerson = { profileOf = it }, onPlus = onPlus)
             if (inFriends && callLogEnabled) CallLogButton(onClick = { showCallLog = true })
             IconButton(onClick = { showActivity = true; vm.markActivitySeen() }) {
                 androidx.compose.material3.BadgedBox(badge = {
@@ -234,19 +235,18 @@ fun FriendsScreen(
             }
             // Online now: a strip of round avatars, like the top of Messenger.
             val onlineNow = sorted.filter { it.online }
-            val hasLikes = likes.count > 0 || likes.people.isNotEmpty()
             if (top) item(key = "online-strip") {
                 LazyRow(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                     // Stories first, like Messenger and Instagram: yours, then friends with new ones.
                     item(key = "my-story") {
                         val me = stories.firstOrNull { it.mine }
-                        MyStoryBubble(me, onAdd = { composingStory = true }, onOpen = { viewingStory = stories.indexOf(me) })
+                        val upload by vm.storyUpload.collectAsStateWithLifecycle()
+                        MyStoryBubble(me, upload, onAdd = { composingStory = true }, onOpen = { viewingStory = stories.indexOf(me) }, onRetry = vm::retryStory)
                     }
                     stories.forEachIndexed { i, p ->
                         if (!p.mine && p.stories.isNotEmpty()) item(key = "st" + p.clientId) { FriendStoryBubble(p) { viewingStory = i } }
                     }
                     // Likes: one compact bubble at the start of the strip, not a big card.
-                    if (hasLikes) item(key = "likes") { LikesBubble(likes, onPerson = { profileOf = it }, onPlus = onPlus) }
                     items(onlineNow, key = { "o" + it.clientId }) { p ->
                         Column(
                             Modifier.width(64.dp).combinedClickable(
@@ -378,7 +378,7 @@ fun FriendsScreen(
     }
 
     if (inFriends) ChatActions(vm, chatMenu) { chatMenu = null }
-    if (composingStory) StoryComposer(onPost = { t, b, g -> vm.postStory(t, b, g) }, onDismiss = { composingStory = false })
+    if (composingStory) StoryComposer(onPost = { vm.publishStory(it) }, onDismiss = { composingStory = false })
     viewingStory?.let { i ->
         StoryViewer(
             stories, i,

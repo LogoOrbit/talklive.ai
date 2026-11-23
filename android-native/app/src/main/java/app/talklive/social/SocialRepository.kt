@@ -742,6 +742,67 @@ class SocialRepository @Inject constructor(
         }
     }
 
+    private val _storyUpload = MutableStateFlow<StoryUpload?>(null)
+    /** The story being posted right now, for the ring around "Your story". */
+    val storyUpload: StateFlow<StoryUpload?> = _storyUpload
+    private var pendingStory: StoryDraft? = null
+    private var uploadJob: Job? = null
+
+    /**
+     * Posts in the background so the composer can close at once: waiting for a
+     * connection, sent, saved by the server, then seen in the fetched story list.
+     * The draft is cleared only once the story is really there.
+     */
+    fun publishStory(d: StoryDraft) {
+        pendingStory = d
+        uploadJob?.cancel()
+        uploadJob = scope.launch { upload(d) }
+    }
+
+    fun retryStory() { pendingStory?.let { publishStory(it) } }
+
+    fun dismissStoryUpload() { if (_storyUpload.value?.stage == StoryUpload.Stage.Failed) _storyUpload.value = null }
+
+    private suspend fun upload(d: StoryDraft) {
+        _storyUpload.value = StoryUpload(StoryUpload.Stage.Waiting)
+        if (!socket.isConnected() && !socket.awaitConnected(15_000)) {
+            _storyUpload.value = StoryUpload(StoryUpload.Stage.Failed, "No connection. Tap to try again.")
+            return
+        }
+        _storyUpload.value = StoryUpload(StoryUpload.Stage.Sending)
+        val arr = JSONArray()
+        d.gifs.forEach { arr.put(JSONObject().put("url", it.url).put("preview", it.preview).put("w", it.w).put("h", it.h).put("x", it.x.toDouble()).put("y", it.y.toDouble())) }
+        val r = socket.askWith("story-post", JSONObject().put("text", d.text.trim()).put("bg", d.bg).put("gifs", arr))
+        if (r == null || !r.optBoolean("ok")) {
+            _storyUpload.value = StoryUpload(StoryUpload.Stage.Failed, r?.optString("error")?.ifBlank { null } ?: "Could not post. Tap to try again.")
+            return
+        }
+        _storyUpload.value = StoryUpload(StoryUpload.Stage.Saved)
+        val id = r.optString("id")
+        // Published once the story list from the server has it.
+        repeat(3) {
+            val got = socket.ask("stories-get")
+            if (got != null && got.optBoolean("ok")) {
+                refreshStories()
+                val mine = got.optJSONArray("people")?.optJSONObject(0)?.optJSONArray("stories")
+                val found = mine != null && (0 until mine.length()).any { i -> mine.optJSONObject(i)?.optString("id") == id }
+                if (found) {
+                    StoryDrafts.clear()
+                    pendingStory = null
+                    _storyUpload.value = StoryUpload(StoryUpload.Stage.Published)
+                    delay(1400)
+                    if (_storyUpload.value?.stage == StoryUpload.Stage.Published) _storyUpload.value = null
+                    return
+                }
+            }
+            delay(700)
+        }
+        // Saved on the server even if the list was slow: treat it as posted.
+        StoryDrafts.clear(); pendingStory = null
+        refreshStories()
+        _storyUpload.value = null
+    }
+
     /** Posts a story; null on success, else what to tell the person. */
     suspend fun postStory(text: String, bg: String, gifs: List<StoryGif>): String? {
         val arr = JSONArray()

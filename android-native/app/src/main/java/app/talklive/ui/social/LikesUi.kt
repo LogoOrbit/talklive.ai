@@ -152,44 +152,19 @@ fun LikesRow(likes: LikesSummary, onPerson: (Person) -> Unit, onPlus: () -> Unit
 }
 
 /**
- * Likes as one bubble at the start of the friends strip (like a story circle),
- * instead of a big card: a pink heart with the count. Plus opens who; free opens Plus.
+ * Likes as a small heart in the Friends header with a pink count: not a story
+ * circle, so it is never mistaken for one. Plus opens who; free opens Plus.
  */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-fun LikesBubble(likes: LikesSummary, onPerson: (Person) -> Unit, onPlus: () -> Unit) {
+fun LikesButton(likes: LikesSummary, onPerson: (Person) -> Unit, onPlus: () -> Unit) {
     val count = if (likes.people.isNotEmpty()) maxOf(likes.count, likes.people.size) else likes.count
     if (count <= 0) return
     var open by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
-    Column(
-        Modifier.width(64.dp).clip(RoundedCornerShape(12.dp)).clickable { if (likes.people.isNotEmpty()) open = true else onPlus() },
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            val first = likes.people.firstOrNull()
-            Box(
-                Modifier.size(56.dp).clip(CircleShape)
-                    .background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(LikePink, Color(0xFFF472B6))))
-                    .padding(2.5.dp).clip(CircleShape).background(MaterialTheme.colorScheme.background),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (first != null) AnimalAvatar(first.animal, first.displayName, 48.dp)
-                else AnimalAvatar("cat", null, 48.dp, Modifier.blur(8.dp))
-            }
-            // The count on a heart, bottom right.
-            Box(
-                Modifier.align(Alignment.BottomEnd).size(24.dp).clip(CircleShape).background(LikePink)
-                    .border(2.dp, MaterialTheme.colorScheme.background, CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(if (count > 99) "99+" else count.toString(), style = MaterialTheme.typography.labelSmall, color = Color.White, maxLines = 1)
-            }
-        }
-        Spacer(Modifier.height(4.dp))
-        Text(
-            stringResource(R.string.likes_short), style = MaterialTheme.typography.labelMedium, color = LikePink,
-            maxLines = 1, overflow = TextOverflow.Ellipsis,
-        )
+    androidx.compose.material3.IconButton(onClick = { if (likes.people.isNotEmpty()) open = true else onPlus() }) {
+        androidx.compose.material3.BadgedBox(badge = {
+            androidx.compose.material3.Badge(containerColor = LikePink, contentColor = Color.White) { Text(if (count > 99) "99+" else count.toString()) }
+        }) { Icon(Icons.Rounded.Favorite, pluralStringResource(R.plurals.people_liked_you, count, count), tint = LikePink) }
     }
     if (open) androidx.compose.material3.ModalBottomSheet(onDismissRequest = { open = false }) {
         Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, bottom = 24.dp)) {

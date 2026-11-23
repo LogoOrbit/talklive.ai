@@ -32,6 +32,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -98,26 +99,77 @@ private const val STORY_MS = 6000L
 private val StoryEmojis = ("😀 😂 🤣 😊 😍 😘 😎 🤩 🥳 😇 🤗 🤔 😴 😭 😡 🤯 😱 🥺 😏 🙄 👋 👍 👏 🙌 🙏 💪 🤝 ✌️ 🤞 👀 " +
     "❤️ 🧡 💛 💚 💙 💜 🖤 💔 💕 💯 ✨ ⭐ 🔥 🎉 🎊 🎁 🎂 🍕 🍔 ☕ ⚽ 🏀 🎮 🎵 🎧 🎤 ✈️ 🚀 🌍 🌙 ☀️ 🌈 🌸 🌹 🐶 🐱 🦊 🐼 🦁 🐸 🦋 👻 🤖 👽").split(" ")
 
-/** "Your story" at the start of the row: a + to add one, or a ring when you have one. */
+/**
+ * "Your story" at the start of the row: a + to add one, or a ring when you have one.
+ * While a story is being posted a ring fills around the face, one real step at a
+ * time (waiting, sent, saved, published); red with a retry if it failed.
+ */
 @Composable
-fun MyStoryBubble(me: StoryPerson?, onAdd: () -> Unit, onOpen: () -> Unit) {
+fun MyStoryBubble(me: StoryPerson?, upload: app.talklive.social.StoryUpload?, onAdd: () -> Unit, onOpen: () -> Unit, onRetry: () -> Unit = {}) {
     val has = me != null && me.stories.isNotEmpty()
-    Column(Modifier.width(64.dp).clip(RoundedCornerShape(12.dp)).clickable { if (has) onOpen() else onAdd() }, horizontalAlignment = Alignment.CenterHorizontally) {
+    val failed = upload?.stage == app.talklive.social.StoryUpload.Stage.Failed
+    val busy = upload != null && !failed && upload.stage != app.talklive.social.StoryUpload.Stage.Published
+    val reduce = app.talklive.ui.theme.LocalReduceMotion.current
+    val target = upload?.progress ?: 0f
+    val progress by androidx.compose.animation.core.animateFloatAsState(
+        target, if (reduce) androidx.compose.animation.core.snap() else androidx.compose.animation.core.tween(650, easing = androidx.compose.animation.core.FastOutSlowInEasing), label = "upload",
+    )
+    // A soft rotating highlight only while waiting on the network, so the ring never looks frozen.
+    val spin = if (busy && !reduce) androidx.compose.animation.core.rememberInfiniteTransition(label = "spin")
+        .animateFloat(0f, 360f, androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(1400, easing = androidx.compose.animation.core.LinearEasing)), label = "a") else null
+    val accent = MaterialTheme.colorScheme.primary
+    val track = MaterialTheme.colorScheme.outlineVariant
+    val doneAlpha by androidx.compose.animation.core.animateFloatAsState(if (upload?.stage == app.talklive.social.StoryUpload.Stage.Published) 1f else 0f, label = "done")
+    Column(
+        Modifier.width(64.dp).clip(RoundedCornerShape(12.dp)).clickable { when { failed -> onRetry(); busy -> Unit; has -> onOpen(); else -> onAdd() } },
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Box {
-            Box(
-                Modifier.size(58.dp).clip(CircleShape)
-                    .then(if (has) Modifier.background(MaterialTheme.colorScheme.outlineVariant) else Modifier)
-                    .padding(2.5.dp).clip(CircleShape).background(MaterialTheme.colorScheme.background).padding(1.dp),
+            Box(Modifier.size(58.dp), contentAlignment = Alignment.Center) {
+                androidx.compose.foundation.Canvas(Modifier.matchParentSize()) {
+                    val stroke = 2.5.dp.toPx()
+                    val inset = stroke / 2
+                    val arcSize = androidx.compose.ui.geometry.Size(size.width - stroke, size.height - stroke)
+                    val tl = androidx.compose.ui.geometry.Offset(inset, inset)
+                    when {
+                        upload != null -> {
+                            drawArc(track, 0f, 360f, false, tl, arcSize, style = androidx.compose.ui.graphics.drawscope.Stroke(stroke))
+                            val col = if (failed) Color(0xFFEF4444) else accent
+                            drawArc(col, -90f, 360f * progress, false, tl, arcSize, style = androidx.compose.ui.graphics.drawscope.Stroke(stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round))
+                            spin?.let { a ->
+                                drawArc(Brush.sweepGradient(listOf(Color.Transparent, Color.White.copy(alpha = 0.7f), Color.Transparent)), a.value, 50f, false, tl, arcSize,
+                                    style = androidx.compose.ui.graphics.drawscope.Stroke(stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round))
+                            }
+                            if (doneAlpha > 0f) drawArc(StoryRing, 0f, 360f, false, tl, arcSize, alpha = doneAlpha, style = androidx.compose.ui.graphics.drawscope.Stroke(stroke))
+                        }
+                        has -> drawArc(track, 0f, 360f, false, tl, arcSize, style = androidx.compose.ui.graphics.drawscope.Stroke(stroke))
+                    }
+                }
+                AnimalAvatar(me?.animal, me?.name, 50.dp)
+            }
+            val badge = when { failed -> Color(0xFFEF4444); else -> MaterialTheme.colorScheme.primary }
+            if (!busy) Box(
+                Modifier.align(Alignment.BottomEnd).size(22.dp).clip(CircleShape).background(badge)
+                    .border(2.dp, MaterialTheme.colorScheme.background, CircleShape).clickable(onClick = if (failed) onRetry else onAdd),
                 contentAlignment = Alignment.Center,
-            ) { AnimalAvatar(me?.animal, me?.name, 52.dp) }
-            Box(
-                Modifier.align(Alignment.BottomEnd).size(22.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary)
-                    .border(2.dp, MaterialTheme.colorScheme.background, CircleShape).clickable(onClick = onAdd),
-                contentAlignment = Alignment.Center,
-            ) { Icon(Icons.Rounded.Add, stringResource(R.string.story_add), tint = Color.White, modifier = Modifier.size(15.dp)) }
+            ) {
+                if (failed) Icon(Icons.Rounded.Refresh, stringResource(R.string.story_retry), tint = Color.White, modifier = Modifier.size(14.dp))
+                else Icon(Icons.Rounded.Add, stringResource(R.string.story_add), tint = Color.White, modifier = Modifier.size(15.dp))
+            }
         }
         Spacer(Modifier.height(4.dp))
-        Text(stringResource(R.string.your_story), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(
+            stringResource(
+                when (upload?.stage) {
+                    null -> R.string.your_story
+                    app.talklive.social.StoryUpload.Stage.Failed -> R.string.story_failed_short
+                    app.talklive.social.StoryUpload.Stage.Published -> R.string.story_posted
+                    else -> R.string.story_posting
+                },
+            ),
+            style = MaterialTheme.typography.labelMedium,
+            color = if (failed) Color(0xFFEF4444) else MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
@@ -274,21 +326,34 @@ private fun StoryPill(label: String, icon: androidx.compose.ui.graphics.vector.I
 
 /** Writing a story: type on a colour, add emoji, drop GIFs and drag them where you want. */
 @Composable
-fun StoryComposer(onPost: suspend (String, String, List<StoryGif>) -> String?, onDismiss: () -> Unit) {
-    var bg by remember { mutableStateOf(StoryBgs.keys.random()) }
-    var text by remember { mutableStateOf("") }
-    val gifs = remember { mutableStateListOf<StoryGif>() }
+fun StoryComposer(onPost: (app.talklive.social.StoryDraft) -> Unit, onDismiss: () -> Unit) {
+    // A saved draft comes back exactly as it was left.
+    val saved = remember { app.talklive.social.StoryDrafts.load() }
+    var bg by remember { mutableStateOf(saved?.bg?.takeIf { it in StoryBgs } ?: StoryBgs.keys.random()) }
+    var text by remember { mutableStateOf(saved?.text.orEmpty()) }
+    val gifs = remember { mutableStateListOf<StoryGif>().apply { saved?.gifs?.let { addAll(it) } } }
     var panel by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
-    var posting by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
+    var confirmLeave by remember { mutableStateOf(false) }
+    val posting = false
+    fun draft() = app.talklive.social.StoryDraft(text, bg, gifs.toList())
+    // Every edit is kept, so Back, a phone call or the app closing never loses it.
+    LaunchedEffect(text, bg, gifs.toList()) { app.talklive.social.StoryDrafts.save(draft()) }
+    // Back and the X go through the same door: nothing to lose closes; otherwise ask first.
+    fun requestClose() {
+        when {
+            panel != null -> panel = null
+            draft().isEmpty -> { app.talklive.social.StoryDrafts.clear(); onDismiss() }
+            else -> confirmLeave = true
+        }
+    }
     val context = LocalContext.current
     val gifApi = remember { runCatching { dagger.hilt.android.EntryPointAccessors.fromApplication(context.applicationContext, app.talklive.ui.chat.GifEntryPoint::class.java).gifs() }.getOrNull() }
     val emptyMsg = stringResource(R.string.story_empty)
     val maxGifsMsg = stringResource(R.string.story_max_gifs, MAX_GIFS)
     LaunchedEffect(error) { if (error != null) { delay(2600); error = null } }
 
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
+    Dialog(onDismissRequest = { requestClose() }, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         BoxWithConstraints(Modifier.fillMaxSize().background(bgBrush(bg))) {
             val w = constraints.maxWidth.toFloat()
             val h = constraints.maxHeight.toFloat()
@@ -327,7 +392,7 @@ fun StoryComposer(onPost: suspend (String, String, List<StoryGif>) -> String?, o
             }
             // Top: close, then emoji and GIF on the right.
             Row(Modifier.fillMaxWidth().statusBarsPadding().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onDismiss) { Icon(Icons.Rounded.Close, stringResource(R.string.close), tint = Color.White) }
+                IconButton(onClick = { requestClose() }) { Icon(Icons.Rounded.Close, stringResource(R.string.close), tint = Color.White) }
                 Text(stringResource(R.string.new_story), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 Spacer(Modifier.weight(1f))
                 ToolButton("😊") { panel = if (panel == "emoji") null else "emoji" }
@@ -376,12 +441,11 @@ fun StoryComposer(onPost: suspend (String, String, List<StoryGif>) -> String?, o
                     Box(
                         Modifier.clip(CircleShape).background(Color.White).clickable(enabled = !posting) {
                             if (text.isBlank() && gifs.isEmpty()) { error = emptyMsg; return@clickable }
-                            posting = true
-                            scope.launch {
-                                val err = onPost(text.trim(), bg, gifs.toList())
-                                posting = false
-                                if (err == null) onDismiss() else error = err
-                            }
+                            // Posting carries on in the background; the ring on "Your story" shows it.
+                            val d = draft()
+                            app.talklive.social.StoryDrafts.save(d)
+                            onPost(d)
+                            onDismiss()
                         }.padding(horizontal = 20.dp, vertical = 10.dp),
                         contentAlignment = Alignment.Center,
                     ) {
@@ -390,6 +454,17 @@ fun StoryComposer(onPost: suspend (String, String, List<StoryGif>) -> String?, o
                     }
                 }
             }
+            if (confirmLeave) androidx.compose.material3.AlertDialog(
+                onDismissRequest = { confirmLeave = false },
+                title = { Text(stringResource(R.string.story_leave_title)) },
+                text = { Text(stringResource(R.string.story_leave_body)) },
+                confirmButton = { androidx.compose.material3.TextButton(onClick = { confirmLeave = false }) { Text(stringResource(R.string.story_keep_editing)) } },
+                dismissButton = {
+                    androidx.compose.material3.TextButton(onClick = { confirmLeave = false; app.talklive.social.StoryDrafts.clear(); onDismiss() }) {
+                        Text(stringResource(R.string.story_discard), color = Color(0xFFEF4444))
+                    }
+                },
+            )
             error?.let {
                 Text(
                     it, color = Color.White, fontWeight = FontWeight.Bold,
