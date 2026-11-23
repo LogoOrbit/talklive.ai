@@ -2,8 +2,7 @@
 // TalkLive - reasons to come back, and the Premium perks built on them.
 //
 //   Daily streak      a call of 30s+ each day; one free streak-saver a week
-//   Country passport  every country you have talked to, shareable
-//   Weekly recap      last week's calls, countries and longest call
+//   Country passport  every country you have talked to (shown on the Profile)
 //   Who liked you     how many hearted you; Premium sees who, and calls back
 //   Undo skip         Premium brings back the person just skipped
 //   It's mutual       both hearted the call: one tap to add a friend
@@ -23,17 +22,12 @@
     fxSupportChip: "New: Chat Support is here",
     fxSupportGo: "Chat now",
     engageAria: "Your TalkLive",
-    engageRecap: "Last week: {calls} calls · {countries} countries · longest {minutes} min",
-    engageStreakLabel: "day streak",
     engageStreakDone: "Done for today ✓",
     engageStreakDue: "Talk today to keep it",
-    engagePassportLabel: "countries",
-    engagePassportEmpty: "Talk to someone",
     engageLikesLabel: "liked you",
     engageLikesUnlock: "Unlock ",
     engageLikesNone: "No likes yet",
     engageLikesSee: "See who",
-    engageQuestionLabel: "Today's question",
     engageStreakHow: "Talk to someone for 30 seconds every day to grow your streak. Miss a day? You get one free streak-saver a week.",
     engagePassportEmptyLong: "Every country you talk to gets a stamp. Have a 30-second call to collect your first one.",
     engagePassportTitle: "{n} countries",
@@ -58,7 +52,6 @@
     engageStreakUp: "{n}-day streak! Come back tomorrow",
     engageStreakStart: "Streak started! Talk tomorrow to keep it",
     engageStamp: "{flag} New stamp: {country} ({n} countries)",
-    engageQuestionToast: "Today's question: {q}",
     presOnline: "Online now",
     presActive: "Active {time}",
     bellOn: "You'll be told when {name} comes online",
@@ -108,7 +101,7 @@
     Object.keys(EN).forEach(function (k) { if (!(k in I18N_STRINGS.en)) I18N_STRINGS.en[k] = EN[k]; });
   }
 
-  var KEY = { streak: 'tl_streak', passport: 'tl_passport', server: 'tl_engage_state', recap: 'tl_recap_seen', question: 'tl_daily_q_seen' };
+  var KEY = { streak: 'tl_streak', passport: 'tl_passport', server: 'tl_engage_state' };
   var UNDO_MS = 15000;
 
   function read(k, d) {
@@ -165,7 +158,7 @@
     render();
   }
   function streak() { return state.streak; }
-  function passport() { return { codes: state.passport || [] }; }
+  function passport() { return { codes: countries().map(function (c) { return c.code; }) }; }
 
   function legacyProgress() {
     var s = read(KEY.streak, null);
@@ -190,35 +183,22 @@
     render();
   }
 
+  // The home strip holds only the Chat Support news chip and the likes chip.
+  // Streak and countries live on the Profile; there is no weekly recap and no
+  // daily question anywhere on the home page.
   function render() {
     if (!strip) return;
-    var s = streak();
-    var p = passport();
-    var prev = state.prevWeek;
-    var today = !!s.doneToday;
     var html = '';
     // The Chat Support launch (support-chat.js says whether it is running).
     if (supportPromoLive()) {
       html += '<button type="button" class="tl-engage-banner tl-engage-news" data-act="support"><span><i class="ti ti-headset" aria-hidden="true"></i> ' + esc(t('fxSupportChip')) + '</span>'
         + '<span class="tl-engage-new" aria-hidden="true">' + esc(t('fxSupportGo')) + '</span></button>';
-    } else if (prev && read(KEY.recap, '') !== prev.week) {
-      html += '<div class="tl-engage-banner tl-engage-recap"><span>📊 ' + esc(t('engageRecap', {
-        calls: prev.calls, countries: prev.countries, minutes: Math.max(1, Math.round(prev.longest / 60)),
-      })) + '</span><button type="button" class="tl-engage-x" data-act="recap" aria-label="' + esc(t('close')) + '">&times;</button></div>';
     }
-    // Someone who has not talked to anyone yet has zeros to look at: the chips
-    // appear with their first streak day, country or like.
-    var chips = '';
-    if (s.count || s.lost) chips += '<button type="button" class="tl-chip tl-chip-streak' + (today ? ' is-done' : (s.count ? ' is-due' : '')) + '" data-act="streak"'
-      + ' title="' + esc(today ? t('engageStreakDone') : t('engageStreakDue')) + '">'
-      + '<i class="ti ti-flame" aria-hidden="true"></i><span>' + s.count + '</span><small>' + esc(t('engageStreakLabel')) + '</small></button>';
-    if (p.codes.length) chips += '<button type="button" class="tl-chip tl-chip-world" data-act="passport">'
-      + '<i class="ti ti-globe" aria-hidden="true"></i><span>' + p.codes.length + '</span><small>' + esc(t('engagePassportLabel')) + '</small>'
-      + '<span class="tl-chip-flags">' + p.codes.slice(-3).map(function (c) { return flagImg(c, 16); }).join('') + '</span></button>';
     var likes = window.TalkLiveLikes && window.TalkLiveLikes.chip ? window.TalkLiveLikes.chip() : '';
-    if (likes) chips += likes;
-    if (chips) html += '<div class="tl-chips">' + chips + '</div>';
+    if (likes) html += '<div class="tl-chips">' + likes + '</div>';
     strip.innerHTML = html;
+    // The Profile shows streak and countries; tell it the numbers moved.
+    try { document.dispatchEvent(new CustomEvent('tl-engage')); } catch (_) { /* old browser */ }
   }
 
   function onStripClick(e) {
@@ -230,22 +210,30 @@
       if (window.TLSupport) window.TLSupport.open();
       return;
     }
-    if (act === 'recap') { write(KEY.recap, state.prevWeek ? state.prevWeek.week : ''); render(); return; }
-    if (act === 'streak') {
-      // A streak that just broke: Plus brings it back (same rule as the app).
-      var lost = state.streak && state.streak.lost;
-      if (state.streak && !state.streak.count && lost && lost.restorable && lost.count >= 2) {
-        if (!isPremiumUser) { plusUpsell(t('restoreAsk', { n: lost.count }), 'streak'); return; }
-        socket.emit('streak-restore', function (r) {
-          showToast(r && r.ok ? t('restoreOk', { n: r.count || lost.count }) : t('restoreNo'), r && r.ok ? 'success' : 'social');
-        });
-        return;
-      }
-      var fz = state.streak && state.streak.freezesLeft;
-      showToast(t('engageStreakHow') + ' ' + (typeof fz === 'number' ? t('plusFreezes', { n: fz }) : t('plusFreezesFree')), 'success');
+  }
+
+  // The Profile's streak chip: a broken streak Plus can restore, else how it works.
+  function streakTap() {
+    var lost = state.streak && state.streak.lost;
+    if (state.streak && !state.streak.count && lost && lost.restorable && lost.count >= 2) {
+      if (!isPremiumUser) { plusUpsell(t('restoreAsk', { n: lost.count }), 'streak'); return; }
+      socket.emit('streak-restore', function (r) {
+        showToast(r && r.ok ? t('restoreOk', { n: r.count || lost.count }) : t('restoreNo'), r && r.ok ? 'success' : 'social');
+      });
       return;
     }
-    if (act === 'passport') { openPassport(); return; }
+    var fz = state.streak && state.streak.freezesLeft;
+    showToast(t('engageStreakHow') + ' ' + (typeof fz === 'number' ? t('plusFreezes', { n: fz }) : t('plusFreezesFree')), 'success');
+  }
+  // Countries talked to, most calls first: [{ code, n }]. The server may send
+  // the passport as bare codes or as { code, n } rows (n = calls there).
+  function countries() {
+    var rows = (state.countries || state.passport || []).map(function (c) {
+      if (typeof c === 'string') return { code: c, n: (state.counts && state.counts[c]) || 0 };
+      var code = c.code || c.c || c.country;
+      return { code: code, n: Number(c.n || c.count || c.calls || 0) };
+    }).filter(function (c) { return /^[A-Z]{2}$/.test(c.code || ''); });
+    return rows.sort(function (a, b) { return b.n - a.n; });
   }
 
   // --- Small dialogs (built on demand, styled like the Premium card) --------
@@ -450,7 +438,8 @@
   }
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest(FACE_BTN);
-    if (!b || !isPlusFace(b.dataset.avatar) || faceOk(b.dataset.avatar)) return;
+    // The Edit profile grid only previews; its Save asks for Plus.
+    if (!b || b.closest('.tlp-edit') || !isPlusFace(b.dataset.avatar) || faceOk(b.dataset.avatar)) return;
     e.stopPropagation(); e.preventDefault();
     plusUpsell(t('plusMember'), 'avatars');
   }, true);
@@ -549,14 +538,20 @@
     bar.innerHTML = html;
     bar.classList.toggle('is-on', state === 'on');
   }
-  document.addEventListener('click', function (e) {
-    var b = e.target.closest && e.target.closest('[data-ntf]');
-    if (!b) return;
-    var a = b.dataset.ntf;
+  function ntfAct(a) {
     if (a === 'on') enableNotifications();
     else if (a === 'help') showHelp();
     else if (a === 'test') socket.emit('push-test', function (r) { showToast(t(r && r.sent ? 'ntfTestSent' : 'ntfTestNone'), r && r.sent ? 'success' : 'social'); });
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-ntf]');
+    if (b) ntfAct(b.dataset.ntf);
   });
+  // The Profile's Notifications row does what the bar on Friends would.
+  function notifyTap() {
+    var st = pushState();
+    ntfAct(st === 'on' ? 'test' : st === 'off' ? 'on' : 'help');
+  }
   // Already allowed: re-register, so notifications follow this browser's profile.
   socket.on('connect', function () { setTimeout(function () { if (pushState() === 'on' && window.TalkLivePush) window.TalkLivePush.enable('refresh'); }, 4000); });
   renderNotifyBar();
@@ -613,8 +608,16 @@
   })();
 
   window.TalkLiveEngage = { onCall: onCall, onReveal: onReveal, render: render,
-    openPassport: openPassport, 
-    passportCount: function () { return (state.passport || []).length; } };
+    openPassport: openPassport,
+    streak: function () { return state.streak || { count: 0 }; },
+    streakTap: streakTap,
+    countries: countries,
+    countryName: countryName,
+    flagImg: flagImg,
+    faceOk: function (id) { return !!faceOk(id); },
+    pushState: function () { return pushState(); },
+    notifyTap: function () { notifyTap(); },
+    passportCount: function () { return countries().length; } };
   window.addEventListener('i18n-changed', render);
   window.addEventListener('tl-likes', render);
   buildStrip();

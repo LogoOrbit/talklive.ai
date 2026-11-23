@@ -305,7 +305,14 @@
       + (withName === false ? '' : '<span>' + esc(label) + '</span>') + '</span>';
   }
 
-  function fmtHours(h) { return h >= 100 ? String(Math.round(h)) : String(Math.round(h * 10) / 10); }
+  // Whole hours ("12h", floored), minutes under an hour ("40m"). Never "1.0h".
+  function fmtHours(h) {
+    h = Number(h) > 0 ? Number(h) : 0;
+    if (h < 1) return Math.max(h > 0 ? 1 : 0, Math.floor(h * 60)) + 'm';
+    return Math.floor(h) + 'h';
+  }
+  // Raw hours still needed, for the progress bar (display uses fmtHours).
+  function togoHours(b, hours) { return Math.max(1 / 60, b.hours - hours); }
 
   // Earned medals first, then the locked ones with the hours still needed.
   function shelf(badges) {
@@ -317,12 +324,12 @@
     }).join('') + LIST.map(function (b) {
       var has = earned.indexOf(b.id) !== -1;
       var small = has
-        ? tr('badgeEarnedAt', '{n} h', { n: b.hours })
-        : tr('badgeNeedMore', '{n} h to go', { n: fmtHours(Math.max(0.1, b.hours - hours)) });
-      return '<li class="tl-badge-cell' + (has ? '' : ' is-locked') + '" role="button" tabindex="0" data-badge="' + b.id + '"' + (has ? ' data-earned="1"' : ' data-togo="' + fmtHours(Math.max(0.1, b.hours - hours)) + '"') + '>' + svg(b.id, 52, !has)
+        ? fmtHours(b.hours)
+        : fmtHours(togoHours(b, hours)) + ' ' + tr('badgeToGo', 'to go');
+      return '<li class="tl-badge-cell' + (has ? '' : ' is-locked') + '" role="button" tabindex="0" data-badge="' + b.id + '"' + (has ? ' data-earned="1"' : ' data-togo="' + togoHours(b, hours).toFixed(4) + '"') + '>' + svg(b.id, 52, !has)
         + '<strong>' + esc(name(b.id)) + '</strong><small>' + esc(small) + '</small></li>';
     }).join('');
-    return '<p class="tl-badge-total">' + esc(tr('badgeTotal', '{n} h talked', { n: fmtHours(hours) })) + '</p><ul class="tl-badge-shelf">' + cells + '</ul>';
+    return '<p class="tl-badge-total">' + esc(fmtHours(hours) + ' ' + tr('badgeTalked', 'talked')) + '</p><ul class="tl-badge-shelf">' + cells + '</ul>';
   }
 
 
@@ -344,14 +351,14 @@
     var b = BY_ID[id];
     var earned = !!opts.earned;
     var state = earned ? '<span class="tlb-pop-state">' + esc(tr('badgeEarned', 'Earned')) + '</span>'
-      : '<span class="tlb-pop-state is-locked">' + esc(tr('badgeHoursToGo', '{n} hours to go', { n: opts.togo || b.hours })) + '</span>';
+      : '<span class="tlb-pop-state is-locked">' + esc(fmtHours(opts.togo || b.hours) + ' ' + tr('badgeToGo', 'to go')) + '</span>';
     var pct = !earned && opts.togo ? Math.max(4, Math.min(96, Math.round((1 - Number(opts.togo) / b.hours) * 100))) : 0;
     popEl = document.createElement('div');
     popEl.className = 'tlb-pop';
     popEl.innerHTML = '<div class="tlb-pop-card" role="dialog" aria-modal="true" aria-label="' + esc(name(id)) + '">'
       + '<button type="button" class="tlb-pop-x" aria-label="' + esc(tr('close', 'Close')) + '">&times;</button>'
       + svg(id, 96, !earned) + '<h3>' + esc(name(id)) + '</h3>'
-      + '<p>' + esc(b.rank ? tr('badgeTopTalkerInfo', '#{n} Top Talker - one of the 5 people who talked the most on TalkLive', { n: b.rank }) : tr('badgeHoursNeeded', '{n} hours of talking', { n: b.hours })) + '</p>' + state
+      + '<p>' + esc(b.rank ? tr('badgeTopTalkerInfo', '#{n} Top Talker - one of the 5 people who talked the most on TalkLive', { n: b.rank }) : fmtHours(b.hours) + ' ' + tr('badgeOfTalking', 'of talking')) + '</p>' + state
       + (pct ? '<div class="tlb-pop-bar" aria-hidden="true"><i style="width:' + pct + '%"></i></div>' : '') + '</div>';
     popEl.addEventListener('click', function (e) { if (e.target === popEl || e.target.closest('.tlb-pop-x')) closePop(); });
     document.body.appendChild(popEl);

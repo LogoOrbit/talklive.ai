@@ -108,7 +108,8 @@
     } catch (e) { return new Date(d).toLocaleDateString(); }
   }
 
-  function mount(root) {
+  // opts.poll === false: load once and never refresh (the call screen).
+  function mount(root, opts) {
     if (!root || root.dataset.mounted) return;
     root.dataset.mounted = '1';
     var style = document.createElement('style');
@@ -341,6 +342,7 @@
     // Reactions and comments from other people show up without a reload, while
     // the section is on screen.
     var visible = false;
+    if (opts && opts.poll === false) { global.addEventListener('i18n-changed', render); return; }
     if ('IntersectionObserver' in global) {
       new IntersectionObserver(function (entries) { visible = entries[0].isIntersecting; }).observe(root);
     }

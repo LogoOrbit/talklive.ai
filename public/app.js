@@ -351,7 +351,6 @@ const sidePanelAuth = document.getElementById('sidePanelAuth');
 const sidePanelSignInBtn = document.getElementById('sidePanelSignInBtn');
 const sidePanelRegisterBtn = document.getElementById('sidePanelRegisterBtn');
 const avatarGrid = document.getElementById('avatarGrid');
-const saveAvatarBtn = document.getElementById('saveAvatarBtn');
 
 
 // --- Theme-matched inline icon set, used instead of emoji everywhere in the UI ---
@@ -1697,6 +1696,7 @@ const COVERING_LAYERS = [
   ['friendProfileModal', 'open'],
   ['friendChatModal', 'open'],
   ['myProfileSheet', 'open'],
+  ['editProfileSheet', 'open'],
   ['settingsPanel', 'open'],
   ['filtersPanel', 'open'],
   ['navDrawer', '!hidden'],
@@ -1852,7 +1852,7 @@ function closeQuickSettings() {
 // page over its size budget); it is fetched once the page is idle, or on the
 // first tap of the gear if that comes sooner.
 // It also brings settings.css, which the screen waits for (html.tl-set-css).
-var SETTINGS_PANEL_SRC = '/settings-panel.js?v=ab40f13b37';
+var SETTINGS_PANEL_SRC = '/settings-panel.js?v=4baf9ad904';
 // Top 3 films on profiles (fav-films.js), loaded when a profile first opens.
 var filmsLoading = null;
 function withFilms(cb) {
@@ -1890,7 +1890,6 @@ function enhanceSettingsPage() {
   loadSettingsPanel().then(() => {
     window.TalkLiveSettingsPanel.enhancePage(settingsPage, {
       show: (tab, drill) => showSettingsTab(tab, drill),
-      openProfile: () => { renderAccountState(); openMyProfile(); },
     });
   }, () => {});
 }
@@ -1908,10 +1907,6 @@ function openQuickSettings() {
   if (!quickSettings && window.TalkLiveSettingsPanel) {
     const flip = (box, on) => { box.checked = on; box.dispatchEvent(new Event('change')); };
     quickSettings = window.TalkLiveSettingsPanel.mount(document.getElementById('quickSettings'), {
-      profileFace: (size) => (myAvatar ? avatarFaceHtml(myAvatar, size, isPremiumUser) : genderIcon(null, size)),
-      profileName: () => currentDisplayName() || (myProfile && myProfile.username) || '',
-      profileSub: () => t(accountNickname ? 'settingsRowAccount' : 'settingsRowGuest'),
-      openProfile: () => { closeQuickSettings(); renderAccountState(); openMyProfile(); },
       openAll: () => { closeQuickSettings(); openAppSettings(); },
       saveName: (value) => {
         tempUsernameInput.value = value;
@@ -2693,7 +2688,8 @@ function renderHeaderAuthVisibility() {
   const landing = onLandingScreen();
   headerAuth.classList.toggle('hidden', !landing || !!accountNickname);
   // In a call, your face and the gear are there signed in or not, as on /chat.
-  headerAccountBtn.classList.toggle('hidden', landing && !accountNickname);
+  // Guests have a profile too: the face is always there.
+  headerAccountBtn.classList.remove('hidden');
   headerSettingsBtn.classList.toggle('hidden', landing);
   renderHeaderAccountFace();
   if (headerLinkProfileBtn) {
@@ -3226,8 +3222,7 @@ function renderAvatarGrid() {
     avatarGrid.appendChild(section);
     if (keepScroll[cat]) row.scrollLeft = keepScroll[cat];
   });
-  syncSaveAvatarBtn();
-}
+  }
 
 // Opening the picker scrolls your current face into view inside its row.
 function revealSelectedAvatar() {
@@ -3242,46 +3237,27 @@ function revealSelectedAvatar() {
     - row.getBoundingClientRect().left - 8;
 }
 
-function syncSaveAvatarBtn() {
-  if (!saveAvatarBtn) return;
-  saveAvatarBtn.disabled = !pendingAvatar || pendingAvatar === myAvatar;
-}
-
+// A tap in the Edit profile grid only previews: the face on the live card
+// changes at once, and Save (profile-ui.js) decides whether it may be worn.
 avatarGrid.addEventListener('click', (e) => {
   const option = e.target.closest('.avatar-option');
   if (!option) return;
-  if (blockLockedSpecial(option.dataset.avatar)) return;
   pendingAvatar = option.dataset.avatar;
   renderAvatarGrid();          // move the tick to the one just picked
-  syncSaveAvatarBtn();
+  document.dispatchEvent(new CustomEvent('tl-avatar-preview', { detail: pendingAvatar }));
   vibrate(8);
 });
 
-if (saveAvatarBtn) {
-  saveAvatarBtn.addEventListener('click', () => {
-    if (!pendingAvatar || pendingAvatar === myAvatar) return;
-    myAvatar = pendingAvatar;
-    try { localStorage.setItem('talklive_avatar', myAvatar); } catch (err) { /* storage blocked */ }
-    // Picking an animal here is picking your spirit animal - the same choice,
-    // made from the other picker. Keeping them apart meant the animal on your
-    // own profile and the animal the person you called saw could be two
-    // different creatures.
-    // A character or a plain face is no animal, so it clears the old one.
-    const pickedAnimal = animalAvatarId(myAvatar);
-    if (myAnimal !== pickedAnimal) {
-      myAnimal = pickedAnimal;
-      if (Animals) Animals.store(pickedAnimal);
-    }
-    renderAnimalPicker();
-    renderAvatarGrid();
-    renderAccountState();
-    renderHeaderAccountFace();   // the corner wears it once it is saved
-    renderSettingsProfileRow();
-    registerProfile(); // pushes the new avatar to the server so friends see it
-    showToast(t('avatarSaved'), 'success');
-    syncSaveAvatarBtn();
-    vibrate(15);
-  });
+// Wearing a face for real. Plus faces need Plus and the three level faces need
+// their level; the server checks again, this is so the page never even tries.
+function faceAllowed(id) {
+  if (!validAvatarId(id)) return false;
+  if (specialTierOf(id)) return specialUnlocked(id);
+  if (isPlusOnlyFace(id)) {
+    const E = window.TalkLiveEngage;
+    return !!(isPremiumUser || id === myAvatar || (E && E.faceOk && E.faceOk(id)));
+  }
+  return true;
 }
 
 // --- Avatar picker (home screen, call screen, gate) ---------------------------
@@ -3448,7 +3424,7 @@ function renderAnimalChoiceLine() {
 // The one way the face changes from a picker row: the avatar is saved, and the
 // animal follows it (or clears, for a character). Everywhere re-renders.
 function setMyAvatarChoice(id) {
-  if (!validAvatarId(id) || id === myAvatar) return;
+  if (!validAvatarId(id) || id === myAvatar || !faceAllowed(id)) return;
   myAvatar = id;
   pendingAvatar = id;
   try { localStorage.setItem('talklive_avatar', id); } catch (e) { /* storage blocked */ }
@@ -3582,7 +3558,7 @@ function accountUi() {
       css.href = '/account-ui.css?v=00ddfccc11';
       document.head.appendChild(css);
       const js = document.createElement('script');
-      js.src = '/account-ui.js?v=409f0ed008';
+      js.src = '/account-ui.js?v=8ec323d703';
       js.onload = () => resolve(window.AccountUI);
       js.onerror = (e) => { accountUiP = null; reject(e); };
       document.head.appendChild(js);
@@ -3817,7 +3793,7 @@ function loadLazyScript(name, src) {
 }
 function withBadges(cb) {
   if (window.TalkLiveBadges) { cb(window.TalkLiveBadges); return; }
-  loadLazyScript('badges', '/badges.js?v=e9312841fa').then(() => cb(window.TalkLiveBadges), () => {});
+  loadLazyScript('badges', '/badges.js?v=89e37f1a68').then(() => cb(window.TalkLiveBadges), () => {});
 }
 function withCovers(cb) {
   if (window.TalkLiveCovers) { cb(window.TalkLiveCovers); return; }
@@ -3911,260 +3887,48 @@ function dropPlusFace(look) {
 socket.on('state-sync', ingestOwnExtras);
 socket.on('profile', ingestOwnExtras);
 
-// --- My profile: a sheet of its own --------------------------------------
-// Your face in the corner opens your profile and nothing else - who you are,
-// your ID, your name, picture and account - in a sheet that slides up from
-// the bottom and goes away with Back, a tap outside or a swipe down. It used
-// to land on the whole Settings screen, which is a different thing entirely.
-// The name, avatar, "I am" and account controls are the very ones Settings >
-// Profile has; they are lent to the sheet while it is open (moving the nodes
-// keeps every listener), so there is one of each and they cannot disagree.
-// `var`: the header and friend-ID code call into this before it is reached.
-var myProfileSheet = null;
-var myProfileBorrowed = [];
-function myProfileIsOpen() {
-  return !!myProfileSheet && myProfileSheet.classList.contains('open');
-}
-// The profile's rows: [key, colour, icon, where the lent control goes].
-var MP_ACC = [
-  ['avatar', 'hue-brand', '<circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/>', 'tl-set-group mp-avatar-host'],
-  ['cover', 'hue-blue', '<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="m3 16 5-5 4 4 3-3 6 6"/>', 'mp-cover-picker'],
-  ['name', 'hue-orange', '<path d="M4 20h4L19 9a2.5 2.5 0 0 0-3.5-3.5L4 16z"/>', 'tl-set-group mp-name-host'],
-  ['id', 'hue-grey', '<path d="M9 4 7 20M17 4l-2 16M4 9h16M3 15h16"/>', 'tl-set-group mp-id-host'],
-  ['ga', 'hue-pink', '<circle cx="9" cy="9" r="3.5"/><circle cx="16" cy="15" r="3"/><path d="M3 20c.5-3 3-4.5 6-4.5"/>', 'tl-set-group mp-ga-host'],
-  ['badges', 'hue-green', '<circle cx="12" cy="9" r="5.5"/><path d="m8.500 14 -1.500 7 5-3 5 3-1.500-7"/>', 'mp-badges'],
-  ['voice', 'hue-red', '<rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>', 'tl-set-group mp-voice-host'],
-];
-function buildMyProfileSheet() {
-  myProfileSheet = document.createElement('div');
-  myProfileSheet.id = 'myProfileSheet';
-  myProfileSheet.className = 'my-profile';
-  myProfileSheet.innerHTML = `
-    <div class="my-profile-backdrop"></div>
-    <section class="my-profile-sheet" role="dialog" aria-modal="true" aria-labelledby="myProfileName" tabindex="-1">
-      <div class="my-profile-grab" aria-hidden="true"></div>
-      <button type="button" class="my-profile-close">&times;</button>
-      <div class="my-profile-scroll">
-        <div class="my-profile-card">
-          <div class="mp-cover" aria-hidden="true"></div>
-          <span class="mp-face"><span class="my-profile-face"></span></span>
-          <h2 id="myProfileName" class="my-profile-name"></h2>
-          <span class="mp-badge"></span>
-          <button type="button" class="mp-id my-profile-copy"><span class="my-profile-id-value"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
-        </div>
-        <button type="button" class="mp-plus" data-act="plus"><span class="mp-plus-gem" aria-hidden="true">\u{1F48E}</span><span class="mp-row-text"><strong></strong><small></small></span><span class="mp-go" aria-hidden="true"></span></button>
-        <div class="mp-rows mp-acc-list">${MP_ACC.map(([k, hue, icon, host]) => `
-          <section class="mp-acc mp-acc-${k}" data-acc="${k}"${k === 'cover' || k === 'badges' || k === 'voice' ? ' hidden' : ''}>
-            <button type="button" class="mp-row mp-acc-head" data-act="acc" data-key="${k}" aria-expanded="false">
-              <span class="mp-ico ${hue}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icon}</svg></span>
-              <span class="mp-row-text"><strong></strong><small></small></span>
-              <span class="mp-go" aria-hidden="true"></span>
-            </button>
-            <div class="mp-acc-body" hidden><div class="${host}"></div></div>
-          </section>`).join('')}
-        </div>
-        <p class="mp-legend"></p>
-        <div class="mp-rows mp-you"></div>
-        <div class="my-profile-films" hidden></div>
-        <div class="mp-rows my-profile-actions"></div>
-      </div>
-    </section>`;
-  document.body.appendChild(myProfileSheet);
-  myProfileSheet.querySelector('.my-profile-backdrop').addEventListener('click', closeMyProfile);
-  myProfileSheet.querySelector('.my-profile-close').addEventListener('click', closeMyProfile);
-  myProfileSheet.querySelector('.my-profile-copy').addEventListener('click', () => copyFriendIdBtn.click());
-  myProfileSheet.querySelector('.my-profile-scroll').addEventListener('click', onMyProfileAction);
-  // Drag the top of the sheet down to put it away, as a phone sheet does.
-  const sheet = myProfileSheet.querySelector('.my-profile-sheet');
-  const scroller = myProfileSheet.querySelector('.my-profile-scroll');
-  let startY = null;
-  let dy = 0;
-  sheet.addEventListener('touchstart', (e) => {
-    if (scroller.scrollTop > 0) { startY = null; return; }
-    startY = e.touches[0].clientY;
-    dy = 0;
-  }, { passive: true });
-  sheet.addEventListener('touchmove', (e) => {
-    if (startY === null) return;
-    dy = Math.max(0, e.touches[0].clientY - startY);
-    if (dy > 0) sheet.style.transform = `translateY(${dy}px)`;
-  }, { passive: true });
-  sheet.addEventListener('touchend', () => {
-    if (startY === null) return;
-    startY = null;
-    sheet.style.transform = '';
-    if (dy > 90) closeMyProfile();
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && myProfileIsOpen() && !document.querySelector('.modal-overlay:not(.hidden)')) closeMyProfile();
-  });
-}
-// Same layout as the app's Profile tab: face and name, Friend ID, the Plus
-// card, a "You" list, then Settings and Sign out.
+// --- My profile -----------------------------------------------------------
+// Your face in the corner opens your Profile: one card on its cover (face with a
+// pencil, name, ID, top badge, streak and countries), one Edit profile button,
+// the badge shelf and a short grouped settings list. Everything lives in
+// profile-ui.js, loaded the first time it is needed so the landing page never
+// pays for it (docs/SPEC-PROFILE-PROGRESS-POSTS.md section 10).
+// `var`/function: the header and friend-ID code call into these early.
+var premiumUntil = null;
+// A translated string, or the English one given when a language has none yet.
 function mpText(key, fallback, vars) {
   const v = t(key, vars);
-  return v && v !== key ? v : fallback;
+  if (v && v !== key) return v;
+  let s = fallback;
+  if (vars) for (const k in vars) s = s.split('{' + k + '}').join(vars[k]);
+  return s;
 }
-let premiumUntil = null;
-document.addEventListener('tl-films', () => { if (myProfileIsOpen()) renderMyProfileCard(); });
-function renderMyProfileCard() {
-  if (!myProfileSheet) return;
-  const q = (sel) => myProfileSheet.querySelector(sel);
-  const name = accountNickname || (tempUsernameInput && tempUsernameInput.value) || t('you');
-  q('.my-profile-face').innerHTML = myAvatar ? avatarFaceHtml(myAvatar, 92, isPremiumUser) : genderIcon(null, 92);
-  q('.my-profile-name').textContent = name;
-  q('.my-profile-id-value').textContent = myFriendId || '…';
-  q('.my-profile-copy').setAttribute('aria-label', t('copyFriendId'));
-  q('.my-profile-close').setAttribute('aria-label', t('close'));
-  [
-    ['avatar', 'changeAvatar', 'Change avatar', 'mpHintAvatar', 'Pick your face'],
-    ['cover', 'coverTitle', 'Cover', 'mpHintCover', 'Colour or animated scene'],
-    ['name', 'tempUsername', 'Display name', 'mpHintName', 'How people see you'],
-    ['id', 'mpYourId', 'Your ID', 'mpHintId', 'Friends find you with it'],
-    ['ga', 'mpGenderAge', 'Gender & age', 'mpHintGa', 'Optional'],
-    ['badges', 'badgesTitle', 'Badges', 'mpHintBadges', 'Earned by talking'],
-    ['voice', 'voiceCheck', 'Voice check', 'mpHintVoice', 'Keeps calls friendly'],
-  ].forEach(([k, tk, tf, hk, hf]) => {
-    q('.mp-acc-' + k + ' strong').textContent = mpText(tk, tf);
-    q('.mp-acc-' + k + ' small').textContent = mpText(hk, hf);
-  });
-  paintCover(q('.mp-cover'), myCover, true);
-  paintBadgeChip(q('.mp-badge'), myBadges, 22);
-  // Covers and badges only exist once the server sends them.
-  const extras = serverSendsExtras;
-  q('.mp-acc-cover').hidden = !extras;
-  q('.mp-acc-badges').hidden = !extras;
-  if (extras) {
-    withCovers((C) => {
-      const host = q('.mp-cover-picker');
-      host.innerHTML = C.picker(effectiveCover(myCover), isPremiumUser);
-    });
-    withBadges((B) => {
-      q('.mp-badges').innerHTML = `<label class="tl-set-control tl-set-toggle mp-show-badges"><span class="tl-set-text"><strong>${escapeHtml(mpText('showBadges', 'Show badges on my profile'))}</strong></span><span class="switch"><input type="checkbox" id="mpShowBadges"${myBadgesHidden ? '' : ' checked'} /><span class="switch-slider" aria-hidden="true"></span></span></label>`
-        + B.shelf(myBadges || { earned: [], hours: 0 });
-    });
-  }
-  q('.mp-acc-voice').hidden = !voiceCheckAvailable;
-  const plus = q('.mp-plus');
-  plus.querySelector('strong').textContent = isPremiumUser ? 'TalkLive Plus' : mpText('getPlus', 'Get TalkLive Plus');
-  plus.querySelector('small').textContent = isPremiumUser
-    ? (premiumUntil ? mpText('plusActiveUntil', 'Active until {date}', { date: new Date(premiumUntil).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) }) : mpText('plusActive', 'Active'))
-    : mpText('plusPitchShort', 'Priority matching, every filter, gold ring');
-  plus.classList.toggle('on', isPremiumUser);
-  accountUi().then((ui) => ui.profileRows(myProfileSheet, {
-    t, escapeHtml, signedIn: !!accountNickname,
-    stamps: window.TalkLiveEngage && window.TalkLiveEngage.passportCount ? window.TalkLiveEngage.passportCount() : 0,
-    film: window.TalkLiveFilms && window.TalkLiveFilms.firstTitle ? window.TalkLiveFilms.firstTitle() : '',
-  })).catch(() => {});
+function myProfileIsOpen() { return !!(window.TalkLiveProfile && window.TalkLiveProfile.isOpen()); }
+function renderMyProfileCard() { if (window.TalkLiveProfile) window.TalkLiveProfile.render(); }
+function withProfileUi(cb) {
+  if (window.TalkLiveProfile) { cb(window.TalkLiveProfile); return; }
+  loadLazyScript('profile', '/profile-ui.js?v=11736dcddc')
+    .then(() => window.TalkLiveProfile.ready)
+    .then(() => cb(window.TalkLiveProfile), () => showToast(t('errNoConnection'), 'warn'));
 }
-// Choosing a cover: a Plus scene needs Plus (the server says so too); the
-// server's answer is the cover that counts.
-function chooseCover(id) {
-  if (id === myCover) return;
-  if (id.indexOf('plus:') === 0 && !isPremiumUser) {
-    leaveMyProfileFor('settings');
-    showPremiumUpsell('', 'avatars');
-    return;
-  }
-  const before = myCover;
-  myCover = id;
-  renderMyProfileCard();
-  socket.emit('set-cover', { cover: id }, (r) => {
-    if (r && r.ok) {
-      myCover = typeof r.cover === 'string' ? r.cover : id;
-    } else {
-      myCover = before;
-      if (r && r.reason === 'plus') showPremiumUpsell('', 'avatars');
-      else if (r) showToast(t('coverFailed'), 'warn');
-    }
-    renderMyProfileCard();
-  });
+function openMyProfile(opts) {
+  loadSettingsPanel().catch(() => {});
+  if (settingsIsOpen()) closeAppSettings();
+  refreshProgress();
+  withProfileUi((P) => P.open(opts));
 }
-// One row open at a time; the lent control lives in its body.
-function toggleMyProfileAcc(key, open) {
-  myProfileSheet.querySelectorAll('.mp-acc').forEach((sec) => {
-    const on = sec.dataset.acc === key && (typeof open === 'boolean' ? open : sec.querySelector('.mp-acc-body').hidden);
-    sec.querySelector('.mp-acc-body').hidden = !on;
-    sec.querySelector('.mp-acc-head').setAttribute('aria-expanded', on ? 'true' : 'false');
-    sec.classList.toggle('open', on);
-    if (on) {
-      if (key === 'avatar') { renderAvatarGrid(); revealSelectedAvatar(); }
-      sec.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-  });
-}
-function toggleMyProfileAvatar(open) { toggleMyProfileAcc('avatar', open); }
+// Opening the editor straight from somewhere else (the pencil on the avatar).
+function openEditProfile(tab) { withProfileUi((P) => P.edit(tab)); }
 // Leaving the sheet for somewhere else in the app: it closes without sending
 // someone who came from /chat straight back there.
 function leaveMyProfileFor(next) {
   if (returnToChatAfter === 'profile') returnToChatAfter = next === 'settings' ? 'settings' : null;
   closeMyProfile(true);
 }
-function onMyProfileAction(e) {
-  if (e.target.id === 'mpShowBadges') {
-    const on = e.target.checked;
-    myBadgesHidden = !on;
-    socket.emit('show-badges', { on }, (r) => {
-      if (r && r.ok) { myBadgesHidden = !r.on; return; }
-      myBadgesHidden = !myBadgesHidden;
-      e.target.checked = !myBadgesHidden;
-      showToast(t('coverFailed'), 'warn');
-    });
-    return;
-  }
-  const cover = e.target.closest('[data-cover]');
-  if (cover) { chooseCover(cover.dataset.cover); return; }
-  if (e.target.closest('[data-cover-upsell]')) { leaveMyProfileFor('settings'); showPremiumUpsell('', 'avatars'); return; }
-  const btn = e.target.closest('[data-act]');
-  if (!btn) return;
-  const act = btn.dataset.act;
-  const E = window.TalkLiveEngage;
-  if (act === 'acc') { toggleMyProfileAcc(btn.dataset.key); return; }
-  if (act === 'films') { myProfileSheet.querySelector('.my-profile-films').classList.toggle('open'); return; }
-  if (act === 'passport' && E && E.openPassport) { E.openPassport(); return; }
-  if (act === 'invite') { showSharePrompt(); return; }
-  if (act === 'plus') { leaveMyProfileFor('settings'); if (isPremiumUser) openBilling(); else showPremiumUpsell('', 'general'); return; }
-  if (act === 'logout') { logoutBtn.click(); return; }
-  if (act === 'more') { leaveMyProfileFor('settings'); openAppSettings('profile'); return; }
-  if (act === 'login' || act === 'signup') { leaveMyProfileFor('auth'); openAuthPage(act); }
-}
-function openMyProfile() {
-  if (!myProfileSheet) buildMyProfileSheet();
-  loadSettingsPanel().catch(() => {});
-  if (settingsIsOpen()) closeAppSettings();
-  // The sheet is the quick version of Settings > Profile: display name, your
-  // ID (signed in only - a guest's is temporary), avatar, and log in or out.
-  // Those controls are lent to it (a placeholder keeps their spot, so they go
-  // back exactly where they were); everything else - "I am", password,
-  // recovery email - is one tap away under "More profile settings".
-  renderIdEditor();
-  const host = (sel) => myProfileSheet.querySelector(sel);
-  const ctl = (id) => { const n = document.getElementById(id); return n && n.closest('.tl-set-control'); };
-  // [control, where it goes]: everything about how you appear, in one place.
-  myProfileBorrowed = [
-    [ctl('tempUsernameInput'), '.mp-name-host'],
-    [myFriendIdEditable && idEditor, '.mp-id-host'],
-    [ctl('genderGroup'), '.mp-ga-host'],
-    [ctl('ageGroup'), '.mp-ga-host'],
-    [ctl('avatarGrid'), '.mp-avatar-host'],
-    [document.getElementById('voiceCheckRow'), '.mp-voice-host'],
-    [document.getElementById('voiceCheckActions'), '.mp-voice-host'],
-  ].filter(([el]) => el).map(([el, where]) => {
-    const spot = document.createComment('my-profile');
-    el.before(spot);
-    host(where).appendChild(el);
-    return { el, spot };
-  });
-  toggleMyProfileAcc('', false);
-  myProfileSheet.querySelector('.my-profile-films').classList.remove('open');
-  refreshProgress();
-  renderMyProfileCard();
-  withFilms((F) => F.editor(myProfileSheet.querySelector('.my-profile-films'), socket));
-  myProfileSheet.querySelector('.my-profile-scroll').scrollTop = 0;
-  myProfileSheet.classList.add('shown');
-  requestAnimationFrame(() => requestAnimationFrame(() => myProfileSheet.classList.add('open')));
-  updateScrollLock();
-  try { myProfileSheet.querySelector('.my-profile-sheet').focus({ preventScroll: true }); } catch (_) {}
+function closeMyProfile(now) {
+  if (!myProfileIsOpen()) return;
+  window.TalkLiveProfile.close(now === true);
+  if (returnToChatAfter === 'profile') setTimeout(() => maybeReturnToChat('profile'), 280);
 }
 // /chat has no settings or profile screen of its own; it sends people here
 // (?from=chat) and they go back to the chat when they are done with it.
@@ -4178,24 +3942,6 @@ function maybeReturnToChat(what) {
   if (fromChat && steps >= 1 && history.length < 50) history.go(-steps);
   else location.replace('/chat');
   return true;
-}
-
-// `now`: the controls go straight back (the screen they belong to is about to
-// show them) instead of after the slide.
-function closeMyProfile(now) {
-  if (!myProfileIsOpen()) return;
-  myProfileSheet.classList.remove('open');
-  if (returnToChatAfter === 'profile') setTimeout(() => maybeReturnToChat('profile'), 280);
-  // Handed back once the sheet has slid away, so nothing jumps mid-animation.
-  const give = myProfileBorrowed;
-  myProfileBorrowed = [];
-  if (now === true) give.splice(0).forEach(({ el, spot }) => spot.replaceWith(el));
-  setTimeout(() => {
-    if (myProfileIsOpen()) return;
-    give.forEach(({ el, spot }) => spot.replaceWith(el));
-    myProfileSheet.classList.remove('shown');
-    updateScrollLock();
-  }, 280);
 }
 
 // "Update password" only becomes active once the password form is filled in.
@@ -9190,6 +8936,7 @@ function teardownPeer() {
   callGeneration += 1;
   currentPartner = null;
   currentPairId = null;
+  if (typeof hideSilenceWarning === 'function') hideSilenceWarning();
   clearTimeout(iceRestartRetry);
   clearConnectWatchdog();
   clearReconnectDeadline();
@@ -9322,6 +9069,7 @@ function enterCallUI() {
   }
   setupPanel.classList.add('hidden');
   callPanel.classList.remove('hidden');
+  mountCallPosts();
   stageEl.classList.add('call-live');
   chatToggleBtn.classList.remove('hidden');
   syncNavCurrent();
@@ -11946,7 +11694,8 @@ socket.on('partner-left', (info) => {
   // The partner ended the call. Show the single red "your friend ended the call"
   // message. Only keep hunting for a new person if auto-connect is on; otherwise
   // stop on the red message so the user isn't yanked into a new search.
-  const endedKey = dropped ? 'statusPartnerDropped' : 'statusFriendEnded';
+  const silent = !!(info && info.reason === 'silence');
+  const endedKey = dropped ? 'statusPartnerDropped' : silent ? 'statusSilenceEnded' : 'statusFriendEnded';
   const connKey = dropped ? 'connPartnerDropped' : 'connFriendEnded';
   if (autoCallEnabled && !wasCallback) {
     setCallState('searching');
@@ -11975,6 +11724,106 @@ socket.on('partner-left', (info) => {
     setSubText(null);
   }
 });
+
+// --- Only active talk counts (spec section 10) -----------------------------------
+// While a voice call is connected this device measures how long ITS OWN mic
+// heard speech and reports it every 10 s as `voice-activity` { pairId, spokeMs }.
+// The server pairs the two sides' reports to decide which seconds were really
+// a conversation; a client that reports nothing earns no talk time. Text chats
+// never get here (no media). The mic is read through an analyser, never recorded.
+const VOICE_REPORT_MS = 10000;
+const VOICE_LEVEL = 0.025;    // RMS (0..1) above which the mic counts as speech
+const VOICE_HANG_MS = 350;    // speech continues this long after the level drops
+const vad = { pair: null, stream: null, node: null, src: null, data: null, spoke: 0, last: 0, windowAt: 0, heardAt: 0 };
+function vadReset() {
+  if (vad.src) { try { vad.src.disconnect(); } catch (_) { /* already gone */ } }
+  vad.pair = null; vad.stream = null; vad.node = null; vad.src = null; vad.data = null;
+  vad.spoke = 0; vad.last = 0; vad.windowAt = 0; vad.heardAt = 0;
+}
+function vadStart() {
+  vadReset();
+  try {
+    if (!visualizerCtx || visualizerCtx.state === 'closed') {
+      visualizerCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    const track = localStream && localStream.getAudioTracks()[0];
+    if (!track || track.readyState !== 'live') return;
+    const src = visualizerCtx.createMediaStreamSource(new MediaStream([track]));
+    const node = visualizerCtx.createAnalyser();
+    node.fftSize = 1024;
+    src.connect(node);
+    vad.src = src; vad.node = node; vad.data = new Uint8Array(node.fftSize);
+    vad.stream = localStream; vad.pair = currentPairId;
+    vad.last = vad.windowAt = Date.now();
+  } catch (_) { vadReset(); /* no Web Audio: nothing is reported, nothing is earned */ }
+}
+function vadTick() {
+  const live = currentPairId && mediaConnected && localStream && socket.connected;
+  if (!live) { if (vad.pair || vad.stream) vadReset(); return; }
+  if (vad.pair !== currentPairId || vad.stream !== localStream || !vad.node) {
+    vadStart();
+    if (!vad.node) return;
+  }
+  const now = Date.now();
+  // A throttled background tab ticks about once a second; count that as it is.
+  const dt = Math.min(1500, now - vad.last);
+  vad.last = now;
+  const track = localStream.getAudioTracks()[0];
+  if (track && track.enabled && !isMuted) {
+    vad.node.getByteTimeDomainData(vad.data);
+    let sum = 0;
+    for (let i = 0; i < vad.data.length; i += 1) { const v = (vad.data[i] - 128) / 128; sum += v * v; }
+    if (Math.sqrt(sum / vad.data.length) > VOICE_LEVEL) vad.heardAt = now;
+  }
+  if (now - vad.heardAt < VOICE_HANG_MS) vad.spoke += dt;
+  if (now - vad.windowAt >= VOICE_REPORT_MS) {
+    socket.emit('voice-activity', { pairId: currentPairId, spokeMs: Math.max(0, Math.min(VOICE_REPORT_MS, Math.round(vad.spoke))) });
+    vad.spoke = 0;
+    vad.windowAt = now;
+  }
+}
+setInterval(vadTick, 100);
+
+// "No one is talking": the server warns both sides, then ends the call after a
+// minute unless someone speaks or taps Still here.
+let silenceBanner = null;
+let silenceTimer = null;
+function silenceText(secs) {
+  const m = Math.floor(secs / 60);
+  const ss = String(secs % 60).padStart(2, '0');
+  return mpText('silenceWarn', "No one's talking - call ends in {time}", { time: `${m}:${ss}` });
+}
+function hideSilenceWarning() {
+  clearInterval(silenceTimer);
+  silenceTimer = null;
+  if (silenceBanner) silenceBanner.classList.add('hidden');
+}
+function showSilenceWarning(endsInMs) {
+  if (!silenceBanner) {
+    silenceBanner = document.createElement('div');
+    silenceBanner.className = 'tl-silence hidden';
+    silenceBanner.setAttribute('role', 'alert');
+    silenceBanner.innerHTML = '<span class="tl-silence-text"></span><button type="button" class="tl-silence-btn"></button>';
+    silenceBanner.querySelector('button').addEventListener('click', () => {
+      socket.emit('still-here', { pairId: currentPairId });
+      hideSilenceWarning();
+    });
+    callPanel.insertBefore(silenceBanner, callPanel.firstChild);
+  }
+  silenceBanner.querySelector('button').textContent = mpText('stillHere', 'Still here');
+  const until = Date.now() + (Number(endsInMs) > 0 ? Math.min(Number(endsInMs), 60000) : 60000);
+  const paint = () => {
+    const left = Math.max(0, Math.ceil((until - Date.now()) / 1000) - 1);
+    silenceBanner.querySelector('.tl-silence-text').textContent = silenceText(left);
+  };
+  paint();
+  silenceBanner.classList.remove('hidden');
+  clearInterval(silenceTimer);
+  silenceTimer = setInterval(paint, 250);
+}
+socket.on('silence-warning', (info) => { if (mediaConnected) showSilenceWarning(info && info.endsInMs); });
+socket.on('silence-cleared', hideSilenceWarning);
+socket.on('partner-left', () => { hideSilenceWarning(); });
 
 socket.on('partner-mic-state', (muted) => {
   orb.classList.toggle('muted-remote', muted);
@@ -12413,17 +12262,25 @@ socket.on('friend-online', ({ clientId, username, countryCode, country } = {}) =
 // a call, so it loads once the page is up and stays out of the first paint.
 window.addEventListener('load', () => {
   const s = document.createElement('script');
-  s.src = '/engage.js?v=b7be34cbac';
+  s.src = '/engage.js?v=d509f0cbfc';
   s.async = true;
   document.head.appendChild(s);
 });
+
+// The same posts under the call screen's safety note: mounted the first time
+// the call screen opens, loaded once, never polled.
+function mountCallPosts() {
+  const section = document.getElementById('tlCallPosts');
+  if (!section || section.dataset.mounted) return;
+  loadLazyScript('posts', '/posts.js?v=21a2a98e8f').then(() => window.TalkLivePosts.mount(section, { poll: false }), () => {});
+}
 
 // --- "From TalkLive" posts: right under the Talk / Chat buttons. posts.js is
 // fetched once the page is idle, so it never competes with the first paint. ---
 {
   const section = document.getElementById('tlPosts');
   if (section) {
-    const go = () => loadLazyScript('posts', '/posts.js?v=6435ed5dff').then(() => window.TalkLivePosts.mount(section), () => {});
+    const go = () => loadLazyScript('posts', '/posts.js?v=21a2a98e8f').then(() => window.TalkLivePosts.mount(section), () => {});
     window.addEventListener('load', () => { (window.requestIdleCallback || ((f) => setTimeout(f, 300)))(go, { timeout: 2500 }); });
   }
 }

@@ -1,0 +1,84 @@
+/* ==========================================================================
+ * PROFILE and EDIT PROFILE (profile-ui.js; spec section 10).
+ * One card on its cover, one Edit button, a badge row, a short grouped list.
+ * ======================================================================== */
+.mp-face-wrap { display: contents; }
+.my-profile .mp-face { cursor: pointer; }
+.my-profile .mp-face.is-static { cursor: default; }
+.my-profile .mp-id.is-static { cursor: default; background: none; }
+.mp-ico.hue-gold { background: linear-gradient(135deg, #e6b23e, #b8860b); }
+.my-profile .my-profile-card { margin-bottom: 12px; }
+.tlp-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 12px; }
+.tlp-chip {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 4px 12px;
+  border: 1px solid var(--tl-line, color-mix(in srgb, var(--text) 14%, transparent)); border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 6%, transparent); color: var(--text);
+  font: inherit; font-size: 14px; cursor: pointer; transition: border-color .15s ease, background-color .15s ease;
+}
+.tlp-chip:hover { border-color: var(--accent); }
+.tlp-chip svg { width: 16px; height: 16px; flex: none; }
+.tlp-chip b { font-weight: 800; }
+.tlp-chip small { font-size: 12.5px; color: var(--muted); }
+.tlp-streak svg { color: #ff8a3d; }
+.tlp-streak.is-done { border-color: color-mix(in srgb, var(--green, #22c55e) 55%, transparent); }
+.tlp-world svg:first-child { color: var(--accent); }
+.tlp-world .tlp-chev { width: 14px; height: 14px; transition: transform .2s ease; }
+.tlp-world.open .tlp-chev { transform: rotate(180deg); }
+.tlp-countries {
+  align-self: stretch; margin: 10px 0 0; max-height: 216px; overflow-y: auto; overscroll-behavior: contain; text-align: start;
+  border-radius: 14px; background: color-mix(in srgb, var(--text) 6%, var(--bg-2));
+  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+}
+.tlp-countries[hidden] { display: none; }
+.tlp-country { display: flex; align-items: center; gap: 10px; padding: 8px 14px; font-size: 14.5px; }
+.tlp-country + .tlp-country { border-top: 1px solid color-mix(in srgb, var(--text) 7%, transparent); }
+.tlp-country-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tlp-country-n { flex: none; min-width: 24px; padding: 1px 8px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); font-weight: 700; font-size: 12.5px; text-align: center; }
+.tlp-countries-empty { margin: 0; padding: 14px; font-size: 13.5px; color: var(--muted); }
+.tlp-edit-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px; margin: 0 0 14px;
+  border: 0; border-radius: 14px; background: var(--accent); color: #fff; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+}
+.tlp-edit-btn:hover { filter: brightness(1.08); }
+.tlp-edit-btn svg { width: 18px; height: 18px; }
+.tlp-badges { margin: 0 0 16px; border-radius: 20px; background: color-mix(in srgb, var(--text) 5%, transparent); padding: 12px 0 6px; }
+.tlp-badges[hidden] { display: none; }
+.tlp-badges-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 16px 6px; }
+.tlp-badges-head strong { font-size: 15px; }
+.tlp-switch { display: inline-flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--muted); cursor: pointer; }
+.tlp-shelf .tl-badge-total { margin: 0 0 4px; padding: 0 16px; }
+.tlp-settings .mp-rows { margin-bottom: 12px; }
+.tlp-settings .mp-row { min-height: 56px; }
+.tlp-settings .mp-row-text small:empty { display: none; }
+
+/* Edit profile: a full-height sheet; the card above stays put while the tabs scroll. */
+.tlp-edit { z-index: 1550; }
+.tlp-edit .my-profile-sheet { height: 94vh; height: 94dvh; max-height: none; padding: 0 16px; }
+.tlp-edit-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0 10px; flex: 0 0 auto; }
+.tlp-edit-head strong { font-size: 17px; }
+.tlp-head-btn { min-height: 38px; padding: 0 16px; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--text); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+.tlp-head-btn.is-primary { background: var(--accent); color: #fff; font-weight: 700; }
+.tlp-head-btn:disabled { opacity: .45; cursor: default; }
+.tlp-edit .tlp-preview { flex: 0 0 auto; margin-bottom: 8px; padding-bottom: 12px; }
+.tlp-edit .mp-cover { height: 64px; }
+.tlp-edit .mp-face { margin-top: -38px; }
+.tlp-edit .mp-face .my-profile-face { width: 76px; height: 76px; }
+.tlp-edit .my-profile-name { font-size: 19px; margin-top: 6px; }
+.tlp-lock-note { flex: 0 0 auto; margin: 0 0 8px; padding: 8px 12px; border-radius: 12px; font-size: 13px; text-align: center; background: color-mix(in srgb, #f5c451 16%, transparent); }
+.tlp-lock-note[hidden] { display: none; }
+.tlp-tabs { flex: 0 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 14px; background: color-mix(in srgb, var(--text) 7%, transparent); margin-bottom: 8px; }
+.tlp-tab { min-height: 38px; border: 0; border-radius: 11px; background: none; color: var(--muted); font: inherit; font-size: 14.5px; font-weight: 700; cursor: pointer; }
+.tlp-tab.selected { background: var(--accent); color: #fff; }
+.tlp-edit .tlp-body { flex: 1 1 auto; min-height: 0; padding: 4px 0 24px; --cvp-fade: var(--bg-2); }
+.tlp-panel[hidden] { display: none; }
+.tlp-edit #avatarGrid { max-height: none; }
+.tlp-edit .avatar-option.is-locked .avatar-animal { filter: grayscale(.85) brightness(.8); }
+.tlp-field { display: block; margin: 0 0 14px; }
+.tlp-field-label { display: block; margin: 0 2px 6px; font-size: 13px; font-weight: 700; color: var(--muted); }
+.tlp-field .search-input { width: 100%; }
+.tlp-field-note { margin: -4px 2px 0; font-size: 12.5px; color: var(--muted); }
+.tlp-field-note.is-error { color: var(--danger, #ff5470); }
+/* Pop-ups raised from a sheet (Plus, share, sign out) and toasts sit above it. */
+body.tlp-open .modal-overlay { z-index: 1700; }
+.tl-toast { z-index: 2100; }
+

@@ -3315,7 +3315,7 @@ summary.tl-filter-legend::-webkit-details-marker { display: none; }
 @keyframes tl-skel { from { opacity: .5; } to { opacity: 1; } }
 
 /* ===========================================================================
- * ENGAGE (engage.js): streak, passport, likes, today's question
+ * ENGAGE (engage.js): news chip and likes chip on the home page
  * ======================================================================== */
 .tl-engage { margin: 14px 0 4px; display: grid; gap: 10px; }
 .tl-engage:empty { display: none; }
@@ -3330,13 +3330,6 @@ summary.tl-filter-legend::-webkit-details-marker { display: none; }
 }
 .tl-chip:hover { transform: translateY(-1px); border-color: var(--tl-line-strong); }
 .tl-chip i { font-size: 15px; line-height: 1; }
-.tl-chip small { font-size: 12px; font-weight: 600; color: var(--muted); }
-.tl-chip .tl-chip-flags { display: inline-flex; gap: 2px; margin-inline-start: 2px; }
-.tl-chip .tl-chip-flags img { border-radius: 2px; }
-.tl-chip.is-due { border-color: color-mix(in srgb, #ff8a3d 55%, transparent); }
-.tl-chip.is-done { border-color: color-mix(in srgb, var(--green) 45%, transparent); }
-.tl-chip-streak i { color: #ff8a3d; }
-.tl-chip-world i { color: var(--accent-2); }
 .tl-chip-likes { border-color: color-mix(in srgb, #ff4f8b 45%, transparent); background: color-mix(in srgb, #ff4f8b 10%, transparent); }
 .tl-chip-likes svg { width: 15px; height: 15px; color: #ff4f8b; flex: none; }
 .tl-engage-banner {
@@ -3352,7 +3345,6 @@ summary.tl-filter-legend::-webkit-details-marker { display: none; }
   text-align: start;
 }
 .tl-engage-banner span { flex: 1; }
-.tl-engage-recap { border-color: color-mix(in srgb, var(--green) 35%, var(--tl-line)); background: color-mix(in srgb, var(--green) 10%, transparent); }
 .tl-engage-x { border: 0; background: transparent; color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer; padding: 0 4px; }
 .tl-engage-dialog { max-height: 85vh; overflow-y: auto; }
 .tl-gem-green { background: linear-gradient(135deg, #1fbf75, #2ad4c4); font-size: 30px; }
