@@ -57,8 +57,6 @@ fun ChatsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalkin
     val archived by vm.archived.collectAsStateWithLifecycle()
     var showArchived by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
     var menuFor by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Conversation?>(null) }
-    var confirm by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Pair<String, Conversation>?>(null) }
-    var renaming by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Conversation?>(null) }
     val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
     val active = conversations.filter { it.person.clientId !in archived }
     val stored = conversations.filter { it.person.clientId in archived }
@@ -104,10 +102,23 @@ fun ChatsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalkin
         }
     }
 
-    menuFor?.let { c ->
+    ChatActions(vm, menuFor) { menuFor = null }
+}
+
+/**
+ * The long-press menu of a chat (archive, rename, mute, delete, block) and its dialogs. Always
+ * composed by its screen, so a rename or confirm dialog outlives the menu that opened it.
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+fun ChatActions(vm: SocialViewModel, target: Conversation?, onDone: () -> Unit) {
+    val archived by vm.archived.collectAsStateWithLifecycle()
+    var confirm by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Pair<String, Conversation>?>(null) }
+    var renaming by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Conversation?>(null) }
+    target?.let { c ->
         val id = c.person.clientId
         val isArchived = id in archived
-        androidx.compose.material3.ModalBottomSheet(onDismissRequest = { menuFor = null }, containerColor = MaterialTheme.colorScheme.background) {
+        androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDone, containerColor = MaterialTheme.colorScheme.background) {
             Column(Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
                 Row(Modifier.padding(horizontal = 24.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     PersonAvatar(c.person, 44.dp)
@@ -126,14 +137,14 @@ fun ChatsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalkin
                         Text(label, style = MaterialTheme.typography.bodyLarge, color = color)
                     }
                 item(if (isArchived) Icons.Rounded.Unarchive else Icons.Rounded.Archive, stringResource(if (isArchived) R.string.unarchive else R.string.archive)) {
-                    vm.setArchived(id, !isArchived); menuFor = null
+                    vm.setArchived(id, !isArchived); onDone()
                 }
-                if (c.isFriend) item(Icons.Rounded.Edit, stringResource(R.string.rename)) { renaming = c; menuFor = null }
+                if (c.isFriend) item(Icons.Rounded.Edit, stringResource(R.string.rename)) { renaming = c; onDone() }
                 item(if (c.muted) Icons.Rounded.Notifications else Icons.Rounded.NotificationsOff, stringResource(if (c.muted) R.string.unmute_chat else R.string.mute_chat)) {
-                    vm.setMuted(id, !c.muted); menuFor = null
+                    vm.setMuted(id, !c.muted); onDone()
                 }
-                item(Icons.Rounded.Delete, stringResource(R.string.delete_chat), app.talklive.ui.theme.Danger) { confirm = "delete" to c; menuFor = null }
-                item(Icons.Rounded.Block, stringResource(R.string.block), app.talklive.ui.theme.Danger) { confirm = "block" to c; menuFor = null }
+                item(Icons.Rounded.Delete, stringResource(R.string.delete_chat), app.talklive.ui.theme.Danger) { confirm = "delete" to c; onDone() }
+                item(Icons.Rounded.Block, stringResource(R.string.block), app.talklive.ui.theme.Danger) { confirm = "block" to c; onDone() }
             }
         }
     }
@@ -168,7 +179,7 @@ fun ChatsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalkin
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun ConversationRow(c: Conversation, modifier: Modifier, onLongClick: () -> Unit = {}, onClick: () -> Unit) {
+internal fun ConversationRow(c: Conversation, modifier: Modifier, onLongClick: () -> Unit = {}, onClick: () -> Unit) {
     val p = c.person
     val last = p.last
     val bold = c.unread > 0

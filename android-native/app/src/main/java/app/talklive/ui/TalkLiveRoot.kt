@@ -494,7 +494,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     LaunchedEffect(openTarget) {
         val target = openTarget ?: return@LaunchedEffect
         app.talklive.data.LaunchActions.open.value = null
-        if (target.startsWith("chat:")) { tab = MainTab.Chats; openChat = target.removePrefix("chat:") }
+        if (target.startsWith("chat:")) { tab = MainTab.Friends; openChat = target.removePrefix("chat:") }
         else if (target == "requests") tab = MainTab.Friends
     }
 
@@ -674,11 +674,14 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                             onStart()
                         },
                     )
-                    MainTab.Chats -> ChatsScreen(social, onOpenChat = { openChat = it }, onStartTalking = { tab = MainTab.Talk })
+                    // Chats live inside Friends now; an old route here shows Friends.
+                    MainTab.Chats -> FriendsScreen(
+                        social, onOpenChat = { openChat = it }, onStartTalking = { tab = MainTab.Talk },
+                        onPlus = { openPlus("history", app.talklive.ui.engage.PlusWhy(app.talklive.ui.engage.PlusReason.History)) },
+                    )
                     MainTab.Friends -> FriendsScreen(
                         social, onOpenChat = { openChat = it }, onStartTalking = { tab = MainTab.Talk },
                         onPlus = { openPlus("history", app.talklive.ui.engage.PlusWhy(app.talklive.ui.engage.PlusReason.History)) },
-                        onChats = { tab = MainTab.Chats }, unreadChats = totalUnread,
                     )
                     MainTab.History -> FriendsScreen(
                         social, onOpenChat = { openChat = it }, onStartTalking = { tab = MainTab.Talk },

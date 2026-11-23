@@ -909,6 +909,8 @@
     <string name="news_filter_posts">Posts</string>
     <string name="badges_summary">%1$d of %2$d earned · %3$s talked</string>
     <string name="badges_visible">Visible</string>
+    <string name="search_chats">Search chats and friends</string>
+    <string name="no_results">No one found.</string>
     <string name="sign_out_this_device">Sign out on this device</string>
     <string name="plus_why_cover">Animated covers</string>
     <string name="plus_why_cover_body">Six live covers for your profile: aurora, galaxy, waves, neon, sakura and fireflies.</string>

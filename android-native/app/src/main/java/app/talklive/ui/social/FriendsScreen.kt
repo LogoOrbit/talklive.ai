@@ -106,7 +106,7 @@ enum class FriendsPane { Friends, History }
 @Composable
 fun FriendsScreen(
     vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalking: () -> Unit, onPlus: () -> Unit = {},
-    pane: FriendsPane = FriendsPane.Friends, onChats: (() -> Unit)? = null, unreadChats: Int = 0,
+    pane: FriendsPane = FriendsPane.Friends,
 ) {
     val inFriends = pane == FriendsPane.Friends
     var profileOf by remember { mutableStateOf<Person?>(null) }
@@ -152,19 +152,31 @@ fun FriendsScreen(
         }
     }
 
+    // Friends is the inbox now (like Messenger or Instagram): search, requests, who is online,
+    // then every chat, newest first, then friends you have not written to yet.
+    val conversations by vm.conversations.collectAsStateWithLifecycle()
+    val archivedIds by vm.archived.collectAsStateWithLifecycle()
+    var query by rememberSaveable { mutableStateOf("") }
+    var showArchived by rememberSaveable { mutableStateOf(false) }
+    var chatMenu by remember { mutableStateOf<Conversation?>(null) }
+    if (showArchived) androidx.activity.compose.BackHandler { showArchived = false }
+    val q = query.trim().lowercase()
+    fun matches(p: Person) = q.isEmpty() || p.displayName.lowercase().contains(q) || (p.friendId?.lowercase()?.contains(q) == true)
+
     val friendIds = friends.map { it.clientId }.toSet()
     val met = history.filter { it.clientId !in friendIds }
     val sorted = friends.sortedWith(compareByDescending<Person> { it.pinned }.thenByDescending { it.online }.thenBy { it.displayName.lowercase() })
 
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
-        Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 16.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(if (inFriends) R.string.tab_friends else R.string.tab_history), style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onBackground)
-            Spacer(Modifier.weight(1f))
-            if (inFriends && onChats != null) IconButton(onClick = onChats) {
-                androidx.compose.material3.BadgedBox(badge = {
-                    if (unreadChats > 0) androidx.compose.material3.Badge(containerColor = MaterialTheme.colorScheme.primary) { Text(if (unreadChats > 99) "99+" else unreadChats.toString()) }
-                }) { Icon(androidx.compose.material.icons.Icons.AutoMirrored.Rounded.Chat, stringResource(R.string.tab_chats)) }
+        Row(Modifier.fillMaxWidth().padding(start = if (showArchived) 8.dp else 24.dp, end = 12.dp, top = 16.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (inFriends && showArchived) IconButton(onClick = { showArchived = false }) {
+                Icon(androidx.compose.material.icons.Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.back))
             }
+            Text(
+                stringResource(if (inFriends && showArchived) R.string.archived else if (inFriends) R.string.tab_friends else R.string.tab_history),
+                style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onBackground,
+            )
+            Spacer(Modifier.weight(1f))
             IconButton(onClick = { showActivity = true; vm.markActivitySeen() }) {
                 androidx.compose.material3.BadgedBox(badge = {
                     if (activity.isNotEmpty()) androidx.compose.material3.Badge(containerColor = MaterialTheme.colorScheme.primary) { Text(activity.size.toString()) }
@@ -173,7 +185,21 @@ fun FriendsScreen(
             FilledTonalIconButton(onClick = { adding = true }) { Icon(Icons.Rounded.PersonAdd, stringResource(R.string.add_friend)) }
         }
 
-        if (if (inFriends) friends.isEmpty() && requests.isEmpty() else met.isEmpty() && historyHidden == 0) {
+        if (inFriends && (friends.isNotEmpty() || conversations.isNotEmpty())) {
+            androidx.compose.material3.OutlinedTextField(
+                value = query, onValueChange = { query = it.take(40) },
+                placeholder = { Text(stringResource(R.string.search_chats)) },
+                leadingIcon = { Icon(androidx.compose.material.icons.Icons.Rounded.Search, null) },
+                trailingIcon = { if (query.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(androidx.compose.material.icons.Icons.Rounded.Close, stringResource(R.string.close)) } },
+                singleLine = true, shape = RoundedCornerShape(50),
+                colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface, focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedBorderColor = Color.Transparent,
+                ),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 6.dp),
+            )
+        }
+        if (if (inFriends) friends.isEmpty() && requests.isEmpty() && conversations.isEmpty() else met.isEmpty() && historyHidden == 0) {
             Box(Modifier.weight(1f)) { EmptyTab(if (inFriends) MainTab.Friends else MainTab.History, onStart = onStartTalking, showTitle = false) }
             return@Column
         }
@@ -186,15 +212,65 @@ fun FriendsScreen(
             modifier = Modifier.weight(1f),
         ) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 16.dp)) {
-            if (inFriends) item(key = "notify") { NotificationsBanner() }
-            if (inFriends) item(key = "likes") {
-                val likes by vm.likes.collectAsStateWithLifecycle()
-                LikesRow(likes, onPerson = { profileOf = it }, onPlus = onPlus)
-            }
-            if (inFriends && requests.isNotEmpty()) {
+            val top = inFriends && !showArchived && q.isEmpty()
+            if (top) item(key = "notify") { NotificationsBanner() }
+            if (top && requests.isNotEmpty()) {
                 item { SectionLabel(stringResource(R.string.friend_requests, requests.size)) }
                 items(requests, key = { "r" + it.clientId }) { p ->
                     RequestCard(p, onAccept = { vm.respond(p.clientId, true) }, onDecline = { vm.respond(p.clientId, false) })
+                }
+            }
+            // Online now: a strip of round avatars, like the top of Messenger.
+            val onlineNow = sorted.filter { it.online }
+            if (top && onlineNow.isNotEmpty()) item(key = "online-strip") {
+                LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    items(onlineNow, key = { "o" + it.clientId }) { p ->
+                        Column(
+                            Modifier.width(64.dp).combinedClickable(
+                                onClick = { onOpenChat(p.clientId) },
+                                onLongClick = { haptics.performHapticFeedback(HapticFeedbackType.LongPress); actionsFor = p },
+                            ),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            PersonAvatar(p, 56.dp)
+                            Spacer(Modifier.height(4.dp))
+                            Text(p.displayName, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+            }
+            if (top) item(key = "likes") {
+                val likes by vm.likes.collectAsStateWithLifecycle()
+                LikesRow(likes, onPerson = { profileOf = it }, onPlus = onPlus)
+            }
+            if (inFriends) {
+                val storedChats = conversations.filter { it.person.clientId in archivedIds }
+                val chats = (if (showArchived) storedChats else conversations.filter { it.person.clientId !in archivedIds }).filter { matches(it.person) }
+                if (!showArchived && q.isEmpty() && storedChats.isNotEmpty()) item(key = "archived-row") {
+                    Row(
+                        Modifier.fillMaxWidth().clickable { app.talklive.sound.Tap.soft(); showArchived = true }.padding(horizontal = 20.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(Modifier.size(54.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
+                            Icon(androidx.compose.material.icons.Icons.Rounded.Archive, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Spacer(Modifier.width(14.dp))
+                        Text(stringResource(R.string.archived), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+                        Text(storedChats.size.toString(), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                if (chats.isNotEmpty() && !showArchived) item(key = "h-chats") { SectionLabel(stringResource(R.string.tab_chats)) }
+                items(chats, key = { "c" + it.person.clientId }) { c ->
+                    ConversationRow(
+                        c, Modifier.animateItem(),
+                        onLongClick = { haptics.performHapticFeedback(HapticFeedbackType.LongPress); chatMenu = c },
+                    ) { onOpenChat(c.person.clientId) }
+                }
+                if (q.isNotEmpty() && chats.isEmpty() && sorted.none { matches(it) && conversations.none { c -> c.person.clientId == it.clientId } }) item(key = "no-results") {
+                    Text(
+                        stringResource(R.string.no_results), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.fillMaxWidth().padding(24.dp),
+                    )
                 }
             }
             // Who you met at random, split by how: voice calls (call them back)
@@ -260,11 +336,13 @@ fun FriendsScreen(
                     Text("Plus", color = app.talklive.ui.theme.GoldText, style = MaterialTheme.typography.labelLarge)
                 }
             }
-            // Online first, then offline, each under its own heading.
+            // Friends with no chat yet: online first, then offline, each under its own heading.
+            val chatIds = conversations.map { it.person.clientId }.toSet()
+            val noChat = sorted.filter { it.clientId !in chatIds && matches(it) }
             listOf(
-                R.string.friends_online to sorted.filter { it.online },
-                R.string.friends_offline to sorted.filter { !it.online },
-            ).filter { inFriends && it.second.isNotEmpty() }.forEach { (label, group) ->
+                R.string.friends_online to noChat.filter { it.online },
+                R.string.friends_offline to noChat.filter { !it.online },
+            ).filter { inFriends && !showArchived && it.second.isNotEmpty() }.forEach { (label, group) ->
                 item(key = "h$label") { SectionLabel(stringResource(label, group.size)) }
                 items(group, key = { "f" + it.clientId }) { p ->
                     FriendRow(
@@ -284,6 +362,7 @@ fun FriendsScreen(
         }
     }
 
+    if (inFriends) ChatActions(vm, chatMenu) { chatMenu = null }
     if (showActivity) ActivitySheet(vm, friends, onDismiss = { showActivity = false }, onOpenChat = { showActivity = false; onOpenChat(it) })
     if (adding) AddFriendSheet(vm, onDismiss = { adding = false }, onOpenChat = { adding = false; onOpenChat(it) })
     actionsFor?.let { p -> FriendActionsSheet(vm, p, onDismiss = { actionsFor = null }, onOpenChat = { actionsFor = null; onOpenChat(p.clientId) }) }
