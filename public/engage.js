@@ -229,7 +229,7 @@
   // the passport as bare codes or as { code, n } rows (n = calls there).
   function countries() {
     var rows = (state.countries || state.passport || []).map(function (c) {
-      if (typeof c === 'string') return { code: c, n: (state.counts && state.counts[c]) || 0 };
+      if (typeof c === 'string') return { code: c, n: (state.passportCounts && state.passportCounts[c]) || (state.counts && state.counts[c]) || 0 };
       var code = c.code || c.c || c.country;
       return { code: code, n: Number(c.n || c.count || c.calls || 0) };
     }).filter(function (c) { return /^[A-Z]{2}$/.test(c.code || ''); });
