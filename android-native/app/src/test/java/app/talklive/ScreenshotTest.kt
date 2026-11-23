@@ -87,6 +87,17 @@ class ScreenshotTest {
         ))
     }
     @Test fun animals() = shot("10_animals") { app.talklive.ui.animals.AnimalSetupScreen("owl") {} }
+    // The TalkLive Plus collection: every portrait, as people see them in a profile.
+    @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+    @Test fun premiumFaces() = shot("10b_premium_faces") {
+        androidx.compose.foundation.layout.FlowRow(
+            androidx.compose.ui.Modifier.padding(12.dp),
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+        ) {
+            app.talklive.ui.animals.PremiumFaces.forEach { app.talklive.ui.animals.AnimalAvatar(it.id, it.name, 72.dp) }
+        }
+    }
     @Test fun chatsEmpty() = shot("11_chats") { app.talklive.ui.main.EmptyTab(app.talklive.ui.main.MainTab.Chats, onStart = {}) }
     @Test fun reconnecting() = shot("12_reconnecting") {
         CallScreen(CallState(phase = CallPhase.Connected(partner, System.currentTimeMillis()), onHold = true), false, "fox", { 0f }, onNext = {}, onEnd = {}, onMute = {}, onSpeaker = {}, onReport = {})

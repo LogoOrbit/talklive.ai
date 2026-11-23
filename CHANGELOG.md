@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-11-23 — TalkLive Plus avatars, story replies, games with friends
+
+- **Premium avatars** (`public/premium-avatars.js`, `public/premium-art.js`,
+  `android-native/tools/gen-premium.js`): the 21 offered faces are redrawn as
+  detailed, lit portraits on their own scenes, each with its own idle loop, plus
+  10 new ones (axolotl, snow leopard, red panda, chameleon, kitsune, crystal
+  golem, forest spirit, aviator, neon DJ, desert nomad). One scene format drives
+  the website (inline SVG + CSS, paused off-screen, still under reduced motion)
+  and Android (VectorDrawable + AnimatedVectorDrawable; still on low-memory
+  phones). All 31 are **Plus only**; the free set is the classic owl, penguin,
+  koala, bear, wolf, chef, cowboy, doctor, scientist and viking. Locked faces
+  open a live preview with "Unlock with Plus".
+- **Stories**: like (heart, or double tap), quick reactions and replies, which
+  arrive in the author's inbox with a tile of the story; swipe up on your own
+  story for viewers (likes first, with reactions).
+- **Games with friends** from their chat thread, no call needed (`friend-game`).
+- **Reports keep the pair apart for 7 days** in random matching, across
+  unblocks and new profiles on the same device or account.
+- Android: news and Home's latest post retry until they load; a friend leaving a
+  random chat continues in their inbox thread instead of a stranger being dealt.
+
 ## 2026-11-22 — Auto-bans for major offenses, and a case file for every warning and ban
 
 - **Major offenses climb their own ladder** (`server/automod.js`): a threat or
