@@ -58,7 +58,7 @@ const { botLabel, isPrefetch, isBotUserAgent } = require('./bots');
 const Engage = require('./engage');
 const { createAdmin, applyOwnerReset } = require('./admin');
 const { createSupport } = require('./support');
-const { createPosts, isVerifiedAccount } = require('./posts');
+const { createPosts, isVerifiedAccount, mediaHandler } = require('./posts');
 const { createProgress, SPECIAL_FACES } = require('./progress');
 const Badges = require('./badges');
 const { createGameTracker } = require('./game-tracker');
@@ -634,6 +634,8 @@ const posts = createPosts({
   },
 });
 app.use('/api/posts', posts.router);
+// Photos uploaded with posts and news from the dashboard.
+app.use('/media/u', mediaHandler);
 
 // "Get email updates" form, injected into every page footer by pwa.js. Double
 // opt-in: the address joins the list only after its owner clicks the link we
@@ -4734,6 +4736,8 @@ const FREE_COVERS = new Set([
 ]);
 const PLUS_COVERS = new Set([
   'plus:aurora', 'plus:galaxy', 'plus:waves', 'plus:neon', 'plus:sakura', 'plus:fireflies',
+  // 8-bit scenes.
+  'plus:pxcity', 'plus:pxdrive', 'plus:pxforest', 'plus:pxspace', 'plus:pxsea',
 ]);
 // What everyone else sees: a Plus cover is reported as null while Plus is off.
 function effectiveCover(clientId) {
@@ -4918,7 +4922,9 @@ function recordLike(me, targetClientId) {
 
 function pushProgress(clientId) {
   const hasAccount = !!store.findUsernameByClientId(clientId);
-  emitToClient(clientId, 'progress', progress.view(clientId, { hasAccount }));
+  const dev = deviceIdOfClient(clientId);
+  const deviceKey = dev ? crypto.createHash('sha256').update(String(dev)).digest('hex').slice(0, 24) : '';
+  emitToClient(clientId, 'progress', progress.view(clientId, { hasAccount, deviceKey }));
 }
 
 function sanitizeAvatar(value) {
@@ -7905,7 +7911,7 @@ io.on('connection', (socket) => {
   });
 
   // --- Points, levels and covers (server/progress.js, spec sections 2 and 4) ---
-  const progressView = (clientId) => progress.view(clientId, { hasAccount: !!store.findUsernameByClientId(clientId) });
+  const progressView = (clientId) => progress.view(clientId, { hasAccount: !!store.findUsernameByClientId(clientId), deviceKey: deviceKeyOf(socket) });
   socket.on('progress-get', (ack) => {
     const me = profiles.get(socket.id);
     if (!me || typeof ack !== 'function') return;

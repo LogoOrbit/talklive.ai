@@ -175,24 +175,27 @@ fun TopBadgePill(badges: BadgeSet?, modifier: Modifier = Modifier) {
 
 /** All ten badges in one row that scrolls sideways: earned ones lit, the rest greyed. Tap one for its details. */
 @Composable
-fun BadgeShelf(badges: BadgeSet?, modifier: Modifier = Modifier) {
+fun BadgeShelf(badges: BadgeSet?, modifier: Modifier = Modifier, compact: Boolean = false) {
+    val medal = if (compact) 46.dp else 56.dp
+    val cell = if (compact) 62.dp else 68.dp
     val earned = badges?.earned.orEmpty().toSet()
     val hours = badges?.hours ?: 0.0
     var detail by remember { mutableStateOf<String?>(null) }
     LazyRow(modifier, horizontalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(horizontal = 2.dp)) {
         items(RANK_BADGES.filter { it.id in earned } + BADGES, key = { it.id }) { b ->
             val has = b.id in earned
-            Column(Modifier.width(68.dp).clickable { detail = b.id }, horizontalAlignment = Alignment.CenterHorizontally) {
-                BadgeMedal(b.id, 56.dp, earned = has)
+            Column(Modifier.width(cell).clickable { detail = b.id }, horizontalAlignment = Alignment.CenterHorizontally) {
+                BadgeMedal(b.id, medal, earned = has)
                 Spacer(Modifier.size(4.dp))
                 Text(
-                    stringResource(b.name), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, maxLines = 2,
+                    stringResource(b.name), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, maxLines = if (compact) 1 else 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     fontWeight = if (has) FontWeight.SemiBold else FontWeight.Normal,
                     color = if (has) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
                     if (has || isRankBadge(b.id)) stringResource(R.string.badge_earned) else stringResource(R.string.badge_to_go, hoursLeftText(b.hours, hours)),
-                    style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, maxLines = 2,
+                    style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, maxLines = if (compact) 1 else 2,
                     color = if (has) app.talklive.ui.theme.AccentText else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }

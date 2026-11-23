@@ -650,3 +650,29 @@
 }
 .cx-reaction.own { background: color-mix(in srgb, var(--accent) 35%, var(--bg-2)); }
 [data-theme="light"] .cx-reaction { background: var(--bg-2); }
+
+/* Full-screen messaging (desktop only): the expand button in the chat header. */
+.chat-expand-btn { display: none; }
+@media (min-width: 900px) {
+  .chat-expand-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%;
+    background: transparent; color: inherit; opacity: .75; cursor: pointer;
+  }
+  .chat-expand-btn:hover { opacity: 1; background: rgba(127,127,127,.14); }
+  .chat-expand-btn svg { width: 20px; height: 20px; }
+  .chat-expand-btn .cx-exp-off { display: none; }
+  .chat-expand-btn[aria-pressed="true"] .cx-exp-on { display: none; }
+  .chat-expand-btn[aria-pressed="true"] .cx-exp-off { display: block; }
+  aside.chat-full {
+    width: 100vw !important; max-width: none !important;
+    left: 0 !important; right: 0 !important; border-radius: 0 !important;
+  }
+  aside.chat-full .chat-messages,
+  aside.chat-full .msgs,
+  aside.chat-full .chat-form,
+  aside.chat-full .composer,
+  aside.chat-full .dm-gate {
+    width: 100%; max-width: 920px; margin-left: auto; margin-right: auto; box-sizing: border-box;
+  }
+}

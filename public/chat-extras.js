@@ -739,16 +739,6 @@
       if (replyTo || editing) cancelReply();
     });
 
-    // Double tap (or double click) a message: like it with a heart, again to undo.
-    messages.addEventListener('dblclick', function (e) {
-      var b = e.target.closest ? e.target.closest(msgSelector) : null;
-      var id = b && b.dataset ? b.dataset.cxId : null;
-      if (!id || !canReact) return;
-      if (window.getSelection) window.getSelection().removeAllRanges();
-      toggleReaction(id, '\u2764\ufe0f');
-      b.classList.remove('cx-pop'); void b.offsetWidth; b.classList.add('cx-pop');
-    });
-
     // --- reactions -----------------------------------------------------------
     function toggleReaction(id, emoji) {
       var rec = index[id];
@@ -953,4 +943,31 @@
   }
 
   window.TalkLiveChatExtras = { attach: attach, REACTIONS: REACTIONS };
+
+  // Full-screen messaging on a desktop: the expand button in a chat panel's
+  // header widens it to the whole window. Remembered for next time.
+  function initExpand() {
+    var KEY = 'tl_chat_full';
+    var on = false;
+    try { on = localStorage.getItem(KEY) === '1'; } catch (e) { /* storage blocked */ }
+    function paint() {
+      document.querySelectorAll('[data-chat-expand]').forEach(function (b) {
+        var panel = b.closest('aside');
+        if (panel) panel.classList.toggle('chat-full', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        var label = on ? 'Exit full screen' : 'Full screen';
+        b.title = label; b.setAttribute('aria-label', label);
+      });
+    }
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('[data-chat-expand]');
+      if (!b) return;
+      on = !on;
+      try { localStorage.setItem(KEY, on ? '1' : '0'); } catch (err) { /* storage blocked */ }
+      paint();
+    });
+    paint();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initExpand);
+  else initExpand();
 })();

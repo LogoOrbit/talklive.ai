@@ -56,7 +56,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
      is fetched on demand by the unicode-range in style.css. -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/plus-jakarta-sans-latin.woff2?v=153fc85b70" crossorigin />
 <link rel="stylesheet" href="style.css?v=6adc715d5f" />
-<link rel="stylesheet" href="chat-extras.css?v=4b7b6398b3" />
+<link rel="stylesheet" href="chat-extras.css?v=fde3f23b31" />
 <link rel="stylesheet" href="games.css?v=2dd354f960" />
 <!-- The redesigned panels and dialogs. Loaded last on purpose: it owns the
      side-panel shell, Settings, Friends/History and the account dialog, and it
@@ -742,6 +742,10 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           <button type="button" id="friendChatClearBtn" class="chat-clear-btn" data-i18n-title="clearChat" title="Clear chat" data-i18n-aria="clearChat" aria-label="Clear chat">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4.5h6V7"/><path d="M6.5 7l1 12.5h9L17.5 7"/></svg>
           </button>
+          <button type="button" class="chat-expand-btn" data-chat-expand aria-pressed="false" title="Full screen" aria-label="Full screen">
+            <svg class="cx-exp-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+            <svg class="cx-exp-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
+          </button>
           <button type="button" id="closeFriendChatBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
         </div>
       </div>
@@ -1417,6 +1421,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
               <button type="button" id="feedbackBtn" class="i-chat" data-i18n="feedback">Feedback for Improvement</button>
               <button type="button" id="settingsTermsBtn" class="i-rules" data-i18n="termsLink">Terms &amp; Community Guidelines</button>
               <a href="/pricing" class="i-star" data-i18n="pricingLink">Pricing &amp; Premium</a>
+              <a href="/news" class="i-star">TalkLive News</a>
               <a href="/about" class="i-info" data-i18n="aboutLink">About TalkLive</a>
               <a href="/contact" class="i-mail" data-i18n="contactLink">Contact Us</a>
             </div>
@@ -2201,6 +2206,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
     <a href="/blog/" class="footer-blog-btn" data-i18n="readOurBlog">Read our blog</a>
     <div class="footer-links">
       <a href="/about" class="link-btn" data-i18n="aboutLink">About</a>
+      <a href="/news" class="link-btn">News</a>
       <a href="/safety" class="link-btn">Safety Center</a>
       <a href="/contact" class="link-btn" data-i18n="contactLink">Contact</a>
       <a href="/pricing" class="link-btn" data-i18n="pricingLink">Pricing</a>
@@ -2338,12 +2344,12 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="social-kit.js?v=fa26a36909"></script>
   <script defer src="moderation.js?v=7a69fce698"></script>
   <script defer src="error-reporter.js?v=0e5b1c5f7d"></script>
-  <script defer src="chat-extras.js?v=722851ac47"></script>
+  <script defer src="chat-extras.js?v=dacd7409ce"></script>
   <script defer src="voice-notes.js?v=8e48c58788"></script>
   <script defer src="games.js?v=4a44d16cae"></script>
   <script defer src="nickname-rules.js?v=077c943b4d"></script>
   <script defer src="social-links.js?v=a4e5c724ac"></script>
-  <script defer src="app.js?v=5b4904b2fb"></script>
+  <script defer src="app.js?v=9f2d022273"></script>
 
 <!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

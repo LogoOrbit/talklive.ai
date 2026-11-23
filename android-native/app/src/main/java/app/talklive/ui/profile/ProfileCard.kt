@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,7 +26,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -40,8 +40,9 @@ import app.talklive.ui.components.PlusRing
 import app.talklive.ui.rewards.tierColor
 
 /**
- * The profile card: everything about a person on their cover. Used on the Profile screen and, with no
- * buttons, as the live preview at the top of Edit profile.
+ * The profile card: a cover banner across the top, the avatar sitting on its lower edge, then name,
+ * Friend ID, level and stats on the card itself. Used on the Profile screen and, with no buttons, as
+ * the live preview at the top of Edit profile.
  */
 @Composable
 fun ProfileCard(
@@ -54,63 +55,71 @@ fun ProfileCard(
     ring: Boolean,
     alive: Boolean,
     modifier: Modifier = Modifier,
-    avatarSize: androidx.compose.ui.unit.Dp = 88.dp,
+    avatarSize: androidx.compose.ui.unit.Dp = 96.dp,
     onEditAvatar: (() -> Unit)? = null,
     onLevel: (() -> Unit)? = null,
     stats: (@Composable () -> Unit)? = null,
 ) {
-    Box(modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp))) {
-        CoverBackground(cover, Modifier.matchParentSize())
-        // A soft scrim so white text reads on any cover.
-        Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.10f), Color.Black.copy(alpha = 0.45f)))))
-        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Box {
-                PlusRing(ring, avatarSize, alive = alive) {
-                    AnimalAvatar(face, name, avatarSize, Modifier.clip(CircleShape).then(if (onEditAvatar != null) Modifier.clickable(onClick = onEditAvatar) else Modifier))
+    val bannerHeight = avatarSize + 12.dp
+    Surface(modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 1.dp) {
+        Column(Modifier.fillMaxWidth().padding(bottom = 18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(Modifier.fillMaxWidth()) {
+                CoverBackground(cover, Modifier.fillMaxWidth().height(bannerHeight))
+                // The level sits on the banner's corner, out of the way of the avatar.
+                if (progress != null) {
+                    val chip = @Composable {
+                        Row(Modifier.padding(horizontal = 10.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Rounded.Star, null, tint = tierColor(progress.tier), modifier = Modifier.size(15.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text(stringResource(R.string.level_chip, progress.level), style = MaterialTheme.typography.labelLarge, color = Color.White)
+                        }
+                    }
+                    val chipMod = Modifier.align(Alignment.TopEnd).padding(10.dp)
+                    if (onLevel != null) Surface(onClick = onLevel, shape = CircleShape, color = Color.Black.copy(alpha = 0.32f), modifier = chipMod, content = chip)
+                    else Surface(shape = CircleShape, color = Color.Black.copy(alpha = 0.32f), modifier = chipMod, content = chip)
                 }
-                if (onEditAvatar != null) Box(
-                    Modifier.align(Alignment.BottomEnd).size(28.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary).clickable(onClick = onEditAvatar),
-                    contentAlignment = Alignment.Center,
-                ) { Icon(Icons.Rounded.Edit, stringResource(R.string.edit_avatar_cd), tint = Color.White, modifier = Modifier.size(15.dp)) }
+                Box(Modifier.align(Alignment.BottomCenter).offset(y = avatarSize / 2)) {
+                    // A ring in the card's colour lifts the avatar off the banner.
+                    Box(Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.surface).padding(4.dp)) {
+                        PlusRing(ring, avatarSize, alive = alive) {
+                            AnimalAvatar(face, name, avatarSize, Modifier.clip(CircleShape).then(if (onEditAvatar != null) Modifier.clickable(onClick = onEditAvatar) else Modifier))
+                        }
+                    }
+                    if (onEditAvatar != null) Box(
+                        Modifier.align(Alignment.BottomEnd).padding(end = 4.dp, bottom = 4.dp).size(30.dp).clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surface).padding(3.dp).clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary).clickable(onClick = onEditAvatar),
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(Icons.Rounded.Edit, stringResource(R.string.edit_avatar_cd), tint = Color.White, modifier = Modifier.size(14.dp)) }
+                }
             }
-            Spacer(Modifier.height(10.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Spacer(Modifier.height(avatarSize / 2 + 10.dp))
+            Row(Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    name, style = MaterialTheme.typography.titleLarge, color = Color.White,
+                    name, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false),
                 )
-                TopBadge(badges, 24.dp, Modifier.padding(start = 8.dp))
+                TopBadge(badges, 22.dp, Modifier.padding(start = 6.dp))
             }
-            if (!friendId.isNullOrBlank()) Text(friendId, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.85f))
-            if (progress != null) {
-                Spacer(Modifier.height(8.dp))
-                val chip = @Composable {
-                    Row(Modifier.padding(horizontal = 12.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.Star, null, tint = tierColor(progress.tier), modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text(stringResource(R.string.level_chip, progress.level), style = MaterialTheme.typography.labelLarge, color = Color.White)
-                    }
-                }
-                if (onLevel != null) Surface(onClick = onLevel, shape = CircleShape, color = Color.White.copy(alpha = 0.22f), content = chip)
-                else Surface(shape = CircleShape, color = Color.White.copy(alpha = 0.22f), content = chip)
-            }
+            if (!friendId.isNullOrBlank()) Text(friendId, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (stats != null) {
-                Spacer(Modifier.height(10.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) { stats() }
+                Spacer(Modifier.height(14.dp))
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) { stats() }
             }
         }
     }
 }
 
-/** A small translucent pill for the card's stats row: "🔥 5" or "🌍 12 countries". */
+/** A small pill for the card's stats row: "🔥 5" or "🌍 12 countries". */
 @Composable
 fun CardStatChip(text: String, onClick: (() -> Unit)?) {
     val body = @Composable {
         Text(
-            text, style = MaterialTheme.typography.labelLarge, color = Color.White, textAlign = TextAlign.Center, maxLines = 1,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
+            text, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.Center, maxLines = 1,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
         )
     }
-    if (onClick != null) Surface(onClick = onClick, shape = CircleShape, color = Color.White.copy(alpha = 0.22f), content = body)
-    else Surface(shape = CircleShape, color = Color.White.copy(alpha = 0.22f), content = body)
+    val color = MaterialTheme.colorScheme.background
+    if (onClick != null) Surface(onClick = onClick, shape = CircleShape, color = color, content = body)
+    else Surface(shape = CircleShape, color = color, content = body)
 }

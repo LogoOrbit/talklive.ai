@@ -11,7 +11,24 @@
 // pass the same checks as chat.
 
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const express = require('express');
+
+// News is a post with kind 'news', a title and a tag (what kind of update it is).
+const KINDS = ['post', 'news'];
+const NEWS_TAGS = ['update', 'feature', 'upcoming', 'fix', 'event'];
+const MAX_TITLE = 140;
+// Photos uploaded from the dashboard live on the data volume and are served at /media/u/<file>.
+const MAX_UPLOAD = 6 * 1024 * 1024;
+const UPLOAD_TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
+function uploadDir() {
+  const base = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
+  return path.join(base, 'uploads');
+}
+const kindOf = (post) => (post.kind === 'news' ? 'news' : 'post');
+function cleanKind(v) { return KINDS.includes(v) ? v : 'post'; }
+function cleanTag(v) { return NEWS_TAGS.includes(v) ? v : null; }
 
 const REACTION_TYPES = ['like', 'love', 'haha', 'wow', 'sad'];
 const MAX_TEXT = 4000;
@@ -70,6 +87,9 @@ function publicPost(post, clientId, faceOf) {
   const vis = visible(post);
   return {
     id: post.id,
+    kind: kindOf(post),
+    title: post.title || null,
+    tag: post.tag || null,
     text: post.text,
     image: post.image || null,
     createdAt: post.createdAt,
@@ -84,6 +104,9 @@ function publicPost(post, clientId, faceOf) {
 function ownerPost(post) {
   return {
     id: post.id,
+    kind: kindOf(post),
+    title: post.title || null,
+    tag: post.tag || null,
     text: post.text,
     image: post.image || null,
     createdAt: post.createdAt,
@@ -135,8 +158,10 @@ function createPosts({ store, httpRateLimit, validIdentityToken, isVerifiedClien
     const known = identityOk(clientId, String(req.query.identityToken || ''));
     const cid = known ? clientId : '';
     res.setHeader('Cache-Control', 'no-store');
+    // ?kind=news or ?kind=post narrows the list; without it, everything (older apps).
+    const kind = KINDS.includes(req.query.kind) ? req.query.kind : null;
     res.json({
-      posts: order(list()).map((p) => publicPost(p, cid, resolveAvatar)),
+      posts: order(list()).filter((p) => !kind || kindOf(p) === kind).map((p) => publicPost(p, cid, resolveAvatar)),
       canComment: !!cid && !!isVerifiedClient(cid),
     });
   });
@@ -200,16 +225,35 @@ function createPosts({ store, httpRateLimit, validIdentityToken, isVerifiedClien
       res.json({ posts: order(list()).map(ownerPost), reactionTypes: REACTION_TYPES });
     });
 
+    // A photo for a post or news item: the raw image bytes as the body. It is
+    // saved on the data volume and the link to use comes back.
+    r.post('/api/posts/upload', express.raw({ type: Object.keys(UPLOAD_TYPES), limit: MAX_UPLOAD }), (req, res) => {
+      const ext = UPLOAD_TYPES[String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase()];
+      if (!ext || !Buffer.isBuffer(req.body) || !req.body.length) return bad(res, 'Send a JPEG, PNG, WebP or GIF image.');
+      if (!looksLikeImage(req.body, ext)) return bad(res, 'That file is not a valid image.');
+      const name = crypto.randomBytes(10).toString('hex') + '.' + ext;
+      try {
+        fs.mkdirSync(uploadDir(), { recursive: true });
+        fs.writeFileSync(path.join(uploadDir(), name), req.body);
+      } catch (e) { return bad(res, 'Could not save the image.', 500); }
+      audit(req, 'post_upload', name);
+      res.json({ ok: true, url: '/media/u/' + name });
+    });
+
     r.post('/api/posts', (req, res) => {
       const b = req.body || {};
       const text = cleanText(b.text, MAX_TEXT);
       const image = cleanImage(b.image);
+      const kind = cleanKind(b.kind);
+      const title = cleanText(b.title, MAX_TITLE).replace(/\n/g, ' ');
       if (!text && !image) return bad(res, 'A post needs some text or an image.');
+      if (kind === 'news' && !title) return bad(res, 'News needs a title.');
       if (list().length >= MAX_POSTS) return bad(res, 'Too many posts. Delete an old one first.');
       const post = {
         id: newId('p'), text, createdAt: now(), pinned: b.pinned === true,
         reactions: Object.fromEntries(REACTION_TYPES.map((t) => [t, []])), comments: [],
       };
+      if (kind === 'news') { post.kind = 'news'; post.title = title; const tag = cleanTag(b.tag); if (tag) post.tag = tag; }
       if (image) post.image = image;
       list().push(post);
       store.save();
@@ -226,6 +270,11 @@ function createPosts({ store, httpRateLimit, validIdentityToken, isVerifiedClien
       if (!text && !image) return bad(res, 'A post needs some text or an image.');
       if (b.text !== undefined || b.image !== undefined) { post.text = text; post.editedAt = now(); }
       if (image) post.image = image; else delete post.image;
+      if (b.kind !== undefined) { if (cleanKind(b.kind) === 'news') post.kind = 'news'; else { delete post.kind; delete post.title; delete post.tag; } }
+      if (kindOf(post) === 'news') {
+        if (b.title !== undefined) { const t = cleanText(b.title, MAX_TITLE).replace(/\n/g, ' '); if (!t) return bad(res, 'News needs a title.'); post.title = t; }
+        if (b.tag !== undefined) { const tag = cleanTag(b.tag); if (tag) post.tag = tag; else delete post.tag; }
+      }
       if (b.pinned !== undefined) post.pinned = b.pinned === true;
       store.save();
       audit(req, 'post_edit', post.id);
@@ -286,4 +335,23 @@ function createPosts({ store, httpRateLimit, validIdentityToken, isVerifiedClien
   return { router, mountOwner };
 }
 
-module.exports = { createPosts, isVerifiedAccount, REACTION_TYPES, publicPost, counts };
+// Checks the first bytes, so a renamed file of another kind is refused.
+function looksLikeImage(buf, ext) {
+  if (ext === 'jpg') return buf[0] === 0xff && buf[1] === 0xd8;
+  if (ext === 'png') return buf.slice(0, 4).toString('hex') === '89504e47';
+  if (ext === 'gif') return buf.slice(0, 3).toString('ascii') === 'GIF';
+  if (ext === 'webp') return buf.slice(0, 4).toString('ascii') === 'RIFF' && buf.slice(8, 12).toString('ascii') === 'WEBP';
+  return false;
+}
+
+// Serves uploaded photos: /media/u/<20 hex>.<ext>, cached for a year (names never change).
+function mediaHandler(req, res) {
+  const m = /^\/([a-f0-9]{20})\.(jpg|png|webp|gif)$/.exec(req.path);
+  if (!m) return res.status(404).end();
+  const file = path.join(uploadDir(), m[1] + '.' + m[2]);
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.sendFile(file, (err) => { if (err && !res.headersSent) res.status(404).end(); });
+}
+
+module.exports = { createPosts, mediaHandler, NEWS_TAGS, isVerifiedAccount, REACTION_TYPES, publicPost, counts };

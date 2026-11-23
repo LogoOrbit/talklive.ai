@@ -3480,7 +3480,8 @@ async function viewBadges(){
 }
 
 /* ---------- posts: write, pin and moderate the home-page feed ---------- */
-let pstEditing=null;
+let pstEditing=null,pstKind='post',pstFilter='all';
+const PST_TAGS={update:'Update',feature:'New feature',upcoming:'Coming soon',fix:'Fix',event:'Event'};
 const PST_REACT={like:'👍',love:'❤️',haha:'😆',wow:'😮',sad:'😢'};
 function pstCard(p){
   const c=p.counts||{};
@@ -3490,13 +3491,28 @@ function pstCard(p){
     <div class="pst-t">${esc(m.text)}</div>
     <div class="pst-a">${m.admin?'':`<button class="lnk" data-act="hide" data-p="${esc(p.id)}" data-c="${esc(m.id)}" data-h="${m.hidden?0:1}">${m.hidden?'Unhide':'Hide'}</button>`}<button class="lnk" data-act="delc" data-p="${esc(p.id)}" data-c="${esc(m.id)}">Delete</button></div></div>`).join('');
   return `<div class="card anim pst" data-id="${esc(p.id)}">
-    <h2>${p.pinned?'<span class="pill info">Pinned</span>':''} <span class="sub">${new Date(p.createdAt).toLocaleString()}${p.editedAt?' · edited '+ago(p.editedAt):''}</span></h2>
-    <div class="pst-t">${esc(p.text)}</div>${p.image?`<img src="${esc(p.image)}" alt="" style="max-width:260px;max-height:200px;border-radius:12px;margin-top:8px">`:''}
+    <h2>${p.kind==='news'?`<span class="pill good">News${p.tag?' · '+esc(PST_TAGS[p.tag]||p.tag):''}</span> `:''}${p.pinned?'<span class="pill info">Pinned</span>':''} <span class="sub">${new Date(p.createdAt).toLocaleString()}${p.editedAt?' · edited '+ago(p.editedAt):''}</span></h2>
+    ${p.title?`<div style="font-weight:800;font-size:16px;margin-bottom:4px">${esc(p.title)}</div>`:''}<div class="pst-t">${esc(p.text)}</div>${p.image?`<img src="${esc(p.image)}" alt="" style="max-width:260px;max-height:200px;border-radius:12px;margin-top:8px">`:''}
     <div class="muted" style="margin:8px 0">${reacts||'No reactions yet'} · ${num(c.total||0)} total · ${num(p.commentCount)} comment${p.commentCount===1?'':'s'}${p.hiddenCount?` (${p.hiddenCount} hidden)`:''}</div>
     <div class="pst-a"><button class="lnk" data-act="edit" data-p="${esc(p.id)}">Edit</button><button class="lnk" data-act="pin" data-p="${esc(p.id)}" data-v="${p.pinned?0:1}">${p.pinned?'Unpin':'Pin to top'}</button><button class="lnk" data-act="delp" data-p="${esc(p.id)}">Delete post</button></div>
     ${comments?`<div class="pst-cs">${comments}</div>`:''}
     <div style="display:flex;gap:8px;margin-top:10px"><input class="pst-reply" maxlength="500" placeholder="Reply as TalkLive…" data-p="${esc(p.id)}"><button class="lnk" data-act="reply" data-p="${esc(p.id)}" style="cursor:pointer">Reply</button></div>
   </div>`;
+}
+/* Photos are scaled down in the browser (longest side 1600px, JPEG) before upload; GIFs go as they are. */
+function pstShrink(file){
+  return new Promise((ok,no)=>{
+    if(file.type==='image/gif'){if(file.size>6e6)return no(new Error('GIF is over 6 MB'));return ok(file);}
+    const img=new Image(),url=URL.createObjectURL(file);
+    img.onload=()=>{
+      const max=1600,sc=Math.min(1,max/Math.max(img.width,img.height));
+      const c=document.createElement('canvas');c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);
+      c.toBlob(b=>b?ok(b):no(new Error('Could not read the image')),'image/jpeg',0.86);
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);no(new Error('Not an image'));};
+    img.src=url;
+  });
 }
 async function viewPosts(){
   /* A poll must not wipe what is being typed. */
@@ -3505,15 +3521,40 @@ async function viewPosts(){
   const r=await vapi('posts');
   const list=r.posts||[];
   const ed=pstEditing&&list.find(p=>p.id===pstEditing);
+  const kind=ed?(ed.kind||'post'):pstKind;
+  const shown=pstFilter==='all'?list:list.filter(p=>(p.kind||'post')===pstFilter);
   $('#main').innerHTML=`<style>.pst-t{white-space:pre-wrap;word-break:break-word}.pst-a{display:flex;gap:12px;flex-wrap:wrap}.pst-a .lnk{background:none;cursor:pointer}.pst-cs{margin-top:10px;border-top:1px solid var(--ring)}.pst-c{padding:8px 0;border-bottom:1px solid var(--ring)}.pst-c.hid{opacity:.55}</style>
-  <div class="card anim"><h2>${ed?'Edit post':'New post'} <span class="sub">shown in "From TalkLive" on the home page</span></h2>
-    <textarea id="pstText" rows="4" maxlength="4000" placeholder="What is new at TalkLive?">${ed?esc(ed.text):''}</textarea>
-    <input id="pstImage" placeholder="Image link (https://… or /path), optional" style="margin-top:8px" value="${ed?esc(ed.image||''):''}">
+  <div class="card anim"><h2>${ed?(kind==='news'?'Edit news':'Edit post'):(kind==='news'?'New news':'New post')} <span class="sub">${kind==='news'?'shown in TalkLive News on the website and in the app':'shown in "From TalkLive" on the home page'}</span></h2>
+    <div class="seg" style="display:flex;gap:6px;margin-bottom:10px">${['post','news'].map(k=>`<button class="btn ${kind===k?'':'ghost'}" data-kind="${k}" style="width:auto;margin:0">${k==='news'?'News':'Post'}</button>`).join('')}</div>
+    ${kind==='news'?`<input id="pstTitle" maxlength="140" placeholder="Title, e.g. Voice filters are here" value="${ed?esc(ed.title||''):''}" style="margin-bottom:8px">
+    <select id="pstTag" style="margin-bottom:8px">${Object.entries(PST_TAGS).map(([k,v])=>`<option value="${k}"${ed&&ed.tag===k?' selected':''}>${v}</option>`).join('')}</select>`:''}
+    <textarea id="pstText" rows="${kind==='news'?8:4}" maxlength="4000" placeholder="${kind==='news'?'What changed, what is new, what is coming…':'What is new at TalkLive?'}">${ed?esc(ed.text):''}</textarea>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap">
+      <input id="pstImage" placeholder="Image link (https://… or /path), optional" style="flex:1;min-width:200px;margin:0" value="${ed?esc(ed.image||''):''}">
+      <label class="btn ghost" style="width:auto;margin:0;cursor:pointer">Upload photo<input type="file" id="pstFile" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none"></label>
+    </div>
+    <div id="pstPreview" style="margin-top:8px">${ed&&ed.image?`<img src="${esc(ed.image)}" alt="" style="max-width:260px;max-height:200px;border-radius:12px">`:''}</div>
     <label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="pstPin" style="width:auto"${ed&&ed.pinned?' checked':''}> Pin to the top</label>
     <div style="display:flex;gap:8px;margin-top:10px"><button class="btn" id="pstSave" style="width:auto;margin:0">${ed?'Save changes':'Publish'}</button>${ed?'<button class="btn ghost" id="pstCancel">Cancel</button>':''}</div></div>
-  ${list.map(pstCard).join('')||'<div class="card muted">No posts yet. Write the first one above.</div>'}`;
+  <div style="display:flex;gap:6px;margin:0 0 12px">${[['all','All'],['post','Posts'],['news','News']].map(([k,v])=>`<button class="btn ${pstFilter===k?'':'ghost'}" data-filter="${k}" style="width:auto;margin:0">${v}</button>`).join('')}</div>
+  ${shown.map(pstCard).join('')||'<div class="card muted">Nothing here yet. Write the first one above.</div>'}`;
+  $('#main').querySelectorAll('[data-kind]').forEach(b=>b.onclick=()=>{pstKind=b.dataset.kind;renderedTab=null;viewPosts();});
+  $('#main').querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{pstFilter=b.dataset.filter;renderedTab=null;viewPosts();});
+  $('#pstImage').oninput=()=>{const v=$('#pstImage').value.trim();$('#pstPreview').innerHTML=v?`<img src="${esc(v)}" alt="" style="max-width:260px;max-height:200px;border-radius:12px">`:'';};
+  $('#pstFile').onchange=async(e)=>{
+    const f=e.target.files&&e.target.files[0];if(!f)return;
+    try{
+      toast('Uploading photo…','','info');
+      const blob=await pstShrink(f);
+      const r=await fetch('/owner/api/posts/upload',{method:'POST',headers:{'Content-Type':blob.type},body:blob});
+      const j=await r.json().catch(()=>({}));
+      if(!r.ok||!j.url)throw new Error(j.error||'Upload failed');
+      $('#pstImage').value=j.url;$('#pstImage').oninput();toast('Photo uploaded','','good');
+    }catch(err){toast('Could not upload',err.message,'bad');}
+  };
   $('#pstSave').onclick=async()=>{
-    const body={text:$('#pstText').value,image:$('#pstImage').value,pinned:$('#pstPin').checked};
+    const body={kind,text:$('#pstText').value,image:$('#pstImage').value,pinned:$('#pstPin').checked};
+    if(kind==='news'){body.title=$('#pstTitle').value;body.tag=$('#pstTag').value;}
     try{await post(ed?'posts/'+encodeURIComponent(ed.id):'posts',body);pstEditing=null;toast(ed?'Post updated':'Post published','','good');renderedTab=null;viewPosts();}catch(e){toast('Could not save',e.message,'bad');}
   };
   const cancel=$('#pstCancel');if(cancel)cancel.onclick=()=>{pstEditing=null;renderedTab=null;viewPosts();};

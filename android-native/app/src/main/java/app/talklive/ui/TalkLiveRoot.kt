@@ -607,7 +607,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                     onSelect = { if (it == MainTab.Filters) showFilters = true else tab = it },
                     badges = mapOf(MainTab.Friends to requests.size + totalUnread, MainTab.Filters to filters.activeCount),
                     profileIcon = { on ->
-                        app.talklive.ui.components.PlusRing(premium.ring, 28.dp, alive = premium.active) {
+                        app.talklive.ui.components.PlusRing(premium.ring, 26.dp, alive = premium.active) {
                             app.talklive.ui.animals.AnimalAvatar(
                                 app.talklive.ui.animals.ownFace(animal, premium.ended, premium.look), account?.nickname, 26.dp,
                                 Modifier.clip(androidx.compose.foundation.shape.CircleShape)

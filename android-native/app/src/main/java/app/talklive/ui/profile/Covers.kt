@@ -70,6 +70,9 @@ val GRADIENT_COVERS = listOf(
 val PLUS_COVERS = listOf(
     CoverDef("plus:aurora", R.string.cover_aurora), CoverDef("plus:galaxy", R.string.cover_galaxy), CoverDef("plus:waves", R.string.cover_waves),
     CoverDef("plus:neon", R.string.cover_neon), CoverDef("plus:sakura", R.string.cover_sakura), CoverDef("plus:fireflies", R.string.cover_fireflies),
+    // 8-bit scenes (PixelCovers.kt).
+    CoverDef("plus:pxcity", R.string.cover_pxcity), CoverDef("plus:pxdrive", R.string.cover_pxdrive), CoverDef("plus:pxforest", R.string.cover_pxforest),
+    CoverDef("plus:pxspace", R.string.cover_pxspace), CoverDef("plus:pxsea", R.string.cover_pxsea),
 )
 private val ALL_COVERS = (SOLID_COVERS + GRADIENT_COVERS + PLUS_COVERS).map { it.id }.toSet()
 
@@ -112,6 +115,7 @@ fun CoverBackground(cover: String?, modifier: Modifier = Modifier, animate: Bool
         id == null -> Box(modifier.background(BrandGradient))
         id.startsWith("solid:") -> Box(modifier.background(solidColor(id)))
         id.startsWith("grad:") -> Box(modifier.background(gradientBrush(id)))
+        isPixelCover(id) -> PixelCover(id, modifier, animate)
         else -> AnimatedCover(id, modifier, animate)
     }
 }
@@ -119,6 +123,21 @@ fun CoverBackground(cover: String?, modifier: Modifier = Modifier, animate: Bool
 private const val PERIOD_MS = 24_000
 private const val STILL = 0.19f
 private const val TAU = (2 * PI).toFloat()
+
+/** An 8-bit cover: stepped at 8 frames a second, like the real thing. */
+@Composable
+private fun PixelCover(id: String, modifier: Modifier, animate: Boolean) {
+    val reduce = LocalReduceMotion.current
+    val frame = if (animate && !reduce) {
+        rememberInfiniteTransition(label = "px")
+            .animateFloat(0f, PX_LOOP.toFloat(), infiniteRepeatable(tween(PX_LOOP * 125, easing = LinearEasing)), label = "frame")
+    } else null
+    // Redrawn only when the whole frame number changes (8 a second), not on every vsync.
+    val tick = androidx.compose.runtime.remember(frame) { androidx.compose.runtime.derivedStateOf { (frame?.value?.toInt() ?: 60).coerceIn(0, PX_LOOP - 1) } }
+    Canvas(modifier.clipToBounds()) {
+        pixelCover(id, tick.value)
+    }
+}
 
 @Composable
 private fun AnimatedCover(id: String, modifier: Modifier, animate: Boolean) {

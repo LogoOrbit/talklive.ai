@@ -84,14 +84,26 @@ fun NewsScreen(vm: PostsViewModel, onBack: () -> Unit) {
                 IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.back), tint = MaterialTheme.colorScheme.onBackground) }
                 Text(stringResource(R.string.news_title), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
             }
+            // All, or just the news (features, updates, what is coming), or just the posts.
+            var filter by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("all") }
+            val hasNews = state.posts.any { it.kind == "news" }
+            if (hasNews) Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf("all" to R.string.news_filter_all, "news" to R.string.news_filter_news, "post" to R.string.news_filter_posts).forEach { (k, label) ->
+                    androidx.compose.material3.FilterChip(
+                        selected = filter == k, onClick = { filter = k },
+                        label = { Text(stringResource(label)) },
+                    )
+                }
+            }
+            val shown = if (filter == "all") state.posts else state.posts.filter { it.kind == filter }
             SlidePullToRefresh(refreshing = state.loading && state.loaded, onRefresh = { vm.load() }, modifier = Modifier.weight(1f)) {
                 when {
-                    state.posts.isNotEmpty() -> LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        items(state.posts, key = { it.id }) { p ->
+                    shown.isNotEmpty() -> LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        items(shown, key = { it.id }) { p ->
                             PostCard(p, state.canComment, onReact = { type -> vm.react(p.id, type) }, onComment = { text -> vm.comment(p.id, text) })
                         }
                     }
-                    state.loading || !state.loaded && !state.error -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                    state.posts.isEmpty() && (state.loading || !state.loaded && !state.error) -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
                     else -> Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
                         Text(
                             stringResource(if (state.error) R.string.news_error else R.string.news_empty),
@@ -154,10 +166,48 @@ fun PinIcon(modifier: Modifier = Modifier) {
     }
 }
 
+/** TalkLive's own avatar on posts and replies: a person silhouette on a calm slate-blue disc (same as the website). */
+@Composable
+fun TeamAvatar(size: androidx.compose.ui.unit.Dp, modifier: Modifier = Modifier) {
+    androidx.compose.foundation.Canvas(modifier.size(size).clip(CircleShape)) {
+        val w = this.size.width
+        drawRect(androidx.compose.ui.graphics.Brush.linearGradient(listOf(androidx.compose.ui.graphics.Color(0xFF3B4A66), androidx.compose.ui.graphics.Color(0xFF1F2A40))))
+        val fg = androidx.compose.ui.graphics.Color(0xFFCFE0FF)
+        // Head.
+        drawCircle(fg, radius = w * 0.156f, center = androidx.compose.ui.geometry.Offset(w * 0.5f, w * 0.39f))
+        // Shoulders: an arc rising from the bottom of the disc.
+        val path = androidx.compose.ui.graphics.Path().apply {
+            moveTo(w * 0.2f, w * 1.0f)
+            cubicTo(w * 0.2f, w * 0.7f, w * 0.34f, w * 0.585f, w * 0.5f, w * 0.585f)
+            cubicTo(w * 0.66f, w * 0.585f, w * 0.8f, w * 0.7f, w * 0.8f, w * 1.0f)
+            close()
+        }
+        drawPath(path, fg)
+    }
+}
+
+/** A coloured chip for a news item's tag: New feature, Update, Coming soon, Fix, Event. */
+@Composable
+fun NewsTagChip(tag: String) {
+    val (label, color) = when (tag) {
+        "feature" -> R.string.news_tag_feature to androidx.compose.ui.graphics.Color(0xFF1F9D55)
+        "upcoming" -> R.string.news_tag_upcoming to androidx.compose.ui.graphics.Color(0xFF8B5CF6)
+        "fix" -> R.string.news_tag_fix to androidx.compose.ui.graphics.Color(0xFFD97706)
+        "event" -> R.string.news_tag_event to androidx.compose.ui.graphics.Color(0xFFE0457B)
+        else -> R.string.news_tag_update to androidx.compose.ui.graphics.Color(0xFF2A6FE8)
+    }
+    Text(
+        stringResource(label).uppercase(),
+        style = MaterialTheme.typography.labelSmall,
+        color = androidx.compose.ui.graphics.Color.White,
+        modifier = Modifier.clip(RoundedCornerShape(50)).background(color).padding(horizontal = 9.dp, vertical = 3.dp),
+    )
+}
+
 @Composable
 private fun PostHeader(post: Post) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Image(painterResource(R.drawable.logo), null, Modifier.size(38.dp).clip(CircleShape))
+        TeamAvatar(38.dp)
         Spacer(Modifier.width(10.dp))
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -172,14 +222,25 @@ private fun PostHeader(post: Post) {
     }
 }
 
+/** A news item's tag and title (nothing for an ordinary post). */
+@Composable
+private fun NewsTitle(post: Post, modifier: Modifier = Modifier) {
+    if (post.kind != "news" || post.title == null) return
+    Column(modifier) {
+        post.tag?.let { NewsTagChip(it); Spacer(Modifier.height(6.dp)) }
+        Text(post.title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
+    }
+}
+
 /** One post like a Facebook card: text, picture, reactions with counts, comments, a comment box. */
 @Composable
 fun PostCard(post: Post, canComment: Boolean, onReact: (String?) -> Unit, onComment: suspend (String) -> String?) {
     Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface) {
         Column(Modifier.fillMaxWidth().padding(14.dp)) {
             PostHeader(post)
+            NewsTitle(post, Modifier.padding(top = 10.dp))
             if (post.text.isNotBlank()) {
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(if (post.title != null) 6.dp else 10.dp))
                 Text(post.text, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
             }
             post.image?.let { url ->
@@ -246,7 +307,7 @@ private fun CommentsSection(post: Post, canComment: Boolean, onComment: suspend 
 @Composable
 private fun CommentRow(c: PostComment) {
     Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.Top) {
-        if (c.admin) Image(painterResource(R.drawable.logo), null, Modifier.size(30.dp).clip(CircleShape))
+        if (c.admin) TeamAvatar(30.dp)
         else AnimalAvatar(animalOf(c.avatar), c.name, 30.dp)
         Spacer(Modifier.width(8.dp))
         Column(Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.background).padding(horizontal = 12.dp, vertical = 8.dp)) {
@@ -301,6 +362,7 @@ fun LatestPostCard(post: Post, onClick: () -> Unit, modifier: Modifier = Modifie
     Surface(onClick = onClick, shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surface, modifier = modifier.fillMaxWidth()) {
         Column(Modifier.padding(14.dp)) {
             PostHeader(post)
+            NewsTitle(post, Modifier.padding(top = 8.dp))
             if (post.text.isNotBlank()) {
                 Spacer(Modifier.height(8.dp))
                 Text(post.text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, maxLines = 3, overflow = TextOverflow.Ellipsis)

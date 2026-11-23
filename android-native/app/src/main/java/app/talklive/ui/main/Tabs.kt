@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -96,7 +97,12 @@ fun TabBar(
                             Badge(containerColor = MaterialTheme.colorScheme.primary) { Text(if (count > 99) "99+" else count.toString()) }
                         }
                     }) {
-                        if (tab == MainTab.Profile && profileIcon != null) profileIcon(on)
+                        // The avatar is laid out as a 24dp icon like the others (so every label sits on
+                        // the same line) and drawn a little larger around its centre.
+                        if (tab == MainTab.Profile && profileIcon != null) Box(
+                            Modifier.size(24.dp).wrapContentSize(unbounded = true),
+                            contentAlignment = Alignment.Center,
+                        ) { profileIcon(on) }
                         else BouncyIcon(if (on) tab.selectedIcon else tab.icon, on)
                     }
                 },

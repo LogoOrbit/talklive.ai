@@ -35,8 +35,8 @@
   document.head.appendChild(s);
 })();
 </script>
-<link rel="stylesheet" href="/chat.css?v=58271b22e6" />
-<link rel="stylesheet" href="/chat-extras.css?v=4b7b6398b3" />
+<link rel="stylesheet" href="/chat.css?v=3e205ab105" />
+<link rel="stylesheet" href="/chat-extras.css?v=fde3f23b31" />
 <link rel="stylesheet" href="/games.css?v=2dd354f960" />
 <link rel="stylesheet" href="/ui.css?v=439264fdc4" />
 <!-- The top bar, shared with / and /call: one button language, one radius,
@@ -658,7 +658,11 @@
         <button type="button" id="friendChatBlockBtn" class="chat-block-btn" data-i18n-title="blockUser" title="Block User" data-i18n-aria="blockUser" aria-label="Block User">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/></svg>
         </button>
-        <button type="button" id="friendChatCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
+        <button type="button" class="chat-expand-btn" data-chat-expand aria-pressed="false" title="Full screen" aria-label="Full screen">
+            <svg class="cx-exp-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+            <svg class="cx-exp-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
+          </button>
+          <button type="button" id="friendChatCloseBtn" class="modal-close" data-i18n-aria="close" aria-label="Close">&times;</button>
       </div>
     </div>
     <div class="friend-chat-body">
@@ -783,12 +787,12 @@
   <script defer src="/characters.js?v=0da1f15e5d"></script>
   <script defer src="/social-kit.js?v=fa26a36909"></script>
   <script defer src="/error-reporter.js?v=0e5b1c5f7d"></script>
-  <script defer src="/chat-extras.js?v=722851ac47"></script>
+  <script defer src="/chat-extras.js?v=dacd7409ce"></script>
   <script defer src="/games.js?v=4a44d16cae"></script>
   <script defer src="/icebreakers.js?v=42657c1791"></script>
   <script defer src="/talkguard.js?v=2b180e6471"></script>
   <script defer src="/social-links.js?v=a4e5c724ac"></script>
-  <script defer src="/chat.js?v=ac1cff9b41"></script>
+  <script defer src="/chat.js?v=433b2d75e5"></script>
 
 <!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

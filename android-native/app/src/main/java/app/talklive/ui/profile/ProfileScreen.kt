@@ -87,6 +87,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -194,29 +195,32 @@ fun ProfileScreen(
                 PrimaryButton(stringResource(R.string.sign_in_or_create), onClick = onSignIn)
             }
 
-            // Badges: one row that scrolls sideways, and the switch for showing them to other people.
+            // Badges: a one-line header (title, progress, a "visible" switch) over one row that scrolls sideways.
             Spacer(Modifier.height(16.dp))
             Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface) {
-                Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp)) {
+                Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 10.dp, top = 10.dp, bottom = 12.dp)) {
                     val badgesHidden by vm.badgesHidden.collectAsStateWithLifecycle()
+                    val all = app.talklive.ui.badges.BADGES
+                    val earnedCount = all.count { it.id in myBadges?.earned.orEmpty() }
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text(stringResource(R.string.section_badges), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                            Text(stringResource(R.string.section_badges), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
                             Text(
-                                stringResource(R.string.badges_talked, app.talklive.ui.badges.hoursText(myBadges?.hours ?: 0.0)),
-                                style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                stringResource(R.string.badges_summary, earnedCount, all.size, app.talklive.ui.badges.hoursText(myBadges?.hours ?: 0.0)),
+                                style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                             )
                         }
-                        Text(stringResource(R.string.show_badges), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.badges_visible), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                         Switch(
                             checked = !badgesHidden,
                             onCheckedChange = { on -> vm.setShowBadges(on) { ok -> if (!ok) vm.saved = context.getString(R.string.t_couldnt_send) } },
                             colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary),
+                            modifier = Modifier.scale(0.8f),
                         )
                     }
-                    Spacer(Modifier.height(10.dp))
-                    BadgeShelf(myBadges, Modifier.fillMaxWidth())
+                    Spacer(Modifier.height(8.dp))
+                    BadgeShelf(myBadges, Modifier.fillMaxWidth(), compact = true)
                 }
             }
 
@@ -256,6 +260,22 @@ fun ProfileScreen(
                     SettingRow(Icons.Rounded.SupportAgent, stringResource(R.string.settings_help), null) { page = ProfilePage.Help }
                     SettingRow(Icons.Rounded.Feedback, stringResource(R.string.news_title), null) { youSheet = "news" }
                     SettingRow(Icons.Rounded.CardGiftcard, stringResource(R.string.invite_title), null) { youSheet = "invite" }
+                }
+            }
+            // Sign out, at the very bottom: asks whether this device or every device.
+            if (account != null) {
+                Spacer(Modifier.height(20.dp))
+                Surface(
+                    onClick = { confirmSignOut = true },
+                    shape = MaterialTheme.shapes.large,
+                    color = Danger.copy(alpha = 0.10f),
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                ) {
+                    Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.AutoMirrored.Rounded.Logout, null, tint = Danger, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(10.dp))
+                        Text(stringResource(R.string.sign_out), style = MaterialTheme.typography.titleMedium, color = app.talklive.ui.theme.DangerText)
+                    }
                 }
             }
 
@@ -711,10 +731,16 @@ private fun SignOutSheet(name: String, email: String, animal: String?, onCancel:
             if (email.isNotBlank()) Text(email, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(20.dp))
             Surface(onClick = { onSignOut(false) }, shape = MaterialTheme.shapes.large, color = Danger, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-                Box(contentAlignment = Alignment.Center) { Text(stringResource(R.string.sign_out), style = MaterialTheme.typography.labelLarge, color = Color.White) }
+                Box(contentAlignment = Alignment.Center) { Text(stringResource(R.string.sign_out_this_device), style = MaterialTheme.typography.labelLarge, color = Color.White) }
             }
-            Spacer(Modifier.height(8.dp))
-            androidx.compose.material3.TextButton(onClick = { onSignOut(true) }) { Text(stringResource(R.string.sign_out_all), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            Spacer(Modifier.height(10.dp))
+            Surface(
+                onClick = { onSignOut(true) }, shape = MaterialTheme.shapes.large, color = Color.Transparent,
+                border = androidx.compose.foundation.BorderStroke(1.5.dp, Danger), modifier = Modifier.fillMaxWidth().height(52.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center) { Text(stringResource(R.string.sign_out_all), style = MaterialTheme.typography.labelLarge, color = app.talklive.ui.theme.DangerText) }
+            }
+            Spacer(Modifier.height(4.dp))
             androidx.compose.material3.TextButton(onClick = onCancel) { Text(stringResource(R.string.cancel)) }
         }
     }

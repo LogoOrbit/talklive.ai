@@ -894,6 +894,22 @@
     <string name="cover_neon">Neon</string>
     <string name="cover_sakura">Sakura</string>
     <string name="cover_fireflies">Fireflies</string>
+    <string name="cover_pxcity">Neon City</string>
+    <string name="cover_pxdrive">Retro Drive</string>
+    <string name="cover_pxforest">Pixel Forest</string>
+    <string name="cover_pxspace">Star Voyage</string>
+    <string name="cover_pxsea">Pixel Sea</string>
+    <string name="news_tag_update">Update</string>
+    <string name="news_tag_feature">New feature</string>
+    <string name="news_tag_upcoming">Coming soon</string>
+    <string name="news_tag_fix">Fix</string>
+    <string name="news_tag_event">Event</string>
+    <string name="news_filter_all">All</string>
+    <string name="news_filter_news">News</string>
+    <string name="news_filter_posts">Posts</string>
+    <string name="badges_summary">%1$d of %2$d earned · %3$s talked</string>
+    <string name="badges_visible">Visible</string>
+    <string name="sign_out_this_device">Sign out on this device</string>
     <string name="plus_why_cover">Animated covers</string>
     <string name="plus_why_cover_body">Six live covers for your profile: aurora, galaxy, waves, neon, sakura and fireflies.</string>
 
@@ -903,7 +919,7 @@
     <string name="section_avatar">Avatar</string>
     <string name="section_help">Help and friends</string>
     <string name="history_kept_30">Kept for 30 days</string>
-    <string name="news_title">TalkLive news</string>
+    <string name="news_title">TalkLive News</string>
     <string name="news_row_desc">Updates and posts from the TalkLive team</string>
     <string name="news_empty">No news yet. Check back soon.</string>
     <string name="news_error">Could not load the news. Pull down to try again.</string>

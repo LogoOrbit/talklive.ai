@@ -3800,7 +3800,7 @@ function withBadges(cb) {
 }
 function withCovers(cb) {
   if (window.TalkLiveCovers) { cb(window.TalkLiveCovers); return; }
-  loadLazyScript('covers', '/covers.js?v=c0f5259273').then(() => cb(window.TalkLiveCovers), () => {});
+  loadLazyScript('covers', '/covers.js?v=e2b0bed94f').then(() => cb(window.TalkLiveCovers), () => {});
 }
 var myCover = null;
 var myBadges = null;
@@ -12268,7 +12268,7 @@ window.addEventListener('load', () => {
 function mountCallPosts() {
   const section = document.getElementById('tlCallPosts');
   if (!section || section.dataset.mounted) return;
-  loadLazyScript('posts', '/posts.js?v=a15dc74cf4').then(() => window.TalkLivePosts.mount(section, { poll: false }), () => {});
+  loadLazyScript('posts', '/posts.js?v=cf709fccdb').then(() => window.TalkLivePosts.mount(section, { poll: false, kind: 'post' }), () => {});
 }
 
 // --- "From TalkLive" posts: right under the Talk / Chat buttons. posts.js is
@@ -12276,7 +12276,7 @@ function mountCallPosts() {
 {
   const section = document.getElementById('tlPosts');
   if (section) {
-    const go = () => loadLazyScript('posts', '/posts.js?v=a15dc74cf4').then(() => window.TalkLivePosts.mount(section), () => {});
+    const go = () => loadLazyScript('posts', '/posts.js?v=cf709fccdb').then(() => window.TalkLivePosts.mount(section, { kind: 'post' }), () => {});
     window.addEventListener('load', () => { (window.requestIdleCallback || ((f) => setTimeout(f, 300)))(go, { timeout: 2500 }); });
   }
 }

@@ -37,6 +37,8 @@
   }
   function identity() {
     try { if (typeof global.TalkLiveIdentity === 'function') return global.TalkLiveIdentity() || {}; } catch (e) { /* not ready */ }
+    // Pages without the app (the News page) read the saved identity directly.
+    try { return { clientId: localStorage.getItem('talklive_client_id') || '', identityToken: localStorage.getItem('talklive_identity_token') || '' }; } catch (e) { /* storage blocked */ }
     return {};
   }
   function safeImage(src) { return typeof src === 'string' && /^(https?:\/\/|\/[^/])/.test(src) ? src : ''; }
@@ -49,6 +51,7 @@
     wow: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="#ffc83d"/><circle cx="8.600" cy="10" r="1.500" fill="#4a3200"/><circle cx="15.400" cy="10" r="1.500" fill="#4a3200"/><ellipse cx="12" cy="16.400" rx="2.300" ry="3" fill="#4a3200"/><path d="M6.500 6.500c.8-.8 2-1 3-.6M17.500 6.500c-.8-.8-2-1-3-.6" stroke="#4a3200" stroke-width="1.200" stroke-linecap="round" fill="none"/></svg>',
     sad: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="#ffc83d"/><circle cx="8.600" cy="10.200" r="1.400" fill="#4a3200"/><circle cx="15.400" cy="10.200" r="1.400" fill="#4a3200"/><path d="M8.200 17c1.100-1.500 2.400-2.100 3.800-2.100s2.700.6 3.800 2.100" stroke="#4a3200" stroke-width="1.600" stroke-linecap="round" fill="none"/><path d="M17.600 12.500c.8 1 1.100 1.800.6 2.500-.6.700-1.700.3-1.500-.9z" fill="#5bc0ff"/></svg>',
   };
+  var TAGS = { update: 'Update', feature: 'New feature', upcoming: 'Coming soon', fix: 'Fix', event: 'Event' };
   var NAME = { like: 'Like', love: 'Love', haha: 'Haha', wow: 'Wow', sad: 'Sad' };
   function typeName(k) { return tr('reaction_' + k, NAME[k]); }
   // The team's avatar: a clean person silhouette on a calm brand-blue disc.
@@ -72,6 +75,10 @@
     + '.tl-post-who small{color:var(--muted);font-size:12.5px}'
     + '.tl-post-tag{display:inline-block;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:#fff;background:linear-gradient(135deg,#2a6fe8,#00a8cc)}'
     + '.tl-post-pin{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;margin-inline-start:4px;border-radius:50%;background:rgba(42,111,232,.14);transform:rotate(28deg);filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}.tl-post-pin svg{width:15px;height:15px}'
+    + '.tl-news-title{margin:8px 14px 0;font-size:19px;line-height:1.3;font-weight:800;color:var(--text)}'
+    + '.tl-news-tag{display:inline-block;vertical-align:2px;margin-inline-end:8px;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:#2a6fe8}'
+    + '.tl-news-tag-feature{background:#1f9d55}.tl-news-tag-upcoming{background:#8b5cf6}.tl-news-tag-fix{background:#d97706}.tl-news-tag-event{background:#e0457b}'
+    + '.tl-news-empty{text-align:center;color:var(--muted);padding:40px 12px}'
     + '.tl-post-text{margin:6px 14px 10px;font-size:15.5px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}'
     + '.tl-post-img{display:block;width:100%;max-height:480px;object-fit:cover;background:var(--bg-glow)}'
     + '.tl-post-stats{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;color:var(--muted);font-size:13.5px}'
@@ -173,6 +180,7 @@
       return '<article class="tl-post" data-post="' + esc(p.id) + '">'
         + '<div class="tl-post-head"><span class="tl-post-av">' + LOGO + '</span><span class="tl-post-who"><strong>TalkLive <span class="tl-post-tag">' + esc(tr('adminBadge', 'Admin')) + '</span>'
         + (p.pinned ? '<span class="tl-post-pin" role="img" title="' + esc(tr('postPinned', 'Pinned')) + '" aria-label="' + esc(tr('postPinned', 'Pinned')) + '">' + PIN + '</span>' : '') + '</strong><small>' + esc(when(p.createdAt)) + '</small></span></div>'
+        + (p.kind === 'news' && p.title ? '<h3 class="tl-news-title">' + (p.tag && TAGS[p.tag] ? '<span class="tl-news-tag tl-news-tag-' + esc(p.tag) + '">' + esc(tr('newsTag_' + p.tag, TAGS[p.tag])) + '</span>' : '') + esc(p.title) + '</h3>' : '')
         + (p.text ? '<p class="tl-post-text">' + esc(p.text) + '</p>' : '')
         + (img ? '<img class="tl-post-img" src="' + esc(img) + '" alt="" loading="lazy" decoding="async">' : '')
         + '<div class="tl-post-stats"><div class="tl-post-reacts">' + reacts + (total ? '<span class="tl-post-total">' + total + '</span>' : '') + '</div>'
@@ -192,7 +200,10 @@
     }
 
     function render() {
-      if (!state.posts.length) { root.hidden = true; return; }
+      if (!state.posts.length) {
+        if (opts && opts.emptyText) { root.hidden = false; inner.innerHTML = '<p class="tl-news-empty">' + esc(opts.emptyText) + '</p>'; return; }
+        root.hidden = true; return;
+      }
       root.hidden = false;
       var focus = document.activeElement;
       var keep = null;
@@ -336,7 +347,8 @@
       if (loading) return Promise.resolve();
       loading = true;
       var id = identity();
-      var qs = '?clientId=' + encodeURIComponent(id.clientId || '') + '&identityToken=' + encodeURIComponent(id.identityToken || '');
+      var qs = '?clientId=' + encodeURIComponent(id.clientId || '') + '&identityToken=' + encodeURIComponent(id.identityToken || '')
+        + (opts && opts.kind ? '&kind=' + encodeURIComponent(opts.kind) : '');
       return request('GET', '/api/posts' + qs).then(function (r) {
         loading = false;
         var b = r.body;

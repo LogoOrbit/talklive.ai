@@ -31,6 +31,11 @@ data class Post(
     val commentCount: Int,
     val comments: List<PostComment>,
     val pinned: Boolean = false,
+    /** "news" for TalkLive News (has a title and a tag), "post" otherwise. */
+    val kind: String = "post",
+    val title: String? = null,
+    /** update, feature, upcoming, fix or event (news only). */
+    val tag: String? = null,
 )
 
 data class PostsState(
@@ -137,6 +142,9 @@ class PostsRepository @Inject constructor(private val identity: IdentityStore) {
             commentCount = o.optInt("commentCount", comments.size),
             comments = comments,
             pinned = o.optBoolean("pinned"),
+            kind = o.optString("kind").ifBlank { "post" },
+            title = if (o.isNull("title")) null else o.optString("title").takeIf { it.isNotBlank() },
+            tag = if (o.isNull("tag")) null else o.optString("tag").takeIf { it.isNotBlank() },
         )
     }
 

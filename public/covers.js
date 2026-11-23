@@ -18,7 +18,9 @@
 
   var SOLIDS = [['ocean', 'Ocean'], ['sky', 'Sky'], ['mint', 'Mint'], ['sunset', 'Sunset'], ['rose', 'Rose'], ['slate', 'Slate']];
   var GRADS = [['dawn', 'Dawn'], ['lagoon', 'Lagoon'], ['berry', 'Berry'], ['forest', 'Forest'], ['peach', 'Peach'], ['night', 'Night']];
-  var PLUS = [['aurora', 'Aurora'], ['galaxy', 'Galaxy'], ['waves', 'Waves'], ['neon', 'Neon grid'], ['sakura', 'Sakura'], ['fireflies', 'Fireflies']];
+  var PLUS = [['aurora', 'Aurora'], ['galaxy', 'Galaxy'], ['waves', 'Waves'], ['neon', 'Neon grid'], ['sakura', 'Sakura'], ['fireflies', 'Fireflies'],
+    // 8-bit scenes, drawn as pixel art on a 36-row grid (see PX below).
+    ['pxcity', 'Neon City'], ['pxdrive', 'Retro Drive'], ['pxforest', 'Pixel Forest'], ['pxspace', 'Star Voyage'], ['pxsea', 'Pixel Sea']];
 
   var LIST = [];
   SOLIDS.forEach(function (c) { LIST.push({ id: 'solid:' + c[0], kind: 'solid', name: c[1] }); });
@@ -49,6 +51,8 @@
   function css() {
     var s = '';
     s += '.tl-cv{position:relative;overflow:hidden;isolation:isolate;background:linear-gradient(135deg,var(--accent,#2a6fe8),var(--accent-2,#00d4ff))}'
+      + '.tl-cv>canvas.tl-cv-px{position:absolute;inset:0;width:100%;height:100%;display:block;image-rendering:pixelated;image-rendering:crisp-edges;pointer-events:none;z-index:0}'
+      + '.tl-cv[data-cv^="plus:px"]{background:#0b0620}'
       + '.tl-cv>i{position:absolute;pointer-events:none;display:block}';
     // free solids
     var solids = { ocean: '#1e6fd9', sky: '#38bdf8', mint: '#34d399', sunset: '#fb923c', rose: '#fb7185', slate: '#475569' };
@@ -135,6 +139,225 @@
     return s;
   }
 
+
+  // --- 8-bit covers -----------------------------------------------------------
+  // Pixel art on a grid 36 cells tall, drawn into a canvas exactly that many
+  // pixels tall and scaled up with image-rendering: pixelated. 8 frames a
+  // second on a 480-frame loop; the Android app draws the same scenes
+  // (android-native/.../ui/profile/PixelCovers.kt).
+  var PX_ROWS = 36, PX_LOOP = 480;
+  function isPx(id) { return typeof id === 'string' && id.indexOf('plus:px') === 0; }
+  function hash(a, b) {
+    var h = (Math.imul(a | 0, 374761393) + Math.imul(b | 0, 668265263)) | 0;
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    h ^= h >>> 16;
+    return (h >>> 0) / 4294967296;
+  }
+  function mod(a, n) { return ((a % n) + n) % n; }
+  function bands(px, colors, y0, rows, C) {
+    var n = colors.length;
+    for (var i = 0; i < n; i++) {
+      var a = y0 + Math.floor(i * rows / n), b = y0 + Math.floor((i + 1) * rows / n);
+      px(0, a, C, b - a, colors[i]);
+    }
+  }
+  function stars(px, C, rows, tick, density, seed) {
+    for (var y = 0; y < rows; y++) for (var x = 0; x < C; x++) {
+      if (hash(x + seed, y * 7) < density && hash(x, y + Math.floor(tick / 4) * 3 + seed) > 0.25) px(x, y, 1, 1, hash(x, y) < 0.3 ? '#bfe3ff' : '#ffffff');
+    }
+  }
+  function disc(px, cx, cy, r, maxY, color) {
+    for (var y = cy - r; y <= Math.min(cy + r, maxY); y++) {
+      var w = Math.floor(Math.sqrt(Math.max(0, r * r - (y - cy) * (y - cy))) + 0.3);
+      px(cx - w, y, w * 2 + 1, 1, typeof color === 'function' ? color(y) : color);
+    }
+  }
+  var PX = {
+    pxcity: function (px, C, t) {
+      bands(px, ['#1b0a3c', '#2a0f55', '#43136b', '#64197a', '#8c2381', '#b8317f'], 0, 24, C);
+      stars(px, C, 12, t, 0.03, 1);
+      var cx = Math.floor(C / 2), cy = 21, r = 9;
+      for (var y = cy - r; y <= 31; y++) {
+        if (y >= cy - 2 && mod(y + Math.floor(t / 3), 3) === 0) continue;
+        var w = Math.floor(Math.sqrt(Math.max(0, r * r - (y - cy) * (y - cy))) + 0.3);
+        var f = (y - (cy - r)) / (2 * r);
+        px(cx - w, y, w * 2 + 1, 1, f < 0.34 ? '#ffe66d' : f < 0.67 ? '#ffa24c' : '#ff5f8f');
+      }
+      var off = Math.floor(t / 2), x, wc, b, i, h;
+      for (x = 0; x < C; x++) {
+        wc = mod(x + off, 240); b = Math.floor(wc / 5);
+        h = 5 + Math.floor(hash(b, 11) * 10);
+        px(x, 32 - h, 1, h, '#2b1457');
+        if (wc % 5 === 2 && hash(b, 3) > 0.5) px(x, 32 - h - 2, 1, 2, '#2b1457');
+      }
+      for (x = 0; x < C; x++) {
+        wc = mod(x + t, 480); b = Math.floor(wc / 7); i = wc % 7;
+        if (i === 6) continue;
+        h = 6 + Math.floor(hash(b, 23) * 13);
+        var top = 33 - h;
+        px(x, top, 1, h, '#140a2e');
+        if (i % 2 === 1) for (var yy = top + 2; yy < 32; yy += 2) {
+          if (hash(b * 13 + i, yy) > 0.45 && hash(b + i, yy * 3 + Math.floor(t / 24)) > 0.1) px(x, yy, 1, 1, hash(b, i) > 0.7 ? '#6ef0ff' : '#ffd36e');
+        }
+      }
+      px(0, 33, C, 3, '#0b0620');
+      px(0, 33, C, 1, '#ff3fa4');
+    },
+    pxdrive: function (px, C, t) {
+      bands(px, ['#0d0221', '#1a0538', '#2e0854', '#4b0d6b', '#7a1279'], 0, 20, C);
+      stars(px, C, 10, t, 0.03, 9);
+      var cx = Math.floor(C / 2), cy = 15, r = 10;
+      for (var y = cy - r; y <= 19; y++) {
+        if (y >= cy && mod(y + Math.floor(t / 4), 3) === 0) continue;
+        var w = Math.floor(Math.sqrt(Math.max(0, r * r - (y - cy) * (y - cy))) + 0.3);
+        var f = (y - (cy - r)) / r;
+        px(cx - w, y, w * 2 + 1, 1, f < 0.4 ? '#ffd319' : f < 0.75 ? '#ff901f' : '#ff2975');
+      }
+      var off = Math.floor(t / 4);
+      for (var x = 0; x < C; x++) {
+        var wc = mod(x + off, 120);
+        var m = 2 + Math.round(3 * (0.5 + 0.5 * Math.sin(2 * Math.PI * 5 * wc / 120)) + 2 * (0.5 + 0.5 * Math.sin(2 * Math.PI * 3 * wc / 120 + 1)));
+        px(x, 20 - m, 1, m, '#2b0f4c');
+        px(x, 20 - m, 1, 1, '#c03bd6');
+      }
+      px(0, 20, C, 16, '#12002b');
+      var ph = (t % 8) / 8;
+      for (var k = 0; k < 12; k++) {
+        var ly = 20 + Math.floor((k + ph) * (k + ph) * 0.3);
+        if (ly < 36) px(0, ly, C, 1, '#ff2bd6');
+      }
+      for (var yy = 21; yy < 36; yy++) {
+        var d = yy - 20;
+        for (var j = -12; j <= 12; j++) px(cx + Math.round(j * (3 + d * 1.6)), yy, 1, 1, '#c11fb0');
+      }
+    },
+    pxforest: function (px, C, t) {
+      bands(px, ['#071327', '#0b1d3a', '#10284d', '#163560', '#1d4370', '#25507c', '#2e5d86'], 0, 30, C);
+      stars(px, C, 14, t, 0.025, 17);
+      var mx = Math.floor(C * 0.78);
+      disc(px, mx, 7, 4, 99, '#f4f1c9');
+      px(mx - 2, 6, 1, 1, '#d9d4a0'); px(mx + 1, 8, 2, 1, '#d9d4a0'); px(mx, 4, 1, 1, '#d9d4a0');
+      var x, wc, b, i, th, hgt;
+      var off = Math.floor(t / 4);
+      for (x = 0; x < C; x++) {
+        wc = mod(x + off, 120); b = Math.floor(wc / 6); i = wc % 6;
+        th = 8 + Math.floor(hash(b, 5) * 7);
+        hgt = th - Math.floor(Math.abs(i - 2.5) * 2.4);
+        if (hgt > 0) px(x, 31 - hgt, 1, hgt, '#123049');
+      }
+      px(0, 31, C, 5, '#081923');
+      off = Math.floor(t / 2);
+      for (x = 0; x < C; x++) {
+        wc = mod(x + off, 240); b = Math.floor(wc / 8); i = wc % 8;
+        th = 12 + Math.floor(hash(b, 29) * 9);
+        hgt = th - Math.floor(Math.abs(i - 3.5) * 3);
+        if (i === 3 || i === 4) px(x, 33, 1, 3, '#2a1a10');
+        if (hgt > 0) px(x, 34 - hgt, 1, hgt - 1, '#061620');
+        if (hgt > 0 && Math.abs(i - 3.5) < 3 && (34 - hgt + i) % 4 === 0) px(x, 34 - hgt + 1, 1, 1, '#0d2a36');
+      }
+      for (var n = 0; n < 14; n++) {
+        var fx = mod(Math.floor(hash(n, 1) * C + t * (hash(n, 2) - 0.5) * 0.5), C);
+        var fy = 16 + Math.floor(hash(n, 3) * 16 + Math.sin(t * 0.13 + n) * 1.5);
+        if (Math.sin(t * 0.21 + n * 1.7) > -0.2) {
+          px(fx - 1, fy, 3, 1, 'rgba(217,255,107,.28)'); px(fx, fy - 1, 1, 3, 'rgba(217,255,107,.28)');
+          px(fx, fy, 1, 1, '#eaff8f');
+        }
+      }
+    },
+    pxspace: function (px, C, t) {
+      bands(px, ['#05010f', '#0a0420', '#120830', '#160a3a', '#120830', '#0a0420', '#05010f'], 0, 36, C);
+      var speeds = [4, 2, 1], dens = [0.02, 0.012, 0.007], cols = ['#5a5f8a', '#a7b4ff', '#ffffff'];
+      for (var k = 0; k < 3; k++) {
+        var W = PX_LOOP / speeds[k], off = Math.floor(t / speeds[k]);
+        for (var y = 0; y < 36; y++) for (var x = 0; x < C; x++) {
+          var wc = mod(x + off, W);
+          if (hash(wc + k * 1000, y * 31 + k) < dens[k]) px(x, y, k === 2 ? 2 : 1, 1, cols[k]);
+        }
+      }
+      var pcx = Math.floor(C * 0.24), pcy = 18, pr = 8;
+      for (var rx = -15; rx <= 15; rx++) { var ry = pcy + Math.round(rx * 0.28); if (rx < 0) px(pcx + rx, ry, 1, 2, '#f6d6a8'); }
+      disc(px, pcx, pcy, pr, 99, function (yy) { var f = (yy - (pcy - pr)) / (2 * pr); return f < 0.3 ? '#f2a65a' : f < 0.55 ? '#e08a52' : f < 0.8 ? '#c9604a' : '#9e4a4a'; });
+      px(pcx - 4, pcy - 5, 3, 1, '#f7c28a');
+      for (rx = -15; rx <= 15; rx++) { ry = pcy + Math.round(rx * 0.28); if (rx >= 0 || Math.abs(rx) > pr) px(pcx + rx, ry, 1, 2, rx > pr ? '#f6d6a8' : '#e9c08c'); }
+      var sx = Math.floor(C * 0.64), sy = 15 + Math.round(Math.sin(t * 0.2) * 1.5);
+      var ship = ['.##....', '#####..', '#######', '#####..', '.##....'];
+      for (var r = 0; r < ship.length; r++) for (var c = 0; c < 7; c++) if (ship[r][c] === '#') px(sx + c, sy + r, 1, 1, '#cfd8ff');
+      px(sx + 4, sy + 2, 1, 1, '#6ef0ff');
+      px(sx - 1, sy + 1, 1, 3, t % 2 ? '#ffb347' : '#ff5e3a');
+      px(sx - 2 - (t % 3 === 0 ? 1 : 0), sy + 2, 1 + (t % 3 === 0 ? 1 : 0), 1, '#ffd36e');
+    },
+    pxsea: function (px, C, t) {
+      bands(px, ['#2d6cdf', '#4a86e8', '#6fa3ef', '#9bc1f3', '#ffc9a6'], 0, 20, C);
+      disc(px, Math.floor(C * 0.8), 12, 4, 99, '#ffe08a');
+      var off = Math.floor(t / 4), x, wc, cid, i;
+      for (x = 0; x < C; x++) {
+        wc = mod(x + off, 120); cid = Math.floor(wc / 30); i = wc % 30;
+        if (hash(cid, 7) < 0.25) continue;
+        var y0 = 2 + Math.floor(hash(cid, 8) * 8), len = 10 + Math.floor(hash(cid, 9) * 12);
+        if (i >= len) continue;
+        if (i > 2 && i < len - 3) px(x, y0, 1, 1, '#ffffff');
+        px(x, y0 + 1, 1, 1, '#ffffff');
+        if (i > 0 && i < len - 1) px(x, y0 + 2, 1, 1, '#dbe8ff');
+      }
+      bands(px, ['#1b6fd1', '#1862bd', '#1556a8', '#124a93', '#0f3f80'], 20, 16, C);
+      var sunx = Math.floor(C * 0.8);
+      for (var gy = 21; gy < 32; gy += 2) if (hash(gy, Math.floor(t / 3)) > 0.3) px(sunx - 2 + Math.floor(hash(gy, t) * 5), gy, 2, 1, '#ffe9a8');
+      var off2 = Math.floor(t / 2);
+      for (var yy = 21; yy < 36; yy += 3) for (x = 0; x < C; x++) {
+        wc = mod(x + (yy % 2 ? off2 : -off2) + yy * 7, 240);
+        if (hash(wc, yy) < 0.07) px(x, yy, 2, 1, '#bfe3ff');
+      }
+      var bx = Math.floor(C * 0.34), by = 20 + (Math.floor(t / 6) % 2);
+      for (var s = 0; s < 6; s++) px(bx + 5, by - 7 + s, s + 1, 1, '#ffffff');
+      px(bx + 4, by - 8, 1, 8, '#3e2714');
+      px(bx, by, 10, 1, '#7a4a24');
+      px(bx + 1, by + 1, 8, 1, '#5b3a1e');
+    },
+  };
+  var pxLive = [], pxTimer = null, pxTick = 0;
+  function pxPaint(cv, id, tick) {
+    var w = cv.clientWidth || 300, h = cv.clientHeight || 100;
+    var C = Math.max(12, Math.round(PX_ROWS * w / h));
+    if (cv.width !== C) { cv.width = C; cv.height = PX_ROWS; }
+    var g = cv.getContext('2d');
+    if (!g) return;
+    g.clearRect(0, 0, C, PX_ROWS);
+    var px = function (x, y, ww, hh, c) { g.fillStyle = c; g.fillRect(x, y, ww, hh); };
+    (PX[id.slice(5)] || PX.pxcity)(px, C, tick);
+  }
+  function pxReduced() { try { return global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } }
+  function pxRun() {
+    if (pxTimer) return;
+    pxTimer = setInterval(function () {
+      pxTick = (pxTick + 1) % PX_LOOP;
+      pxLive = pxLive.filter(function (c) { return c.isConnected; });
+      if (!pxLive.length) { clearInterval(pxTimer); pxTimer = null; return; }
+      if (document.hidden) return;
+      pxLive.forEach(function (c) { if (c.dataset.still !== '1') pxPaint(c, c.dataset.px, pxTick); });
+    }, 125);
+  }
+  // Fills every pixel cover canvas under `root` (new ones from apply/picker).
+  function pxMount(root) {
+    if (!root || !root.querySelectorAll) return;
+    Array.prototype.slice.call(root.querySelectorAll('canvas.tl-cv-px:not([data-on])')).forEach(function (cv) {
+      cv.setAttribute('data-on', '1');
+      var still = cv.closest('.tl-cvp-opt') || pxReduced();
+      if (still) cv.dataset.still = '1';
+      var draw = function () { pxPaint(cv, cv.dataset.px, still ? 60 : pxTick); };
+      if (global.requestAnimationFrame) global.requestAnimationFrame(draw); else draw();
+      if (!still) { pxLive.push(cv); pxRun(); }
+    });
+  }
+  if (typeof MutationObserver !== 'undefined' && typeof document !== 'undefined') {
+    new MutationObserver(function (list) {
+      for (var i = 0; i < list.length; i++) if (list[i].addedNodes.length) { pxMount(document.body); return; }
+    }).observe(document.documentElement, { childList: true, subtree: true });
+  }
+  function layersFor(id) {
+    if (isPx(id)) return '<canvas class="tl-cv-l tl-cv-px" data-px="' + id + '" aria-hidden="true"></canvas>';
+    return '<i class="tl-cv-l a"></i><i class="tl-cv-l b"></i><i class="tl-cv-l c"></i>';
+  }
+
   var cssDone = false;
   function ensureCss() {
     if (cssDone || typeof document === 'undefined') return;
@@ -162,11 +385,12 @@
     ensureCss();
     var valid = isValid(id) ? id : '';
     el.classList.add('tl-cv');
-    if ((el.dataset.cv || '') === valid && !!el.querySelector(':scope>i.tl-cv-l') === isPlus(valid)) return;
+    if ((el.dataset.cv || '') === valid && !!el.querySelector(':scope>.tl-cv-l') === isPlus(valid)) return;
     el.dataset.cv = valid;
-    Array.prototype.slice.call(el.querySelectorAll(':scope>i.tl-cv-l')).forEach(function (n) { n.remove(); });
+    Array.prototype.slice.call(el.querySelectorAll(':scope>.tl-cv-l')).forEach(function (n) { n.remove(); });
     if (isPlus(valid)) {
-      el.insertAdjacentHTML('afterbegin', '<i class="tl-cv-l a"></i><i class="tl-cv-l b"></i><i class="tl-cv-l c"></i>');
+      el.insertAdjacentHTML('afterbegin', layersFor(valid));
+      pxMount(el);
     }
     if (!valid) delete el.dataset.cv;
   }
@@ -183,7 +407,7 @@
     ensureCss();
     function opt(c) {
       var locked = c.kind === 'plus' && !hasPlus;
-      var layers = c.kind === 'plus' ? '<i class="tl-cv-l a"></i><i class="tl-cv-l b"></i><i class="tl-cv-l c"></i>' : '';
+      var layers = c.kind === 'plus' ? layersFor(c.id) : '';
       return '<button type="button" class="tl-cvp-opt' + (selected === c.id ? ' selected' : '') + (locked ? ' is-locked' : '') + '" data-cover="' + c.id + '"'
         + ' aria-pressed="' + (selected === c.id ? 'true' : 'false') + '" aria-label="' + esc(nameOf(c.id) + (locked ? ' (Plus)' : '')) + '">'
         + '<span class="tl-cv" data-cv="' + c.id + '">' + layers + '</span><span class="tl-cvp-name">' + esc(nameOf(c.id)) + '</span>'
@@ -210,5 +434,5 @@
     }, true);
   }
 
-  global.TalkLiveCovers = { list: LIST, isValid: isValid, isPlus: isPlus, name: nameOf, apply: apply, picker: picker, ensureCss: ensureCss };
+  global.TalkLiveCovers = { list: LIST, isValid: isValid, isPlus: isPlus, name: nameOf, apply: apply, picker: picker, ensureCss: ensureCss, mountPixels: pxMount, PX: PX };
 }(window));
