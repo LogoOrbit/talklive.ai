@@ -3342,11 +3342,12 @@ function userProfileRow(x){
   </td></tr>`;
 }
 async function viewUsers(){
-  const r=await vapi('users?who='+usrWho);
+  const r=await vapi('users?who='+(usrQ.trim()?'all':usrWho));
   const all=r.rows||[];
   const sum=(k)=>all.reduce((a,x)=>a+(x[k]||0),0);
   const q=usrQ.trim().toLowerCase();
-  const rows=q?all.filter(x=>[x.username,x.handle,x.friendId,x.name,x.email,x.account,x.country,x.city,x.clientId].some(v=>String(v||'').toLowerCase().includes(q))):all.slice();
+  const qc=q.replace(/[^a-z0-9]/g,'');
+  const rows=q?all.filter(x=>[x.username,x.handle,x.friendId,x.name,x.email,x.account,x.country,x.city,x.clientId].some(v=>{const t=String(v||'').toLowerCase();return t.includes(q)||(qc.length>=4&&t.replace(/[^a-z0-9]/g,'').includes(qc));})):all.slice();
   rows.sort((a,b)=>{
     const va=a[usrSort],vb=b[usrSort];
     if(typeof va==='number'||typeof vb==='number')return ((va||0)-(vb||0))*usrDir;

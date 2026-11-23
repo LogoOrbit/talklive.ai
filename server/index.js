@@ -1776,6 +1776,8 @@ function getUserStats(since) {
     const a = shownAvatar(p);
     if (a) r.avatar = a;
   }
+  // A guest's temporary "G-XXXXXX" ID, so the dashboard can search it.
+  for (const [cid, code] of guestFriendIds) get(cid).guestId = displayFriendId(code);
   if (since) {
     for (const list of friendChats.values()) {
       for (const m of list || []) if (m && m.from && (m.ts || 0) < since) get(m.from).friendMsgs++;

@@ -1232,15 +1232,16 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
     }
     if (who === 'all') {
       const guests = new Set([...Object.keys(talk), ...Object.keys(mc.users), ...Object.keys(baseUsers)]);
-      for (const [cid, st] of stats) if (st.friends) guests.add(cid);
+      for (const [cid, st] of stats) if (st.friends || st.online || st.guestId) guests.add(cid);
       const extra = [];
       for (const cid of guests) {
         if (seen.has(cid)) continue;
         const act = activity(cid);
-        if (!act.calls && !act.messages && !act.friends) continue;
+        const gid = (stats.get(cid) || {}).guestId || '';
+        if (!act.calls && !act.messages && !act.friends && !act.online && !gid) continue;
         const t = talk[cid] || {};
         extra.push({
-          clientId: cid, account: null,
+          clientId: cid, account: null, friendId: gid,
           username: t.username || (mc.users[cid] || {}).u || cid,
           name: '', method: 'guest', email: '', emailVerified: false, picture: '',
           country: t.country || '', city: '', createdAt: null,
