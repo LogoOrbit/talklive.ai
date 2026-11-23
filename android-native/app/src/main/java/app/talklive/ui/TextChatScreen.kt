@@ -92,6 +92,7 @@ import app.talklive.social.ChatMessage
 import app.talklive.ui.animals.AnimalAvatar
 import app.talklive.ui.components.BrandGradient
 import app.talklive.ui.social.MessageBubble
+import app.talklive.ui.social.jumpHighlight
 import app.talklive.ui.social.TypingBubble
 import app.talklive.ui.theme.BrandBlue
 import app.talklive.ui.theme.Danger
@@ -202,6 +203,7 @@ fun TextChatScreen(
         } else {
             val byId = remember(messages) { messages.associateBy { it.id } }
             val newestFirst = messages.asReversed()
+            var jumpedTo by remember { mutableStateOf<String?>(null) }
             LazyColumn(
                 state = listState,
                 reverseLayout = true,
@@ -213,7 +215,7 @@ fun TextChatScreen(
                 itemsIndexed(newestFirst, key = { _, m -> m.id }) { i, m ->
                     val older = newestFirst.getOrNull(i + 1)
                     val newer = newestFirst.getOrNull(i - 1)
-                    Box(Modifier.animateItem()) {
+                    Box(Modifier.animateItem().jumpHighlight(m.id == jumpedTo)) {
                         MessageBubble(
                             m,
                             quoted = m.replyTo?.let { byId[it] },
@@ -224,6 +226,15 @@ fun TextChatScreen(
                             onRetry = {},
                             onLongPress = { reactingTo = m },
                             onDoubleTap = { onReact(m.id, "❤️") },
+                            onQuoteClick = m.replyTo?.let { q -> {
+                                val at = newestFirst.indexOfFirst { it.id == q }
+                                if (at >= 0) scope.launch {
+                                    listState.animateScrollToItem(at + if (state.partnerTyping) 1 else 0)
+                                    jumpedTo = q
+                                    kotlinx.coroutines.delay(1400)
+                                    if (jumpedTo == q) jumpedTo = null
+                                }
+                            } },
                         )
                     }
                 }

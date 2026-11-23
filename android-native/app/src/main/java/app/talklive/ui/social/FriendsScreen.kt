@@ -218,7 +218,8 @@ fun FriendsScreen(
             onRefresh = { refreshing = true; refreshScope.launch { vm.refresh(); refreshing = false } },
             modifier = Modifier.weight(1f),
         ) {
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 16.dp)) {
+        // No stretch overscroll here: on some phones it blanked the whole list while scrolling.
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 16.dp), overscrollEffect = null) {
             val top = inFriends && !showArchived && q.isEmpty()
             if (top) item(key = "notify") { NotificationsBanner() }
             if (top && requests.isNotEmpty()) {
@@ -268,7 +269,7 @@ fun FriendsScreen(
                 if (chats.isNotEmpty() && !showArchived) item(key = "h-chats") { SectionLabel(stringResource(R.string.tab_chats)) }
                 items(chats, key = { "c" + it.person.clientId }) { c ->
                     ConversationRow(
-                        c, Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null),
+                        c, Modifier,
                         onLongClick = { haptics.performHapticFeedback(HapticFeedbackType.LongPress); chatMenu = c },
                     ) { onOpenChat(c.person.clientId) }
                 }
@@ -349,7 +350,7 @@ fun FriendsScreen(
                 items(group, key = { "f" + it.clientId }) { p ->
                     FriendRow(
                         p,
-                        modifier = Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null).combinedClickable(
+                        modifier = Modifier.combinedClickable(
                             onClick = { onOpenChat(p.clientId) },
                             onLongClick = { haptics.performHapticFeedback(HapticFeedbackType.LongPress); actionsFor = p },
                         ),

@@ -253,6 +253,7 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
         val newestFirst = messages.asReversed()
         val byId = remember(messages) { messages.associateBy { it.id } }
         val lastMineId = messages.lastOrNull { it.mine }?.id
+        var jumpedTo by remember { mutableStateOf<String?>(null) }
         LazyColumn(
             state = listState,
             reverseLayout = true,
@@ -264,7 +265,7 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
             itemsIndexed(newestFirst, key = { _, m -> m.id }) { i, m ->
                 val older = newestFirst.getOrNull(i + 1)
                 val newer = newestFirst.getOrNull(i - 1)
-                Column(Modifier.animateItem()) {
+                Column(Modifier.animateItem().jumpHighlight(m.id == jumpedTo)) {
                     if (older == null || !sameDay(older.ts, m.ts)) DaySeparator(m.ts)
                     MessageBubble(
                         m,
@@ -276,6 +277,15 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                         onRetry = { vm.retry(clientId, m.id) },
                         onLongPress = { actionsFor = m },
                         onDoubleTap = { vm.react(clientId, m.id, "❤️") },
+                        onQuoteClick = m.replyTo?.let { q -> {
+                            val at = newestFirst.indexOfFirst { it.id == q }
+                            if (at >= 0) scope.launch {
+                                listState.animateScrollToItem(at + if (typing) 1 else 0)
+                                jumpedTo = q
+                                kotlinx.coroutines.delay(1400)
+                                if (jumpedTo == q) jumpedTo = null
+                            }
+                        } },
                         playback = playback,
                         onPlay = { m.voiceId?.let { vm.play(clientId, it) } },
                     )
@@ -598,6 +608,8 @@ internal fun MessageBubble(
     onPlay: (() -> Unit)? = null,
     // Double tap: like with a heart (again to take it back).
     onDoubleTap: (() -> Unit)? = null,
+    /** Tapping the quoted message jumps to it. */
+    onQuoteClick: (() -> Unit)? = null,
 ) {
     val haptics = LocalHapticFeedback.current
     val pop = remember { Animatable(0f) }
@@ -682,7 +694,10 @@ internal fun MessageBubble(
                 Column(Modifier.padding(horizontal = 14.dp, vertical = 9.dp)) {
                     val fg = if (m.mine) Color.White else MaterialTheme.colorScheme.onSurface
                     quoted?.let { q ->
-                        Row(Modifier.padding(bottom = 6.dp).clip(RoundedCornerShape(8.dp)).background(fg.copy(alpha = 0.12f)).padding(8.dp)) {
+                        Row(
+                            Modifier.padding(bottom = 6.dp).clip(RoundedCornerShape(8.dp)).background(fg.copy(alpha = 0.12f))
+                                .then(if (onQuoteClick != null) Modifier.clickable(onClick = onQuoteClick) else Modifier).padding(8.dp),
+                        ) {
                             Text(preview(q), color = fg.copy(alpha = 0.85f), style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         }
                     }
@@ -1003,4 +1018,12 @@ private fun VoicePolicySheet(
             }
         }
     }
+}
+
+/** A short glow on the message a reply jumped to, so the eye finds it. */
+@Composable
+internal fun Modifier.jumpHighlight(on: Boolean): Modifier {
+    val a by androidx.compose.animation.core.animateFloatAsState(if (on) 0.22f else 0f, androidx.compose.animation.core.tween(350), label = "jump")
+    val c = MaterialTheme.colorScheme.primary
+    return this.clip(RoundedCornerShape(12.dp)).background(c.copy(alpha = a))
 }

@@ -528,7 +528,8 @@
     var SWIPE_TRIGGER = 52;   // px of travel past which a release fires Reply
     var SWIPE_MAX = 76;       // px the bubble can travel, however far the finger goes
     var SWIPE_CLAIM = 12;     // px before the gesture is declared a swipe, not a scroll
-    var DOUBLE_TAP_MS = 320;
+    // Long enough for an ordinary double tap: at 320ms a normal-speed pair was missed.
+    var DOUBLE_TAP_MS = 480;
     var HEART = '❤️';
 
     var pressTimer = null, pressX = 0, pressY = 0;

@@ -69,7 +69,9 @@ import app.talklive.ui.components.BrandGradient
  */
 @Composable
 fun AnimalAvatar(animalId: String?, name: String?, size: Dp, modifier: Modifier = Modifier, scene: Boolean = LocalPlusAvatar.current) {
-    val animal = animalById(animalId)
+    // Nobody shows as a bare letter: without a chosen animal, one is picked from
+    // their name, so the same person always gets the same face.
+    val animal = animalById(animalId) ?: fallbackAnimal(name)
     val reduce = app.talklive.ui.theme.LocalReduceMotion.current
     AnimatedContent(
         targetState = animal,
@@ -103,6 +105,12 @@ fun AnimalAvatar(animalId: String?, name: String?, size: Dp, modifier: Modifier 
             }
         }
     }
+}
+
+/** A steady stand-in face for someone who has not picked an animal. */
+fun fallbackAnimal(name: String?): Animal {
+    val key = name?.trim()?.lowercase().orEmpty()
+    return Animals[Math.floorMod(key.hashCode(), Animals.size)]
 }
 
 /** True inside a Plus member's gold ring: their face comes alive (see LiveFace). */
