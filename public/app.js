@@ -12293,7 +12293,7 @@ window.addEventListener('load', () => {
 function mountCallPosts() {
   const section = document.getElementById('tlCallPosts');
   if (!section || section.dataset.mounted) return;
-  loadLazyScript('posts', '/posts.js?v=fb1d42e86c').then(() => window.TalkLivePosts.mount(section, { poll: false, kind: 'post' }), () => {});
+  loadLazyScript('posts', '/posts.js?v=cddb42e569').then(() => window.TalkLivePosts.mount(section, { poll: false, kind: 'post' }), () => {});
 }
 
 // A reply notification: load the home feed now if it is not yet, then open
@@ -12301,7 +12301,7 @@ function mountCallPosts() {
 function openPostFromNotice(postId) {
   const section = document.getElementById('tlPosts');
   if (!section || !postId) return;
-  loadLazyScript('posts', '/posts.js?v=fb1d42e86c').then(() => {
+  loadLazyScript('posts', '/posts.js?v=cddb42e569').then(() => {
     window.TalkLivePosts.mount(section, { kind: 'post' });
     if (section.tlOpenPost) section.tlOpenPost(postId);
   }, () => {});
@@ -12312,7 +12312,7 @@ function openPostFromNotice(postId) {
 {
   const section = document.getElementById('tlPosts');
   if (section) {
-    const go = () => loadLazyScript('posts', '/posts.js?v=fb1d42e86c').then(() => window.TalkLivePosts.mount(section, { kind: 'post' }), () => {});
+    const go = () => loadLazyScript('posts', '/posts.js?v=cddb42e569').then(() => window.TalkLivePosts.mount(section, { kind: 'post' }), () => {});
     window.addEventListener('load', () => { (window.requestIdleCallback || ((f) => setTimeout(f, 300)))(go, { timeout: 2500 }); });
   }
 }
