@@ -363,6 +363,34 @@
   .cx-menu-item:hover { background: var(--accent-soft, rgba(42,111,232, 0.12)); }
 }
 
+/* --- hover actions (mouse only) ------------------------------------------ */
+.cx-hover-bar {
+  position: absolute;
+  z-index: 5;
+  display: none;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--line, rgba(138, 144, 168, 0.16));
+  border-radius: 999px;
+  background: var(--bg-2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+.cx-hover-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.cx-hover-btn:hover { color: var(--text); background: var(--accent-soft, rgba(42,111,232, 0.12)); }
+
 @media (prefers-reduced-motion: reduce) {
   .cx-menu, .cx-flash { animation: none; }
   .cx-btn, .cx-emoji-cell, .cx-gif-tile, .cx-menu-react { transition: none; }
