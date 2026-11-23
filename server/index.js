@@ -151,7 +151,10 @@ const CSP = [
     + ' https://*.gstatic.com'
     + ' https://www.google.com'
     // Google Ads conversion measurement (the AW- config in the gtag snippet).
-    + ' https://www.googleadservices.com https://*.doubleclick.net',
+    + ' https://www.googleadservices.com https://*.doubleclick.net'
+    // Google AdSense (the adsbygoogle script on the public pages) and the
+    // scripts it loads for ad rendering and measurement.
+    + ' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.adtrafficquality.google https://fundingchoicesmessages.google.com',
   // Google Identity Services injects its own stylesheet from accounts.google.com
   // to render the Sign-In button; without it listed the browser blocks the
   // sheet and the button renders unstyled.
