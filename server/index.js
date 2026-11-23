@@ -5783,7 +5783,9 @@ function noteVoiceActivity(socket, payload) {
   st.reports.set(me.clientId, mine);
   // Credit the time since the last report if both sides spoke within the lookback.
   const elapsed = Math.max(0, Math.min(VA_WINDOW_MS, now - st.lastEvalAt));
-  st.lastEvalAt = now;
+  // Until both sides have reported there is nothing to credit yet, so the clock
+  // for the first window stays at the start of the call.
+  if (st.reports.size >= 2) st.lastEvalAt = now;
   if (st.reports.size >= 2) {
     const spoke = (list) => (list || []).some((r) => now - r.t <= ACTIVE_LOOKBACK_MS && r.ms >= ACTIVE_MIN_MS);
     if ([...st.reports.values()].every(spoke)) st.creditMs += elapsed;
