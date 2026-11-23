@@ -52,7 +52,7 @@ const historyOf = (name) => ((latest[name] && latest[name].chatHistory) || []).m
     await wait(100);
     a.emit('find-partner', { mode: 'chat' });
     await pair;
-    a.emit('leave');
+    a.emit('leave', { cancelled: true });
     await wait(800);
     ok('cancelled pairing is not in the canceller\'s history', !historyOf('Ann').includes('c_cr_Bob'), historyOf('Ann'));
     ok('cancelled pairing is not in the partner\'s history', !historyOf('Bob').includes('c_cr_Ann'), historyOf('Bob'));

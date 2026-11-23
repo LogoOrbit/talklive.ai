@@ -9450,7 +9450,7 @@ callMainBtn.addEventListener('click', () => {
     // Cancel an in-progress search/connection.
     cancelOutgoingCallBack();
     searchCancelledAt = Date.now();
-    socket.emit('leave');
+    socket.emit('leave', { cancelled: true });
     goIdleOnCallScreen();
   } else {
     // Green "Call" - begin a new search.
@@ -10142,7 +10142,7 @@ window.addEventListener('popstate', async () => {
   if (callState === 'searching' && !callPanel.classList.contains('hidden')) {
     cancelOutgoingCallBack();
     searchCancelledAt = Date.now();
-    socket.emit('leave');
+    socket.emit('leave', { cancelled: true });
     resetUI();
     primeBackGuard();
     return;

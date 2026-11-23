@@ -978,7 +978,7 @@
   var searchCancelledAt = 0;
   cancelBtn.addEventListener('click', function () {
     searchCancelledAt = Date.now();
-    socket.emit('leave');
+    socket.emit('leave', { cancelled: true });
     goStart();
   });
 

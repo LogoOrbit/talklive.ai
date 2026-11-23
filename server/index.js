@@ -5828,8 +5828,8 @@ function noteVoiceActivity(socket, payload) {
   if (ms > 0) noteCallLife(st); else armSilence(st);
 }
 
-// A Cancel (or closing the page) that arrives this soon after a pairing was
-// sent while the person was still searching: the server paired them, but they
+// A search-screen Cancel ('leave' with { cancelled: true }) that arrives this
+// soon after a pairing was sent while the person was still searching: the server paired them, but they
 // never saw the match. Recording it put strangers they never met into both
 // people's Call History ("Met 2x" after two cancelled scans), so the pairing's
 // history rows are taken back before the pair is ended.
@@ -8407,12 +8407,15 @@ io.on('connection', (socket) => {
     persistSocial();
   });
 
-  socket.on('leave', () => {
+  socket.on('leave', (opts) => {
     // Hanging up is a skip too, as far as "Undo skip" is concerned.
     const leftId = partners.get(socket.id);
     const left = leftId ? profiles.get(leftId) : null;
     const me = profiles.get(socket.id);
-    const cancelled = undoCancelledPairing(socket.id);
+    // Only a Cancel pressed on the search screen (the person never saw the
+    // match) takes the pairing back; a quick skip of someone seen must keep
+    // them in history so they can still be reported.
+    const cancelled = !!(opts && opts.cancelled) && undoCancelledPairing(socket.id);
     if (me && left && !cancelled) me.lastSkipped = { clientId: left.clientId, at: Date.now() };
     disconnectPartner(socket.id);
     noteSearchAbandoned(socket.id);
@@ -10344,7 +10347,6 @@ io.on('connection', (socket) => {
     // in a live call, which is held open for a moment (see parkPairing).
     if (!parkedSockets.has(socket.id)
       && !(INVOLUNTARY_DROPS.has(reason) && parkPairing(socket.id, profiles.get(socket.id)))) {
-      undoCancelledPairing(socket.id);
       disconnectPartner(socket.id, { dropped: true });
     }
     noteSearchAbandoned(socket.id);
