@@ -107,9 +107,11 @@ ok('no email, no google, or no account is not verified', !Posts.isVerifiedAccoun
   const store = { data: { posts: [] }, save() {}, audit() {} };
   const routes = {};
   const r = { get: (p, h) => { routes['GET ' + p] = h; }, post: (p, h) => { routes['POST ' + p] = h; } };
+  const notified = [];
   const posts = Posts.createPosts({
     store, httpRateLimit: () => (req, res, next) => next(), validIdentityToken: () => true,
     isVerifiedClient: () => true, identify: () => ({ name: 'X' }), textCheck: () => null,
+    notifyReply: (cid, info) => notified.push({ cid, ...info }),
   });
   posts.mountOwner(r);
   const call = (route, req) => new Promise((resolve) => {
@@ -140,6 +142,17 @@ ok('no email, no google, or no account is not verified', !Posts.isVerifiedAccoun
     ok('hidden comments leave the public view but not the owner view',
       Posts.publicPost(store.data.posts.find((p) => p.id === a.id), '').comments.length === 1
       && (await call('GET /api/posts', {})).body.posts.find((p) => p.id === a.id).comments.length === 2);
+    const liked = (await call('POST /api/posts/:id/comments/:cid/like', { params: { id: a.id, cid: 'cz' }, body: { liked: true } })).body.post;
+    ok('owner can like a comment', liked.comments.find((c) => c.id === 'cz').liked === true
+      && Posts.publicPost(store.data.posts.find((p) => p.id === a.id), '').comments.length === 1);
+    const unliked = (await call('POST /api/posts/:id/comments/:cid/like', { params: { id: a.id, cid: 'cz' }, body: { liked: false } })).body.post;
+    ok('owner can unlike a comment', !unliked.comments.find((c) => c.id === 'cz').liked);
+    const rc = (await call('POST /api/posts/:id/reply', { params: { id: a.id }, body: { text: 'Hi S', replyTo: 'cz' } })).body.post;
+    const rcm = rc.comments[rc.comments.length - 1];
+    ok('owner can reply to one comment', rcm.admin === true && rcm.replyTo === 'cz' && rcm.replyToName === 'S');
+    ok('the commenter is notified of the reply', notified.length === 1 && notified[0].cid === 'someone1' && notified[0].postId === a.id && notified[0].text === 'Hi S');
+    ok('reply to a missing comment is refused', (await call('POST /api/posts/:id/reply', { params: { id: a.id }, body: { text: 'x', replyTo: 'nope' } })).code === 404);
+    store.data.posts.find((p) => p.id === a.id).comments.pop();
     await call('POST /api/posts/:id/comments/:cid/delete', { params: { id: a.id, cid: 'cz' } });
     ok('comment can be deleted', store.data.posts.find((p) => p.id === a.id).comments.length === 1);
     await call('POST /api/posts/:id/delete', { params: { id: a.id } });

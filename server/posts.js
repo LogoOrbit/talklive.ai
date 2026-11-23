@@ -4,7 +4,8 @@
 //
 //   store.data.posts = [{ id, text, image?, createdAt, editedAt?, pinned,
 //     reactions: { like:[cid], love:[cid], haha:[cid], wow:[cid], sad:[cid] },
-//     comments: [{ id, clientId, name, avatar, handle, text, ts, admin?, hidden? }] }]
+//     comments: [{ id, clientId, name, avatar, handle, text, ts, admin?, hidden?,
+//       liked? (the owner liked it), replyTo?, replyToName? (an owner reply to one comment) }] }]
 //
 // Anyone with a valid identity token may react. Only a signed-in account whose
 // email is verified (or that signed in with Google) may comment, and comments
@@ -81,6 +82,8 @@ function publicComment(c, faceOf) {
   const avatar = faceOf && c.clientId ? faceOf(c.clientId, c.avatar || null) : (c.avatar || null);
   const out = { id: c.id, name: c.name || '', avatar: avatar || null, handle: c.handle || '', text: c.text, ts: c.ts };
   if (c.admin) out.admin = true;
+  if (c.liked) out.liked = true;
+  if (c.replyTo) { out.replyTo = c.replyTo; out.replyToName = c.replyToName || ''; }
   return out;
 }
 function publicPost(post, clientId, faceOf) {
@@ -129,7 +132,8 @@ const order = (list) => list.slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinn
 //   textCheck(cid, text)          null to allow, or a reason string to refuse
 //   isBanned(cid)                 true for a banned profile (cannot react or comment)
 //   resolveAvatar(cid, stored)    the author's current, allowed face
-function createPosts({ store, httpRateLimit, validIdentityToken, isVerifiedClient, identify, textCheck, isBanned, resolveAvatar, now = () => Date.now() }) {
+//   notifyReply(cid, info)        tell a commenter the owner replied ({ postId, commentId, text })
+function createPosts({ store, httpRateLimit, validIdentityToken, isVerifiedClient, identify, textCheck, isBanned, resolveAvatar, notifyReply, now = () => Date.now() }) {
   const list = () => {
     if (!Array.isArray(store.data.posts)) store.data.posts = [];
     return store.data.posts;
@@ -318,15 +322,38 @@ function createPosts({ store, httpRateLimit, validIdentityToken, isVerifiedClien
       res.json({ ok: true, post: ownerPost(post) });
     });
 
-    // A reply from "TalkLive" itself, shown with an Admin badge.
+    // The owner likes (or unlikes) one comment; shown as "Liked by TalkLive".
+    r.post('/api/posts/:id/comments/:cid/like', (req, res) => {
+      const post = find(req.params.id);
+      const c = post && (post.comments || []).find((x) => x.id === req.params.cid);
+      if (!c) return bad(res, 'No such comment.', 404);
+      if ((req.body || {}).liked === false) delete c.liked; else c.liked = true;
+      store.save();
+      res.json({ ok: true, post: ownerPost(post) });
+    });
+
+    // A reply from "TalkLive" itself, shown with an Admin badge. `replyTo` (a
+    // comment id) makes it a reply to that one comment.
     r.post('/api/posts/:id/reply', (req, res) => {
       const post = find(req.params.id);
       if (!post) return bad(res, 'No such post.', 404);
-      const text = cleanText((req.body || {}).text, MAX_COMMENT);
+      const b = req.body || {};
+      const text = cleanText(b.text, MAX_COMMENT);
       if (!text) return bad(res, 'Write a reply first.');
       if (!post.comments) post.comments = [];
-      post.comments.push({ id: newId('c'), clientId: '', name: 'TalkLive', avatar: null, handle: 'talklive', text, ts: now(), admin: true });
+      const reply = { id: newId('c'), clientId: '', name: 'TalkLive', avatar: null, handle: 'talklive', text, ts: now(), admin: true };
+      if (b.replyTo) {
+        const target = post.comments.find((x) => x.id === b.replyTo);
+        if (!target) return bad(res, 'No such comment.', 404);
+        reply.replyTo = target.id;
+        reply.replyToName = target.admin ? 'TalkLive' : String(target.name || '').slice(0, 40);
+      }
+      post.comments.push(reply);
       store.save();
+      const target = reply.replyTo && post.comments.find((x) => x.id === reply.replyTo);
+      if (target && !target.admin && target.clientId && notifyReply) {
+        try { notifyReply(target.clientId, { postId: post.id, commentId: reply.id, text: text.slice(0, 120) }); } catch (_) { /* a failed notice never fails the reply */ }
+      }
       audit(req, 'post_reply', post.id);
       res.json({ ok: true, post: ownerPost(post) });
     });

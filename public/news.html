@@ -81,11 +81,12 @@
   gtag('config', 'G-713E3C1RH1');
   gtag('config', 'AW-18500257801');
 </script>
-<script src="/posts.js?v=cf709fccdb"></script>
+<script src="/posts.js?v=691c60b119"></script>
 <script>
 (function(){
   var root=document.getElementById('tlNews');
   window.TalkLivePosts.mount(root,{kind:'news',emptyText:'No news yet. Check back soon.'});
+  if(location.hash.length>1&&root.tlOpenPost)root.tlOpenPost(decodeURIComponent(location.hash.slice(1)));
   // Tag filter: hides the cards whose tag does not match.
   var btns=document.querySelectorAll('.news-filters button');
   function apply(tag){

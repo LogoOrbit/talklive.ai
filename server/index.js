@@ -610,6 +610,8 @@ const posts = createPosts({
   isVerifiedClient,
   isBanned: (clientId) => !!store.findActiveBan(clientId, '', {}),
   resolveAvatar: (clientId, stored) => liveAvatarFor(clientId, stored),
+  // "TalkLive replied to your comment": in the inbox, live on screen, and a push.
+  notifyReply: (clientId, { postId, commentId, text }) => pushNotification(clientId, { type: 'post_reply', postId, commentId, text, username: 'TalkLive' }),
   identify: (clientId) => {
     const usernameLower = store.findUsernameByClientId(clientId);
     const acc = usernameLower && accounts.get(usernameLower);
@@ -3368,6 +3370,8 @@ function pushCopyFor(notif) {
       return { topic: `acc:${notif.byClientId}`, title: `${notif.username} accepted your friend request`, body: 'Say hello - you can message them any time.', url: `/?open=chat&with=${encodeURIComponent(notif.byClientId)}`, kind: 'social' };
     case 'call_back_request':
       return { topic: `call:${notif.fromClientId}`, title: `${notif.username} wants to talk`, body: 'They asked you to call back.', url: '/?open=requests', kind: 'call' };
+    case 'post_reply':
+      return { topic: `post:${notif.postId}`, title: 'TalkLive replied to your comment', body: 'Tap to read it.', url: `/?open=post&id=${encodeURIComponent(notif.postId)}`, kind: 'social' };
     default:
       return null;
   }
@@ -6558,7 +6562,9 @@ function validId(id) {
 const FRIEND_ID_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O or 1/I/L
 const ACCOUNT_FRIEND_ID_LENGTH = 8;
 const GUEST_FRIEND_ID_LENGTH = 6;
-const GUEST_FRIEND_ID_GRACE_MS = 2 * 60000;
+// Long enough for a phone to sit in the background or lose signal without its
+// temporary ID changing under someone who has just been given it.
+const GUEST_FRIEND_ID_GRACE_MS = 10 * 60000;
 const guestFriendIds = new Map(); // clientId -> canonical guest code
 const guestFriendIdOwners = new Map(); // canonical guest code -> clientId
 const guestFriendIdTimers = new Map(); // clientId -> release Timeout
@@ -8978,7 +8984,13 @@ io.on('connection', (socket) => {
     const targetClientId = clientIdForFriendId(code);
     if (targetClientId === me.clientId) return reply({ ok: false, self: true, error: 'That is your own ID.' });
     if (!targetClientId || isBlockedPair(me.clientId, targetClientId) || ageAssurance.isRestricted(targetClientId)) {
-      return reply({ ok: false, error: 'No one has that ID right now.' });
+      // A guest ID is temporary: it changes when its owner reopens the app or
+      // has been offline a while, so a miss is usually a stale ID. The same
+      // words are used whatever the reason (including a block), so a search
+      // never tells anyone why.
+      return reply({ ok: false, error: isGuestFriendId(code)
+        ? 'That guest ID is not active right now. Guest IDs change when someone reopens the app. Ask for their current ID, or add them from your call or History.'
+        : 'No one has that ID right now.' });
     }
     store.recordFeature('friend_id_search');
     const snap = snapshotOf(targetClientId, me.clientId);
@@ -9958,7 +9970,7 @@ io.on('connection', (socket) => {
     if (!me) return;
     let changed = false;
     for (const n of notifications.get(me.clientId) || []) {
-      if (n.type === 'friend_accepted' && !n.seen) { n.seen = true; changed = true; }
+      if ((n.type === 'friend_accepted' || n.type === 'post_reply') && !n.seen) { n.seen = true; changed = true; }
     }
     if (!changed) return;
     persistSocial();

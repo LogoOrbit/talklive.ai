@@ -5513,6 +5513,7 @@ function notifIcon(type) {
     case 'friend_request': return ICONS.person;
     case 'friend_accepted': return ICONS.checkCircle;
     case 'call_back_request': return ICONS.call;
+    case 'post_reply': return ICONS.chat;
     default: return ICONS.bell;
   }
 }
@@ -5525,6 +5526,7 @@ function notifText(n) {
     case 'friend_request': return t('notifWantsFriends', { name });
     case 'friend_accepted': return t('notifAccepted', { name });
     case 'call_back_request': return t('notifWantsCallback', { name });
+    case 'post_reply': return escapeHtml(t('notifPostReply'));
     default: return escapeHtml(t('notification'));
   }
 }
@@ -5569,7 +5571,7 @@ function totalUnreadMessages() {
 // news, and counts only until the Requests tab has been looked at. Every
 // accepted request used to sit in the badge until dismissed by hand.
 function needsAttention(n) {
-  if (n.type === 'friend_accepted') return !n.seen;
+  if (n.type === 'friend_accepted' || n.type === 'post_reply') return !n.seen;
   return true;
 }
 
@@ -5619,8 +5621,9 @@ function showCountOutsidePage(count) {
 
 // Looking at the Requests tab is what "seen" means for news rows.
 function markRequestsSeen() {
-  if (!notifData.some((n) => n.type === 'friend_accepted' && !n.seen)) return;
-  notifData.forEach((n) => { if (n.type === 'friend_accepted') n.seen = true; });
+  const news = (n) => n.type === 'friend_accepted' || n.type === 'post_reply';
+  if (!notifData.some((n) => news(n) && !n.seen)) return;
+  notifData.forEach((n) => { if (news(n)) n.seen = true; });
   socket.emit('mark-notifications-seen');
   updateFriendsMsgBadge();
   syncFriendsTabCounts();
@@ -5673,6 +5676,11 @@ function renderNotifications() {
           <button type="button" class="btn-chip btn-chip-accept notif-callback-accept-btn" data-id="${n.id}" data-from="${escapeHtml(n.fromClientId)}">${ICONS.call} ${escapeHtml(t('callBack'))}</button>
           <button type="button" class="btn-chip notif-callback-decline-btn" data-id="${n.id}" data-from="${escapeHtml(n.fromClientId)}">${ICONS.close} ${escapeHtml(t('dismiss'))}</button>
         `;
+      } else if (n.type === 'post_reply') {
+        actions = `
+          <button type="button" class="btn-chip btn-chip-accept notif-open-post-btn" data-id="${n.id}" data-post="${escapeHtml(n.postId || '')}">${ICONS.chat} ${escapeHtml(t('notifViewReply'))}</button>
+          <button type="button" class="btn-chip notif-clear-btn" data-id="${n.id}">${ICONS.close} ${escapeHtml(t('dismiss'))}</button>
+        `;
       } else {
         actions = `<button type="button" class="btn-chip notif-clear-btn" data-id="${n.id}">${ICONS.close} ${escapeHtml(t('dismiss'))}</button>`;
       }
@@ -5681,7 +5689,7 @@ function renderNotifications() {
       item.innerHTML = `
         <div class="notif-item-icon">${notifIcon(n.type)}</div>
         <div class="notif-item-body">
-          <div class="notif-item-text">${notifText(n)}${n.message ? `<span class="notif-req-message">“${escapeHtml(n.message)}”</span>` : ''}</div>
+          <div class="notif-item-text">${notifText(n)}${n.message ? `<span class="notif-req-message">“${escapeHtml(n.message)}”</span>` : ''}${n.type === 'post_reply' && n.text ? `<span class="notif-req-message">“${escapeHtml(n.text)}”</span>` : ''}</div>
           <div class="notif-item-time">${timeAgo(n.ts)}</div>
           <div class="notif-item-actions">${actions}</div>
         </div>
@@ -5822,6 +5830,14 @@ notifList.addEventListener('click', (e) => {
   const dismissBtn = e.target.closest('.notif-dismiss-btn');
   const clearBtn = e.target.closest('.notif-clear-btn');
   const openChatBtn = e.target.closest('.notif-open-chat-btn');
+  const openPostBtn = e.target.closest('.notif-open-post-btn');
+  if (openPostBtn) {
+    socket.emit('clear-notification', { notificationId: openPostBtn.dataset.id });
+    removeNotifLocal(openPostBtn.dataset.id);
+    closeSidePanel(friendsDropdown, friendsOverlay);
+    openPostFromNotice(openPostBtn.dataset.post);
+    return;
+  }
   const cbAccept = e.target.closest('.notif-callback-accept-btn');
   const cbDecline = e.target.closest('.notif-callback-decline-btn');
 
@@ -5868,6 +5884,10 @@ socket.on('notification', (n) => {
       const preview = n.text === '[GIF]' ? 'GIF' : clipText(n.text, 60);
       showToast(preview ? `${who}: ${preview}` : who, 'social', () => openFriendChat(n.fromClientId));
     }
+  } else if (n.type === 'post_reply') {
+    playFriendAddedSound();
+    vibrate([20, 40, 20]);
+    showToast(t('notifPostReply'), 'social', () => openPostFromNotice(n.postId));
   } else if (n.type === 'friend_request' || n.type === 'friend_accepted') {
     // Both a new friend request and a request being accepted mean a friend
     // event - play the distinct friend chime, never the message chime.
@@ -12051,6 +12071,11 @@ try {
     setTimeout(() => { if (!startBtn.disabled) startBtn.click(); }, 0);
   }
   if (openSocialDeepLink(params)) history.replaceState(history.state, '', '/');
+  if (params.get('open') === 'post') {
+    const pid = params.get('id');
+    history.replaceState(history.state, '', '/');
+    if (pid && /^[A-Za-z0-9_-]{1,40}$/.test(pid)) setTimeout(() => openPostFromNotice(pid), 0);
+  }
   // The account screens live here, so /chat's Settings rows link to them
   // rather than the chat app carrying its own copy of the account stack.
   const open = params.get('open');
@@ -12268,7 +12293,18 @@ window.addEventListener('load', () => {
 function mountCallPosts() {
   const section = document.getElementById('tlCallPosts');
   if (!section || section.dataset.mounted) return;
-  loadLazyScript('posts', '/posts.js?v=cf709fccdb').then(() => window.TalkLivePosts.mount(section, { poll: false, kind: 'post' }), () => {});
+  loadLazyScript('posts', '/posts.js?v=691c60b119').then(() => window.TalkLivePosts.mount(section, { poll: false, kind: 'post' }), () => {});
+}
+
+// A reply notification: load the home feed now if it is not yet, then open
+// that post's comments and scroll to it.
+function openPostFromNotice(postId) {
+  const section = document.getElementById('tlPosts');
+  if (!section || !postId) return;
+  loadLazyScript('posts', '/posts.js?v=691c60b119').then(() => {
+    window.TalkLivePosts.mount(section, { kind: 'post' });
+    if (section.tlOpenPost) section.tlOpenPost(postId);
+  }, () => {});
 }
 
 // --- "From TalkLive" posts: right under the Talk / Chat buttons. posts.js is
@@ -12276,7 +12312,7 @@ function mountCallPosts() {
 {
   const section = document.getElementById('tlPosts');
   if (section) {
-    const go = () => loadLazyScript('posts', '/posts.js?v=cf709fccdb').then(() => window.TalkLivePosts.mount(section, { kind: 'post' }), () => {});
+    const go = () => loadLazyScript('posts', '/posts.js?v=691c60b119').then(() => window.TalkLivePosts.mount(section, { kind: 'post' }), () => {});
     window.addEventListener('load', () => { (window.requestIdleCallback || ((f) => setTimeout(f, 300)))(go, { timeout: 2500 }); });
   }
 }

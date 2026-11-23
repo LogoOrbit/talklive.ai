@@ -100,6 +100,8 @@
     + '.tl-cm-av svg{width:100%;height:100%}.tl-cm-body{min-width:0;padding:8px 12px;border-radius:16px;background:color-mix(in srgb,var(--text) 7%,transparent)}'
     + '.tl-cm-name{font-size:13px;font-weight:800;display:flex;align-items:center;gap:6px;flex-wrap:wrap}.tl-cm-time{font-weight:500;color:var(--muted);font-size:11.5px}'
     + '.tl-cm-text{margin:2px 0 0;font-size:14.5px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}'
+    + '.tl-cm-re{font-size:12px;color:var(--muted);margin-top:1px}.tl-cm-liked{font-size:12px;color:var(--muted);margin-top:4px}'
+    + '.tl-cm.tl-cm-reply{margin-left:41px}'
     + '.tl-post-form{display:flex;gap:8px;align-items:flex-end;margin-top:12px}'
     + '.tl-post-form textarea{flex:1;min-height:40px;max-height:120px;resize:vertical;padding:9px 14px;border-radius:20px;border:1px solid var(--line);background:color-mix(in srgb,var(--text) 6%,transparent);color:var(--text);font:inherit;font-size:14.5px}'
     + '.tl-post-form button{flex:none;padding:10px 16px;border-radius:999px;border:0;font:inherit;font-weight:800;font-size:14px;color:#fff;cursor:pointer;background:linear-gradient(135deg,#2a6fe8,#00a8cc)}'
@@ -153,9 +155,26 @@
     }
     function commentHtml(c) {
       var name = c.admin ? 'TalkLive' : (c.name || tr('someone', 'Someone'));
-      return '<div class="tl-cm">' + faceFor(c) + '<div class="tl-cm-body"><div class="tl-cm-name">' + esc(name)
+      return '<div class="tl-cm' + (c.replyTo ? ' tl-cm-reply' : '') + '">' + faceFor(c) + '<div class="tl-cm-body"><div class="tl-cm-name">' + esc(name)
         + (c.admin ? '<span class="tl-post-tag">' + esc(tr('adminBadge', 'Admin')) + '</span>' : '')
-        + '<span class="tl-cm-time">' + esc(when(c.ts)) + '</span></div><p class="tl-cm-text">' + esc(c.text) + '</p></div></div>';
+        + '<span class="tl-cm-time">' + esc(when(c.ts)) + '</span></div>'
+        + (c.replyTo ? '<div class="tl-cm-re">' + esc(tr('postReplyingTo', 'Replying to {name}', { name: c.replyToName || tr('someone', 'Someone') })) + '</div>' : '')
+        + '<p class="tl-cm-text">' + esc(c.text) + '</p>'
+        + (c.liked ? '<div class="tl-cm-liked">\u2764\ufe0f ' + esc(tr('postLikedByTalkLive', 'Liked by TalkLive')) + '</div>' : '')
+        + '</div></div>';
+    }
+
+    // Owner replies to one comment sit right under it (and its earlier replies).
+    function threaded(list) {
+      var ids = {}, kids = {}, out = [];
+      list.forEach(function (c) { ids[c.id] = 1; });
+      list.forEach(function (c) { if (c.replyTo && ids[c.replyTo]) (kids[c.replyTo] = kids[c.replyTo] || []).push(c); });
+      list.forEach(function (c) {
+        if (c.replyTo && ids[c.replyTo]) return;
+        out.push(c);
+        (kids[c.id] || []).forEach(function (k) { out.push(k); });
+      });
+      return out;
     }
 
     function postHtml(p) {
@@ -168,7 +187,7 @@
         return '<span title="' + esc(typeName(k)) + '">' + ICON[k] + counts[k] + '</span>';
       }).join('');
       var mine = p.mine && ICON[p.mine] ? p.mine : null;
-      var comments = (p.comments || []).map(commentHtml).join('');
+      var comments = threaded(p.comments || []).map(commentHtml).join('');
       var form;
       if (state.canComment) {
         form = '<form class="tl-post-form" data-form="' + esc(p.id) + '"><textarea rows="1" maxlength="' + MAX_COMMENT + '" placeholder="' + esc(tr('postCommentPlaceholder', 'Write a comment...'))
@@ -342,6 +361,26 @@
       if (state.pickFor && !e.target.closest('.tl-post-bar')) setPick(state.pickFor, false);
     });
 
+    // Open one post's comments and bring it into view (a reply notification).
+    var wantOpen = null;
+    function reveal() {
+      if (!wantOpen) return;
+      var art = inner.querySelector('[data-post="' + wantOpen.replace(/[^A-Za-z0-9_-]/g, '') + '"]');
+      if (!art) {
+        // A news item is not in the home feed: open it on the News page.
+        if (state.posts.length && opts && opts.kind === 'post') location.href = '/news#' + encodeURIComponent(wantOpen);
+        return;
+      }
+      wantOpen = null;
+      art.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    root.tlOpenPost = function (id) {
+      if (!id) return;
+      wantOpen = String(id);
+      state.open[wantOpen] = true;
+      if (state.posts.length) { render(); reveal(); } else load();
+    };
+
     var loading = false;
     function load() {
       if (loading) return Promise.resolve();
@@ -356,6 +395,7 @@
         state.posts = b.posts.filter(function (p) { return p && p.id; });
         state.canComment = !!b.canComment;
         render();
+        reveal();
       }, function () { loading = false; });
     }
     load();

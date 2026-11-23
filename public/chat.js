@@ -2408,6 +2408,10 @@
     if (n.type === 'friend_request' && isLivePartner(n.fromClientId)) showPartnerRequestCard(n.fromClientId, who);
     // Tap: a request opens Requests to answer it; an acceptance opens the chat.
     else if (n.type === 'friend_request') socialToast(t('notifWantsFriends', { name: who }), 'social', function () { $('friendsBtn').click(); });
+    else if (n.type === 'post_reply') {
+      vibrate([20, 40, 20]);
+      socialToast(t('notifPostReply'), 'social', function () { location.href = '/?open=post&id=' + encodeURIComponent(n.postId || ''); });
+    }
     else if (n.type === 'friend_accepted' && isLivePartner(n.byClientId)) addMessage(t('nowFriends'), 'system');
     else if (n.type === 'friend_accepted') {
       socialToast(t('notifAccepted', { name: who }), 'social', function () {
