@@ -380,11 +380,14 @@ fun CoverPicker(current: String?, plus: Boolean, onPick: (String) -> Unit, onLoc
 private fun CoverGroup(title: Int, covers: List<CoverDef>, current: String?, plus: Boolean, onPick: (String) -> Unit, onLocked: () -> Unit, previewLocked: Boolean = false) {
     Column {
         Text(stringResource(title), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 6.dp))
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            covers.forEach { c ->
+        // Three per row that fill the width (fixed-size tiles left a wide gap on the right).
+        Column(Modifier.fillMaxWidth().padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+          covers.chunked(3).forEach { rowCovers ->
+           androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            rowCovers.forEach { c ->
                 val locked = isPlusCover(c.id) && !plus
                 val on = c.id == current
-                Column(Modifier.width(92.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(
                         Modifier.fillMaxWidth().height(58.dp).clip(RoundedCornerShape(14.dp))
                             .border(if (on) 2.5.dp else 1.dp, if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(14.dp))
@@ -407,6 +410,9 @@ private fun CoverGroup(title: Int, covers: List<CoverDef>, current: String?, plu
                     )
                 }
             }
+            repeat(3 - rowCovers.size) { Spacer(Modifier.weight(1f)) }
+           }
+          }
         }
     }
 }

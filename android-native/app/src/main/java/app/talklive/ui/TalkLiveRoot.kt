@@ -551,7 +551,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         } else confirmLeave = true
     }
     if (confirmLeave && inCall) {
-        val live = state.phase is CallPhase.Connected
+        val live = state.phase is CallPhase.Connected || state.friendCall
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { confirmLeave = false },
             title = { Text(stringResource(if (live) (if (state.mode == CallMode.Chat) R.string.leave_chat_q else R.string.leave_call_q) else R.string.stop_search_q)) },
@@ -678,10 +678,12 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                     MainTab.Chats -> FriendsScreen(
                         social, onOpenChat = { openChat = it }, onStartTalking = { tab = MainTab.Talk },
                         onPlus = { openPlus("history", app.talklive.ui.engage.PlusWhy(app.talklive.ui.engage.PlusReason.History)) },
+                        callLogEnabled = true,
                     )
                     MainTab.Friends -> FriendsScreen(
                         social, onOpenChat = { openChat = it }, onStartTalking = { tab = MainTab.Talk },
                         onPlus = { openPlus("history", app.talklive.ui.engage.PlusWhy(app.talklive.ui.engage.PlusReason.History)) },
+                        callLogEnabled = true,
                     )
                     MainTab.History -> FriendsScreen(
                         social, onOpenChat = { openChat = it }, onStartTalking = { tab = MainTab.Talk },
@@ -742,7 +744,23 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                     onEnd = { if (state.phase is CallPhase.Connected) confirmLeave = true else vm.end() },
                     onGames = { showGames = true },
                     onSwitchToVoice = { withMic { vm.inviteVoice() } },
-                ) else CallScreen(
+                ) else if (state.friendCall && (state.phase is CallPhase.Connecting || state.phase is CallPhase.Connected)) {
+                    // A call with a friend is private: its own simple screen, not the stranger one.
+                    val fp = (state.phase as? CallPhase.Connected)?.partner ?: (state.phase as? CallPhase.Connecting)?.partner
+                    app.talklive.ui.social.FriendCallActiveScreen(
+                        name = fp?.let { p -> social.person(p.clientId)?.displayName ?: p.username } ?: "",
+                        animal = fp?.animal,
+                        connected = state.phase is CallPhase.Connected,
+                        sinceMs = (state.phase as? CallPhase.Connected)?.sinceMs,
+                        muted = state.muted,
+                        speakerOn = state.speakerOn,
+                        partnerMuted = state.partnerMuted,
+                        remoteLevel = { level },
+                        onMute = vm::toggleMute,
+                        onSpeaker = vm::toggleSpeaker,
+                        onEnd = vm::end,
+                    )
+                } else CallScreen(
                     state = state,
                     connected = connected,
                     myAnimal = animal,

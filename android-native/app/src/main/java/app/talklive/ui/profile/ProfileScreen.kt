@@ -47,6 +47,7 @@ import androidx.compose.material.icons.rounded.CardGiftcard
 import androidx.compose.material.icons.rounded.WorkspacePremium
 import androidx.compose.material.icons.rounded.Feedback
 import androidx.compose.material.icons.rounded.SupportAgent
+import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.ContactMail
 import androidx.compose.material.icons.rounded.BugReport
@@ -335,6 +336,12 @@ fun ProfileScreen(
                 })
                 SettingRow(Icons.Rounded.Call, stringResource(R.string.allow_calls), stringResource(R.string.allow_calls_desc), onClick = { vm.setAcceptCalls(!acceptCallsC) }, trailing = {
                     Switch(checked = acceptCallsC, onCheckedChange = { vm.setAcceptCalls(it) }, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary))
+                })
+                val kaCtx = LocalContext.current
+                var keepAlive by remember { mutableStateOf(app.talklive.push.KeepAlive.enabled(kaCtx)) }
+                val setKeepAlive: (Boolean) -> Unit = { on -> keepAlive = on; app.talklive.push.KeepAlive.set(kaCtx, on) }
+                SettingRow(Icons.Rounded.Sync, stringResource(R.string.keep_alive_setting), stringResource(R.string.keep_alive_setting_desc), onClick = { setKeepAlive(!keepAlive) }, trailing = {
+                    Switch(checked = keepAlive, onCheckedChange = setKeepAlive, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary))
                 })
             }
 
@@ -631,6 +638,7 @@ private fun settingColor(icon: ImageVector): androidx.compose.ui.graphics.Color 
         Icons.Rounded.Mail -> androidx.compose.ui.graphics.Color(0xFF0EA5E9)
         Icons.Rounded.Key -> androidx.compose.ui.graphics.Color(0xFF64748B)
         Icons.Rounded.Visibility -> androidx.compose.ui.graphics.Color(0xFF10B981)      // online status
+        Icons.Rounded.Sync -> androidx.compose.ui.graphics.Color(0xFF6366F1)            // keep running
         Icons.Rounded.Call -> androidx.compose.ui.graphics.Color(0xFF22C55E)
         Icons.Rounded.Tag -> androidx.compose.ui.graphics.Color(0xFF6366F1)             // friend ID
         Icons.Rounded.Block -> androidx.compose.ui.graphics.Color(0xFFEF4444)

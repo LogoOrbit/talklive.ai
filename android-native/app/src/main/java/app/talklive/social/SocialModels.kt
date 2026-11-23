@@ -194,7 +194,8 @@ data class ChatMessage(
 }
 
 /** Someone asking to talk to you (a friend calling). */
-data class IncomingCall(val fromClientId: String, val username: String, val countryCode: String?)
+/** [answering]: accepted here, waiting for the call to connect. */
+data class IncomingCall(val fromClientId: String, val username: String, val countryCode: String?, val answering: Boolean = false)
 
 /** Your call to a friend while it rings. */
 data class OutgoingCall(val person: Person, val status: String = "ringing")

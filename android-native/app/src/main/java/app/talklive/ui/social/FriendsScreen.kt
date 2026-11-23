@@ -109,6 +109,8 @@ enum class FriendsPane { Friends, History }
 fun FriendsScreen(
     vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalking: () -> Unit, onPlus: () -> Unit = {},
     pane: FriendsPane = FriendsPane.Friends,
+    /** The friend call log button; off in screenshot tests (it needs Hilt). */
+    callLogEnabled: Boolean = false,
 ) {
     val inFriends = pane == FriendsPane.Friends
     var profileOf by remember { mutableStateOf<Person?>(null) }
@@ -133,6 +135,7 @@ fun FriendsScreen(
     val sent by vm.sent.collectAsStateWithLifecycle()
     var adding by rememberSaveable { mutableStateOf(false) }
     var showActivity by rememberSaveable { mutableStateOf(false) }
+    var showCallLog by rememberSaveable { mutableStateOf(false) }
     val activity by vm.activity.collectAsStateWithLifecycle()
     var actionsFor by remember { mutableStateOf<Person?>(null) }
     val haptics = LocalHapticFeedback.current
@@ -167,6 +170,7 @@ fun FriendsScreen(
 
     val friendIds = friends.map { it.clientId }.toSet()
     val met = history.filter { it.clientId !in friendIds }
+    val likes by vm.likes.collectAsStateWithLifecycle()
     val sorted = friends.sortedWith(compareByDescending<Person> { it.pinned }.thenByDescending { it.online }.thenBy { it.displayName.lowercase() })
 
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
@@ -179,6 +183,7 @@ fun FriendsScreen(
                 style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onBackground,
             )
             Spacer(Modifier.weight(1f))
+            if (inFriends && callLogEnabled) CallLogButton(onClick = { showCallLog = true })
             IconButton(onClick = { showActivity = true; vm.markActivitySeen() }) {
                 androidx.compose.material3.BadgedBox(badge = {
                     if (activity.isNotEmpty()) androidx.compose.material3.Badge(containerColor = MaterialTheme.colorScheme.primary) { Text(activity.size.toString()) }
@@ -224,8 +229,11 @@ fun FriendsScreen(
             }
             // Online now: a strip of round avatars, like the top of Messenger.
             val onlineNow = sorted.filter { it.online }
-            if (top && onlineNow.isNotEmpty()) item(key = "online-strip") {
-                LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            val hasLikes = likes.count > 0 || likes.people.isNotEmpty()
+            if (top && (onlineNow.isNotEmpty() || hasLikes)) item(key = "online-strip") {
+                LazyRow(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    // Likes: one compact bubble at the start of the strip, not a big card.
+                    if (hasLikes) item(key = "likes") { LikesBubble(likes, onPerson = { profileOf = it }, onPlus = onPlus) }
                     items(onlineNow, key = { "o" + it.clientId }) { p ->
                         Column(
                             Modifier.width(64.dp).combinedClickable(
@@ -240,10 +248,6 @@ fun FriendsScreen(
                         }
                     }
                 }
-            }
-            if (top) item(key = "likes") {
-                val likes by vm.likes.collectAsStateWithLifecycle()
-                LikesRow(likes, onPerson = { profileOf = it }, onPlus = onPlus)
             }
             if (inFriends) {
                 val storedChats = conversations.filter { it.person.clientId in archivedIds }
@@ -264,7 +268,7 @@ fun FriendsScreen(
                 if (chats.isNotEmpty() && !showArchived) item(key = "h-chats") { SectionLabel(stringResource(R.string.tab_chats)) }
                 items(chats, key = { "c" + it.person.clientId }) { c ->
                     ConversationRow(
-                        c, Modifier.animateItem(),
+                        c, Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null),
                         onLongClick = { haptics.performHapticFeedback(HapticFeedbackType.LongPress); chatMenu = c },
                     ) { onOpenChat(c.person.clientId) }
                 }
@@ -305,18 +309,14 @@ fun FriendsScreen(
             }
             if (!inFriends && chatted.isNotEmpty()) {
                 item(key = "h-chatted") { SectionLabel(stringResource(R.string.chatted_by_text)) }
-                item(key = "row-chatted") {
-                    LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(chatted, key = { "m" + it.clientId }) { p ->
-                            MetCard(
-                                p, pending = p.clientId in sent,
-                                onAdd = { if (p.clientId in sent) vm.cancelRequest(p.clientId) else vm.sendRequest(p.clientId) },
-                                onRemove = { vm.removeFromHistory(p.clientId) },
-                                onOpen = { onOpenChat(p.clientId) },
-                                isFriend = friends.any { it.clientId == p.clientId },
-                            )
-                        }
-                    }
+                items(chatted, key = { "m" + it.clientId }) { p ->
+                    MetRow(
+                        p, pending = p.clientId in sent,
+                        onAdd = { if (p.clientId in sent) vm.cancelRequest(p.clientId) else vm.sendRequest(p.clientId) },
+                        onRemove = { vm.removeFromHistory(p.clientId) },
+                        onOpen = { onOpenChat(p.clientId) },
+                        isFriend = friends.any { it.clientId == p.clientId },
+                    )
                 }
             }
             // Free profiles list their last 3 people; the rest wait for Plus.
@@ -349,7 +349,7 @@ fun FriendsScreen(
                 items(group, key = { "f" + it.clientId }) { p ->
                     FriendRow(
                         p,
-                        modifier = Modifier.animateItem().combinedClickable(
+                        modifier = Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null).combinedClickable(
                             onClick = { onOpenChat(p.clientId) },
                             onLongClick = { haptics.performHapticFeedback(HapticFeedbackType.LongPress); actionsFor = p },
                         ),
@@ -365,6 +365,17 @@ fun FriendsScreen(
     }
 
     if (inFriends) ChatActions(vm, chatMenu) { chatMenu = null }
+    if (showCallLog) CallLogSheet(
+        onDismiss = { showCallLog = false },
+        onCallBack = { id ->
+            val p = friends.firstOrNull { it.clientId == id } ?: history.firstOrNull { it.clientId == id }
+            when {
+                p == null -> Unit
+                p.online || p.mode == "talk" -> { showCallLog = false; vm.call(p) }
+                else -> offlineTap = p.displayName
+            }
+        },
+    )
     if (showActivity) ActivitySheet(vm, friends, onDismiss = { showActivity = false }, onOpenChat = { showActivity = false; onOpenChat(it) })
     if (adding) AddFriendSheet(vm, onDismiss = { adding = false }, onOpenChat = { adding = false; onOpenChat(it) })
     actionsFor?.let { p -> FriendActionsSheet(vm, p, onDismiss = { actionsFor = null }, onOpenChat = { actionsFor = null; onOpenChat(p.clientId) }) }
@@ -398,6 +409,47 @@ private fun NotificationsBanner() {
                     .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, ctx.packageName).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
             }
         }) { Text(stringResource(R.string.ntf_turn_on)) }
+    }
+}
+
+/** A text chat met at random, as a list row: tap opens the chat, long-press removes it. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun MetRow(p: Person, pending: Boolean, onAdd: () -> Unit, onOpen: () -> Unit, onRemove: () -> Unit, isFriend: Boolean) {
+    var menu by remember { mutableStateOf(false) }
+    Box {
+        androidx.compose.material3.DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+            androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.remove_from_list)) }, onClick = { menu = false; onRemove() })
+        }
+        Row(
+            Modifier.fillMaxWidth().combinedClickable(onClick = onOpen, onLongClick = { menu = true }).padding(horizontal = 20.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            PersonAvatar(p, 48.dp)
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                app.talklive.ui.components.PlusName(p.displayName, p.premium, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    listOfNotNull(flag(p.countryCode), shortTime(p.ts).ifBlank { null }).joinToString(" · "),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1,
+                )
+            }
+            if (!isFriend) {
+                Box(
+                    Modifier.height(32.dp).clip(CircleShape)
+                        .background(if (pending) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primaryContainer)
+                        .clickable(onClick = onAdd)
+                        .padding(horizontal = 14.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        stringResource(if (pending) R.string.requested else R.string.add),
+                        style = MaterialTheme.typography.labelMedium, maxLines = 1,
+                        color = if (pending) MaterialTheme.colorScheme.onSurfaceVariant else app.talklive.ui.theme.AccentText,
+                    )
+                }
+            }
+        }
     }
 }
 

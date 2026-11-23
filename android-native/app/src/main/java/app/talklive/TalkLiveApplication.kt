@@ -25,6 +25,8 @@ class TalkLiveApplication : Application(), coil.ImageLoaderFactory {
     // Created at start: it signs the saved account back in on the first
     // registration, which can arrive before any screen has asked for it.
     @Inject lateinit var auth: app.talklive.auth.AuthRepository
+    // Created at start so every friend call is logged, whichever screen is open.
+    @Inject lateinit var callLog: app.talklive.social.CallLogStore
 
     override fun onCreate() {
         CrashReporter.install(this)
@@ -87,16 +89,19 @@ class TalkLiveApplication : Application(), coil.ImageLoaderFactory {
                     androidx.lifecycle.Lifecycle.Event.ON_START -> {
                         sleepJob?.cancel()
                         socket.reconnectNow(); socket.hidden = false; calls.appVisible(true)
+                        app.talklive.push.KeepAlive.start(this@TalkLiveApplication)
+                        app.talklive.push.ComebackReminder.appUsed(this@TalkLiveApplication)
                     }
                     androidx.lifecycle.Lifecycle.Event.ON_STOP -> {
                         socket.hidden = true; calls.appVisible(false)
+                        app.talklive.push.ComebackReminder.appUsed(this@TalkLiveApplication)
                         sleepJob?.cancel()
                         sleepJob = kotlinx.coroutines.MainScope().launch {
                             while (true) {
                                 kotlinx.coroutines.delay(60_000)
                                 // Only when push can reach this phone: without it the open
                                 // connection is the one way a message still gets through.
-                                if (push.registered && calls.state.value.phase is app.talklive.call.CallPhase.Idle && social.incoming.value == null && social.outgoing.value == null) socket.sleep()
+                                if (push.registered && !app.talklive.push.KeepAlive.enabled(this@TalkLiveApplication) && calls.state.value.phase is app.talklive.call.CallPhase.Idle && social.incoming.value == null && social.outgoing.value == null) socket.sleep()
                             }
                         }
                     }

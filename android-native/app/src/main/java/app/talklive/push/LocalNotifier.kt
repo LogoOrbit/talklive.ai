@@ -129,7 +129,7 @@ class LocalNotifier @Inject constructor(
         }
         scope.launch {
             social.incoming.collect { inc ->
-                if (inc == null) { nm.cancel(TAG_RING, 0); return@collect }
+                if (inc == null || inc.answering) { nm.cancel(TAG_RING, 0); return@collect }
                 if (!on(app.talklive.data.NotifSettings.Kind.Calls)) return@collect
                 ring(inc.fromClientId, inc.username)
             }

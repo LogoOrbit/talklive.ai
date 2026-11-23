@@ -749,6 +749,7 @@ class CallManager @Inject constructor(
 
     /** A call that was working and could not be recovered: move on (not a failed pair). */
     private fun giveUpDroppedCall() {
+        if (_state.value.friendCall) { failAndRetry(); return }
         teardown()
         setPhase(CallPhase.Searching())
         socket.emit("skip")
@@ -759,6 +760,14 @@ class CallManager @Inject constructor(
     private var quickFails = 0
     private fun failAndRetry() {
         teardown()
+        // A friend call that could not connect must end, not fall into a search for a stranger.
+        if (_state.value.friendCall) {
+            val name = lastPartnerName
+            socket.emit("leave")
+            audio.stop()
+            _state.update { CallState(speakerOn = it.speakerOn, notice = CallNotice.CallEnded(name.ifBlank { "Your friend" })) }
+            return
+        }
         val now = System.currentTimeMillis()
         quickFails = if (now - lastFailAt < 30_000) quickFails + 1 else 1
         lastFailAt = now

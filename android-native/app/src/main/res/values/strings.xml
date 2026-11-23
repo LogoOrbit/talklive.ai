@@ -999,4 +999,36 @@
     <string name="post_pinned">Pinned</string>
     <string name="history_empty_title">No one yet</string>
     <string name="history_empty_body">People you talk to show up here for 30 days.</string>
+    <!-- Keep running in background -->
+    <string name="keep_alive_setting">Keep running in background</string>
+    <string name="keep_alive_setting_desc">Get calls and messages even after you clear the app from recent apps</string>
+    <string name="keep_alive_channel">Running in background</string>
+    <string name="keep_alive_title">TalkLive is on</string>
+    <string name="keep_alive_body">Ready for calls and messages</string>
+    <!-- Daily comeback nudge -->
+    <string name="comeback_1_title">Someone new is waiting 👋</string>
+    <string name="comeback_1_body">People are online right now. Jump in for a quick chat.</string>
+    <string name="comeback_2_title">Your friends miss you</string>
+    <string name="comeback_2_body">Say hi or start a call on TalkLive.</string>
+    <string name="comeback_3_title">Got 5 minutes?</string>
+    <string name="comeback_3_body">Meet someone from another country today.</string>
+    <string name="comeback_4_title">Come back and talk 🎙️</string>
+    <string name="comeback_4_body">A good conversation is one tap away.</string>
+    <!-- Friend call log -->
+    <string name="call_log">Call log</string>
+    <string name="call_log_clear">Clear</string>
+    <string name="call_log_clear_q">Clear the call log?</string>
+    <string name="call_log_talk_time">Talk time</string>
+    <string name="call_log_people">People</string>
+    <string name="call_log_calls">Calls</string>
+    <string name="call_log_all">All</string>
+    <string name="call_log_missed">Missed</string>
+    <string name="call_log_empty">No calls yet</string>
+    <string name="call_log_outgoing">Outgoing</string>
+    <string name="call_log_incoming">Incoming</string>
+    <string name="call_log_missed_one">Missed</string>
+    <string name="call_log_declined">Declined</string>
+    <string name="call_log_no_answer">No answer</string>
+    <string name="likes_short">Likes</string>
+    <string name="private_call">Private call</string>
 </resources>

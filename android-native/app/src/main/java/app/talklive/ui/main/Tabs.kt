@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.add
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -81,7 +82,12 @@ fun TabBar(
     profileIcon: (@Composable (Boolean) -> Unit)? = null,
 ) {
     val haptics = LocalHapticFeedback.current
-    NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
+    // Even space at both ends: without it the first pill touched the left edge
+    // while the round avatar on the right sat further in.
+    NavigationBar(
+        containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp,
+        windowInsets = androidx.compose.material3.NavigationBarDefaults.windowInsets.add(androidx.compose.foundation.layout.WindowInsets(left = 12.dp, right = 12.dp)),
+    ) {
         MainTab.bar.forEach { tab ->
             val on = tab == selected
             NavigationBarItem(

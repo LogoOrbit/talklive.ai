@@ -114,6 +114,9 @@ class SocialRepository @Inject constructor(
 
     private val _incoming = MutableStateFlow<IncomingCall?>(null)
     val incoming: StateFlow<IncomingCall?> = _incoming
+    private val _callDeclined = MutableSharedFlow<String>(extraBufferCapacity = 8)
+    /** A ringing friend call this person turned down (for the call log). */
+    val callDeclined: SharedFlow<String> = _callDeclined
 
     private val _outgoing = MutableStateFlow<OutgoingCall?>(null)
     val outgoing: StateFlow<OutgoingCall?> = _outgoing
@@ -365,6 +368,8 @@ class SocialRepository @Inject constructor(
                 return@on
             }
             _outgoing.value = null
+            // Answered a call that is no longer there (they hung up, went offline).
+            if (_incoming.value?.answering == true) _incoming.value = null
             _toasts.tryEmit(
                 when (o.optString("reason")) {
                     "offline", "away" -> UiText.Res(R.string.t_offline_told)
@@ -712,9 +717,24 @@ class SocialRepository @Inject constructor(
         socket.emit("call-back-cancel", JSONObject().put("targetClientId", target))
     }
 
+    private var answerTimeout: Job? = null
+
     fun answer(accept: Boolean) {
         val call = _incoming.value ?: return
-        if (!accept) _incoming.value = null
+        if (call.answering) return
+        if (!accept) { _incoming.value = null; _callDeclined.tryEmit(call.fromClientId) }
+        else {
+            // Show "Connecting…" right away; give up if the call never comes up.
+            _incoming.value = call.copy(answering = true)
+            answerTimeout?.cancel()
+            answerTimeout = scope.launch {
+                delay(15_000)
+                if (_incoming.value?.let { it.fromClientId == call.fromClientId && it.answering } == true) {
+                    _incoming.value = null
+                    _toasts.tryEmit(UiText.Res(R.string.t_couldnt_reach))
+                }
+            }
+        }
         socket.emit("call-back-respond", JSONObject().put("fromClientId", call.fromClientId).put("accept", accept))
     }
 
