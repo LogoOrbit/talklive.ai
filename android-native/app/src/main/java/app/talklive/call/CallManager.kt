@@ -60,6 +60,8 @@ data class RatePrompt(val token: String, val name: String)
 data class FloatingReaction(val type: String, val mine: Boolean, val id: Long = System.nanoTime())
 
 data class CallState(
+    /** A friend left a random chat: their conversation opens so it can go on there (never a new stranger). */
+    val continueChatWith: String? = null,
     val phase: CallPhase = CallPhase.Idle,
     val muted: Boolean = false,
     val partnerMuted: Boolean = false,
@@ -116,6 +118,8 @@ class CallManager @Inject constructor(
     private val identity: IdentityStore,
     @ApplicationContext private val context: Context,
     private val mic: app.talklive.voice.MicMonitor,
+    // Lazy: only asked whether someone who just left is a friend.
+    private val social: dagger.Lazy<app.talklive.social.SocialRepository>,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default.limitedParallelism(1))
 
@@ -502,6 +506,12 @@ class CallManager @Inject constructor(
                     // The server ended a call nobody was talking in: stop here, do not start another search.
                     audio.stop()
                     _state.update { CallState(speakerOn = it.speakerOn, mode = it.mode, notice = CallNotice.Silence) }
+                } else if (!_state.value.friendCall && leftFriendId(phase) != null) {
+                    // Someone already a friend left a random chat or call: the conversation goes on in
+                    // their inbox thread. Auto-connect used to swap them for a stranger mid-conversation.
+                    val friendId = leftFriendId(phase)
+                    audio.stop()
+                    _state.update { CallState(speakerOn = it.speakerOn, mode = it.mode, notice = CallNotice.PartnerLeft(e.username.ifBlank { "Your friend" }, false), continueChatWith = friendId) }
                 } else if (_state.value.friendCall) {
                     audio.stop()
                     _state.update { CallState(speakerOn = it.speakerOn, notice = CallNotice.CallEnded(e.username.ifBlank { "Your friend" })) }
@@ -509,7 +519,9 @@ class CallManager @Inject constructor(
                     val notice = CallNotice.PartnerLeft(e.username.ifBlank { "Stranger" }, e.reason != "left")
                     // Not while the app is in the background: a new stranger would
                     // be connected to a phone nobody is looking at.
-                    if (_autoConnect.value && visible) {
+                    // "away": this phone's own pairing lapsed (the app was in the background, say for a
+                    // photo or GIF picker): nobody chose to move on, so no new stranger is dealt either.
+                    if (_autoConnect.value && visible && e.reason != "away") {
                         _state.update { it.copy(notice = notice) }
                         search()
                     } else {
@@ -584,6 +596,11 @@ class CallManager @Inject constructor(
             else -> app.talklive.R.string.f_couldnt_send
         },
     )
+
+    private fun leftFriendId(phase: CallPhase): String? {
+        val id = (phase as? CallPhase.Connected)?.partner?.clientId ?: (phase as? CallPhase.Connecting)?.partner?.clientId ?: return null
+        return id.takeIf { cid -> runCatching { social.get().friends.value.any { it.clientId == cid } }.getOrDefault(false) }
+    }
 
     private suspend fun onMatched(m: ServerEvent.Matched) {
         teardown()

@@ -870,6 +870,9 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         )
     }
 
+    // A friend left a random chat: carry on in their inbox thread.
+    LaunchedEffect(state.continueChatWith) { state.continueChatWith?.let { tab = MainTab.Friends; openChat = it } }
+
     // A conversation slides in over the tabs.
     AnimatedVisibility(
         visible = openChat != null && !showFullCall,
