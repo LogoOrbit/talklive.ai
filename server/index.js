@@ -5213,6 +5213,56 @@ function endPairingWith(socketId, otherClientId) {
   if (partner && partner.clientId === otherClientId) disconnectPartner(socketId);
 }
 
+// A report keeps the two people apart in random matching for at least a week,
+// whatever happens to the block (an unblock, a new profile, a fresh install):
+// the pair is matched on profile, device, account and network address.
+const REPORT_AVOID_MS = 7 * 24 * 60 * 60 * 1000;
+function reportIdentity(profile, socketId) {
+  if (!profile) return null;
+  const sock = socketId ? io.sockets.sockets.get(socketId) : null;
+  return {
+    clientId: profile.clientId || null,
+    deviceId: profile.deviceId || null,
+    account: (socketId && socketAuth.get(socketId)) || store.findUsernameByClientId(profile.clientId) || null,
+    ip: profile.ip || (sock ? getClientIp(sock) : null),
+  };
+}
+function noteReportAvoid(a, b) {
+  if (!a || !b) return;
+  const now = Date.now();
+  const list = (store.data.reportAvoids || []).filter((r) => r.until > now);
+  list.push({ a, b, until: now + REPORT_AVOID_MS });
+  store.data.reportAvoids = list.slice(-20000);
+  store.save();
+}
+// The network address only counts for the reported side (someone coming back
+// on a new profile); a shared address on the reporter's side would keep
+// strangers apart for no reason.
+function sameReportSide(side, who, useIp) {
+  if (!side || !who) return false;
+  if (side.clientId && side.clientId === who.clientId) return true;
+  if (side.deviceId && side.deviceId === who.deviceId) return true;
+  if (side.account && side.account === who.account) return true;
+  return !!(useIp && side.ip && side.ip === who.ip && !/^(127\.|10\.|192\.168\.|::1$|::ffff:127\.)/.test(side.ip));
+}
+function reportIdentityOf(clientId) {
+  const sid = clientSockets.get(clientId);
+  const p = sid ? profiles.get(sid) : null;
+  return p ? reportIdentity(p, sid) : { clientId, deviceId: deviceIdOfClient(clientId) || null, account: store.findUsernameByClientId(clientId) || null, ip: null };
+}
+function reportAvoided(pa, pb) {
+  const list = store.data.reportAvoids;
+  if (!list || !list.length) return false;
+  const now = Date.now();
+  const a = { clientId: pa.clientId, deviceId: pa.deviceId || null, account: store.findUsernameByClientId(pa.clientId) || null, ip: pa.ip || null };
+  const b = { clientId: pb.clientId, deviceId: pb.deviceId || null, account: store.findUsernameByClientId(pb.clientId) || null, ip: pb.ip || null };
+  for (const r of list) {
+    if (r.until <= now) continue;
+    if ((sameReportSide(r.a, a) && sameReportSide(r.b, b, true)) || (sameReportSide(r.a, b) && sameReportSide(r.b, a, true))) return true;
+  }
+  return false;
+}
+
 function blockPair(clientIdA, clientIdB) {
   // Snapshot before anything below forgets who they were.
   const who = snapshotOf(clientIdB, clientIdA);
@@ -6218,6 +6268,7 @@ function hardGatesOk(a, b) {
   // Never match a user with themselves (e.g. two tabs of the same browser).
   if (a.clientId === b.clientId) return false;
   if (isBlockedPair(a.clientId, b.clientId)) return false;
+  if (reportAvoided(a, b)) return false;
   // Tap to Talk and Tap to Chat are separate pools: a voice caller must never
   // land in a text chat and vice versa - that would put a mic-less chatter in
   // a call.
@@ -6619,7 +6670,7 @@ function predictedMatch(socketId) {
   const candidates = [];
   for (const [sid, p] of profiles) {
     if (sid === socketId || p.clientId === seeker.clientId) continue;
-    if (isBlockedPair(seeker.clientId, p.clientId)) continue;
+    if (isBlockedPair(seeker.clientId, p.clientId) || reportAvoided(seeker, p)) continue;
     if (pairOnCooldown(seeker.clientId, p.clientId, false)) continue;
     if ((seeker.mode || 'talk') !== (p.mode || 'talk')) continue;
     candidates.push(p);
@@ -7813,6 +7864,7 @@ io.on('connection', (socket) => {
     profiles.set(socket.id, {
       clientId,
       deviceId: socket.data.deviceId || null,
+      ip: getClientIp(socket),
       // A name saved before the nickname rules is tidied rather than refused.
       username: chosenName || guestNameFor(clientId),
       country: geo.country,
@@ -8523,6 +8575,7 @@ io.on('connection', (socket) => {
         return tryMatch(socket.id);
       }
       reportCooldowns.set(reportKey, now);
+      noteReportAvoid(reportIdentity(seeker, socket.id), reportIdentity(partner, partnerId));
       blockPair(seeker.clientId, partner.clientId);
       const partnerSocket = io.sockets.sockets.get(partnerId);
       const reportedIp = partnerSocket ? getClientIp(partnerSocket) : null;
@@ -8581,6 +8634,7 @@ io.on('connection', (socket) => {
     // the pair is blocked, which is what "you will also stop seeing each
     // other" in the confirmation promises.
     endPairingWith(socket.id, targetClientId);
+    noteReportAvoid(reportIdentity(me, socket.id), reportIdentityOf(targetClientId));
     blockPair(me.clientId, targetClientId);
     const targetSocketId = clientSockets.get(targetClientId);
     const targetSocket = targetSocketId ? io.sockets.sockets.get(targetSocketId) : null;

@@ -268,6 +268,9 @@ function defaults() {
     // A Plus face replaced when Plus ended, so it can come back with Plus:
     // clientId -> { face: 'a:panda', free: 'a:lion' }.
     plusFaces: {},
+    // Reported pairs kept apart in matchmaking for a week: [{ a, b, until }],
+    // each side { clientId, deviceId, account, ip } so a new profile does not slip through.
+    reportAvoids: [],
     // Friends' 24-hour stories (server/stories.js): clientId -> [story].
     stories: {},
     // Owner posts shown on the home page (server/posts.js).
@@ -373,6 +376,7 @@ function applyParsed(parsed) {
   data.covers = parsed.covers || {};
   data.hideBadges = parsed.hideBadges || {};
   data.plusFaces = parsed.plusFaces || {};
+  data.reportAvoids = Array.isArray(parsed.reportAvoids) ? parsed.reportAvoids.filter((r) => r && r.until > Date.now()) : [];
   data.stories = parsed.stories && typeof parsed.stories === 'object' ? parsed.stories : {};
   data.posts = Array.isArray(parsed.posts) ? parsed.posts : [];
   data.newsSeeded = parsed.newsSeeded || {};
