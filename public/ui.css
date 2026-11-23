@@ -3642,7 +3642,3 @@ button.tl-filter-summary:focus-visible { outline: 2px solid var(--accent-2); out
 .avatar-option.tl-special-face.is-locked .avatar-animal { filter: grayscale(0.85) brightness(0.8); }
 .animal-option.tl-special-face::after,
 .avatar-option.tl-special-face::after { content: attr(data-lock); position: absolute; top: 4px; right: 6px; font-size: 12px; }
-
-/* "Read the news" button on the home page. */
-.tl-news-btn { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 14px auto 0; padding: 10px 16px; max-width: 360px; border: 1px solid var(--border, rgba(127,127,127,.35)); border-radius: 999px; font-weight: 700; font-size: 14px; color: inherit; text-decoration: none; background: transparent; }
-.tl-news-btn:hover, .tl-news-btn:focus-visible { background: rgba(127,127,127,.12); }
