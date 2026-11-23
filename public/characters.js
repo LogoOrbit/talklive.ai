@@ -462,6 +462,20 @@
     },
   ];
 
+  // The Plus collection (premium-avatars.js): redesigned faces keep their id;
+  // new ones join the list here.
+  var PREMIUM = global.TalkLivePremium || null;
+  function premiumKey(id) { return PREMIUM && PREMIUM.has('c:' + id) ? 'c:' + id : null; }
+  if (PREMIUM) {
+    PREMIUM.keys().forEach(function (key) {
+      if (key.slice(0, 2) !== 'c:') return;
+      var id = key.slice(2), m = PREMIUM.meta(key);
+      var have = LIST.filter(function (ch) { return ch.id === id; })[0];
+      if (have) { have.premium = true; return; }
+      LIST.push({ id: id, name: m.name, premium: true, art: function () { return ''; } });
+    });
+  }
+
   var BY_ID = {};
   for (var i = 0; i < LIST.length; i++) BY_ID[LIST[i].id] = LIST[i];
 
@@ -471,6 +485,7 @@
     if (document.getElementById(SPRITE_ID)) { spriteInstalled = true; return; }
     var symbols = '';
     for (var i = 0; i < LIST.length; i++) {
+      if (LIST[i].premium) continue;
       symbols += '<symbol id="tlc-' + LIST[i].id + '" viewBox="0 0 64 64">' + LIST[i].art() + '</symbol>';
     }
     var host = document.createElement('div');
@@ -493,6 +508,7 @@
 
   function icon(id, size) {
     if (!BY_ID[id]) return '';
+    if (premiumKey(id)) return PREMIUM.svg(premiumKey(id), size || 40);
     var s = size || 40;
     return '<svg class="tl-animal-icon" width="' + s + '" height="' + s
       + '" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><use href="#tlc-' + id + '"/></svg>';
@@ -500,6 +516,7 @@
 
   // The same face, alive (avatar-motion.js), for Plus members and the pickers.
   function liveIcon(id, size) {
+    if (premiumKey(id)) return PREMIUM.svg(premiumKey(id), size || 40, { live: (size || 40) >= 28 });
     var M = global.TalkLiveMotion;
     if (!BY_ID[id] || !M || !M.has(id)) return icon(id, size);
     var s = size || 40;
@@ -521,6 +538,10 @@
   var scenes = false;
   function html(id, size, plus) {
     if (!BY_ID[id]) return '';
+    // A premium face brings its own lit scene and loop: no extra scene behind it.
+    if (premiumKey(id)) {
+      return '<span class="avatar-animal" style="width:' + size + 'px;height:' + size + 'px">' + (plus ? liveIcon(id, size) : icon(id, size)) + '</span>';
+    }
     installSprite();
     if (plus && !scenes) {
       scenes = true;
@@ -536,7 +557,9 @@
   // What the pickers offer (spec section 1): three free, five Plus, then the
   // three level-locked special faces. Every other character stays valid for
   // whoever already wears it.
-  var PICKER_IDS = ['wizard', 'queen', 'pirate', 'robot', 'artist', 'detective', 'ninja', 'warrior', 'gamer', 'astronaut'];
+  var PICKER_IDS = ['chef', 'cowboy', 'doctor', 'scientist', 'viking',
+    'wizard', 'queen', 'pirate', 'robot', 'artist', 'detective', 'ninja', 'warrior', 'gamer', 'astronaut',
+    'golem', 'spirit', 'aviator', 'dj', 'nomad'];
   var SPECIALS = { silver_knight: 'silver', gold_phoenix: 'gold', diamond_legend: 'diamond' };
 
   global.TalkLiveCharacters = {

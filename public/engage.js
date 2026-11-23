@@ -418,7 +418,7 @@
     window[name] = function () { var r = orig.apply(this, arguments); goldFriends(); if (name === 'renderHistory') lockedHistory(); return r; };
   });
 
-  // Only three animals and three characters are free (TalkLiveAnimals.FREE_FACES,
+  // Only the classic faces are free (TalkLiveAnimals.FREE_FACES,
   // mirrored by the server); every other offered face is Plus, except the
   // three special faces, which the level unlocks and app.js locks itself.
   var FACE_BTN = '.animal-option[data-avatar], .avatar-option[data-avatar]';
@@ -441,8 +441,35 @@
     // The Edit profile grid only previews; its Save asks for Plus.
     if (!b || b.closest('.tlp-edit') || !isPlusFace(b.dataset.avatar) || faceOk(b.dataset.avatar)) return;
     e.stopPropagation(); e.preventDefault();
-    plusUpsell(t('plusMember'), 'avatars');
+    lockedFacePreview(b.dataset.avatar);
   }, true);
+  // A locked Plus face is shown big and alive first, with what it is and how to unlock it.
+  function lockedFacePreview(id) {
+    var A = window.TalkLiveAnimals, C = window.TalkLiveCharacters, P = window.TalkLivePremium;
+    var key = id.charAt(0) === 'a' ? id : id;
+    var art = P && P.has(key) ? P.svg(key, 176, { live: true })
+      : (id.charAt(0) === 'a' && A ? (A.liveIcon || A.icon)(id.slice(2), 176) : (C ? (C.liveIcon || C.icon)(id.slice(2), 176) : ''));
+    var name = id.charAt(0) === 'a' ? (A ? A.name(id.slice(2)) : '') : (C ? C.name(id.slice(2)) : '');
+    var meta = P && P.meta(key);
+    var ov = document.createElement('div');
+    ov.className = 'tl-face-preview';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:4000;background:rgba(5,8,20,.72);display:grid;place-items:center;padding:20px';
+    ov.innerHTML = '<div role="dialog" aria-modal="true" style="background:var(--bg-2,#141a2b);color:var(--text,#f2f4ff);border-radius:24px;padding:24px 22px 18px;max-width:320px;width:100%;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.5)">'
+      + '<div style="width:176px;height:176px;margin:0 auto 14px;border-radius:50%;overflow:hidden">' + art + '</div>'
+      + '<div style="font-size:20px;font-weight:800">' + esc(name) + '</div>'
+      + (meta && meta.trait ? '<div style="opacity:.75;margin-top:4px">' + esc(meta.trait) + '</div>' : '')
+      + '<div style="margin:10px 0 16px;color:#f5c542;font-weight:700">💎 ' + esc(t('plusFaceExclusive') === 'plusFaceExclusive' ? 'TalkLive Plus exclusive' : t('plusFaceExclusive')) + '</div>'
+      + '<button type="button" data-unlock style="width:100%;border:0;border-radius:14px;padding:12px;font:inherit;font-weight:800;cursor:pointer;background:linear-gradient(135deg,#f5c542,#e09a1a);color:#2a1a00">' + esc(t('plusFaceUnlock') === 'plusFaceUnlock' ? 'Unlock with Plus' : t('plusFaceUnlock')) + '</button>'
+      + '<button type="button" data-close style="width:100%;margin-top:8px;border:0;background:none;color:inherit;opacity:.75;padding:8px;font:inherit;cursor:pointer">' + esc(t('close') === 'close' ? 'Close' : t('close')) + '</button></div>';
+    function close() { ov.remove(); document.removeEventListener('keydown', onKey); }
+    function onKey(ev) { if (ev.key === 'Escape') close(); }
+    ov.addEventListener('click', function (ev) {
+      if (ev.target === ov || ev.target.closest('[data-close]')) close();
+      else if (ev.target.closest('[data-unlock]')) { close(); plusUpsell(t('plusMember'), 'avatars'); }
+    });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(ov);
+  }
   if (typeof window.renderAnimalPicker === 'function') {
     var origPicker = window.renderAnimalPicker;
     window.renderAnimalPicker = function () { var r = origPicker.apply(this, arguments); markFaces(); return r; };
@@ -631,7 +658,7 @@
   // Stories (stories.js): friends' 24-hour text and GIF stories in the Friends panel.
   (function () {
     var s = document.createElement('script');
-    s.src = '/stories.js?v=e4581bb852';
+    s.src = '/stories.js?v=c4b626308e';
     s.async = true;
     document.head.appendChild(s);
   })();

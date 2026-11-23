@@ -3,6 +3,7 @@ package app.talklive.ui.animals
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.draw.drawWithContent
@@ -82,16 +83,19 @@ fun AnimalAvatar(animalId: String?, name: String?, size: Dp, modifier: Modifier 
         if (a != null) {
             // Plus members' characters stand in a themed scene (AvatarScenes.kt), drawn
             // behind the art without its round tile; still under 56dp or with reduced motion.
-            val bare = if (scene) CharacterBare[a.id] else null
+            val bare = if (scene && !a.premium) CharacterBare[a.id] else null
             val face = if (bare != null) remember(a.id) { a.copy(icon = bare) } else a
-            val fill = if (bare != null) 1f else 0.82f
+            // A Plus portrait brings its own lit tile, so it fills the circle.
+            val fill = if (bare != null || a.premium) 1f else 0.82f
             Box(
-                Modifier.size(size).clip(CircleShape).background(a.color.copy(alpha = 0.22f))
+                Modifier.size(size).clip(CircleShape).background(if (a.premium) Color.Transparent else a.color.copy(alpha = 0.22f))
                     .then(if (bare != null) Modifier.characterScene(a.id, animate = !reduce && size >= 56.dp) else Modifier),
                 contentAlignment = Alignment.Center,
             ) {
                 if (a.special) SpecialFaceArt(a.id, Modifier.size(size * fill), animate = size >= 32.dp)
                 else if (LocalPlusAvatar.current && !reduce) LiveFace(face, size, fill)
+                // A Plus portrait is alive wherever it is big enough to see it move.
+                else if (a.premium && !reduce && size >= 40.dp && !lowEndDevice()) LivingFace(face.icon, a.name, Modifier.size(size))
                 else Image(painterResource(face.icon), contentDescription = a.name, modifier = Modifier.size(size * fill))
             }
         } else {
@@ -110,7 +114,22 @@ fun AnimalAvatar(animalId: String?, name: String?, size: Dp, modifier: Modifier 
 /** A steady stand-in face for someone who has not picked an animal. */
 fun fallbackAnimal(name: String?): Animal {
     val key = name?.trim()?.lowercase().orEmpty()
-    return Animals[Math.floorMod(key.hashCode(), Animals.size)]
+    // From the free faces, like the server's default: a stand-in is never a Plus portrait.
+    val pool = Animals.filter { it.id in FREE_FACES }.ifEmpty { Animals }
+    return pool[Math.floorMod(key.hashCode(), pool.size)]
+}
+
+/**
+ * Phones that report themselves as low on memory (Android Go and similar): Plus
+ * portraits stay still in lists there, and the picker animates only the chosen face.
+ */
+@Composable
+fun lowEndDevice(): Boolean {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    return remember {
+        val am = ctx.getSystemService(android.content.Context.ACTIVITY_SERVICE) as? android.app.ActivityManager
+        am?.isLowRamDevice == true || Runtime.getRuntime().maxMemory() < 160L * 1024 * 1024
+    }
 }
 
 /** True inside a Plus member's gold ring: their face comes alive (see LiveFace). */
@@ -156,7 +175,7 @@ private fun LiveFace(a: Animal, size: Dp, fill: Float = 0.82f) {
  */
 @Composable
 fun LivingFace(icon: Int, description: String?, modifier: Modifier = Modifier) {
-    val live = LiveAvatars[icon]
+    val live = LiveAvatars[icon] ?: PremiumLive[icon]
     if (live == null || app.talklive.ui.theme.LocalReduceMotion.current || androidx.compose.ui.platform.LocalInspectionMode.current) {
         Image(painterResource(icon), description, modifier)
         return
@@ -191,8 +210,8 @@ fun isPlusFace(id: String?): Boolean = id != null && id !in FREE_FACES && !isSpe
 fun ownFace(id: String?, plusEnded: Boolean, look: Boolean): String? =
     if (id != null && plusEnded && !look && isPlusFace(id)) freeFaceFor(id) else id
 
-/** The free face a Plus face falls back to: a character becomes the wizard, an animal the cat (spec 8). */
-fun freeFaceFor(id: String?): String = if (id != null && id.startsWith("c:")) "c:wizard" else "cat"
+/** The free face a Plus face falls back to: a character becomes the chef, an animal the penguin (server FREE_*_FALLBACK). */
+fun freeFaceFor(id: String?): String = if (id != null && id.startsWith("c:")) "c:chef" else "penguin"
 
 /** A free animal at random: "Surprise me" and the automatic first pick never deal a Plus face. */
 fun randomFreeAnimal(): Animal = Animals.filter { it.id in FREE_FACES }.random()
@@ -219,6 +238,9 @@ fun AnimalGrid(
     val held = remember { selected }
     fun unlocked(id: String) = premium || id == held || (look && (lookFace == null || lookFace.removePrefix("a:") == id))
     val haptics = LocalHapticFeedback.current
+    val lowEnd = lowEndDevice()
+    var previewing by remember { mutableStateOf<Animal?>(null) }
+    previewing?.let { p -> LockedFacePreview(p, onUnlock = { previewing = null; onLocked() }, onDismiss = { previewing = null }) }
     // Two families, two tabs, so the characters are never hidden below the animals.
     var tab by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(if (selected?.startsWith("c:") == true) 1 else 0) }
     Column(modifier) {
@@ -260,15 +282,18 @@ fun AnimalGrid(
                         haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         if (previewLocked) onSelect(a.id)
                         else if (specialLocked) onSpecialLocked(a.id)
-                        else if (isPlusFace(a.id) && !unlocked(a.id)) onLocked() else onSelect(a.id)
+                        // A locked Plus face opens a big live preview first, with the way to unlock it.
+                        else if (isPlusFace(a.id) && !unlocked(a.id)) previewing = a else onSelect(a.id)
                     }
                     .padding(vertical = 10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Box {
                     if (a.special) SpecialFaceArt(a.id, Modifier.fillMaxWidth(0.72f).aspectRatio(1f).graphicsLayer { alpha = if (specialLocked) 0.45f else 1f }, animate = !specialLocked)
-                    // Every face moves in the picker, so people see what they are choosing.
-                    else LivingFace(a.icon, a.name, Modifier.fillMaxWidth(0.72f).aspectRatio(1f))
+                    // Every face moves in the picker, so people see what they are choosing (only the
+                    // chosen one on a low-memory phone). Plus portraits fill their tile.
+                    else if (lowEnd && !on) Image(painterResource(a.icon), a.name, Modifier.fillMaxWidth(if (a.premium) 0.86f else 0.72f).aspectRatio(1f).clip(CircleShape))
+                    else LivingFace(a.icon, a.name, Modifier.fillMaxWidth(if (a.premium) 0.86f else 0.72f).aspectRatio(1f).clip(CircleShape))
                     if (specialLocked) androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Lock, null, tint = app.talklive.ui.theme.GoldText, modifier = Modifier.align(Alignment.TopEnd).size(14.dp))
                     if (isPlusFace(a.id)) Box(Modifier.align(Alignment.TopEnd)) {
                         if (unlocked(a.id)) app.talklive.ui.components.PlusGem(14.dp)
@@ -308,3 +333,30 @@ fun AnimalCaption(selected: String?, modifier: Modifier = Modifier) {
     }
 }
 
+
+/** A Plus face a free account tapped: shown big and alive, with what it is and how to get it. */
+@Composable
+private fun LockedFacePreview(a: Animal, onUnlock: () -> Unit, onDismiss: () -> Unit) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Box(Modifier.size(168.dp).clip(CircleShape), contentAlignment = Alignment.Center) {
+                LivingFace(a.icon, a.name, Modifier.size(168.dp))
+            }
+        },
+        title = { Text(a.name, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) },
+        text = {
+            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                if (a.trait.isNotBlank()) Text(a.trait, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+                Spacer(Modifier.size(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    app.talklive.ui.components.PlusGem(16.dp)
+                    Spacer(Modifier.size(6.dp))
+                    Text(stringResource(R.string.plus_face_preview), style = MaterialTheme.typography.labelLarge, color = app.talklive.ui.theme.GoldText)
+                }
+            }
+        },
+        confirmButton = { androidx.compose.material3.Button(onClick = onUnlock) { Text(stringResource(R.string.plus_face_unlock)) } },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) } },
+    )
+}

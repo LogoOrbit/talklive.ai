@@ -25,6 +25,8 @@ const fromSite = (xml) => xml.replace(/gen-animals\.js from public\/animals\.js/
 const rows = [];
 const bare = [];
 for (const c of list) {
+  // New Plus faces have no classic drawing: gen-premium.js writes theirs.
+  if (c.premium && !c.art()) continue;
   const svg = c.art();
   const name = 'character_' + c.id.replace(/[^a-z0-9]/g, '_');
   fs.writeFileSync(path.join(resDir, name + '.xml'), fromSite(toVector(svg)));
@@ -50,7 +52,7 @@ val Characters: List<Animal> = listOf(
 ${rows.join('\n')}
 )
 
-/** The faces a free account may pick (isFree in public/animals.js); every other animal and character is Plus. */
+/** The faces a free account may pick: the classic collection. Every redesigned and new face is Plus. */
 val FREE_FACES: Set<String> = setOf(
 ${free.join('\n')}
 )

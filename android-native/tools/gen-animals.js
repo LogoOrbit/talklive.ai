@@ -82,6 +82,8 @@ module.exports = { toVector };
 if (require.main === module) {
 const entries = [];
 for (const a of list) {
+  // New Plus faces have no classic drawing: gen-premium.js writes theirs.
+  if (a.premium && !a.art()) continue;
   fs.writeFileSync(path.join(resDir, `animal_${a.id}.xml`), toVector(a.art()));
   const esc = (s) => s.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
   entries.push(`    Animal("${a.id}", "${esc(a.name)}", "${esc(a.trait)}", Color(0xFF${color(a.color).slice(1)}), R.drawable.animal_${a.id}),`);
@@ -93,16 +95,19 @@ package app.talklive.ui.animals
 import androidx.compose.ui.graphics.Color
 import app.talklive.R
 
-data class Animal(val id: String, val name: String, val trait: String, val color: Color, val icon: Int)
+data class Animal(val id: String, val name: String, val trait: String, val color: Color, val icon: Int, val special: Boolean = false,
+    /** The TalkLive Plus collection: a full portrait on its own tile, with its own loop (PremiumFaces.kt). */
+    val premium: Boolean = false)
 
 /** The spirit animals, in the website's picker order. */
 val Animals: List<Animal> = listOf(
 ${entries.join('\n')}
 )
 
-private val byId = (Animals + Characters).associateBy { it.id }
+// Premium last: a redesigned face replaces its classic drawing under the same id.
+private val byId = (Animals + Characters + SpecialFaces + PremiumFaces).associateBy { it.id }
 
-fun animalById(id: String?): Animal? = id?.let { byId[it] }
+fun animalById(id: String?): Animal? = id?.let { byId[it] ?: byId[it.removePrefix("a:")] }
 `);
 console.log(`wrote ${list.length} animals`);
 }

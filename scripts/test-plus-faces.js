@@ -80,20 +80,20 @@ const locked = (p) => /lion|raccoon|giraffe|dragon|unicorn|tiger|ninja|detective
 
     // --- register ------------------------------------------------------------
     let p = await seenBy(connect('c_pf_free_01', 'Free1', { avatar: 'a:lion', animal: 'lion' }));
-    ok('register: a never-seen guest with a Plus animal shows a free face', !locked(p) && /cat/.test(faceOf(p)), p);
+    ok('register: a never-seen guest with a Plus animal shows a free face', !locked(p) && /penguin/.test(faceOf(p)), p);
     p = await seenBy(connect('c_pf_free_02', 'Free2', { avatar: 'c:ninja', animal: 'c:ninja' }));
-    ok('register: a Plus character shows the free character', !locked(p) && p.avatar === 'c:wizard', p);
+    ok('register: a Plus character shows the free character', !locked(p) && p.avatar === 'c:chef', p);
     p = await seenBy(connect('c_pf_free_03', 'Free3', { avatar: 'c:gold_phoenix', animal: 'c:gold_phoenix' }));
     ok('register: a special face below its tier is not shown', !locked(p), p);
-    p = await seenBy(connect('c_pf_free_04', 'Free4', { avatar: 'a:cat', animal: 'lion' }));
+    p = await seenBy(connect('c_pf_free_04', 'Free4', { avatar: 'a:penguin', animal: 'lion' }));
     ok('register: a free avatar with a Plus animal slot leaks nothing', !locked(p), p);
-    p = await seenBy(connect('c_pf_free_05', 'Free5', { avatar: 'a:fox', animal: 'fox' }));
-    ok('register: a free face is kept', p.avatar === 'a:fox' && p.animal === 'fox', p);
+    p = await seenBy(connect('c_pf_free_05', 'Free5', { avatar: 'a:owl', animal: 'owl' }));
+    ok('register: a free face is kept', p.avatar === 'a:owl' && p.animal === 'owl', p);
 
     // --- the animal sent with a search ----------------------------------------
-    p = await seenBy(connect('c_pf_free_06', 'Free6', { avatar: 'a:fox', animal: 'fox' }), { animal: 'lion' });
+    p = await seenBy(connect('c_pf_free_06', 'Free6', { avatar: 'a:owl', animal: 'owl' }), { animal: 'lion' });
     ok('find-partner: a Plus animal sent with the search is not shown', !locked(p), p);
-    p = await seenBy(connect('c_pf_free_07', 'Free7', { avatar: 'a:fox', animal: 'fox' }), { animal: 'dragon' });
+    p = await seenBy(connect('c_pf_free_07', 'Free7', { avatar: 'a:owl', animal: 'owl' }), { animal: 'dragon' });
     ok('find-partner: nor a second locked animal', !locked(p), p);
 
     // --- control: Plus really can ---------------------------------------------

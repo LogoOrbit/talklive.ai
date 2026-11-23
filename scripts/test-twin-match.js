@@ -72,13 +72,13 @@ async function pair(nameA, avatarA, nameB, avatarB) {
       try { await fetch(BASE + '/healthz'); break; } catch (_) { await wait(250); }
     }
 
-    let [ma, mb] = await pair('Alpha', 'c:wizard', 'Bravo', 'c:wizard');
-    ok('same personality flagged for the first person', ma.samePersonality === 'wizard', ma.samePersonality);
-    ok('same personality flagged for the second person', mb.samePersonality === 'wizard', mb.samePersonality);
+    let [ma, mb] = await pair('Alpha', 'c:chef', 'Bravo', 'c:chef');
+    ok('same personality flagged for the first person', ma.samePersonality === 'chef', ma.samePersonality);
+    ok('same personality flagged for the second person', mb.samePersonality === 'chef', mb.samePersonality);
     ok('same animal still visible to both', ma.partner.animal === 'wolf' && mb.partner.animal === 'wolf');
     ok('partner chosen avatar is shown', 'avatar' in ma.partner);
 
-    [ma, mb] = await pair('Charlie', 'c:wizard', 'Delta', 'c:pirate');
+    [ma, mb] = await pair('Charlie', 'c:chef', 'Delta', 'c:cowboy');
     ok('different personalities are not flagged', ma.samePersonality == null && mb.samePersonality == null);
 
     [ma, mb] = await pair('Echo', 'm1', 'Foxtrot', 'm1');

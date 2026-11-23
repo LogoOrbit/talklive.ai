@@ -1046,6 +1046,8 @@
     <string name="story_reply_to">Reply to %1$s…</string>
     <string name="story_like">Like</string>
     <string name="play_game">Play a game</string>
+    <string name="plus_face_preview">TalkLive Plus exclusive</string>
+    <string name="plus_face_unlock">Unlock with Plus</string>
     <string name="story_sent">Sent to their inbox</string>
     <string name="story_replied">Replied to their story</string>
     <string name="story_replied_you">Replied to your story</string>

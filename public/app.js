@@ -3936,7 +3936,7 @@ function dropPlusFace(look) {
   if (isPremiumUser || !isPlusOnlyFace(myAvatar)) return;
   // The invite reward's one face stays.
   if (look && (!look.face || look.face === myAvatar)) return;
-  adoptServerAvatar(myAvatar.charAt(0) === 'a' ? 'a:lion' : 'c:wizard');
+  adoptServerAvatar(myAvatar.charAt(0) === 'a' ? 'a:penguin' : 'c:chef');
 }
 socket.on('state-sync', ingestOwnExtras);
 socket.on('profile', ingestOwnExtras);
@@ -12433,7 +12433,7 @@ socket.on('friend-online', ({ clientId, username, countryCode, country } = {}) =
 // a call, so it loads once the page is up and stays out of the first paint.
 window.addEventListener('load', () => {
   const s = document.createElement('script');
-  s.src = '/engage.js?v=62847182da';
+  s.src = '/engage.js?v=7274928180';
   s.async = true;
   document.head.appendChild(s);
 });

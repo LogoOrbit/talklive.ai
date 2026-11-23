@@ -4686,13 +4686,15 @@ function placeFromHints(timezone, acceptLanguage) {
 // The faces free accounts may pick: five animals and five movie characters
 // (spec section 8). Every other animal and character is Plus. Mirrored by
 // FREE_FACES in public/animals.js and android AnimalUi.kt; keep the lists identical.
+// Every redesigned and new face (public/premium-art.js) is TalkLive Plus; the
+// free set is the classic collection.
 const FREE_FACES = new Set([
-  'a:cat', 'a:fox', 'a:panda', 'a:rabbit', 'a:dog',
-  'c:wizard', 'c:pirate', 'c:robot', 'c:queen', 'c:artist',
+  'a:owl', 'a:penguin', 'a:koala', 'a:bear', 'a:wolf',
+  'c:chef', 'c:cowboy', 'c:doctor', 'c:scientist', 'c:viking',
 ]);
 // What someone without Plus is switched to when they wear a Plus face.
-const FREE_ANIMAL_FALLBACK = 'a:cat';
-const FREE_CHARACTER_FALLBACK = 'c:wizard';
+const FREE_ANIMAL_FALLBACK = 'a:penguin';
+const FREE_CHARACTER_FALLBACK = 'c:chef';
 function freeFaceOf(key) { return key && key.startsWith('c:') ? FREE_CHARACTER_FALLBACK : FREE_ANIMAL_FALLBACK; }
 // Special faces are earned with points, never bought (server/progress.js):
 // silver_knight, gold_phoenix and diamond_legend unlock at Silver, Gold and Diamond.
@@ -4844,7 +4846,8 @@ function reconcilePlusFace(clientId, animal, avatar) {
     if (!saved) return { animal, avatar, change: null };
     delete store.data.plusFaces[clientId];
     store.save();
-    if ((!key && !avatar) || key === saved.free) return { ...faceSlots(saved.face), change: 'restored' };
+    // The stand-in may have changed since (the free set did): its current one counts too.
+    if ((!key && !avatar) || key === saved.free || key === freeFaceOf(saved.face)) return { ...faceSlots(saved.face), change: 'restored' };
     return { animal, avatar, change: null };
   }
   if (key && isPlusFace(key)) {
@@ -5226,7 +5229,7 @@ function reportIdentity(profile, socketId) {
     clientId: profile.clientId || null,
     deviceId: profile.deviceId || null,
     account: (socketId && socketAuth.get(socketId)) || store.findUsernameByClientId(profile.clientId) || null,
-    ip: profile.ip || (sock ? getClientIp(sock) : null),
+    ip: profile.netAddr || (sock ? getClientIp(sock) : null),
   };
 }
 function noteReportAvoid(a, b) {
@@ -5256,8 +5259,8 @@ function reportAvoided(pa, pb) {
   const list = store.data.reportAvoids;
   if (!list || !list.length) return false;
   const now = Date.now();
-  const a = { clientId: pa.clientId, deviceId: pa.deviceId || null, account: store.findUsernameByClientId(pa.clientId) || null, ip: pa.ip || null };
-  const b = { clientId: pb.clientId, deviceId: pb.deviceId || null, account: store.findUsernameByClientId(pb.clientId) || null, ip: pb.ip || null };
+  const a = { clientId: pa.clientId, deviceId: pa.deviceId || null, account: store.findUsernameByClientId(pa.clientId) || null, ip: pa.netAddr || null };
+  const b = { clientId: pb.clientId, deviceId: pb.deviceId || null, account: store.findUsernameByClientId(pb.clientId) || null, ip: pb.netAddr || null };
   for (const r of list) {
     if (r.until <= now) continue;
     if ((sameReportSide(r.a, a) && sameReportSide(r.b, b, true)) || (sameReportSide(r.a, b) && sameReportSide(r.b, a, true))) return true;
@@ -6052,6 +6055,8 @@ const ANIMAL_IDS = new Set([
   'bear', 'panda', 'rabbit', 'owl', 'penguin', 'dolphin',
   'elephant', 'koala', 'monkey', 'frog', 'deer', 'turtle', 'horse', 'eagle',
   'unicorn', 'dragon', 'shark', 'octopus', 'parrot', 'raccoon', 'sloth', 'pig', 'giraffe', 'hedgehog',
+  // The TalkLive Plus newcomers.
+  'axolotl', 'snowleopard', 'redpanda', 'chameleon', 'kitsune',
 ]);
 // Movie-character avatars (public/characters.js holds the artwork), `c:<id>`.
 const CHARACTER_IDS = new Set([
@@ -6059,6 +6064,8 @@ const CHARACTER_IDS = new Set([
   'ninja', 'astronaut', 'zombie', 'alien', 'knight', 'queen', 'warrior',
   'chef', 'doctor', 'scientist', 'artist', 'rockstar', 'firefighter', 'gamer', 'king', 'viking', 'witch', 'elf', 'clown',
   'silver_knight', 'gold_phoenix', 'diamond_legend',
+  // The TalkLive Plus newcomers.
+  'golem', 'spirit', 'aviator', 'dj', 'nomad',
 ]);
 function sanitizeAnimal(value) {
   return typeof value === 'string' && ANIMAL_IDS.has(value) ? value : null;
@@ -7866,7 +7873,8 @@ io.on('connection', (socket) => {
     profiles.set(socket.id, {
       clientId,
       deviceId: socket.data.deviceId || null,
-      ip: getClientIp(socket),
+      // Only for keeping reported pairs apart (reportAvoided); not the quarantine's address.
+      netAddr: getClientIp(socket),
       // A name saved before the nickname rules is tidied rather than refused.
       username: chosenName || guestNameFor(clientId),
       country: geo.country,

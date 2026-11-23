@@ -45,7 +45,7 @@ function connect(clientId, name, extra) {
   return sock;
 }
 
-// Registers `clientId` with `face` ("a:fox" avatar + bare animal id, or a
+// Registers `clientId` with `face` ("a:owl" avatar + bare animal id, or a
 // character) and reports what a stranger who is matched with them sees.
 async function seenAs(clientId, face) {
   const extra = face.startsWith('c:') ? { avatar: face, animal: face } : { avatar: face, animal: face.slice(2) };
@@ -85,23 +85,23 @@ async function seenAs(clientId, face) {
     }
 
     // 1-2. A new free user starts on a basic face and cannot move to a locked one.
-    ok('a free user can pick a free animal', await seenAs('c_face_free', 'a:fox') === 'a:fox');
-    ok('a free user can switch between free faces', await seenAs('c_face_free', 'c:robot') === 'c:robot');
+    ok('a free user can pick a free animal', await seenAs('c_face_free', 'a:owl') === 'a:owl');
+    ok('a free user can switch between free faces', await seenAs('c_face_free', 'c:doctor') === 'c:doctor');
     const refused = await seenAs('c_face_free', 'a:dragon');
     ok('a free user cannot switch to a locked animal', refused !== 'a:dragon', refused);
-    ok('...and keeps the face they had', refused === 'c:robot', refused);
+    ok('...and keeps the face they had', refused === 'c:doctor', refused);
     const refusedChar = await seenAs('c_face_free', 'c:vampire');
-    ok('a free user cannot switch to a locked character', refusedChar === 'c:robot', refusedChar);
+    ok('a free user cannot switch to a locked character', refusedChar === 'c:doctor', refusedChar);
 
     // 3. Plus faces only last while Plus does: a free account wearing one is
     // moved to a free face of the same kind.
-    const swapped = await seenAs('c_face_old', 'a:bear');
-    ok('a Plus face on a free account is replaced by a free one', swapped === 'a:cat', swapped);
-    ok('...and they can then pick another free face', await seenAs('c_face_old', 'a:dog') === 'a:dog');
+    const swapped = await seenAs('c_face_old', 'a:tiger');
+    ok('a Plus face on a free account is replaced by a free one', swapped === 'a:penguin', swapped);
+    ok('...and they can then pick another free face', await seenAs('c_face_old', 'a:wolf') === 'a:wolf');
     const swappedChar = await seenAs('c_face_old2', 'c:ninja');
-    ok('a Plus character is replaced by a free character', swappedChar === 'c:wizard', swappedChar);
+    ok('a Plus character is replaced by a free character', swappedChar === 'c:chef', swappedChar);
     const special = await seenAs('c_face_free', 'c:silver_knight');
-    ok('a special face is refused before its tier', special !== 'c:silver_knight' && special === 'c:robot', special);
+    ok('a special face is refused before its tier', special !== 'c:silver_knight' && special === 'c:doctor', special);
 
     // 4. Plus can pick anything.
     ok('Plus can pick a locked animal', await seenAs('c_face_plus', 'a:unicorn') === 'a:unicorn');

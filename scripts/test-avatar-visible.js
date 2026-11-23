@@ -29,13 +29,13 @@ function once(sock, ev, ms = 5000) {
     sock.on(ev, on);
   });
 }
-const FREE = new Set(['a:cat', 'a:fox', 'a:panda', 'a:rabbit', 'a:dog', 'c:wizard', 'c:pirate', 'c:robot', 'c:queen', 'c:artist']);
+const FREE = new Set(['a:penguin', 'a:owl', 'a:koala', 'a:bear', 'a:wolf', 'c:chef', 'c:cowboy', 'c:doctor', 'c:scientist', 'c:viking']);
 
 const now = Date.now();
 fs.writeFileSync(path.join(DATA_DIR, 'owner-data.json'), JSON.stringify({
   accounts: {
     alice: { nickname: 'Alice', animal: 'lion', clientId: 'c_av_alice' }, // Plus face, no Plus
-    carol: { nickname: 'Carol', animal: 'c:artist', clientId: 'c_av_carol' },
+    carol: { nickname: 'Carol', animal: 'c:viking', clientId: 'c_av_carol' },
     dave: { nickname: 'Dave', animal: 'c:ninja', clientId: 'c_av_dave' }, // Plus character
   },
   heldFace: { c_av_guestplus: 'a:giraffe' },
@@ -66,18 +66,18 @@ fs.writeFileSync(path.join(DATA_DIR, 'owner-data.json'), JSON.stringify({
     bob.emit('register', { clientId: 'c_av_bob', username: 'Bob', gender: 'male', identityToken: sign('c_av_bob') });
     const st = await sync;
     const row = (id) => st.friends.find((f) => f.clientId === id) || {};
-    ok('offline friend with an account face shows the migrated free face', row('c_av_alice').avatar === 'a:cat', row('c_av_alice'));
-    ok('offline friend with a saved account face and an empty row shows it', row('c_av_carol').avatar === 'c:artist', row('c_av_carol'));
+    ok('offline friend with an account face shows the migrated free face', row('c_av_alice').avatar === 'a:penguin', row('c_av_alice'));
+    ok('offline friend with a saved account face and an empty row shows it', row('c_av_carol').avatar === 'c:viking', row('c_av_carol'));
     ok('a friend who never picked a face still has a free one', FREE.has(row('c_av_guest').avatar), row('c_av_guest'));
     ok('a guest wearing a Plus face without Plus is shown a free face', FREE.has(row('c_av_guestplus').avatar) && row('c_av_guestplus').avatar.startsWith('a:'), row('c_av_guestplus'));
-    ok('a stored Plus character row is rewritten', row('c_av_dave').avatar === 'c:wizard', row('c_av_dave'));
-    ok('history rows carry the face', (st.chatHistory[0] || {}).avatar === 'c:artist', st.chatHistory);
+    ok('a stored Plus character row is rewritten', row('c_av_dave').avatar === 'c:chef', row('c_av_dave'));
+    ok('history rows carry the face', (st.chatHistory[0] || {}).avatar === 'c:viking', st.chatHistory);
 
     const fid = row('c_av_carol').friendId;
     const found = once(bob, 'find-by-friend-id-result');
     bob.emit('find-by-friend-id', { friendId: fid });
     const r = await found;
-    ok('find-by-friend-id carries the face', r.ok && r.user.avatar === 'c:artist', r);
+    ok('find-by-friend-id carries the face', r.ok && r.user.avatar === 'c:viking', r);
 
     // Live: a registered partner sends no avatar at all -> still a face.
     const eve = io(BASE, { transports: ['websocket'], forceNew: true });
@@ -92,9 +92,9 @@ fs.writeFileSync(path.join(DATA_DIR, 'owner-data.json'), JSON.stringify({
 
     await wait(3000); // debounced save
     const saved = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'owner-data.json'), 'utf8'));
-    ok('stored account face is rewritten by the boot migration', saved.accounts.alice.animal === 'cat' && saved.accounts.dave.animal === 'c:wizard', saved.accounts);
+    ok('stored account face is rewritten by the boot migration', saved.accounts.alice.animal === 'penguin' && saved.accounts.dave.animal === 'c:chef', saved.accounts);
     ok('the chosen Plus face is remembered for when Plus returns', saved.plusFaces && saved.plusFaces.c_av_alice && saved.plusFaces.c_av_alice.face === 'a:lion', saved.plusFaces);
-    ok('migration leaves free faces alone', saved.accounts.carol.animal === 'c:artist', saved.accounts.carol);
+    ok('migration leaves free faces alone', saved.accounts.carol.animal === 'c:viking', saved.accounts.carol);
   } catch (err) {
     console.error(err);
     failed++;

@@ -34,18 +34,18 @@ val Characters: List<Animal> = listOf(
     Animal("c:clown", "Clown", "", Color(0xFFF59E0B), R.drawable.character_clown),
 )
 
-/** The faces a free account may pick (spec 8: five animals, five characters); every other face is Plus. */
+/** The faces a free account may pick: the classic collection. Every redesigned and new face is Plus. */
 val FREE_FACES: Set<String> = setOf(
-    "cat",
-    "fox",
-    "panda",
-    "rabbit",
-    "dog",
-    "c:wizard",
-    "c:pirate",
-    "c:robot",
-    "c:queen",
-    "c:artist",
+    "owl",
+    "penguin",
+    "koala",
+    "bear",
+    "wolf",
+    "c:chef",
+    "c:cowboy",
+    "c:doctor",
+    "c:scientist",
+    "c:viking",
 )
 
 /** Characters with a Plus scene (public/avatar-scenes.css), with their art minus the round tile the scene replaces. */

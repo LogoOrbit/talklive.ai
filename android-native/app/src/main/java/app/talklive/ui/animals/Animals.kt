@@ -4,7 +4,9 @@ package app.talklive.ui.animals
 import androidx.compose.ui.graphics.Color
 import app.talklive.R
 
-data class Animal(val id: String, val name: String, val trait: String, val color: Color, val icon: Int, val special: Boolean = false)
+data class Animal(val id: String, val name: String, val trait: String, val color: Color, val icon: Int, val special: Boolean = false,
+    /** The TalkLive Plus collection: a full portrait on its own tile, with its own loop (PremiumFaces.kt). */
+    val premium: Boolean = false)
 
 /** The spirit animals, in the website's picker order. */
 val Animals: List<Animal> = listOf(
@@ -40,6 +42,7 @@ val Animals: List<Animal> = listOf(
     Animal("hedgehog", "Hedgehog", "Shy but sweet", Color(0xFFA16207), R.drawable.animal_hedgehog),
 )
 
-private val byId = (Animals + Characters + SpecialFaces).associateBy { it.id }
+// Premium last: a redesigned face replaces its classic drawing under the same id.
+private val byId = (Animals + Characters + SpecialFaces + PremiumFaces).associateBy { it.id }
 
 fun animalById(id: String?): Animal? = id?.let { byId[it] ?: byId[it.removePrefix("a:")] }

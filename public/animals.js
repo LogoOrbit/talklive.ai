@@ -46,12 +46,16 @@
 
   // Free faces; all others are Plus. Same list as server FREE_FACES and android.
   // They lead LIST so the pickers show them first.
-  var FREE_FACES = ['a:cat', 'a:rabbit', 'a:fox', 'a:panda', 'a:dog', 'c:wizard', 'c:queen', 'c:pirate', 'c:robot', 'c:artist'];
+  // Every redesigned and new face (premium-avatars.js) is TalkLive Plus; the free
+  // set is the classic collection.
+  var FREE_FACES = ['a:owl', 'a:penguin', 'a:koala', 'a:bear', 'a:wolf', 'c:chef', 'c:cowboy', 'c:doctor', 'c:scientist', 'c:viking'];
   function isFree(face) { return FREE_FACES.indexOf(face) !== -1; }
   // What the pickers offer (docs/SPEC-PROFILE-PROGRESS-POSTS.md section 1): the
   // free animals, then the five Plus animals. Every other animal stays valid
   // for whoever already wears it; it is just no longer offered.
-  var PICKER_IDS = ['cat', 'rabbit', 'fox', 'panda', 'dog', 'lion', 'raccoon', 'giraffe', 'unicorn', 'dragon'];
+  var PICKER_IDS = ['owl', 'penguin', 'koala', 'bear', 'wolf',
+    'lion', 'fox', 'cat', 'dog', 'panda', 'tiger', 'rabbit', 'raccoon', 'giraffe', 'unicorn', 'dragon',
+    'axolotl', 'snowleopard', 'redpanda', 'chameleon', 'kitsune'];
 
   // --- The animals. Order is the order of the picker. -------------------------
   var LIST = [
@@ -442,6 +446,20 @@
     },
   ];
 
+  // The Plus collection (premium-avatars.js): redesigned faces keep their id;
+  // new ones join the list here.
+  var PREMIUM = global.TalkLivePremium || null;
+  function premiumKey(id) { return PREMIUM && PREMIUM.has('a:' + id) ? 'a:' + id : null; }
+  if (PREMIUM) {
+    PREMIUM.keys().forEach(function (key) {
+      if (key.slice(0, 2) !== 'a:') return;
+      var id = key.slice(2), m = PREMIUM.meta(key);
+      var have = LIST.filter(function (a) { return a.id === id; })[0];
+      if (have) { have.premium = true; return; }
+      LIST.push({ id: id, name: m.name, trait: m.trait, color: m.color, premium: true, art: function () { return ''; } });
+    });
+  }
+
   var BY_ID = {};
   for (var i = 0; i < LIST.length; i++) BY_ID[LIST[i].id] = LIST[i];
 
@@ -454,6 +472,7 @@
     if (document.getElementById(SPRITE_ID)) { spriteInstalled = true; return; }
     var symbols = '';
     for (var i = 0; i < LIST.length; i++) {
+      if (LIST[i].premium) continue;
       symbols += '<symbol id="tla-' + LIST[i].id + '" viewBox="0 0 64 64">' + LIST[i].art() + '</symbol>';
     }
     var host = document.createElement('div');
@@ -470,6 +489,7 @@
   // reference, not a copy of the artwork.
   function icon(id, size, cls) {
     if (!BY_ID[id]) return '';
+    if (premiumKey(id)) return PREMIUM.svg(premiumKey(id), size || 40, { cls: cls });
     var s = size || 40;
     return '<svg class="tl-animal-icon' + (cls ? ' ' + cls : '') + '" width="' + s + '" height="' + s
       + '" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><use href="#tla-' + id + '"/></svg>';
@@ -478,6 +498,8 @@
   // The same face, alive (avatar-motion.js): drawn inline so each part can move.
   // Falls back to the still icon when the motion module is not on the page.
   function liveIcon(id, size, cls) {
+    // Premium faces loop on their own; tiny ones stay still (cheaper, and too small to see).
+    if (premiumKey(id)) return PREMIUM.svg(premiumKey(id), size || 40, { cls: cls, live: (size || 40) >= 28 });
     var M = global.TalkLiveMotion;
     if (!BY_ID[id] || !M || !M.has(id)) return icon(id, size, cls);
     var s = size || 40;
@@ -537,6 +559,7 @@
       return ids[Math.floor(Math.random() * ids.length)].slice(2);
     },
     isFree: isFree,
+    isPremium: function (id) { return !!premiumKey(id); },
     FREE_FACES: FREE_FACES,
     pickerIds: PICKER_IDS,
     STORAGE_KEY: STORAGE_KEY,
