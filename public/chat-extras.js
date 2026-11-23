@@ -689,6 +689,78 @@
       showMenu(id, e.clientX, e.clientY);
     });
 
+    // --- hover actions (mouse) ------------------------------------------------
+    // A laptop has no swipe and no long press, and a right-click menu is not
+    // something anyone finds on their own. Hovering a bubble shows a small
+    // toolbar beside it: Reply, and "more" for the full menu. One shared node,
+    // moved into place, so a long chat adds no per-message DOM.
+    var hoverBar = null, hoverId = null, hoverHideTimer = null;
+    var finePointer = !!(window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches);
+    var REPLY_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"'
+      + ' stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/>'
+      + '<path d="M4 9h7.5A6.5 6.5 0 0 1 18 15.5V20"/></svg>';
+    function buildHoverBar() {
+      hoverBar = el('div', 'cx-hover-bar');
+      var r = el('button', 'cx-hover-btn');
+      r.type = 'button';
+      r.dataset.act = 'reply';
+      r.title = tr('reply', 'Reply');
+      r.setAttribute('aria-label', r.title);
+      r.innerHTML = REPLY_SVG;
+      hoverBar.appendChild(r);
+      var m = el('button', 'cx-hover-btn', '⋯');
+      m.type = 'button';
+      m.dataset.act = 'more';
+      m.title = tr('more', 'More');
+      m.setAttribute('aria-label', m.title);
+      hoverBar.appendChild(m);
+      hoverBar.addEventListener('click', function (e) {
+        var b = e.target.closest('button');
+        if (!b || !hoverId) return;
+        e.stopPropagation();
+        var id = hoverId;
+        if (b.dataset.act === 'reply') { hideHoverBar(); startReply(id); }
+        else {
+          var br = b.getBoundingClientRect();
+          showMenu(id, br.left + br.width / 2, br.top);
+        }
+      });
+      if (getComputedStyle(messages).position === 'static') messages.style.position = 'relative';
+    }
+    function showHoverBar(id) {
+      var rec = index[id];
+      if (!rec) return;
+      if (!hoverBar) buildHoverBar();
+      if (!hoverBar.parentNode) messages.appendChild(hoverBar);
+      hoverId = id;
+      var m = messages.getBoundingClientRect();
+      var b = rec.el.getBoundingClientRect();
+      hoverBar.style.display = 'flex';
+      var w = hoverBar.offsetWidth, h = hoverBar.offsetHeight;
+      var left = rec.mine ? b.left - m.left - w - 4 : b.right - m.left + 4;
+      left = Math.max(2, Math.min(left, messages.clientWidth - w - 2));
+      hoverBar.style.left = (left + messages.scrollLeft) + 'px';
+      hoverBar.style.top = (b.top - m.top + messages.scrollTop + Math.max(0, (Math.min(b.height, 40) - h) / 2)) + 'px';
+    }
+    function hideHoverBar() {
+      clearTimeout(hoverHideTimer);
+      hoverId = null;
+      if (hoverBar) hoverBar.style.display = 'none';
+    }
+    if (finePointer) {
+      messages.addEventListener('mouseover', function (e) {
+        if (hoverBar && hoverBar.contains(e.target)) { clearTimeout(hoverHideTimer); return; }
+        var id = bubbleIdFrom(e.target);
+        if (id) { clearTimeout(hoverHideTimer); if (id !== hoverId || !hoverBar || !hoverBar.parentNode) showHoverBar(id); return; }
+        clearTimeout(hoverHideTimer);
+        hoverHideTimer = setTimeout(hideHoverBar, 250);
+      });
+      messages.addEventListener('mouseleave', function () {
+        clearTimeout(hoverHideTimer);
+        hoverHideTimer = setTimeout(hideHoverBar, 250);
+      });
+    }
+
     // Double tap only ever adds a heart - it never takes one back. Undoing is
     // deliberate by design: tap the chip under the message, or use the menu.
     // Two fast taps are far too easy to produce by accident for one of them to
@@ -925,6 +997,7 @@
       // other person sends something.
       reset: function (o) {
         index = {};
+        hideHoverBar();
         var keep = !!(o && o.keep);
         if (!keep) {
           if (editing) stopEdit(true);
