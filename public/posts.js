@@ -67,7 +67,7 @@
     + '<path d="M10.3 4.4c.6-.3 1.4-.3 1.9 0l-.4 4.3h-1.2z" fill="#fff" opacity=".45"/></svg>';
 
   var CSS = '.tl-posts{width:100%;max-width:none;align-self:stretch;box-sizing:border-box;margin:18px auto 0;padding:0;text-align:start;contain:layout}.tl-posts[hidden]{display:none}'
-    + '.tl-posts-title{margin:0 0 10px;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}'
+    + '.tl-posts .tl-posts-title{margin:0 0 10px;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}'
     + '.tl-post{background:var(--bg-2);border:1px solid var(--line);border-radius:16px;margin:0 0 16px;overflow:hidden;color:var(--text);box-shadow:0 6px 24px -14px rgba(0,0,0,.5)}'
     + '.tl-post-head{display:flex;align-items:center;gap:10px;padding:12px 14px 4px}'
     + '.tl-post-av{width:40px;height:40px;flex:none;border-radius:50%;overflow:hidden}.tl-post-av svg{width:100%;height:100%}'
@@ -75,11 +75,11 @@
     + '.tl-post-who small{color:var(--muted);font-size:12.5px}'
     + '.tl-post-tag{display:inline-block;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:#fff;background:linear-gradient(135deg,#2a6fe8,#00a8cc)}'
     + '.tl-post-pin{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;margin-inline-start:4px;border-radius:50%;background:rgba(42,111,232,.14);transform:rotate(28deg);filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}.tl-post-pin svg{width:15px;height:15px}'
-    + '.tl-news-title{margin:8px 14px 0;font-size:19px;line-height:1.3;font-weight:800;color:var(--text)}'
+    + '.tl-posts .tl-news-title{margin:8px 14px 0;font-size:19px;line-height:1.3;font-weight:800;color:var(--text)}'
     + '.tl-news-tag{display:inline-block;vertical-align:2px;margin-inline-end:8px;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:#2a6fe8}'
     + '.tl-news-tag-feature{background:#1f9d55}.tl-news-tag-upcoming{background:#8b5cf6}.tl-news-tag-fix{background:#d97706}.tl-news-tag-event{background:#e0457b}'
     + '.tl-news-empty{text-align:center;color:var(--muted);padding:40px 12px}'
-    + '.tl-post-text{margin:6px 14px 10px;font-size:15.5px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}'
+    + '.tl-posts .tl-post-text{margin:6px 14px 12px;font-size:15.5px;line-height:1.55;color:var(--text);overflow-wrap:anywhere}.tl-ln{display:block}.tl-ln.tl-li{padding-inline-start:1.1em;text-indent:-1.1em;margin-top:.35em}.tl-ln.tl-h{font-weight:800;margin-top:.1em}.tl-ln.tl-gap{height:.7em}'
     + '.tl-post-img{display:block;width:100%;max-height:480px;object-fit:cover;background:var(--bg-glow)}'
     + '.tl-post-stats{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;color:var(--muted);font-size:13.5px}'
     + '.tl-post-reacts{display:flex;align-items:center;flex-wrap:wrap;gap:8px;min-height:22px}'
@@ -99,16 +99,16 @@
     + '.tl-cm{display:flex;gap:9px;margin-top:10px}.tl-cm-av{width:32px;height:32px;flex:none;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:var(--bg-glow)}'
     + '.tl-cm-av svg{width:100%;height:100%}.tl-cm-body{min-width:0;padding:8px 12px;border-radius:16px;background:color-mix(in srgb,var(--text) 7%,transparent)}'
     + '.tl-cm-name{font-size:13px;font-weight:800;display:flex;align-items:center;gap:6px;flex-wrap:wrap}.tl-cm-time{font-weight:500;color:var(--muted);font-size:11.5px}'
-    + '.tl-cm-text{margin:2px 0 0;font-size:14.5px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}'
-    + '.tl-cm-re{font-size:12px;color:var(--muted);margin-top:1px}.tl-cm-liked{font-size:12px;color:var(--muted);margin-top:4px}'
+    + '.tl-posts .tl-cm-text{margin:2px 0 0;font-size:14.5px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}'
+    + '.tl-posts .tl-cm-re{font-size:12px;color:var(--muted);margin-top:1px}.tl-posts .tl-cm-liked{font-size:12px;color:var(--muted);margin-top:4px}'
     + '.tl-cm.tl-cm-reply{margin-left:41px}'
     + '.tl-post-form{display:flex;gap:8px;align-items:flex-end;margin-top:12px}'
     + '.tl-post-form textarea{flex:1;min-height:40px;max-height:120px;resize:vertical;padding:9px 14px;border-radius:20px;border:1px solid var(--line);background:color-mix(in srgb,var(--text) 6%,transparent);color:var(--text);font:inherit;font-size:14.5px}'
     + '.tl-post-form button{flex:none;padding:10px 16px;border-radius:999px;border:0;font:inherit;font-weight:800;font-size:14px;color:#fff;cursor:pointer;background:linear-gradient(135deg,#2a6fe8,#00a8cc)}'
     + '.tl-post-form button:disabled{opacity:.5;cursor:default}'
-    + '.tl-post-note{margin:12px 0 0;padding:10px 14px;border-radius:12px;background:color-mix(in srgb,var(--text) 6%,transparent);font-size:13.5px;color:var(--muted);display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}'
+    + '.tl-posts .tl-post-note{margin:12px 0 0;padding:10px 14px;border-radius:12px;background:color-mix(in srgb,var(--text) 6%,transparent);font-size:13.5px;color:var(--muted);display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}'
     + '.tl-post-note button{border:0;border-radius:999px;padding:7px 14px;font:inherit;font-weight:800;font-size:13px;color:#fff;cursor:pointer;background:linear-gradient(135deg,#2a6fe8,#00a8cc)}'
-    + '.tl-post-err{margin:8px 0 0;font-size:13px;color:var(--danger,#ff5470)}'
+    + '.tl-posts .tl-post-err{margin:8px 0 0;font-size:13px;color:var(--danger,#ff5470)}'
     + '@media (prefers-reduced-motion:reduce){.tl-post-pick,.tl-post-pick button{transition:none}}';
 
   function when(ts) {
@@ -177,6 +177,17 @@
       return out;
     }
 
+    // Plain text with line breaks: "• " lines become hanging bullets, a line before a bullet is a heading.
+    function textHtml(t) {
+      var lines = String(t).split('\n');
+      return lines.map(function (ln, i) {
+        if (!ln.trim()) return '<span class="tl-ln tl-gap"></span>';
+        if (ln.indexOf('\u2022 ') === 0) return '<span class="tl-ln tl-li">' + esc(ln) + '</span>';
+        var next = lines[i + 1] || '';
+        return '<span class="tl-ln' + (next.indexOf('\u2022 ') === 0 ? ' tl-h' : '') + '">' + esc(ln) + '</span>';
+      }).join('');
+    }
+
     function postHtml(p) {
       var counts = p.counts || {};
       var total = Number(counts.total) || 0;
@@ -200,7 +211,7 @@
         + '<div class="tl-post-head"><span class="tl-post-av">' + LOGO + '</span><span class="tl-post-who"><strong>TalkLive <span class="tl-post-tag">' + esc(tr('adminBadge', 'Admin')) + '</span>'
         + (p.pinned ? '<span class="tl-post-pin" role="img" title="' + esc(tr('postPinned', 'Pinned')) + '" aria-label="' + esc(tr('postPinned', 'Pinned')) + '">' + PIN + '</span>' : '') + '</strong><small>' + esc(when(p.createdAt)) + '</small></span></div>'
         + (p.kind === 'news' && p.title ? '<h3 class="tl-news-title">' + (p.tag && TAGS[p.tag] ? '<span class="tl-news-tag tl-news-tag-' + esc(p.tag) + '">' + esc(tr('newsTag_' + p.tag, TAGS[p.tag])) + '</span>' : '') + esc(p.title) + '</h3>' : '')
-        + (p.text ? '<p class="tl-post-text">' + esc(p.text) + '</p>' : '')
+        + (p.text ? '<p class="tl-post-text">' + textHtml(p.text) + '</p>' : '')
         + (img ? '<img class="tl-post-img" src="' + esc(img) + '" alt="" loading="lazy" decoding="async">' : '')
         + '<div class="tl-post-stats"><div class="tl-post-reacts">' + reacts + (total ? '<span class="tl-post-total">' + total + '</span>' : '') + '</div>'
         + '<button type="button" class="tl-post-cc" data-toggle="' + esc(p.id) + '">' + esc(tr('postComments', '{n} comments', { n: cc })) + '</button></div>'
@@ -230,7 +241,7 @@
         var form = focus.closest('[data-form]');
         keep = { id: form && form.dataset.form, value: focus.value, start: focus.selectionStart };
       }
-      inner.innerHTML = '<h2 class="tl-posts-title">' + esc(tr('postsTitle', 'From TalkLive')) + '</h2>' + state.posts.map(postHtml).join('');
+      inner.innerHTML = (opts && opts.kind === 'news' ? '' : '<h2 class="tl-posts-title">' + esc(tr('postsTitle', 'From TalkLive')) + '</h2>') + state.posts.map(postHtml).join('');
       if (keep && keep.id) {
         var ta = inner.querySelector('[data-form="' + CSS_escape(keep.id) + '"] textarea');
         if (ta) { ta.value = keep.value; try { ta.focus({ preventScroll: true }); ta.setSelectionRange(keep.start, keep.start); } catch (e) { /* ignore */ } }
