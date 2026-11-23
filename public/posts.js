@@ -350,6 +350,22 @@
       if (state.pickFor && !e.target.closest('.tl-post-bar')) setPick(state.pickFor, false);
     });
 
+    // Open one post's comments and bring it into view (a reply notification).
+    var wantOpen = null;
+    function reveal() {
+      if (!wantOpen) return;
+      var art = inner.querySelector('[data-post="' + wantOpen.replace(/[^A-Za-z0-9_-]/g, '') + '"]');
+      if (!art) return;
+      wantOpen = null;
+      art.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    root.tlOpenPost = function (id) {
+      if (!id) return;
+      wantOpen = String(id);
+      state.open[wantOpen] = true;
+      if (state.posts.length) { render(); reveal(); } else load();
+    };
+
     var loading = false;
     function load() {
       if (loading) return Promise.resolve();
@@ -363,6 +379,7 @@
         state.posts = b.posts.filter(function (p) { return p && p.id; });
         state.canComment = !!b.canComment;
         render();
+        reveal();
       }, function () { loading = false; });
     }
     load();

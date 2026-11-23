@@ -1076,6 +1076,8 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "notifWantsFriends": "{name} wants to be friends",
     "notifAccepted": "{name} accepted your friend request",
     "notifWantsCallback": "{name} wants to call you back",
+    "notifPostReply": "TalkLive replied to your comment",
+    "notifViewReply": "View",
     "notification": "Notification",
     "noRequestsYet": "No requests yet.",
     "accept": "Accept",

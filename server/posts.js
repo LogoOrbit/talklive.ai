@@ -109,7 +109,8 @@ const order = (list) => list.slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinn
 //   textCheck(cid, text)          null to allow, or a reason string to refuse
 //   isBanned(cid)                 true for a banned profile (cannot react or comment)
 //   resolveAvatar(cid, stored)    the author's current, allowed face
-function createPosts({ store, httpRateLimit, validIdentityToken, isVerifiedClient, identify, textCheck, isBanned, resolveAvatar, now = () => Date.now() }) {
+//   notifyReply(cid, info)        tell a commenter the owner replied ({ postId, commentId, text })
+function createPosts({ store, httpRateLimit, validIdentityToken, isVerifiedClient, identify, textCheck, isBanned, resolveAvatar, notifyReply, now = () => Date.now() }) {
   const list = () => {
     if (!Array.isArray(store.data.posts)) store.data.posts = [];
     return store.data.posts;
@@ -300,6 +301,10 @@ function createPosts({ store, httpRateLimit, validIdentityToken, isVerifiedClien
       }
       post.comments.push(reply);
       store.save();
+      const target = reply.replyTo && post.comments.find((x) => x.id === reply.replyTo);
+      if (target && !target.admin && target.clientId && notifyReply) {
+        try { notifyReply(target.clientId, { postId: post.id, commentId: reply.id, text: text.slice(0, 120) }); } catch (_) { /* a failed notice never fails the reply */ }
+      }
       audit(req, 'post_reply', post.id);
       res.json({ ok: true, post: ownerPost(post) });
     });

@@ -610,6 +610,8 @@ const posts = createPosts({
   isVerifiedClient,
   isBanned: (clientId) => !!store.findActiveBan(clientId, '', {}),
   resolveAvatar: (clientId, stored) => liveAvatarFor(clientId, stored),
+  // "TalkLive replied to your comment": in the inbox, live on screen, and a push.
+  notifyReply: (clientId, { postId, commentId, text }) => pushNotification(clientId, { type: 'post_reply', postId, commentId, text, username: 'TalkLive' }),
   identify: (clientId) => {
     const usernameLower = store.findUsernameByClientId(clientId);
     const acc = usernameLower && accounts.get(usernameLower);
@@ -3366,6 +3368,8 @@ function pushCopyFor(notif) {
       return { topic: `acc:${notif.byClientId}`, title: `${notif.username} accepted your friend request`, body: 'Say hello - you can message them any time.', url: `/?open=chat&with=${encodeURIComponent(notif.byClientId)}`, kind: 'social' };
     case 'call_back_request':
       return { topic: `call:${notif.fromClientId}`, title: `${notif.username} wants to talk`, body: 'They asked you to call back.', url: '/?open=requests', kind: 'call' };
+    case 'post_reply':
+      return { topic: `post:${notif.postId}`, title: 'TalkLive replied to your comment', body: 'Tap to read it.', url: `/?open=post&id=${encodeURIComponent(notif.postId)}`, kind: 'social' };
     default:
       return null;
   }
@@ -9960,7 +9964,7 @@ io.on('connection', (socket) => {
     if (!me) return;
     let changed = false;
     for (const n of notifications.get(me.clientId) || []) {
-      if (n.type === 'friend_accepted' && !n.seen) { n.seen = true; changed = true; }
+      if ((n.type === 'friend_accepted' || n.type === 'post_reply') && !n.seen) { n.seen = true; changed = true; }
     }
     if (!changed) return;
     persistSocial();
