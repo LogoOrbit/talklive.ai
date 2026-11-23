@@ -140,6 +140,16 @@ ok('no email, no google, or no account is not verified', !Posts.isVerifiedAccoun
     ok('hidden comments leave the public view but not the owner view',
       Posts.publicPost(store.data.posts.find((p) => p.id === a.id), '').comments.length === 1
       && (await call('GET /api/posts', {})).body.posts.find((p) => p.id === a.id).comments.length === 2);
+    const liked = (await call('POST /api/posts/:id/comments/:cid/like', { params: { id: a.id, cid: 'cz' }, body: { liked: true } })).body.post;
+    ok('owner can like a comment', liked.comments.find((c) => c.id === 'cz').liked === true
+      && Posts.publicPost(store.data.posts.find((p) => p.id === a.id), '').comments.length === 1);
+    const unliked = (await call('POST /api/posts/:id/comments/:cid/like', { params: { id: a.id, cid: 'cz' }, body: { liked: false } })).body.post;
+    ok('owner can unlike a comment', !unliked.comments.find((c) => c.id === 'cz').liked);
+    const rc = (await call('POST /api/posts/:id/reply', { params: { id: a.id }, body: { text: 'Hi S', replyTo: 'cz' } })).body.post;
+    const rcm = rc.comments[rc.comments.length - 1];
+    ok('owner can reply to one comment', rcm.admin === true && rcm.replyTo === 'cz' && rcm.replyToName === 'S');
+    ok('reply to a missing comment is refused', (await call('POST /api/posts/:id/reply', { params: { id: a.id }, body: { text: 'x', replyTo: 'nope' } })).code === 404);
+    store.data.posts.find((p) => p.id === a.id).comments.pop();
     await call('POST /api/posts/:id/comments/:cid/delete', { params: { id: a.id, cid: 'cz' } });
     ok('comment can be deleted', store.data.posts.find((p) => p.id === a.id).comments.length === 1);
     await call('POST /api/posts/:id/delete', { params: { id: a.id } });

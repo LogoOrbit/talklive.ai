@@ -12268,7 +12268,7 @@ window.addEventListener('load', () => {
 function mountCallPosts() {
   const section = document.getElementById('tlCallPosts');
   if (!section || section.dataset.mounted) return;
-  loadLazyScript('posts', '/posts.js?v=a15dc74cf4').then(() => window.TalkLivePosts.mount(section, { poll: false }), () => {});
+  loadLazyScript('posts', '/posts.js?v=35d64b15a1').then(() => window.TalkLivePosts.mount(section, { poll: false }), () => {});
 }
 
 // --- "From TalkLive" posts: right under the Talk / Chat buttons. posts.js is
@@ -12276,7 +12276,7 @@ function mountCallPosts() {
 {
   const section = document.getElementById('tlPosts');
   if (section) {
-    const go = () => loadLazyScript('posts', '/posts.js?v=a15dc74cf4').then(() => window.TalkLivePosts.mount(section), () => {});
+    const go = () => loadLazyScript('posts', '/posts.js?v=35d64b15a1').then(() => window.TalkLivePosts.mount(section), () => {});
     window.addEventListener('load', () => { (window.requestIdleCallback || ((f) => setTimeout(f, 300)))(go, { timeout: 2500 }); });
   }
 }
