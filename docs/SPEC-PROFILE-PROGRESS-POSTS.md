@@ -118,7 +118,7 @@ verified account to comment"). Reacting/commenting updates counts live.
 
 **Free faces (replaces §1 lists):**
 - Free animals (5): `a:cat`, `a:fox`, `a:panda`, `a:rabbit`, `a:dog`
-- Free characters (5): `c:wizard`, `c:pirate`, `c:robot`, `c:astronaut`, `c:artist`
+- Free characters (5): `c:wizard`, `c:pirate`, `c:robot`, `c:queen`, `c:artist`
 - Plus (picker, 5+5): animals `a:lion`, `a:raccoon`, `a:giraffe` + 2 most detailed others; characters `c:detective`, `c:ninja`, `c:warrior`, `c:gamer` + 1 most detailed other. Same lists on server, web, Android.
 - Anyone without Plus currently wearing a Plus face (account record, stored settings, live profile) is switched to a free face: animal -> `a:cat`, character -> `c:wizard`. One-time migration at boot plus the existing per-register check.
 
@@ -129,3 +129,9 @@ verified account to comment"). Reacting/commenting updates counts live.
 - When both have liked each other: both get `like-match` `{ clientId, username, avatar, cover, badges }`; the server makes them friends (if not already, and not blocked) and the UI shows "It's a match!" with a "Call again" action.
 - `likes-summary` -> ack `{ count, matches, people }`: `count` = likes received in the last 30 days not yet matched; `people` = `[{ clientId, username, avatar, ts }]` only for Plus (empty list otherwise, UI shows blurred faces + "See who with Plus"). Push `likes` `{ count }` when it changes.
 - Likes received in the last 7 days give a small match-priority boost (reputation / ranking).
+
+**Server notes (implemented):**
+- Face on every person payload comes from one resolver (`resolveFace` in server/index.js): live profile, then the owner account's saved face, then the last noted face, then the stored row, then a stable free default animal. A Plus face worn without Plus is shown as the free face of that kind. Applies to friend rows, history rows, find-by-friend-id, matched/like-match partner, likes-summary people, post comment avatars.
+- Likes reuse the existing "who liked you" store (`store.addLike`); the in-call heart button feeds it too, so a heart can also complete a match. Match = both directions present within 30 days. `like-partner` failure reasons: `invalid`, `not-registered`, `not-recent`, `blocked`, `rate`. `like-match` also carries `friendId`. Web events `get-likes` and `mutual-heart` still work.
+- Ranking: likes received in the last 7 days add +0.5 each (max 4 counted) to that candidate's match score.
+- Android posts API: `GET /api/posts?clientId=&identityToken=`, `POST /api/posts/:id/react`, `POST /api/posts/:id/comments` need no cookies or CORS. `identityToken` is the token from the socket event `identity-token` `{ clientId, token }`; clientId must match `[A-Za-z0-9_-]{8,64}`. Without a valid pair GET still works (mine null, canComment false); react/comment return 401 `{ ok:false, reason:'identity' }`.

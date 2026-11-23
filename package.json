@@ -35,6 +35,7 @@
     "test:durability": "node scripts/test-durability.js",
     "test:fast-save": "node scripts/test-fast-save.js",
     "test:history": "node scripts/test-history-ttl.js",
+    "test:likes": "node scripts/test-likes-match.js && node scripts/test-avatar-visible.js && node scripts/test-rank-badges.js",
     "test:analytics": "node scripts/test-analytics-visits.js",
     "test:warnings": "node scripts/test-owner-warning.js",
     "test:major": "node scripts/test-major-offense.js && node scripts/test-case-files.js",

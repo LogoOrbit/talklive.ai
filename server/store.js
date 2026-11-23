@@ -261,6 +261,8 @@ function defaults() {
     progress: {},
     // Profile cover per profile (server/index.js, set-cover): clientId -> id such as 'grad:dawn'.
     covers: {},
+    // clientId -> true for people who hid their badges from others.
+    hideBadges: {},
     // A Plus face replaced when Plus ended, so it can come back with Plus:
     // clientId -> { face: 'a:panda', free: 'a:lion' }.
     plusFaces: {},
@@ -358,6 +360,7 @@ function applyParsed(parsed) {
   data.heldFace = parsed.heldFace || {};
   data.progress = parsed.progress || {};
   data.covers = parsed.covers || {};
+  data.hideBadges = parsed.hideBadges || {};
   data.plusFaces = parsed.plusFaces || {};
   data.posts = Array.isArray(parsed.posts) ? parsed.posts : [];
   data.accountSettings = parsed.accountSettings || {};
@@ -2552,7 +2555,7 @@ function revokePremium(clientId, info = {}) {
 }
 
 // --- Who liked you ---
-const LIKES_MAX = 50;
+const LIKES_MAX = 200;
 const LIKES_TTL_MS = 30 * 24 * 60 * 60000;
 function addLike(toClientId, fromClientId, info = {}) {
   if (!toClientId || !fromClientId || toClientId === fromClientId) return;
@@ -2830,7 +2833,7 @@ function deleteAccount(usernameLower) {
 // exception: a live Stripe or Play subscription must keep its record so a
 // renewal or refund notice still finds it, so only the extras go.
 function purgeClientData(clientId) {
-  for (const key of ['engage', 'favFilms', 'talkTime', 'likes', 'push', 'notifPrefs', 'plusLook', 'heldFace', 'progress', 'covers', 'plusFaces',
+  for (const key of ['engage', 'favFilms', 'talkTime', 'likes', 'push', 'notifPrefs', 'plusLook', 'heldFace', 'progress', 'covers', 'hideBadges', 'plusFaces',
     'contactConsent', 'contactCapture', 'identityEpochs', 'voice']) {
     if (data[key]) delete data[key][clientId];
   }

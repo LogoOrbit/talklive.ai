@@ -90,14 +90,14 @@ async function seenAs(clientId, face) {
     const refused = await seenAs('c_face_free', 'a:dragon');
     ok('a free user cannot switch to a locked animal', refused !== 'a:dragon', refused);
     ok('...and keeps the face they had', refused === 'c:robot', refused);
-    const refusedChar = await seenAs('c_face_free', 'c:queen');
+    const refusedChar = await seenAs('c_face_free', 'c:vampire');
     ok('a free user cannot switch to a locked character', refusedChar === 'c:robot', refusedChar);
 
     // 3. Plus faces only last while Plus does: a free account wearing one is
     // moved to a free face of the same kind.
     const swapped = await seenAs('c_face_old', 'a:bear');
-    ok('a Plus face on a free account is replaced by a free one', swapped === 'a:lion', swapped);
-    ok('...and they can then pick another free face', await seenAs('c_face_old', 'a:cat') === 'a:cat');
+    ok('a Plus face on a free account is replaced by a free one', swapped === 'a:cat', swapped);
+    ok('...and they can then pick another free face', await seenAs('c_face_old', 'a:dog') === 'a:dog');
     const swappedChar = await seenAs('c_face_old2', 'c:ninja');
     ok('a Plus character is replaced by a free character', swappedChar === 'c:wizard', swappedChar);
     const special = await seenAs('c_face_free', 'c:silver_knight');
