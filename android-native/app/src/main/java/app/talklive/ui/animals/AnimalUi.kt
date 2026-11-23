@@ -93,9 +93,13 @@ fun AnimalAvatar(animalId: String?, name: String?, size: Dp, modifier: Modifier 
                 contentAlignment = Alignment.Center,
             ) {
                 if (a.special) SpecialFaceArt(a.id, Modifier.size(size * fill), animate = size >= 32.dp)
+                // A Plus portrait moves only where it is big (profile, previews): in lists it is a
+                // still, drawn once and cached, so scrolling stays smooth and memory stays low.
+                else if (a.premium) {
+                    if (!reduce && size >= 72.dp && !lowEndDevice()) LivingFace(face.icon, a.name, Modifier.size(size))
+                    else Image(painterResource(face.icon), contentDescription = a.name, modifier = Modifier.size(size))
+                }
                 else if (LocalPlusAvatar.current && !reduce) LiveFace(face, size, fill)
-                // A Plus portrait is alive wherever it is big enough to see it move.
-                else if (a.premium && !reduce && size >= 40.dp && !lowEndDevice()) LivingFace(face.icon, a.name, Modifier.size(size))
                 else Image(painterResource(face.icon), contentDescription = a.name, modifier = Modifier.size(size * fill))
             }
         } else {
@@ -290,9 +294,10 @@ fun AnimalGrid(
             ) {
                 Box {
                     if (a.special) SpecialFaceArt(a.id, Modifier.fillMaxWidth(0.72f).aspectRatio(1f).graphicsLayer { alpha = if (specialLocked) 0.45f else 1f }, animate = !specialLocked)
-                    // Every face moves in the picker, so people see what they are choosing (only the
-                    // chosen one on a low-memory phone). Plus portraits fill their tile.
-                    else if (lowEnd && !on) Image(painterResource(a.icon), a.name, Modifier.fillMaxWidth(if (a.premium) 0.86f else 0.72f).aspectRatio(1f).clip(CircleShape))
+                    // Stills in the grid (drawn once, cached), and only the chosen face moves: a grid
+                    // of live vector animations re-drew every face each frame and made scrolling lag.
+                    // Tapping a locked face opens its live preview.
+                    else if (!on || lowEnd) Image(painterResource(a.icon), a.name, Modifier.fillMaxWidth(if (a.premium) 0.86f else 0.72f).aspectRatio(1f).clip(CircleShape))
                     else LivingFace(a.icon, a.name, Modifier.fillMaxWidth(if (a.premium) 0.86f else 0.72f).aspectRatio(1f).clip(CircleShape))
                     if (specialLocked) androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Lock, null, tint = app.talklive.ui.theme.GoldText, modifier = Modifier.align(Alignment.TopEnd).size(14.dp))
                     if (isPlusFace(a.id)) Box(Modifier.align(Alignment.TopEnd)) {

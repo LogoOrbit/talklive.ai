@@ -516,7 +516,7 @@
 
   // The same face, alive (avatar-motion.js), for Plus members and the pickers.
   function liveIcon(id, size) {
-    if (premiumKey(id)) return PREMIUM.svg(premiumKey(id), size || 40, { live: (size || 40) >= 28 });
+    if (premiumKey(id)) return PREMIUM.svg(premiumKey(id), size || 40, { live: (size || 40) >= 56 });
     var M = global.TalkLiveMotion;
     if (!BY_ID[id] || !M || !M.has(id)) return icon(id, size);
     var s = size || 40;

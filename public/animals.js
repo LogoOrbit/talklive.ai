@@ -498,8 +498,9 @@
   // The same face, alive (avatar-motion.js): drawn inline so each part can move.
   // Falls back to the still icon when the motion module is not on the page.
   function liveIcon(id, size, cls) {
-    // Premium faces loop on their own; tiny ones stay still (cheaper, and too small to see).
-    if (premiumKey(id)) return PREMIUM.svg(premiumKey(id), size || 40, { cls: cls, live: (size || 40) >= 28 });
+    // Premium faces loop only where they are big (profile, previews); lists and
+    // pickers show the cached still, so scrolling stays smooth.
+    if (premiumKey(id)) return PREMIUM.svg(premiumKey(id), size || 40, { cls: cls, live: (size || 40) >= 56 });
     var M = global.TalkLiveMotion;
     if (!BY_ID[id] || !M || !M.has(id)) return icon(id, size, cls);
     var s = size || 40;

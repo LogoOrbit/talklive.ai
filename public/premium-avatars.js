@@ -57,6 +57,93 @@
   }
 
   // --- the scene builder handed to each face -----------------------------------
+  // --- 2D: colours, path bounds, and cel shading --------------------------------
+  function rgb(h) {
+    h = String(h).replace('#', '');
+    if (h.length === 3) h = h.split('').map(function (x) { return x + x; }).join('');
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  }
+  function hex(c) { return '#' + c.map(function (v) { return Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0'); }).join(''); }
+  function mix(a, b, t) { var x = rgb(a), y = rgb(b); return hex([0, 1, 2].map(function (i) { return x[i] + (y[i] - x[i]) * t; })); }
+  // Darker and a touch more saturated, like an ink line.
+  function shade(c, t) { var x = rgb(c); return hex(x.map(function (v) { return v * (1 - t); })); }
+  // Bounds of a path (control points included: close enough for sizing the shading).
+  function bounds(d) {
+    var re = /([MmLlHhVvCcSsQqTtAaZz])|(-?\d*\.?\d+(?:e-?\d+)?)/g, m, cmd = 'M', args = [], x = 0, y = 0, sx = 0, sy = 0;
+    var b = [1e9, 1e9, -1e9, -1e9];
+    function pt(px, py) { if (px < b[0]) b[0] = px; if (py < b[1]) b[1] = py; if (px > b[2]) b[2] = px; if (py > b[3]) b[3] = py; }
+    var size = { M: 2, L: 2, T: 2, H: 1, V: 1, C: 6, S: 4, Q: 4, A: 7, Z: 0 };
+    function run() {
+      var U = cmd.toUpperCase(), rel = cmd !== U, k = size[U];
+      if (U === 'Z') { x = sx; y = sy; return; }
+      while (args.length >= k && k > 0) {
+        var a = args.splice(0, k);
+        if (U === 'H') { x = rel ? x + a[0] : a[0]; pt(x, y); continue; }
+        if (U === 'V') { y = rel ? y + a[0] : a[0]; pt(x, y); continue; }
+        if (U === 'A') {
+          var nx = rel ? x + a[5] : a[5], ny = rel ? y + a[6] : a[6];
+          pt(Math.min(x, nx) - 0, Math.min(y, ny) - a[1]); pt(Math.max(x, nx), Math.max(y, ny) + a[1]);
+          pt(x, y - a[1]); pt(x, y + a[1]);
+          x = nx; y = ny; pt(x, y); continue;
+        }
+        for (var i = 0; i < k; i += 2) pt(rel ? x + a[i] : a[i], rel ? y + a[i + 1] : a[i + 1]);
+        x = rel ? x + a[k - 2] : a[k - 2]; y = rel ? y + a[k - 1] : a[k - 1];
+        if (U === 'M') { sx = x; sy = y; cmd = rel ? 'l' : 'L'; U = 'L'; k = 2; }
+      }
+    }
+    while ((m = re.exec(d))) {
+      if (m[1]) { run(); cmd = m[1]; args = []; if (cmd === 'Z' || cmd === 'z') run(); } else args.push(+m[2]);
+    }
+    run();
+    return b[0] > b[2] ? null : { w: b[2] - b[0], h: b[3] - b[1] };
+  }
+  function stopsOf(g) { return g.s.map(function (s) { return { o: s[0], c: s[1], a: s[2] == null ? 1 : s[2] }; }); }
+  function colorAt(st, t) {
+    for (var i = 1; i < st.length; i++) if (t <= st[i].o) {
+      var span = st[i].o - st[i - 1].o || 1;
+      return mix(st[i - 1].c, st[i].c, Math.max(0, Math.min(1, (t - st[i - 1].o) / span)));
+    }
+    return st[st.length - 1].c;
+  }
+  // Turns the painted (gradient) look into crisp 2D: every gradient-filled form
+  // becomes three flat tones - a light edge to the upper left, the base, and a
+  // shadow crescent to the lower right - with an ink outline. Glows become flat
+  // translucent shapes. Nothing is removed: every shape and detail stays.
+  function to2d(node, defs) {
+    if (!node.d) {
+      node.c = node.c.map(function (c) { return to2d(c, defs); }).filter(Boolean);
+      return node;
+    }
+    if (node.s && node.s.charAt(0) === '@') { var gs = defs[node.s.slice(1)]; node.s = gs ? colorAt(stopsOf(gs), 0.5) : '#000000'; }
+    if (!node.f || node.f.charAt(0) !== '@') return node;
+    var g = defs[node.f.slice(1)];
+    if (!g) { node.f = '#000000'; return node; }
+    var st = stopsOf(g);
+    var soft = st.some(function (x) { return x.a < 1; });
+    if (soft) {
+      // A glow or haze: transparent at the centre (a vignette) goes; otherwise one flat, see-through tone.
+      if (st[0].a === 0) return null;
+      var maxA = Math.max.apply(null, st.map(function (x) { return x.a; }));
+      node.f = st[0].c;
+      node.o = (node.o == null ? 1 : node.o) * maxA * 0.5;
+      return node;
+    }
+    var light = st[0].c, base = colorAt(st, 0.5), dark = st[st.length - 1].c;
+    var bb = bounds(node.d);
+    var size = bb ? Math.min(bb.w, bb.h) : 10;
+    var o = node.o == null ? 1 : node.o;
+    if (size < 3.5 || o < 1) { node.f = base; return node; }
+    var off = Math.max(0.7, Math.min(5, size * 0.09));
+    var pieces = [
+      { d: node.d, f: dark, o: 1 },
+      { c: [{ d: node.d, f: light, o: 1 }], t: { x: -off, y: -off } },
+      { c: [{ d: node.d, f: base, o: 1 }], t: { x: -off * 0.45, y: -off * 0.45 } },
+    ];
+    var out = { c: [{ c: pieces, clip: node.d }] };
+    if (size >= 7) out.c.push({ d: node.d, f: null, s: shade(dark, 0.35), w: Math.max(0.7, Math.min(1.8, size * 0.035)), o: 0.9, lc: 'round' });
+    return out;
+  }
+
   // Children may be nested lists (helpers return several pieces); flatten them.
   function flat(c) {
     var out = [];
@@ -84,29 +171,33 @@
       heart: function (x, y, s, f, o) { return { d: heartD(x, y, s), f: f, o: o == null ? 1 : o }; },
     };
 
-    // A glossy eye: white, iris with depth, pupil, two catchlights, lid line.
-    // Returns a group that blinks (scaled about the eye's centre) when given anims.
+    // A 2D eye: white, a flat iris with an inked ring and a lighter lower
+    // crescent, pupil, two catchlights, lid line. Returns a group that blinks
+    // (scaled about the eye's centre) when given anims.
     k.eye = function (name, cx, cy, rx, ry, iris, opt) {
       opt = opt || {};
       var ir = opt.ir || Math.min(rx, ry) * 0.78;
       var ix = cx + (opt.look || 0) * rx * 0.25;
-      var irisG = k.rg(name + 'i', ix - ir * 0.25, cy - ir * 0.35, ir * 1.25, [[0, iris[0]], [0.55, iris[1]], [1, iris[2] || '#0b0f1a']]);
+      var ring = iris[2] || '#0b0f1a';
       var c = [];
       if (!opt.noWhite) c.push(k.E(cx, cy, rx, ry, opt.white || '#fbfdff'));
-      c.push(k.C(ix, cy, ir, irisG));
+      c.push(k.C(ix, cy, ir, iris[1]));
+      c.push(k.E(ix, cy + ir * 0.38, ir * 0.62, ir * 0.42, iris[0], 0.85));
       c.push(k.C(ix, cy, ir * (opt.slit ? 0.2 : 0.5), opt.pupil || '#0a0d16'));
       if (opt.slit) c.push(k.E(ix, cy, ir * 0.18, ir * 0.85, opt.pupil || '#0a0d16'));
+      c.push(k.L(ell(ix, cy, ir * 0.94, ir * 0.94), ring, Math.max(0.6, ir * 0.16)));
       c.push(k.C(ix - ir * 0.38, cy - ir * 0.42, ir * 0.3, '#ffffff', 0.95));
       c.push(k.C(ix + ir * 0.4, cy + ir * 0.38, ir * 0.13, '#ffffff', 0.7));
+      if (!opt.noWhite) c.push(k.L(ell(cx, cy, rx, ry), '#2a2230', 0.7, 0.45));
       if (opt.lid) c.push(k.L('M' + n(cx - rx * 1.05) + ',' + n(cy - ry * 0.55) + 'Q' + n(cx) + ',' + n(cy - ry * 1.35) + ' ' + n(cx + rx * 1.05) + ',' + n(cy - ry * 0.55), opt.lid, opt.lidW || 2.2));
       return k.G(c, { o: [cx, cy], a: opt.a || [] });
     };
 
-    // The round tile every Plus face sits on: a lit backdrop with a soft vignette.
+    // The round tile every Plus face sits on: a flat 2D backdrop - base colour,
+    // a pool of light in the upper left, and an inked rim.
     k.tile = function (c1, c2, extra) {
-      var bg = k.rg('tile', 46, 34, 96, [[0, c1], [1, c2]]);
-      var vig = k.rg('vig', 64, 58, 72, [[0.62, '#000000', 0], [1, '#000000', 0.38]]);
-      return k.G([k.C(64, 64, 64, bg)].concat(extra || []).concat([k.C(64, 64, 64, vig)]));
+      return k.G([k.C(64, 64, 64, c2), k.C(48, 40, 62, mix(c1, c2, 0.35), 0.9), k.C(42, 32, 34, c1, 0.55)]
+        .concat(extra || []).concat([k.L(ell(64, 64, 62.6, 62.6), shade(c2, 0.45), 2.8, 0.55)]));
     };
     // Sparkles that twinkle in turn (fx: gone in the still picture).
     k.sparkles = function (pts, colors, dur) {
@@ -139,7 +230,8 @@
       var k = Kit();
       var tree = f.build(k);
       // Everything stays inside the round tile, whatever box the face is shown in.
-      f.scene = { defs: k.defs, tree: k.G([Array.isArray(tree) ? k.G(tree) : tree], { clip: ell(64, 64, 64, 64) }) };
+      var root = to2d(k.G([Array.isArray(tree) ? k.G(tree) : tree], { clip: ell(64, 64, 64, 64) }), k.defs);
+      f.scene = { defs: {}, tree: root };
     }
     return f.scene;
   }
@@ -245,12 +337,28 @@
     if (node.fx) inner = '<g class="tlx-fx">' + inner + '</g>';
     return inner;
   }
-  /** The face as an <svg> string; live = with its loop. */
+  // Stills are one cached image per face (an SVG data URL): the browser decodes it
+  // once and every copy on the page reuses it, so long lists and pickers scroll
+  // smoothly. Only the live (animated) faces are inline SVG.
+  var stillUrl = {};
+  function still(key) {
+    if (!stillUrl[key]) {
+      var markup = svg(key, SIZE, { live: false, inline: true }).replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ');
+      stillUrl[key] = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(markup);
+    }
+    return stillUrl[key];
+  }
+  /** The face as markup; live = an inline <svg> with its loop, otherwise the cached still image. */
   function svg(key, size, opt) {
     var sc = scene(key);
     if (!sc) return '';
     opt = opt || {};
     var live = !!opt.live;
+    var s0 = size || 40;
+    if (!live && !opt.inline) {
+      return '<img class="tl-animal-icon tl-premium' + (opt.cls ? ' ' + opt.cls : '') + '" width="' + s0 + '" height="' + s0
+        + '" src="' + still(key) + '" alt="" decoding="async" draggable="false" style="border-radius:50%;display:block">';
+    }
     var ns = 'tlx' + (++uid) + '_';
     var clips = [];
     var body = nodeSvg(sc.tree, ns, live, clips);
