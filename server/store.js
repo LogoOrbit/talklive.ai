@@ -270,6 +270,8 @@ function defaults() {
     plusFaces: {},
     // Owner posts shown on the home page (server/posts.js).
     posts: [],
+    // Built-in news items already added (server/news-seed.js): id -> true.
+    newsSeeded: {},
     // Account settings saved in the cloud (theme, sounds, privacy switches):
     // username (lowercase) -> { key: boolean | number | short string }.
     accountSettings: {},
@@ -370,6 +372,7 @@ function applyParsed(parsed) {
   data.hideBadges = parsed.hideBadges || {};
   data.plusFaces = parsed.plusFaces || {};
   data.posts = Array.isArray(parsed.posts) ? parsed.posts : [];
+  data.newsSeeded = parsed.newsSeeded || {};
   data.accountSettings = parsed.accountSettings || {};
   data.notifPrefs = parsed.notifPrefs || {};
   data.subscribers = parsed.subscribers || {};

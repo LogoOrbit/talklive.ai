@@ -636,6 +636,7 @@ const posts = createPosts({
   },
 });
 app.use('/api/posts', posts.router);
+require('./news-seed').seedNews(store);
 // Photos uploaded with posts and news from the dashboard.
 app.use('/media/u', mediaHandler);
 
