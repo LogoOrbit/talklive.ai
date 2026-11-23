@@ -3984,6 +3984,7 @@ function deliverFriendMessage(socket, me, toClientId, parsed, msgId) {
   if (parsed.replyTo) msg.replyTo = parsed.replyTo;
   if (parsed.gif) msg.gif = parsed.gif;
   if (parsed.voice) msg.voice = parsed.voice;
+  if (parsed.story) msg.story = parsed.story;
   const list = friendChats.get(key);
   list.push(msg);
   if (list.length > 200) {
@@ -4011,6 +4012,7 @@ function deliverFriendMessage(socket, me, toClientId, parsed, msgId) {
     replyTo: msg.replyTo || null,
     gif: msg.gif || null,
     voice: msg.voice || null,
+    story: msg.story || null,
     exp: msg.exp || null,
   };
   const targetSocket = getSocketByClientId(toClientId);
@@ -4030,14 +4032,14 @@ function deliverFriendMessage(socket, me, toClientId, parsed, msgId) {
     type: 'message',
     fromClientId: me.clientId,
     username: me.username,
-    text: msg.text || (msg.voice ? '🎤 Voice message' : '[GIF]'),
+    text: msg.story ? (msg.story.kind === 'react' ? `Reacted ${msg.story.emoji || ''} to your story` : `Replied to your story: ${msg.text}`) : (msg.text || (msg.voice ? '🎤 Voice message' : '[GIF]')),
     msgId: msg.id,
     media: msg.voice ? 'voice' : msg.gif && !msg.text ? 'gif' : undefined,
   });
 
   socket.emit('friend-message-sent', {
     toClientId, text: msg.text, ts: msg.ts, id: msg.id, replyTo: msg.replyTo || null, gif: msg.gif || null, voice: msg.voice || null,
-    delivered: !!msg.delivered,
+    story: msg.story || null, delivered: !!msg.delivered,
   });
   return msg;
 }
@@ -8466,6 +8468,59 @@ io.on('connection', (socket) => {
       const s = getSocketByClientId(owner);
       if (s) s.emit('stories-changed', { clientId: owner });
     }
+  });
+
+  // Instagram-style answers to a friend's story: a heart (the author sees it in
+  // the viewer list), a quick emoji reaction or a written reply. Reactions and
+  // replies arrive in the author's inbox thread with a preview of the story.
+  const STORY_EMOJI = ['😂', '😮', '😍', '😢', '👏', '🔥', '🎉', '💯', '❤️'];
+  socket.on('story-like', ({ clientId, id, on } = {}, ack) => {
+    const reply = typeof ack === 'function' ? ack : () => {};
+    const me = profiles.get(socket.id);
+    const owner = validId(clientId);
+    if (!me || !owner || typeof id !== 'string') return reply({ ok: false });
+    if (!socialRateOk('story-like', me.clientId, 60, 60000)) return reply({ ok: false });
+    const changed = stories.like(me.clientId, owner, id, on !== false);
+    reply({ ok: true, liked: on !== false });
+    if (changed) {
+      store.recordFeature('story_like');
+      const s = getSocketByClientId(owner);
+      if (s) s.emit('stories-changed', { clientId: owner });
+    }
+  });
+  function storyAnswer(me, owner, id, kind, text, emoji) {
+    const s = stories.find(owner, id);
+    if (!s || !stories.canSee(me.clientId, owner) || owner === me.clientId) return 'gone';
+    if (!canOpenThread(me.clientId, owner) || isBlockedPair(me.clientId, owner)) return 'unreachable';
+    if (kind === 'react') stories.noteReaction(me.clientId, owner, id, emoji);
+    else stories.noteReaction(me.clientId, owner, id, null);
+    const snap = stories.snapshot(owner, s, kind, emoji);
+    deliverFriendMessage(socket, me, owner, { text, gif: null, id: null, replyTo: null, story: snap }, null);
+    store.recordFeature(kind === 'react' ? 'story_react' : 'story_reply');
+    const os = getSocketByClientId(owner);
+    if (os) os.emit('stories-changed', { clientId: owner });
+    return null;
+  }
+  socket.on('story-react', ({ clientId, id, emoji } = {}, ack) => {
+    const reply = typeof ack === 'function' ? ack : () => {};
+    const me = profiles.get(socket.id);
+    const owner = validId(clientId);
+    if (!me || !owner || typeof id !== 'string' || !STORY_EMOJI.includes(emoji)) return reply({ ok: false });
+    if (!ageGate('friends').ok || !socialRateOk('story-answer', me.clientId, 30, 60000)) return reply({ ok: false, error: 'rate' });
+    const err = storyAnswer(me, owner, id, 'react', emoji, emoji);
+    reply(err ? { ok: false, error: err } : { ok: true });
+  });
+  socket.on('story-reply', ({ clientId, id, text } = {}, ack) => {
+    const reply = typeof ack === 'function' ? ack : () => {};
+    const me = profiles.get(socket.id);
+    const owner = validId(clientId);
+    const clean = typeof text === 'string' ? textNorm.stripInvisible(text).trim().slice(0, 1000) : '';
+    if (!me || !owner || typeof id !== 'string' || !clean) return reply({ ok: false });
+    if (!ageGate('friends').ok || !socialRateOk('story-answer', me.clientId, 30, 60000)) return reply({ ok: false, error: 'rate' });
+    if (containsLink(clean)) return reply({ ok: false, error: 'link' });
+    if (UNSAFE_RE.test(clean)) return reply({ ok: false, error: 'unsafe' });
+    const err = storyAnswer(me, owner, id, 'reply', clean, null);
+    reply(err ? { ok: false, error: err } : { ok: true });
   });
 
   socket.on('likes-summary', (ack) => {

@@ -93,6 +93,33 @@ function connect(id, name) {
     const mine = feedA.people[0];
     ok('own stories come first with viewers', mine.mine === true && mine.stories[0].views.length === 1 && mine.stories[0].views[0].clientId === B, mine);
 
+    // Instagram-style answers: a heart, a reaction and a reply.
+    const liked = await ask(b, 'story-like', { clientId: A, id: posted.id, on: true });
+    ok('a friend can like a story', liked.ok === true, liked);
+    const feedB4 = await ask(b, 'stories-get');
+    ok('the like shows for the friend', feedB4.people.find((p) => p.clientId === A).stories[0].liked === true, feedB4);
+    const strangerLike = await ask(c, 'story-like', { clientId: A, id: posted.id, on: true });
+    const feedA1 = await ask(a, 'stories-get');
+    ok('the author sees who liked it', feedA1.people[0].stories[0].likeCount === 1 && feedA1.people[0].stories[0].views[0].liked === true, feedA1.people[0]);
+    ok('a stranger cannot like it', strangerLike.ok === true && feedA1.people[0].stories[0].likeCount === 1);
+    const inboxReact = once(a, 'friend-message');
+    const reacted = await ask(b, 'story-react', { clientId: A, id: posted.id, emoji: '🔥' });
+    ok('a reaction is accepted', reacted.ok === true, reacted);
+    const rmsg = await inboxReact;
+    ok('the reaction arrives in the inbox with the story', rmsg.text === '🔥' && rmsg.story && rmsg.story.kind === 'react' && rmsg.story.id === posted.id, rmsg);
+    const badEmoji = await ask(b, 'story-react', { clientId: A, id: posted.id, emoji: 'x' });
+    ok('an unknown reaction is refused', badEmoji.ok === false, badEmoji);
+    const inboxReply = once(a, 'friend-message');
+    const replied = await ask(b, 'story-reply', { clientId: A, id: posted.id, text: 'Love this!' });
+    ok('a reply is accepted', replied.ok === true, replied);
+    const ymsg = await inboxReply;
+    ok('the reply arrives in the inbox with the story', ymsg.text === 'Love this!' && ymsg.story && ymsg.story.kind === 'reply' && ymsg.story.text === 'Hello friends 👋🔥', ymsg);
+    const feedA2 = await ask(a, 'stories-get');
+    ok('the viewer list shows the reaction', feedA2.people[0].stories[0].views[0].reaction === '🔥', feedA2.people[0].stories[0].views);
+    const unliked = await ask(b, 'story-like', { clientId: A, id: posted.id, on: false });
+    const feedA3 = await ask(a, 'stories-get');
+    ok('a like can be taken back', unliked.ok && feedA3.people[0].stories[0].likeCount === 0, feedA3.people[0].stories[0]);
+
     const del = await ask(a, 'story-delete', { id: posted.id });
     ok('the author can delete it', del.ok === true, del);
     const feedB3 = await ask(b, 'stories-get');

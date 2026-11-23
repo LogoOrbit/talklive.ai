@@ -100,6 +100,44 @@ function createStories({ store, cleanGif, friendIdsOf, isBlockedPair, checkText 
     return false;
   }
 
+  function find(ownerId, id) {
+    return live(all()[ownerId]).find((x) => x.id === id) || null;
+  }
+
+  /** A heart on a friend's story (on: true/false). Returns true when it changed. */
+  function like(viewer, ownerId, id, on) {
+    if (viewer === ownerId) return false;
+    const s = find(ownerId, id);
+    if (!s || !canSee(viewer, ownerId)) return false;
+    if (!Array.isArray(s.likes)) s.likes = [];
+    const has = s.likes.includes(viewer);
+    if (!!on === has) return false;
+    s.likes = on ? s.likes.concat(viewer).slice(-500) : s.likes.filter((c) => c !== viewer);
+    if (!s.views.includes(viewer)) s.views.push(viewer);
+    store.save();
+    return true;
+  }
+
+  /** Remembers the last quick reaction a viewer sent (shown in the viewer list). */
+  function noteReaction(viewer, ownerId, id, emoji) {
+    const s = find(ownerId, id);
+    if (!s || !canSee(viewer, ownerId) || viewer === ownerId) return null;
+    if (!s.reacts || typeof s.reacts !== 'object') s.reacts = {};
+    if (emoji) s.reacts[viewer] = emoji;
+    if (!s.views.includes(viewer)) s.views.push(viewer);
+    store.save();
+    return s;
+  }
+
+  /** What a reply or reaction message carries so the inbox can show which story it was about. */
+  function snapshot(ownerId, s, kind, emoji) {
+    const gif = s.gifs && s.gifs[0];
+    return {
+      id: s.id, owner: ownerId, kind, emoji: emoji || null,
+      text: (s.text || '').slice(0, 140), bg: s.bg, gif: gif ? (gif.preview || gif.url) : null, ts: s.ts,
+    };
+  }
+
   function canSee(viewer, ownerId) {
     if (viewer === ownerId) return true;
     if (isBlockedPair(viewer, ownerId)) return false;
@@ -108,8 +146,15 @@ function createStories({ store, cleanGif, friendIdsOf, isBlockedPair, checkText 
 
   function shape(s, viewer, ownerId, nameOf) {
     const mine = viewer === ownerId;
-    const out = { id: s.id, text: s.text, bg: s.bg, gifs: s.gifs, ts: s.ts, seen: mine || s.views.includes(viewer) };
-    if (mine) out.views = s.views.map((cid) => ({ clientId: cid, name: nameOf ? nameOf(cid) : null }));
+    const likes = Array.isArray(s.likes) ? s.likes : [];
+    const reacts = s.reacts && typeof s.reacts === 'object' ? s.reacts : {};
+    const out = { id: s.id, text: s.text, bg: s.bg, gifs: s.gifs, ts: s.ts, seen: mine || s.views.includes(viewer), liked: likes.includes(viewer) };
+    if (mine) {
+      // Like Instagram: people who liked it first, then everyone else, newest first.
+      const order = s.views.slice().reverse().sort((a, b) => (likes.includes(b) ? 1 : 0) - (likes.includes(a) ? 1 : 0));
+      out.views = order.map((cid) => ({ clientId: cid, name: nameOf ? nameOf(cid) : null, liked: likes.includes(cid), reaction: reacts[cid] || null }));
+      out.likeCount = likes.length;
+    }
     return out;
   }
 
@@ -147,7 +192,7 @@ function createStories({ store, cleanGif, friendIdsOf, isBlockedPair, checkText 
     return me ? [me, ...rest] : rest;
   }
 
-  return { post, remove, markSeen, feed, prune, canSee, TTL_MS, MAX_GIFS, MAX_TEXT, BACKGROUNDS };
+  return { post, remove, markSeen, like, noteReaction, snapshot, find, feed, prune, canSee, TTL_MS, MAX_GIFS, MAX_TEXT, BACKGROUNDS };
 }
 
 module.exports = { createStories };
