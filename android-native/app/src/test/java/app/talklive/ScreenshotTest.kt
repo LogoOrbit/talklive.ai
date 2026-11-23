@@ -109,7 +109,7 @@ class ScreenshotTest {
         val socket = TalkSocket(identity)
         app.talklive.ui.profile.ProfileScreen(
             onSignIn = {},
-            vm = app.talklive.ui.profile.ProfileViewModel(app.talklive.voice.MicMonitor(ctx, socket).let { mic -> app.talklive.call.CallManager(socket, app.talklive.net.IceServerApi(ctx), app.talklive.call.RtcFactory(ctx, mic), app.talklive.call.AudioRouter(ctx), identity, ctx, mic) }, AuthRepository(ctx, socket, identity), identity, app.talklive.data.ThemeStore(ctx), app.talklive.sound.Sounds(ctx), app.talklive.data.PrivacyStore(ctx), socket, app.talklive.social.SocialRepository(socket, identity), app.talklive.progress.ProgressRepository(socket, identity), app.talklive.data.NotifSettings(ctx, socket)),
+            vm = app.talklive.ui.profile.ProfileViewModel(app.talklive.voice.MicMonitor(ctx, socket).let { mic -> app.talklive.call.CallManager(socket, app.talklive.net.IceServerApi(ctx), app.talklive.call.RtcFactory(ctx, mic), app.talklive.call.AudioRouter(ctx), identity, ctx, mic, dagger.Lazy<app.talklive.social.SocialRepository> { error("not in screenshots") }) }, AuthRepository(ctx, socket, identity), identity, app.talklive.data.ThemeStore(ctx), app.talklive.sound.Sounds(ctx), app.talklive.data.PrivacyStore(ctx), socket, app.talklive.social.SocialRepository(socket, identity), app.talklive.progress.ProgressRepository(socket, identity), app.talklive.data.NotifSettings(ctx, socket)),
             engageVm = app.talklive.ui.engage.EngageViewModel(app.talklive.engage.EngageRepository(ctx, socket), app.talklive.voice.MicMonitor(ctx, socket)),
         )
     }
@@ -125,7 +125,7 @@ class ScreenshotTest {
         val engage = app.talklive.engage.EngageRepository(ctx, socket).apply { seedFlags(setOf("voiceCheck")); setMyGender("female") }
         app.talklive.ui.profile.ProfileScreen(
             onSignIn = {},
-            vm = app.talklive.ui.profile.ProfileViewModel(app.talklive.call.CallManager(socket, app.talklive.net.IceServerApi(ctx), app.talklive.call.RtcFactory(ctx, mic), app.talklive.call.AudioRouter(ctx), identity, ctx, mic), AuthRepository(ctx, socket, identity), identity, app.talklive.data.ThemeStore(ctx), app.talklive.sound.Sounds(ctx), app.talklive.data.PrivacyStore(ctx), socket, app.talklive.social.SocialRepository(socket, identity), app.talklive.progress.ProgressRepository(socket, identity), app.talklive.data.NotifSettings(ctx, socket)),
+            vm = app.talklive.ui.profile.ProfileViewModel(app.talklive.call.CallManager(socket, app.talklive.net.IceServerApi(ctx), app.talklive.call.RtcFactory(ctx, mic), app.talklive.call.AudioRouter(ctx), identity, ctx, mic, dagger.Lazy<app.talklive.social.SocialRepository> { error("not in screenshots") }), AuthRepository(ctx, socket, identity), identity, app.talklive.data.ThemeStore(ctx), app.talklive.sound.Sounds(ctx), app.talklive.data.PrivacyStore(ctx), socket, app.talklive.social.SocialRepository(socket, identity), app.talklive.progress.ProgressRepository(socket, identity), app.talklive.data.NotifSettings(ctx, socket)),
             engageVm = app.talklive.ui.engage.EngageViewModel(engage, mic),
             initialPage = app.talklive.ui.profile.ProfilePage.Privacy,
         )

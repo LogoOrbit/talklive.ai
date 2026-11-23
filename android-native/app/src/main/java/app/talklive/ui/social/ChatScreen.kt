@@ -115,7 +115,7 @@ import java.util.Locale
 import kotlin.math.roundToInt
 
 @Composable
-fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit, onPlayGame: ((String, String) -> Unit)? = null) {
+fun ChatScreen(vm: SocialViewModel, clientId: String, onPlayGame: ((String, String) -> Unit)? = null, onBack: () -> Unit) {
     val threads by vm.threads.collectAsStateWithLifecycle()
     val typingSet by vm.typing.collectAsStateWithLifecycle()
     val friends by vm.friends.collectAsStateWithLifecycle()

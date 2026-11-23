@@ -49,7 +49,7 @@ class ServerE2ETest {
         val social = SocialRepository(socket, identity)
         val auth = AuthRepository(ctx, socket, identity, "acc_$name")
         val mic = app.talklive.voice.MicMonitor(ctx, socket, "voice_$name")
-        val calls = if (withCalls) CallManager(socket, IceServerApi(ctx), RtcFactory(ctx, mic), AudioRouter(ctx), identity, ctx, mic) else null
+        val calls = if (withCalls) CallManager(socket, IceServerApi(ctx), RtcFactory(ctx, mic), AudioRouter(ctx), identity, ctx, mic, dagger.Lazy { social }) else null
         val engage = app.talklive.engage.EngageRepository(ctx, socket, "engage_$name")
         val events = CopyOnWriteArrayList<ServerEvent>()
 
@@ -540,8 +540,8 @@ class ServerE2ETest {
 
     @Test fun mini_game_between_two_clients() {
         val a = Client("a", withCalls = true); val b = Client("b", withCalls = true)
-        val ga = app.talklive.game.Games(a.socket, a.calls!!)
-        val gb = app.talklive.game.Games(b.socket, b.calls!!)
+        val ga = app.talklive.game.Games(a.socket, a.calls!!, a.identity)
+        val gb = app.talklive.game.Games(b.socket, b.calls!!, b.identity)
         a.calls.start(CallMode.Chat); b.calls.start(CallMode.Chat)
         check("matched") { a.calls.state.value.phase is CallPhase.Connected && b.calls.state.value.phase is CallPhase.Connected }
         val (host, guest) = if (a.calls.state.value.isHost) ga to gb else gb to ga
