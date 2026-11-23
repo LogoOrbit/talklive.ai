@@ -1571,7 +1571,7 @@
     if (!settingsPanelLoading) {
       settingsPanelLoading = [];
       var s = document.createElement('script');
-      s.src = '/settings-panel.js?v=ab40f13b37';
+      s.src = '/settings-panel.js?v=4baf9ad904';
       s.async = true;
       s.onload = function () {
         window.TalkLiveSettingsPanel.ready.then(function () {
@@ -3097,7 +3097,7 @@
       lazyMod('covers', '/covers.js?v=c0f5259273').then(function () { window.TalkLiveCovers.apply(cover, p.cover || null); }, function () {});
     }
     if (p.badges && (p.badges.top || (p.badges.earned && p.badges.earned.length))) {
-      lazyMod('badges', '/badges.js?v=e9312841fa').then(function () {
+      lazyMod('badges', '/badges.js?v=89e37f1a68').then(function () {
         if (!nameEl.querySelector('.tl-badge-chip')) nameEl.insertAdjacentHTML('beforeend', window.TalkLiveBadges.chip(p.badges, 18));
       }, function () {});
     }

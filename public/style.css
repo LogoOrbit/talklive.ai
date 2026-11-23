@@ -6192,12 +6192,6 @@ html.perf-lite .side-panel { box-shadow: none; }
 .my-profile-card { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 6px 0 14px; }
 .my-profile-face { width: 92px; height: 92px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--text) 7%, transparent); }
 .my-profile-name { margin: 8px 0 0; font-size: 22px; }
-.my-profile-sub { margin: 0; color: var(--muted); font-size: 13px; }
-.my-profile-id { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; padding: 10px 12px; border-radius: 14px; background: color-mix(in srgb, var(--text) 6%, transparent); }
-.my-profile-id-label { color: var(--muted); font-size: 12.5px; }
-.my-profile-id-value { letter-spacing: .08em; font-size: 16px; }
-.my-profile-id .btn { padding: 7px 14px; font-size: 13px; }
-.my-profile-body #settingsProfileRow, .my-profile-body > section:first-child > .tl-set-legend { display: none; }
 @media (prefers-reduced-motion: reduce) { .my-profile-sheet, .my-profile-backdrop { transition: none; } }
 .my-profile-sheet:focus { outline: none; }
 
@@ -6222,8 +6216,6 @@ html.perf-lite .side-panel { box-shadow: none; }
 
 /* My profile sheet: the quick profile - display name, ID, avatar - then log
    in/out and the way to the rest of Settings > Profile. */
-.my-profile-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
-.my-profile-actions .btn { flex: 1 1 140px; padding: 12px 16px; }
 
 /* My profile: the same layout as the app's Profile tab. */
 .my-profile .my-profile-card { padding: 8px 16px 20px; margin-bottom: 14px; border-radius: 24px; background: color-mix(in srgb, var(--text) 5%, transparent); gap: 2px; }
@@ -6235,11 +6227,6 @@ html.perf-lite .side-panel { box-shadow: none; }
 .mp-id { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 4px 10px; border: 0; border-radius: 999px; background: none; color: var(--muted); font: inherit; font-size: 14.5px; cursor: pointer; }
 .mp-id:hover { color: var(--text); background: color-mix(in srgb, var(--text) 7%, transparent); }
 .mp-id svg { width: 15px; height: 15px; }
-.mp-plus { display: flex; align-items: center; gap: 14px; width: 100%; padding: 16px 18px; margin-bottom: 18px; border: 0; border-radius: 20px; text-align: start; cursor: pointer; color: var(--text); font: inherit; background: color-mix(in srgb, #f5c451 14%, var(--bg-2)); }
-.mp-plus.on { background: linear-gradient(100deg, #b8860b, #e6b23e 60%, #f2c45a); color: #fff; }
-.mp-plus-gem { font-size: 30px; line-height: 1; }
-.mp-plus.on small { color: rgba(255, 255, 255, .92); }
-.mp-legend { margin: 0 6px 8px; font-size: 14px; font-weight: 700; color: var(--muted); }
 .mp-rows { border-radius: 20px; overflow: hidden; background: color-mix(in srgb, var(--text) 5%, transparent); margin-bottom: 16px; }
 .mp-row { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 64px; padding: 10px 16px; border: 0; background: none; color: var(--text); font: inherit; text-align: start; cursor: pointer; }
 .mp-row:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
@@ -6253,9 +6240,6 @@ html.perf-lite .side-panel { box-shadow: none; }
 .mp-ico.hue-green { background: #22c55e; } .mp-ico.hue-grey { background: #64748b; } .mp-ico.hue-red { background: #ef4444; } .mp-ico.hue-brand { background: var(--accent); }
 .mp-go { flex: 0 0 auto; width: 8px; height: 8px; border-right: 2px solid var(--muted); border-top: 2px solid var(--muted); transform: rotate(45deg); margin-inline-end: 4px; }
 [dir="rtl"] .mp-go { transform: rotate(-135deg); }
-.my-profile .my-profile-films:not(.open) { display: none; }
-.my-profile .my-profile-films { margin: -8px 0 16px; }
-.my-profile .my-profile-body { margin-bottom: 16px; }
 .my-profile .my-profile-scroll { padding-top: 44px; }
 
 /* ===========================================================================
@@ -6550,20 +6534,15 @@ html.perf-lite .tl-hero-clouds, html.perf-lite .tl-hero-range { animation: none;
 .mp-face { cursor: default; margin-top: -48px; border-radius: 50%; box-shadow: 0 0 0 4px var(--bg-2), 0 8px 24px rgba(0, 0, 0, 0.3); background: var(--bg-2); }
 .mp-badge:empty { display: none; }
 .mp-badge .tl-badge-chip { margin: 6px 0 0; font-size: 13px; }
-.mp-acc + .mp-acc { border-top: 1px solid color-mix(in srgb, var(--text) 7%, transparent); }
-.mp-acc[hidden], .mp-acc-body[hidden] { display: none; }
-.mp-acc-head .mp-go { transition: transform .2s; }
-.mp-acc.open .mp-acc-head .mp-go { transform: rotate(135deg); }
-.mp-acc-body { padding: 4px 14px 16px; --cvp-fade: color-mix(in srgb, var(--text) 5%, var(--bg-2)); }
-.mp-acc-body .tl-set-group, .mp-acc-body .mp-badges { background: none; border-radius: 0; padding: 0; }
-.mp-acc-body .tl-set-control { padding-inline: 0; }
-.mp-acc-body .mp-badges { margin-inline: -14px; }
-.mp-acc-list { margin-top: 6px; }
-.mp-sec { margin-bottom: 18px; }
-.mp-sec[hidden] { display: none; }
-.mp-sec-title { margin: 0 6px 8px; font-size: 14px; font-weight: 700; color: var(--muted); }
-.mp-sec > .tl-set-group { border-radius: 20px; background: color-mix(in srgb, var(--text) 5%, transparent); overflow: hidden; }
-.mp-badges, .mp-cover-picker { padding: 12px; border-radius: 20px; background: color-mix(in srgb, var(--text) 5%, transparent); }
-.mp-avatar-host .avatar-option.is-locked .avatar-animal { filter: grayscale(0.85) brightness(0.8); }
-.my-profile-scroll #avatarGrid { max-height: none; }
 a.tt-play{text-decoration:none}
+
+
+/* Call: nobody is talking (server silence-warning). */
+.tl-silence {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 10px; padding: 10px 12px 10px 14px;
+  border-radius: 14px; border: 1px solid color-mix(in srgb, #f5c451 55%, transparent); background: color-mix(in srgb, #f5c451 14%, var(--bg-2));
+  font-size: 14px; font-weight: 600;
+}
+.tl-silence.hidden { display: none; }
+.tl-silence-text { flex: 1 1 auto; min-width: 0; }
+.tl-silence-btn { flex: none; min-height: 36px; padding: 0 16px; border: 0; border-radius: 999px; background: var(--accent); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }

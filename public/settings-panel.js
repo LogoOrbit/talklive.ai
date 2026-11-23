@@ -137,17 +137,11 @@
   }
 
   // hooks: {
-  //   profileFace(size) -> html, profileName() -> string,
-  //   openProfile() (the one "My Profile" entry), openAll(), onTheme(theme),
+  //   openAll(), onTheme(theme),
   //   onSound(on), onVibration(on), onStatusVisible(on), onMessageSeen(on)
   // }
   function mount(container, hooks) {
     container.innerHTML = `
-      <button type="button" class="tl-set-hero qs-profile">
-        <span class="tl-set-hero-face qs-face" aria-hidden="true"></span>
-        <span class="tl-set-hero-text"><strong class="qs-name"></strong><small class="qs-sub"></small></span>
-        <span class="tl-set-hero-go" aria-hidden="true">${CHEVRON}</span>
-      </button>
       ${section('setAppearance', `
         ${themes('qsTheme')}
         <div class="tl-set-control tl-set-control-stack">
@@ -190,9 +184,6 @@
     }
 
     function render() {
-      $('.qs-face').innerHTML = hooks.profileFace ? hooks.profileFace(44) : '';
-      $('.qs-name').textContent = (hooks.profileName && hooks.profileName()) || tr('you');
-      $('.qs-sub').textContent = tr('myProfile');
       const theme = read('talklive_theme');
       setSeg($('#qsTheme'), THEMES.includes(theme) ? theme : 'dark');
       if (typeof I18N_STATE !== 'undefined') langSel.value = I18N_STATE.lang;
@@ -202,7 +193,6 @@
       $('#qsSeen').checked = read('talklive_message_seen') !== 'off';
     }
 
-    $('.qs-profile').addEventListener('click', () => hooks.openProfile && hooks.openProfile());
     $('.qs-all').addEventListener('click', () => hooks.openAll && hooks.openAll());
 
     $('#qsTheme').addEventListener('click', (e) => {
@@ -244,7 +234,6 @@
     langSelect: 'translate translation',
     soundToggle: 'audio mute volume ring',
     vibrationToggle: 'haptic haptics',
-    settingsMyProfileBtn: 'avatar name display gender age cover badges voice check picture photo face id',
     acceptCallsCheckbox: 'ring incoming',
     statusVisibilityToggle: 'invisible hidden presence last seen',
     messageSeenToggle: 'read receipts',
@@ -278,8 +267,6 @@
       pane.prepend(head);
     });
 
-    const hero = page.querySelector('.tl-set-hero');
-    if (hero) hero.addEventListener('click', () => { clearSearch(); if (api.openProfile) api.openProfile(); else { api.show('profile', true); scrollUp(); } });
 
     function scrollUp() {
       if (isPhone()) window.scrollTo({ top: 0 });
