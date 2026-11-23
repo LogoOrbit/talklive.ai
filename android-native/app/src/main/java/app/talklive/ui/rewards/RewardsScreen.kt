@@ -321,7 +321,7 @@ private fun DailyCard(p: Progress, vm: RewardsViewModel) {
     }
 }
 
-private fun countdown(ms: Long): String {
+internal fun countdown(ms: Long): String {
     val s = (ms / 1000).coerceAtLeast(0)
     val h = s / 3600
     val m = (s % 3600) / 60

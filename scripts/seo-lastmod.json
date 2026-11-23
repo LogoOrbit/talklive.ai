@@ -1,6 +1,6 @@
 {
   "/": {
-    "hash": "ea1cd8dc271fa14c",
+    "hash": "f5e945022f833b52",
     "date": "2026-11-23",
     "v": 3
   },
@@ -417,6 +417,11 @@
   "/monkey-app-alternative": {
     "hash": "a9b69f810d27c209",
     "date": "2026-11-22",
+    "v": 3
+  },
+  "/news": {
+    "hash": "af1f055564241e4f",
+    "date": "2026-11-23",
     "v": 3
   },
   "/omegle-alternative": {

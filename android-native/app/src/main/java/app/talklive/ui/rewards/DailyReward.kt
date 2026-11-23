@@ -40,6 +40,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.talklive.R
 import app.talklive.ui.components.PrimaryButton
 
@@ -95,12 +99,30 @@ fun DailyRewardSheet(vm: RewardsViewModel, onDismiss: () -> Unit) {
             if (claimed) {
                 Text(stringResource(R.string.daily_claimed), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
             } else {
-                PrimaryButton(stringResource(R.string.daily_claim), onClick = vm::claim, loading = vm.busy)
-                vm.claimNote?.let {
-                    Spacer(Modifier.height(8.dp))
-                    Text(stringResource(it), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+                // The server decides: once it says "wait" (or the reward is not ready yet), the button
+                // becomes a live countdown instead of a Claim that can only be refused again.
+                val p by vm.progress.collectAsStateWithLifecycle()
+                var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+                val waitUntil = p?.takeIf { !it.canClaim }?.nextClaimAt ?: 0L
+                LaunchedEffect(waitUntil) {
+                    while (waitUntil > System.currentTimeMillis()) { now = System.currentTimeMillis(); kotlinx.coroutines.delay(1000) }
+                    now = System.currentTimeMillis()
                 }
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.daily_later)) }
+                val waiting = p?.canClaim == false && (waitUntil == 0L || waitUntil > now)
+                if (waiting) {
+                    PrimaryButton(
+                        if (waitUntil > now) stringResource(R.string.rewards_claim_wait, countdown(waitUntil - now)) else stringResource(R.string.reward_wait_note),
+                        onClick = {}, enabled = false,
+                    )
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) }
+                } else {
+                    PrimaryButton(stringResource(R.string.daily_claim), onClick = vm::claim, loading = vm.busy)
+                    vm.claimNote?.takeIf { it != R.string.reward_wait_note }?.let {
+                        Spacer(Modifier.height(8.dp))
+                        Text(stringResource(it), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+                    }
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.daily_later)) }
+                }
             }
         }
     }
