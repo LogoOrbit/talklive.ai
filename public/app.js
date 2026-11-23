@@ -457,7 +457,9 @@ function avatarFaceHtml(id, size = 36, plus = false) {
   const animal = animalAvatarId(id);
   if (animal && window.TalkLiveAnimals && window.TalkLiveAnimals.has(animal)) {
     window.TalkLiveAnimals.installSprite();
-    return `<span class="avatar-animal" style="width:${size}px;height:${size}px">${window.TalkLiveAnimals.icon(animal, size)}</span>`;
+    // Plus members' faces are alive (avatar-motion.js); everyone else's stay still.
+    const art = plus && window.TalkLiveAnimals.liveIcon ? window.TalkLiveAnimals.liveIcon(animal, size) : window.TalkLiveAnimals.icon(animal, size);
+    return `<span class="avatar-animal" style="width:${size}px;height:${size}px">${art}</span>`;
   }
   if (AVATAR_STYLES[id]) return avatarSvg(id, size);
   return genderIcon(id, size);
@@ -3403,9 +3405,10 @@ function renderAnimalPicker() {
 
 function avatarTileArt(id) {
   const animal = animalAvatarId(id);
-  if (animal) return { art: Animals.icon(animal, 44), name: Animals.name(animal), color: Animals.color(animal) };
+  // The picker shows every face alive, so people can see what they are choosing.
+  if (animal) return { art: (Animals.liveIcon || Animals.icon)(animal, 44), name: Animals.name(animal), color: Animals.color(animal) };
   const ch = characterAvatarId(id);
-  if (ch) return { art: window.TalkLiveCharacters.icon(ch, 44), name: window.TalkLiveCharacters.name(ch), color: '' };
+  if (ch) return { art: (window.TalkLiveCharacters.liveIcon || window.TalkLiveCharacters.icon)(ch, 44), name: window.TalkLiveCharacters.name(ch), color: '' };
   return null;
 }
 

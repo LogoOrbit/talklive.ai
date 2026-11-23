@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -266,7 +267,7 @@ fun ArtCover(def: ArtCoverDef, modifier: Modifier = Modifier, animate: Boolean =
     val drift = when { def.pixel -> 0f; "drift2" in def.fx -> 2f; "drift" in def.fx -> 1f; else -> 0f }
     Box(modifier.clipToBounds()) {
         Image(
-            painterResource(if (live || def.pixel) def.image else def.thumb), contentDescription = null,
+            androidx.compose.ui.graphics.ImageBitmap.imageResource(if (live || def.pixel) def.image else def.thumb), contentDescription = null,
             contentScale = ContentScale.Crop,
             filterQuality = if (def.pixel) FilterQuality.None else FilterQuality.Medium,
             modifier = Modifier.fillMaxSize().graphicsLayer {

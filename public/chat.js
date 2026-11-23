@@ -573,9 +573,9 @@
     }
     if (an) {
       btn.style.setProperty('--animal-color', Animals.color(an));
-      btn.innerHTML = Animals.icon(an, 44) + '<span class="animal-option-name">' + escapeHtml(Animals.name(an)) + '</span>';
+      btn.innerHTML = (Animals.liveIcon || Animals.icon)(an, 44) + '<span class="animal-option-name">' + escapeHtml(Animals.name(an)) + '</span>';
     } else {
-      btn.innerHTML = Characters.icon(ch, 44) + '<span class="animal-option-name">' + escapeHtml(Characters.name(ch)) + '</span>';
+      btn.innerHTML = (Characters.liveIcon || Characters.icon)(ch, 44) + '<span class="animal-option-name">' + escapeHtml(Characters.name(ch)) + '</span>';
     }
     return btn;
   }

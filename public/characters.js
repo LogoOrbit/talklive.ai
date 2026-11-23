@@ -498,6 +498,15 @@
       + '" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><use href="#tlc-' + id + '"/></svg>';
   }
 
+  // The same face, alive (avatar-motion.js), for Plus members and the pickers.
+  function liveIcon(id, size) {
+    var M = global.TalkLiveMotion;
+    if (!BY_ID[id] || !M || !M.has(id)) return icon(id, size);
+    var s = size || 40;
+    return '<svg class="tl-animal-icon tlm" width="' + s + '" height="' + s
+      + '" viewBox="0 0 64 64" aria-hidden="true" focusable="false">' + M.animatedSvg(id, BY_ID[id].art()) + '</svg>';
+  }
+
   // Localised name when i18n has one (key `character<Id>`), else the English.
   function name(id) {
     var ch = BY_ID[id];
@@ -521,7 +530,7 @@
       document.head.appendChild(link);
     }
     return '<span class="avatar-animal' + (plus ? ' tl-scene tl-s-' + id + (size < 56 ? ' tl-still' : '') : '')
-      + '" style="width:' + size + 'px;height:' + size + 'px">' + (plus ? '<i class="tl-sc"></i>' : '') + icon(id, size) + '</span>';
+      + '" style="width:' + size + 'px;height:' + size + 'px">' + (plus ? '<i class="tl-sc"></i>' : '') + (plus ? liveIcon(id, size) : icon(id, size)) + '</span>';
   }
 
   // What the pickers offer (spec section 1): three free, five Plus, then the
@@ -531,6 +540,7 @@
   var SPECIALS = { silver_knight: 'silver', gold_phoenix: 'gold', diamond_legend: 'diamond' };
 
   global.TalkLiveCharacters = {
+    liveIcon: liveIcon,
     list: LIST,
     pickerIds: PICKER_IDS,
     specials: SPECIALS,

@@ -124,40 +124,18 @@ val LocalPlusAvatar = androidx.compose.runtime.staticCompositionLocalOf { false 
 @OptIn(androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi::class)
 @Composable
 private fun LiveFace(a: Animal, size: Dp, fill: Float = 0.82f) {
-    val live = LiveAvatars[a.icon]
-    var blink by remember { mutableStateOf(false) }
-    val tilt = remember { androidx.compose.animation.core.Animatable(0f) }
-    val bob = remember { androidx.compose.animation.core.Animatable(0f) }
+    // A band of gold light passes over a Plus face now and then; the face's own
+    // motion (ears, eyes, breathing, sparkles) is its living drawable.
     val shine = remember { androidx.compose.animation.core.Animatable(-1f) }
     LaunchedEffect(a.id) {
-        var turn = 0
         while (true) {
-            kotlinx.coroutines.delay(2200L + (0..2600).random())
-            kotlinx.coroutines.coroutineScope {
-                launch { shine.snapTo(-1f); shine.animateTo(2f, androidx.compose.animation.core.tween(900)) }
-                when (turn++ % 3) {
-                    0 -> { blink = !blink; kotlinx.coroutines.delay(260); if (turn % 2 == 0) blink = !blink }
-                    1 -> launch {
-                        for (r in listOf(-7f, 5f, -2f, 0f)) tilt.animateTo(r, androidx.compose.animation.core.tween(220))
-                    }
-                    else -> launch {
-                        // Chatter: quick little bobs, like someone talking.
-                        repeat(3) {
-                            bob.animateTo(1f, androidx.compose.animation.core.tween(90))
-                            bob.animateTo(0f, androidx.compose.animation.core.tween(110))
-                        }
-                    }
-                }
-            }
+            kotlinx.coroutines.delay(4200L + (0..2600).random())
+            shine.snapTo(-1f); shine.animateTo(2f, androidx.compose.animation.core.tween(900))
         }
     }
-    val painter = if (live != null) {
-        rememberAnimatedVectorPainter(AnimatedImageVector.animatedVectorResource(live), blink)
-    } else painterResource(a.icon)
     Box(
         Modifier.size(size).drawWithContent {
             drawContent()
-            // A band of gold light passing over the face.
             val x = shine.value * this.size.width
             drawRect(
                 Brush.linearGradient(
@@ -168,17 +146,35 @@ private fun LiveFace(a: Animal, size: Dp, fill: Float = 0.82f) {
             )
         },
         contentAlignment = Alignment.Center,
-    ) {
-        Image(
-            painter, contentDescription = a.name,
-            modifier = Modifier.size(size * fill).graphicsLayer {
-                rotationZ = tilt.value
-                translationY = -bob.value * size.toPx() * 0.04f
-                scaleY = 1f - bob.value * 0.04f
-                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f)
-            },
-        )
+    ) { LivingFace(a.icon, a.name, Modifier.size(size * fill)) }
+}
+
+/**
+ * A face, alive: its own AnimatedVectorDrawable (tools/gen-live-motion.js), which
+ * Android plays on the render thread. It stops when the face leaves the screen,
+ * and the still drawing stands in under reduced motion or where there is none.
+ */
+@Composable
+fun LivingFace(icon: Int, description: String?, modifier: Modifier = Modifier) {
+    val live = LiveAvatars[icon]
+    if (live == null || app.talklive.ui.theme.LocalReduceMotion.current || androidx.compose.ui.platform.LocalInspectionMode.current) {
+        Image(painterResource(icon), description, modifier)
+        return
     }
+    androidx.compose.ui.viewinterop.AndroidView(
+        factory = { ctx -> android.widget.ImageView(ctx).apply { scaleType = android.widget.ImageView.ScaleType.FIT_CENTER } },
+        update = { v ->
+            v.contentDescription = description
+            if (v.tag != live) {
+                (v.drawable as? android.graphics.drawable.Animatable)?.stop()
+                v.tag = live
+                v.setImageResource(live)
+                (v.drawable as? android.graphics.drawable.Animatable)?.start()
+            }
+        },
+        onRelease = { v -> (v.drawable as? android.graphics.drawable.Animatable)?.stop() },
+        modifier = modifier,
+    )
 }
 
 /**
@@ -271,7 +267,8 @@ fun AnimalGrid(
             ) {
                 Box {
                     if (a.special) SpecialFaceArt(a.id, Modifier.fillMaxWidth(0.72f).aspectRatio(1f).graphicsLayer { alpha = if (specialLocked) 0.45f else 1f }, animate = !specialLocked)
-                    else Image(painterResource(a.icon), a.name, Modifier.fillMaxWidth(0.72f).aspectRatio(1f))
+                    // Every face moves in the picker, so people see what they are choosing.
+                    else LivingFace(a.icon, a.name, Modifier.fillMaxWidth(0.72f).aspectRatio(1f))
                     if (specialLocked) androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Lock, null, tint = app.talklive.ui.theme.GoldText, modifier = Modifier.align(Alignment.TopEnd).size(14.dp))
                     if (isPlusFace(a.id)) Box(Modifier.align(Alignment.TopEnd)) {
                         if (unlocked(a.id)) app.talklive.ui.components.PlusGem(14.dp)

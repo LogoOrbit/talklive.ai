@@ -475,6 +475,16 @@
       + '" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><use href="#tla-' + id + '"/></svg>';
   }
 
+  // The same face, alive (avatar-motion.js): drawn inline so each part can move.
+  // Falls back to the still icon when the motion module is not on the page.
+  function liveIcon(id, size, cls) {
+    var M = global.TalkLiveMotion;
+    if (!BY_ID[id] || !M || !M.has(id)) return icon(id, size, cls);
+    var s = size || 40;
+    return '<svg class="tl-animal-icon tlm' + (cls ? ' ' + cls : '') + '" width="' + s + '" height="' + s
+      + '" viewBox="0 0 64 64" aria-hidden="true" focusable="false">' + M.animatedSvg(id, BY_ID[id].art()) + '</svg>';
+  }
+
   // Localised name / trait, falling back to the English text above when the
   // page has no i18n loaded or the language file predates these keys.
   function key(id) { return id.charAt(0).toUpperCase() + id.slice(1); }
@@ -509,6 +519,7 @@
   }
 
   global.TalkLiveAnimals = {
+    liveIcon: liveIcon,
     list: LIST,
     ids: LIST.map(function (a) { return a.id; }),
     has: function (id) { return !!BY_ID[id]; },
