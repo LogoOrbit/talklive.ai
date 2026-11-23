@@ -566,7 +566,7 @@ class CallManager @Inject constructor(
             is ServerEvent.Reaction -> if (phase is CallPhase.Connected) _reactions.tryEmit(FloatingReaction(e.type, mine = false))
             is ServerEvent.MutualHeart -> _state.update { it.copy(mutualHeart = true) }
             is ServerEvent.RatePrompt -> if (e.seconds >= 20) _state.update { it.copy(ratePrompt = RatePrompt(e.token, lastPartnerName)) }
-            is ServerEvent.Game -> Unit
+            is ServerEvent.Game, is ServerEvent.FriendGame -> Unit
             is ServerEvent.VoiceInvite -> if (phase is CallPhase.Connected) _state.update { it.copy(voiceInviteFrom = e.username.ifBlank { "They" }) }
             is ServerEvent.VoiceInviteDeclined -> _state.update { it.copy(voiceInviteSent = false, voiceInviteDeclined = true) }
             is ServerEvent.VoiceInviteAccepted -> {

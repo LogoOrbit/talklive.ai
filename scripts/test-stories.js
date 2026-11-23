@@ -120,6 +120,16 @@ function connect(id, name) {
     const feedA3 = await ask(a, 'stories-get');
     ok('a like can be taken back', unliked.ok && feedA3.people[0].stories[0].likeCount === 0, feedA3.people[0].stories[0]);
 
+    // Games with a friend from the chat, no call.
+    const gotInvite = once(b, 'friend-game');
+    a.emit('friend-game', { toClientId: B, data: { type: 'invite', game: 'ttt' } });
+    const inv = await gotInvite;
+    ok('a friend game invite reaches the friend', inv.fromClientId === A && inv.data.type === 'invite' && inv.name === 'Ann', inv);
+    const strangerBack = once(c, 'friend-game');
+    c.emit('friend-game', { toClientId: A, data: { type: 'invite', game: 'ttt' } });
+    const sb = await strangerBack;
+    ok('a stranger cannot start a friend game', sb.data.type === 'decline', sb);
+
     const del = await ask(a, 'story-delete', { id: posted.id });
     ok('the author can delete it', del.ok === true, del);
     const feedB3 = await ask(b, 'stories-get');
