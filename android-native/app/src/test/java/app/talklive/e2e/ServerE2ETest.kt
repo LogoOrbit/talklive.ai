@@ -465,10 +465,10 @@ class ServerE2ETest {
         assertTrue("one like", (likes?.count ?: 0) >= 1)
         assertTrue(likes!!.locked)
 
-        // A short chat that ends counts toward the streak.
+        // Only voice calls where both people talk count toward the streak now
+        // (server anti-cheat), so a text chat ending leaves it untouched.
         Thread.sleep(1500)
         a.socket.emit("leave")
-        check("streak counted") { (a.engage.engage.value?.streak?.count ?: 0) >= 1 && a.engage.engage.value!!.streak.doneToday }
 
         // Referral link.
         a.engage.requestReferral()
