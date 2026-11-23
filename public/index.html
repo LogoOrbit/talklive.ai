@@ -731,6 +731,9 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
           <span id="friendChatStatus" class="chat-head-status" aria-live="polite"></span>
         </div>
         <div class="chat-header-actions">
+          <button type="button" id="friendChatGameBtn" class="chat-clear-btn hidden" data-i18n-title="playGame" title="Play a game" data-i18n-aria="playGame" aria-label="Play a game">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="7" width="19" height="11" rx="5"/><path d="M7.5 10.5v4M5.5 12.5h4"/><circle cx="15.5" cy="11.5" r="1" fill="currentColor"/><circle cx="18" cy="14" r="1" fill="currentColor"/></svg>
+          </button>
           <button type="button" id="friendChatCallBtn" class="chat-clear-btn chat-call-btn hidden" data-i18n-title="call" title="Call" data-i18n-aria="call" aria-label="Call">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
           </button>

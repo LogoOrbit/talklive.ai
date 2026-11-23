@@ -265,6 +265,11 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
         socket.on("voice-invite-accepted") { args -> args.firstObject()?.optString("token")?.let { _events.tryEmit(ServerEvent.VoiceInviteAccepted(it)) } }
         socket.on("voice-invite-declined") { args -> _events.tryEmit(ServerEvent.VoiceInviteDeclined(args.firstObject()?.optString("username").orEmpty())) }
         socket.on("game") { args -> args.firstObject()?.let { _events.tryEmit(ServerEvent.Game(it)) } }
+        socket.on("friend-game") { args ->
+            val o = args.firstObject() ?: return@on
+            val d = o.optJSONObject("data") ?: return@on
+            _events.tryEmit(ServerEvent.FriendGame(o.optString("fromClientId"), o.optString("name"), d))
+        }
         socket.on("chat-reaction") { args ->
             val o = args.firstObject() ?: return@on
             _events.tryEmit(ServerEvent.StrangerReaction(o.optString("id"), o.optString("emoji"), o.optBoolean("on")))

@@ -711,6 +711,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "replyGone": "Message",
     "send": "Send",
     "noMessagesYet": "No messages yet. Say hi!",
+    "playGame": "Play a game",
     "storyReactedTheirs": "Reacted {e} to their story",
     "storyReactedYours": "Reacted {e} to your story",
     "storyRepliedTheirs": "Replied to their story",

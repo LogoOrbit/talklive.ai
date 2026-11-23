@@ -581,6 +581,7 @@
       syncPlayCard();
     }
     function closeGameOverlay() {
+      if (opts.onClose && tttStage === 'idle') setTimeout(opts.onClose, 0);
       gameOverlay.classList.add('hidden');
       stopDabLoop();
       opts.closeModal(tttEndConfirmModal);
@@ -605,6 +606,7 @@
       gameBtnBadge.classList.remove('is-move', 'is-invite');
       gameBtnBadge.textContent = '!';
       closeGameOverlay();
+      if (opts.onIdle) opts.onIdle();
     }
 
     // Grayscale the board + show a red message when the call itself drops mid-game.

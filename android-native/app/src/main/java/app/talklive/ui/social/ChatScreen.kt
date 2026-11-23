@@ -55,6 +55,7 @@ import androidx.compose.material.icons.automirrored.rounded.Reply
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.Call
+import androidx.compose.material.icons.rounded.SportsEsports
 import androidx.compose.material.icons.rounded.PersonAdd
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.MoreVert
@@ -114,7 +115,7 @@ import java.util.Locale
 import kotlin.math.roundToInt
 
 @Composable
-fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
+fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit, onPlayGame: ((String, String) -> Unit)? = null) {
     val threads by vm.threads.collectAsStateWithLifecycle()
     val typingSet by vm.typing.collectAsStateWithLifecycle()
     val friends by vm.friends.collectAsStateWithLifecycle()
@@ -216,6 +217,12 @@ fun ChatScreen(vm: SocialViewModel, clientId: String, onBack: () -> Unit) {
                         color = if (typing || person.online) app.talklive.ui.theme.AccentText else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                }
+                if (isFriend && onPlayGame != null) {
+                    // Tic Tac Toe or Dots & Boxes with this friend, right from the chat.
+                    IconButton(onClick = { onPlayGame(person.clientId, person.nickname ?: person.username) }, enabled = person.online) {
+                        Icon(Icons.Rounded.SportsEsports, stringResource(R.string.play_game))
+                    }
                 }
                 if (isFriend) {
                     FilledTonalIconButton(onClick = { vm.call(person) }, enabled = person.online) { Icon(Icons.Rounded.Call, stringResource(R.string.call)) }

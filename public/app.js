@@ -6304,6 +6304,14 @@ if (friendChatClearBtn) {
 
 // Call from inside the conversation, as any messenger offers: friends
 // always, a recent match only while they are here.
+const friendChatGameBtnEl = document.getElementById('friendChatGameBtn');
+if (friendChatGameBtnEl) {
+  friendChatGameBtnEl.addEventListener('click', () => {
+    const id = activeFriendChatId;
+    const f = id && friendsData.find((x) => x.clientId === id);
+    if (f) playWithFriend(id, f.nickname || f.username || '');
+  });
+}
 const friendChatCallBtn = document.getElementById('friendChatCallBtn');
 if (friendChatCallBtn) {
   friendChatCallBtn.addEventListener('click', () => {
@@ -6325,6 +6333,11 @@ function renderFriendChatStatus() {
   if (friendChatCallBtn) {
     const isFriend = !!id && friendsData.some((f) => f.clientId === id);
     friendChatCallBtn.classList.toggle('hidden', !id || inCallWith(id) || !(isFriend || (person && person.online)));
+  }
+  const friendGameBtn = document.getElementById('friendChatGameBtn');
+  if (friendGameBtn) {
+    const isFriend = !!id && friendsData.some((f) => f.clientId === id);
+    friendGameBtn.classList.toggle('hidden', !id || !isFriend || !(person && person.online) || callState === 'connected');
   }
   const typing = !!id && typingFrom.has(id);
   friendChatStatus.textContent = typing ? t('friendTyping') : presenceText(person);
@@ -9931,12 +9944,50 @@ const GAME_SOUNDS = {
   invite: playInviteSound,
 };
 
+// The same games with a friend from their chat thread, no call needed: the
+// page's one game screen talks either to the call partner (the 'game' relay)
+// or to one friend ('friend-game'), whichever this channel is set to.
+const gameChannel = {
+  friend: null,
+  friendName: '',
+  emit(ev, data) {
+    if (ev !== 'game') return socket.emit(ev, data);
+    if (this.friend) socket.emit('friend-game', { toClientId: this.friend, data });
+    else socket.emit('game', data);
+  },
+  on(ev, fn) {
+    if (ev !== 'game') { socket.on(ev, fn); return; }
+    socket.on('game', (d) => { if (!this.friend) fn(d); });
+    socket.on('friend-game', (m) => {
+      if (!m || !m.data) return;
+      if (this.friend === m.fromClientId) { fn(m.data); return; }
+      if (m.data.type !== 'invite') return;
+      // A friend's invite while this screen is free: it becomes the game's channel.
+      const busy = this.friend || callState === 'connected' || (games && games.isActive && games.isActive());
+      if (busy) { socket.emit('friend-game', { toClientId: m.fromClientId, data: { type: 'decline' } }); return; }
+      this.friend = m.fromClientId;
+      this.friendName = m.name || '';
+      fn(m.data);
+    });
+  },
+};
+function playWithFriend(clientId, name) {
+  if (!games || callState === 'connected') return;
+  if (gameChannel.friend && gameChannel.friend !== clientId && games.isActive && games.isActive()) return;
+  gameChannel.friend = clientId;
+  gameChannel.friendName = name || '';
+  games.open();
+}
+
 const games = window.TalkLiveGames ? window.TalkLiveGames.attach({
-  socket,
+  socket: gameChannel,
   gameBtn,
-  isConnected: () => callState === 'connected',
-  isHost: () => amCallInitiator,
-  partnerName: () => (currentPartner ? currentPartner.username : ''),
+  isConnected: () => (gameChannel.friend ? true : callState === 'connected'),
+  // With a friend, the smaller profile id hosts, so exactly one side builds the board.
+  isHost: () => (gameChannel.friend ? getClientId() < gameChannel.friend : amCallInitiator),
+  onIdle: () => { gameChannel.friend = null; gameChannel.friendName = ''; },
+  onClose: () => { gameChannel.friend = null; gameChannel.friendName = ''; },
+  partnerName: () => (gameChannel.friend ? gameChannel.friendName : (currentPartner ? currentPartner.username : '')),
   myName: () => (myProfile && myProfile.username ? myProfile.username : ''),
   vibrate,
   openModal,

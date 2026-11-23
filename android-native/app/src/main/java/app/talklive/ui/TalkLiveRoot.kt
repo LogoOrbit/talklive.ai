@@ -531,6 +531,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     var showGames by remember { mutableStateOf(false) }
     // A game that starts opens the board on both phones.
     LaunchedEffect(game.stage) {
+        if (game.friendId != null) return@LaunchedEffect
         if (game.stage == app.talklive.game.Stage.Playing || game.stage == app.talklive.game.Stage.Waiting) showGames = true
         if (game.stage == app.talklive.game.Stage.Idle && !game.declined) showGames = false
     }
@@ -830,7 +831,18 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
 
     // Mini-games with the person on the call or chat.
     val partnerName = (state.phase as? CallPhase.Connected)?.partner?.username ?: ""
-    if (showFullCall && showGames) {
+    // A game with a friend from their chat: the same sheet, not tied to a call.
+    if (game.friendId != null && game.stage != app.talklive.game.Stage.Invited) {
+        app.talklive.ui.game.GameSheet(
+            ui = game, partnerName = game.friendName,
+            onInvite = vm::inviteGame, onCell = vm::tapCell, onEdge = vm::drawEdge, onRematch = vm::rematch,
+            onClose = { vm.leaveGame() },
+        )
+    }
+    if (game.friendId != null && game.stage == app.talklive.game.Stage.Invited) {
+        app.talklive.ui.game.GameInviteDialog(game.kind, game.friendName, onAccept = { vm.acceptGame() }, onDecline = vm::declineGame)
+    }
+    if (game.friendId == null && showFullCall && showGames) {
         app.talklive.ui.game.GameSheet(
             ui = game, partnerName = partnerName,
             onInvite = vm::inviteGame, onCell = vm::tapCell, onEdge = vm::drawEdge, onRematch = vm::rematch,
@@ -838,7 +850,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
         )
     }
     // Shown over the sheet too: with the sheet open there is no other way to answer.
-    if (inCall && game.stage == app.talklive.game.Stage.Invited) {
+    if (game.friendId == null && inCall && game.stage == app.talklive.game.Stage.Invited) {
         app.talklive.ui.game.GameInviteDialog(game.kind, partnerName, onAccept = { vm.acceptGame(); showGames = true }, onDecline = vm::declineGame)
     }
 
@@ -881,7 +893,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     ) {
         var shown by remember { mutableStateOf(openChat) }
         LaunchedEffect(openChat) { if (openChat != null) shown = openChat }
-        shown?.let { ChatScreen(social, it, onBack = { openChat = null }) }
+        shown?.let { ChatScreen(social, it, onBack = { openChat = null }, onPlayGame = { id, name -> vm.playWithFriend(id, name) }) }
     }
 
     // Friend calls ringing in or out cover everything.

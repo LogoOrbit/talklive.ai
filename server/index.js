@@ -9204,6 +9204,34 @@ io.on('connection', (socket) => {
     io.to(partnerId).emit('game', verdict.relay);
   });
 
+  // Games with a friend from the chat thread, no call needed: the same game
+  // messages as the in-call relay, addressed to one friend who is online.
+  let friendGameRl = { start: 0, n: 0 };
+  socket.on('friend-game', (payload = {}) => {
+    const me = profiles.get(socket.id);
+    const to = validId(payload && payload.toClientId);
+    const data = payload && payload.data;
+    if (!me || !to || to === me.clientId || !data || typeof data !== 'object' || !GAME_EVENT_TYPES.has(data.type)) return;
+    const now = Date.now();
+    if (now - friendGameRl.start > 5000) friendGameRl = { start: now, n: 0 };
+    if (++friendGameRl.n > 30) return;
+    let size = 0;
+    try { size = JSON.stringify(data).length; } catch (_) { return; }
+    if (size > 4096) return;
+    const back = (d) => socket.emit('friend-game', { fromClientId: to, data: d });
+    if (!isFriend(me.clientId, to) || isBlockedPair(me.clientId, to) || !ageGate('friends').ok) {
+      if (data.type !== 'left' && data.type !== 'decline') back({ type: data.type === 'invite' ? 'decline' : 'left', reason: 'unreachable' });
+      return;
+    }
+    const target = getSocketByClientId(to);
+    if (!target) {
+      if (data.type !== 'left' && data.type !== 'decline') back({ type: data.type === 'invite' ? 'decline' : 'left', reason: 'offline' });
+      return;
+    }
+    if (data.type === 'invite') store.recordFeature('friend_game');
+    target.emit('friend-game', { fromClientId: me.clientId, name: me.username, avatar: shownAvatar(me), data });
+  });
+
   // --- Friends ---
   // Look someone up by their public friend ID, to add them without having met.
   socket.on('find-by-friend-id', ({ friendId } = {}) => {

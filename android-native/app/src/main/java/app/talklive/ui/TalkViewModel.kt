@@ -94,6 +94,7 @@ class TalkViewModel @Inject constructor(
     fun drawEdge(k: Char, i: Int) = games.drawEdge(k, i)
     fun rematch() = games.rematch()
     fun leaveGame() = games.leave()
+    fun playWithFriend(clientId: String, name: String) = games.playWithFriend(clientId, name)
     fun next() = calls.next()
     fun widenSearch() = calls.widenSearch()
     fun end() = calls.end()

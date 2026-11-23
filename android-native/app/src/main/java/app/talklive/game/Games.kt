@@ -129,6 +129,9 @@ data class GameUi(
     val board: Board? = null,
     val me: Int = 0,
     val declined: Boolean = false,
+    /** Playing with a friend from their chat thread (no call): who. */
+    val friendId: String? = null,
+    val friendName: String = "",
 )
 
 /**
@@ -139,25 +142,51 @@ data class GameUi(
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
-class Games @Inject constructor(private val socket: TalkSocket, private val calls: CallManager) {
+class Games @Inject constructor(private val socket: TalkSocket, private val calls: CallManager, private val identity: app.talklive.data.IdentityStore) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default.limitedParallelism(1))
     private val _ui = MutableStateFlow(GameUi())
     val ui: StateFlow<GameUi> = _ui
     private var goneJob: Job? = null
 
-    private val isHost get() = calls.state.value.isHost
+    private val friend get() = _ui.value.friendId
+    // With a friend, the smaller profile id hosts (same rule as the website), so one side builds the board.
+    private val isHost get() = friend?.let { identity.clientId < it } ?: calls.state.value.isHost
 
     init {
-        scope.launch { socket.events.collect { if (it is ServerEvent.Game) onGame(it.data) } }
-        // A new partner (or none) starts from scratch.
         scope.launch {
-            calls.state.map { (it.phase as? CallPhase.Connected)?.let { c -> c.partner.clientId to c.sinceMs } }.distinctUntilChanged().collect { reset() }
+            socket.events.collect {
+                if (it is ServerEvent.Game && friend == null) onGame(it.data)
+                if (it is ServerEvent.FriendGame) onFriendGame(it)
+            }
         }
+        // A new partner (or none) starts from scratch; a game with a friend is not tied to a call.
+        scope.launch {
+            calls.state.map { (it.phase as? CallPhase.Connected)?.let { c -> c.partner.clientId to c.sinceMs } }.distinctUntilChanged().collect { if (friend == null) reset() }
+        }
+    }
+
+    /** Opens the games with a friend from their chat (not during a call, not over another game). */
+    fun playWithFriend(clientId: String, name: String) = scope.launch {
+        if (calls.state.value.phase is CallPhase.Connected) return@launch
+        val u = _ui.value
+        if (u.stage != Stage.Idle && u.friendId != clientId) return@launch
+        if (u.friendId != clientId) _ui.value = GameUi(friendId = clientId, friendName = name)
+    }
+
+    private fun onFriendGame(e: ServerEvent.FriendGame) {
+        val u = _ui.value
+        if (u.friendId == e.fromClientId) { onGame(e.data); return }
+        if (e.data.optString("type") != "invite") return
+        // A friend's invite while this phone is free opens their game; otherwise it is turned down.
+        if (u.stage == Stage.Idle && u.friendId == null && calls.state.value.phase !is CallPhase.Connected) {
+            _ui.value = GameUi(friendId = e.fromClientId, friendName = e.name)
+            onGame(e.data)
+        } else socket.emit("friend-game", JSONObject().put("toClientId", e.fromClientId).put("data", JSONObject().put("type", "decline")))
     }
 
     fun invite(kind: GameKind) = scope.launch {
         // One thing at a time: not while an invite or a game is already going.
-        if (_ui.value.stage != Stage.Idle || calls.state.value.phase !is CallPhase.Connected) return@launch
+        if (_ui.value.stage != Stage.Idle || (friend == null && calls.state.value.phase !is CallPhase.Connected)) return@launch
         _ui.update { it.copy(stage = Stage.Inviting, kind = kind, declined = false) }
         send(JSONObject().put("type", "invite").put("game", kind.wire))
     }
@@ -227,7 +256,7 @@ class Games @Inject constructor(private val socket: TalkSocket, private val call
             }
             "accept" -> if (u.stage == Stage.Inviting) handshake(u.kind)
             // Only an invite of mine can be declined; a stray one must not end a game.
-            "decline" -> if (u.stage == Stage.Inviting) _ui.update { GameUi(declined = true) }
+            "decline" -> if (u.stage == Stage.Inviting) _ui.update { GameUi(declined = true, friendId = it.friendId, friendName = it.friendName) }
             "state" -> d.optJSONObject("state")?.takeIf { u.stage == Stage.Playing || u.stage == Stage.Waiting }?.let { st ->
                 val board = Board.from(st)
                 _ui.update { it.copy(stage = Stage.Playing, kind = board.kind, board = board, me = if (isHost) 0 else 1) }
@@ -244,6 +273,8 @@ class Games @Inject constructor(private val socket: TalkSocket, private val call
     private fun reset() { goneJob?.cancel(); _ui.value = GameUi() }
 
     private fun send(o: JSONObject) {
-        if (calls.state.value.phase is CallPhase.Connected) socket.emit("game", o)
+        val f = friend
+        if (f != null) socket.emit("friend-game", JSONObject().put("toClientId", f).put("data", o))
+        else if (calls.state.value.phase is CallPhase.Connected) socket.emit("game", o)
     }
 }
