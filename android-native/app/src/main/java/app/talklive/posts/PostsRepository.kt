@@ -30,6 +30,7 @@ data class Post(
     val mine: String?,
     val commentCount: Int,
     val comments: List<PostComment>,
+    val pinned: Boolean = false,
 )
 
 data class PostsState(
@@ -135,6 +136,7 @@ class PostsRepository @Inject constructor(private val identity: IdentityStore) {
             mine = if (o.isNull("mine")) null else o.optString("mine").takeIf { it.isNotBlank() },
             commentCount = o.optInt("commentCount", comments.size),
             comments = comments,
+            pinned = o.optBoolean("pinned"),
         )
     }
 

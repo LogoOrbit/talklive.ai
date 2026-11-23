@@ -97,6 +97,7 @@ class TalkViewModel @Inject constructor(
     fun next() = calls.next()
     fun widenSearch() = calls.widenSearch()
     fun end() = calls.end()
+    fun stillHere() = calls.stillHere()
     fun toggleMute() = calls.toggleMute()
     fun toggleSpeaker() = calls.toggleSpeaker()
     val noiseSuppression = calls.noiseSuppression

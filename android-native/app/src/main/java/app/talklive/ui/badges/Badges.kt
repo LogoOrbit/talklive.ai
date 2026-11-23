@@ -191,7 +191,7 @@ fun BadgeShelf(badges: BadgeSet?, modifier: Modifier = Modifier) {
                     color = if (has) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    if (has || isRankBadge(b.id)) stringResource(R.string.badge_earned) else stringResource(R.string.badge_hours_needed, hoursLeft(b.hours, hours)),
+                    if (has || isRankBadge(b.id)) stringResource(R.string.badge_earned) else stringResource(R.string.badge_to_go, hoursLeftText(b.hours, hours)),
                     style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, maxLines = 2,
                     color = if (has) app.talklive.ui.theme.AccentText else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -229,7 +229,7 @@ fun BadgeDetailSheet(id: String, badges: BadgeSet?, onDismiss: () -> Unit) {
             Spacer(Modifier.height(12.dp))
             Surface(shape = RoundedCornerShape(50), color = if (has) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface) {
                 Text(
-                    if (has) stringResource(R.string.badge_earned) else if (isRankBadge(id)) stringResource(R.string.badge_rank_locked) else stringResource(R.string.badge_hours_needed, hoursLeft(def.hours, hours)),
+                    if (has) stringResource(R.string.badge_earned) else if (isRankBadge(id)) stringResource(R.string.badge_rank_locked) else stringResource(R.string.badge_to_go, hoursLeftText(def.hours, hours)),
                     style = MaterialTheme.typography.labelLarge,
                     color = if (has) app.talklive.ui.theme.AccentText else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -239,9 +239,16 @@ fun BadgeDetailSheet(id: String, badges: BadgeSet?, onDismiss: () -> Unit) {
     }
 }
 
-private fun hoursLeft(need: Int, have: Double): String {
+/** Whole hours rounded down ("12h"); under an hour, minutes ("40m"). Never "1.0h". */
+fun hoursText(hours: Double): String {
+    val h = Math.floor(hours.coerceAtLeast(0.0)).toInt()
+    return if (h >= 1) "${h}h" else "${(hours.coerceAtLeast(0.0) * 60 + 1e-6).toInt()}m"
+}
+
+/** What is left to earn a badge, rounded up: "3h" or "25m". */
+fun hoursLeftText(need: Int, have: Double): String {
     val left = (need - have).coerceAtLeast(0.0)
-    return if (left < 10) String.format(java.util.Locale.getDefault(), "%.1f", left) else Math.ceil(left).toInt().toString()
+    return if (left >= 1) "${Math.ceil(left).toInt()}h" else "${Math.ceil(left * 60).toInt().coerceAtLeast(1)}m"
 }
 
 // ---- Artwork (100 x 100 space) ---------------------------------------------

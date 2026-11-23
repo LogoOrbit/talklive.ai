@@ -945,4 +945,40 @@
         <item quantity="other">%1$d people liked you</item>
     </plurals>
     <string name="see_who_with_plus">See who with Plus</string>
+    <string name="tab_home">Home</string>
+    <string name="tab_history">History</string>
+    <string name="tab_filters">Filters</string>
+    <string name="silence_ended">Call ended: no one was talking</string>
+    <string name="silence_warning">No one is talking. This call ends in %1$d s.</string>
+    <string name="silence_still_here">Still here</string>
+    <string name="badges_talked">You have talked %1$s so far. Keep talking to earn more badges.</string>
+    <string name="badge_to_go">%1$s to go</string>
+    <string name="edit_tab_avatar">Avatar</string>
+    <string name="edit_tab_cover">Cover</string>
+    <string name="edit_tab_name">Name</string>
+    <string name="edit_name_signin">Sign in to change your name and ID.</string>
+    <string name="edit_saved">Profile saved</string>
+    <string name="edit_error">Couldn\'t save your profile. Try again.</string>
+    <string name="edit_avatar_cd">Edit avatar</string>
+    <plurals name="countries_talked">
+        <item quantity="one">%1$d country</item>
+        <item quantity="other">%1$d countries</item>
+    </plurals>
+    <string name="countries_sheet_title">Countries you have talked to</string>
+    <string name="countries_empty">Talk to someone to stamp your first country.</string>
+    <string name="country_times">%1$d×</string>
+    <string name="profile_settings">Settings</string>
+    <string name="settings_privacy_safety">Privacy &amp; safety</string>
+    <string name="settings_appearance_sound">Appearance &amp; sound</string>
+    <string name="settings_help">Help</string>
+    <string name="daily_title">Daily reward</string>
+    <string name="daily_body">Your gift for coming back today.</string>
+    <string name="daily_plus_one">+1 point</string>
+    <string name="daily_claim">Claim</string>
+    <string name="daily_later">Later</string>
+    <string name="daily_claimed">Claimed! See you tomorrow.</string>
+    <string name="daily_ready_cd">Daily reward ready</string>
+    <string name="post_pinned">Pinned</string>
+    <string name="history_empty_title">No one yet</string>
+    <string name="history_empty_body">People you talk to show up here for 30 days.</string>
 </resources>

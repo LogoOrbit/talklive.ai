@@ -339,26 +339,26 @@ private fun DrawScope.fireflies(p: Float) {
 /** All cover choices in three groups; Plus covers carry a lock and ask for Plus when it is not active. */
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-fun CoverPicker(current: String?, plus: Boolean, onPick: (String) -> Unit, onLocked: () -> Unit, modifier: Modifier = Modifier) {
+fun CoverPicker(current: String?, plus: Boolean, onPick: (String) -> Unit, onLocked: () -> Unit, modifier: Modifier = Modifier, previewLocked: Boolean = false, height: androidx.compose.ui.unit.Dp = 236.dp) {
     // Two rows and a half-visible third, faded out at the bottom, with a scrollbar: more is clearly below.
     val scroll = androidx.compose.foundation.rememberScrollState()
     Column(
-        modifier.fillMaxWidth().height(236.dp)
+        modifier.fillMaxWidth().height(height)
             .verticalScrollbar(scroll, thickness = 5.dp)
             .fadeBottomEdge(scroll)
             .verticalScroll(scroll),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        CoverGroup(R.string.cover_group_colors, SOLID_COVERS, current, plus, onPick, onLocked)
-        CoverGroup(R.string.cover_group_gradients, GRADIENT_COVERS, current, plus, onPick, onLocked)
-        CoverGroup(R.string.cover_group_plus, PLUS_COVERS, current, plus, onPick, onLocked)
+        CoverGroup(R.string.cover_group_colors, SOLID_COVERS, current, plus, onPick, onLocked, previewLocked)
+        CoverGroup(R.string.cover_group_gradients, GRADIENT_COVERS, current, plus, onPick, onLocked, previewLocked)
+        CoverGroup(R.string.cover_group_plus, PLUS_COVERS, current, plus, onPick, onLocked, previewLocked)
         Spacer(Modifier.height(30.dp))
     }
 }
 
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-private fun CoverGroup(title: Int, covers: List<CoverDef>, current: String?, plus: Boolean, onPick: (String) -> Unit, onLocked: () -> Unit) {
+private fun CoverGroup(title: Int, covers: List<CoverDef>, current: String?, plus: Boolean, onPick: (String) -> Unit, onLocked: () -> Unit, previewLocked: Boolean = false) {
     Column {
         Text(stringResource(title), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 6.dp))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -369,7 +369,7 @@ private fun CoverGroup(title: Int, covers: List<CoverDef>, current: String?, plu
                     Box(
                         Modifier.fillMaxWidth().height(58.dp).clip(RoundedCornerShape(14.dp))
                             .border(if (on) 2.5.dp else 1.dp, if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(14.dp))
-                            .clickable { app.talklive.sound.Tap.soft(); if (locked) onLocked() else onPick(c.id) },
+                            .clickable { app.talklive.sound.Tap.soft(); if (locked && !previewLocked) onLocked() else onPick(c.id) },
                     ) {
                         // Only the chosen live cover moves; the rest are a still frame, so the picker stays light.
                         CoverBackground(c.id, Modifier.fillMaxSize(), animate = on && !locked)

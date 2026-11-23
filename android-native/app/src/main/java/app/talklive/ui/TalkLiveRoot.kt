@@ -24,6 +24,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -89,6 +90,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import app.talklive.ui.social.ChatScreen
 import app.talklive.ui.social.ChatsScreen
+import app.talklive.ui.social.FriendsPane
 import app.talklive.ui.social.FriendsScreen
 import app.talklive.ui.social.IncomingCallScreen
 import app.talklive.ui.social.OutgoingCallScreen
@@ -249,6 +251,16 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     LaunchedEffect(Unit) { moments.touch() }
     androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) { moments.touch() }
     LaunchedEffect(goodCall, premium.active) { if (tab == MainTab.Talk && state.phase is CallPhase.Idle) offerCard() }
+    // Daily reward: offered once per app open, when a claim is ready and nothing else is going on.
+    // Dismissed, the level chip pulses on Home until it is claimed.
+    var showDaily by remember { mutableStateOf(false) }
+    LaunchedEffect(levelProgress?.canClaim, inCallNow) {
+        if (levelProgress?.canClaim == true && !inCallNow && !app.talklive.ui.rewards.DailyOffer.shown) {
+            kotlinx.coroutines.delay(1200)
+            if (!app.talklive.ui.rewards.DailyOffer.shown) { app.talklive.ui.rewards.DailyOffer.shown = true; showDaily = true }
+        }
+    }
+    if (showDaily) app.talklive.ui.rewards.DailyRewardSheet(rewardsVm, onDismiss = { showDaily = false })
     // Tapped "Get TalkLive Plus" on the first-launch intro: open Plus once home.
     LaunchedEffect(Unit) {
         val ui = context.getSharedPreferences("ui", android.content.Context.MODE_PRIVATE)
@@ -492,6 +504,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
             // The server's reason is a website i18n key; the ones the app has words for are mapped.
             is CallNotice.Refused -> if (n.reason == "searchTooFast") stringResource(R.string.search_too_fast) else n.reason
             is CallNotice.CallEnded -> stringResource(R.string.call_ended, n.name)
+            CallNotice.Silence -> stringResource(R.string.silence_ended)
         }
     }
     LaunchedEffect(state.notice) {
@@ -588,9 +601,20 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                 exit = slideOutVertically { it } + fadeOut(),
             ) {
                 TabBar(
-                    selected = tab,
-                    onSelect = { tab = it },
-                    badges = mapOf(MainTab.Chats to totalUnread, MainTab.Friends to requests.size),
+                    // Chats opens from the Friends screen, so Friends stays lit there.
+                    selected = if (tab == MainTab.Chats) MainTab.Friends else tab,
+                    // Filters is an action: it opens the sheet and leaves the current screen as it is.
+                    onSelect = { if (it == MainTab.Filters) showFilters = true else tab = it },
+                    badges = mapOf(MainTab.Friends to requests.size + totalUnread, MainTab.Filters to filters.activeCount),
+                    profileIcon = { on ->
+                        app.talklive.ui.components.PlusRing(premium.ring, 28.dp, alive = premium.active) {
+                            app.talklive.ui.animals.AnimalAvatar(
+                                app.talklive.ui.animals.ownFace(animal, premium.ended, premium.look), account?.nickname, 26.dp,
+                                Modifier.clip(androidx.compose.foundation.shape.CircleShape)
+                                    .then(if (on) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, androidx.compose.foundation.shape.CircleShape) else Modifier),
+                            )
+                        }
+                    },
                 )
             }
         },
@@ -651,7 +675,18 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                         },
                     )
                     MainTab.Chats -> ChatsScreen(social, onOpenChat = { openChat = it }, onStartTalking = { tab = MainTab.Talk })
-                    MainTab.Friends -> FriendsScreen(social, onOpenChat = { openChat = it }, onStartTalking = { tab = MainTab.Talk }, onPlus = { openPlus("history", app.talklive.ui.engage.PlusWhy(app.talklive.ui.engage.PlusReason.History)) })
+                    MainTab.Friends -> FriendsScreen(
+                        social, onOpenChat = { openChat = it }, onStartTalking = { tab = MainTab.Talk },
+                        onPlus = { openPlus("history", app.talklive.ui.engage.PlusWhy(app.talklive.ui.engage.PlusReason.History)) },
+                        onChats = { tab = MainTab.Chats }, unreadChats = totalUnread,
+                    )
+                    MainTab.History -> FriendsScreen(
+                        social, onOpenChat = { openChat = it }, onStartTalking = { tab = MainTab.Talk },
+                        onPlus = { openPlus("history", app.talklive.ui.engage.PlusWhy(app.talklive.ui.engage.PlusReason.History)) },
+                        pane = FriendsPane.History,
+                    )
+                    // Filters is an action on the bar, never a screen of its own.
+                    MainTab.Filters -> Unit
                     MainTab.Profile -> ProfileScreen(onSignIn = onSignIn)
                 }
             }
@@ -751,6 +786,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                 val connectedPartner = (state.phase as? CallPhase.Connected)?.partner
                 app.talklive.ui.components.PlusEntrance(connectedPartner?.clientId, connectedPartner?.premium == true)
                 app.talklive.ui.call.FilmMatchBanner(filmMatch, Modifier.align(Alignment.TopCenter))
+                SilenceBanner(state.silenceEndsAt, onStillHere = vm::stillHere, modifier = Modifier.align(Alignment.TopCenter))
             }
         }
     }
@@ -1032,4 +1068,37 @@ suspend fun SnackbarHostState.say(
     if (currentSnackbarData?.visuals?.message == message) return androidx.compose.material3.SnackbarResult.Dismissed
     currentSnackbarData?.dismiss()
     return showSnackbar(message, actionLabel, withDismissAction = false, duration = duration)
+}
+
+/** "No one is talking": a 60 s countdown with "Still here". The server ends the call when it runs out. */
+@Composable
+private fun SilenceBanner(endsAt: Long?, onStillHere: () -> Unit, modifier: Modifier = Modifier) {
+    AnimatedVisibility(
+        visible = endsAt != null,
+        enter = slideInVertically { -it } + fadeIn(),
+        exit = slideOutVertically { -it } + fadeOut(),
+        modifier = modifier,
+    ) {
+        var left by remember { mutableStateOf(0) }
+        LaunchedEffect(endsAt) {
+            while (endsAt != null) {
+                left = ((endsAt - System.currentTimeMillis() + 999) / 1000).toInt().coerceAtLeast(0)
+                kotlinx.coroutines.delay(250)
+            }
+        }
+        androidx.compose.material3.Surface(
+            shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 6.dp,
+            modifier = Modifier.statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
+        ) {
+            Row(Modifier.padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.silence_warning, left),
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                Spacer(Modifier.width(8.dp))
+                TextButton(onClick = onStillHere) { Text(stringResource(R.string.silence_still_here)) }
+            }
+        }
+    }
 }

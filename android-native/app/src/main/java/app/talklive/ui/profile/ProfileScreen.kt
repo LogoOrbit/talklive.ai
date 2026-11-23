@@ -113,11 +113,16 @@ import app.talklive.ui.components.PrimaryButton
 import app.talklive.ui.components.TalkTextField
 import app.talklive.ui.theme.Danger
 
+/** The settings pages that open from the Profile list. */
+enum class ProfilePage { Privacy, Appearance, Account, Help }
+
 @Composable
 fun ProfileScreen(
     onSignIn: () -> Unit,
     vm: ProfileViewModel = hiltViewModel(),
     engageVm: app.talklive.ui.engage.EngageViewModel = hiltViewModel(),
+    // Opens a settings page at once (previews and screenshots).
+    initialPage: ProfilePage? = null,
 ) {
     val account by vm.account.collectAsStateWithLifecycle()
     val animal by vm.animal.collectAsStateWithLifecycle()
@@ -125,7 +130,9 @@ fun ProfileScreen(
     val context = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
     var youSheet by remember { mutableStateOf<String?>(null) }
-    var myProfileOpen by rememberSaveable { mutableStateOf(false) }
+    // Edit profile (tab to open on) and the settings page that is open, if any.
+    var editTab by rememberSaveable { mutableStateOf<EditTab?>(null) }
+    var page by rememberSaveable { mutableStateOf(initialPage) }
     // Why the Plus page was opened, for its headline.
     var plusWhy by remember { mutableStateOf(app.talklive.ui.engage.PlusWhy()) }
     val plusNow by engageVm.premium.collectAsStateWithLifecycle()
@@ -138,156 +145,145 @@ fun ProfileScreen(
 
     Box(Modifier.fillMaxSize()) {
         Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(horizontal = 20.dp, vertical = 8.dp),
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
-            Text(
-                stringResource(R.string.tab_profile),
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 16.dp),
-            )
-
             val premium by engageVm.premium.collectAsStateWithLifecycle()
             val myCover by vm.myCover.collectAsStateWithLifecycle()
             val myBadges by vm.myBadges.collectAsStateWithLifecycle()
             val progress by vm.progress.collectAsStateWithLifecycle()
+            val engage by engageVm.engage.collectAsStateWithLifecycle()
+            val films by engageVm.films.collectAsStateWithLifecycle()
+            val friendIdNow by vm.myFriendId.collectAsStateWithLifecycle()
+            var countriesOpen by remember { mutableStateOf(false) }
             // A Plus cover or face is dropped once the server says Plus has ended.
             val shownCover = app.talklive.ui.profile.effectiveCover(myCover, !premium.ended)
             val shownFace = app.talklive.ui.animals.ownFace(animal, premium.ended, premium.look)
 
-            // My Profile header: cover, avatar, name, ID and top badge, then a separate Change Avatar button.
-            Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface) {
-                Column(Modifier.fillMaxWidth().padding(bottom = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(Modifier.fillMaxWidth()) {
-                        app.talklive.ui.profile.CoverBackground(shownCover, Modifier.fillMaxWidth().height(116.dp))
-                        Box(Modifier.align(Alignment.BottomCenter).offset(y = 52.dp)) {
-                            app.talklive.ui.components.PlusRing(premium.ring, 104.dp, alive = premium.active) {
-                                AnimalAvatar(shownFace, account?.nickname, 104.dp, Modifier.clip(CircleShape).clickable { vm.open(ProfileSheet.Animal) })
-                            }
-                        }
-                    }
-                    Spacer(Modifier.height(60.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            account?.nickname ?: stringResource(R.string.guest),
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        TopBadge(myBadges, 24.dp, Modifier.padding(start = 8.dp))
-                    }
-                    Text(
-                        // The Friend ID people add you by (name#1234), not the internal username.
-                        vm.myFriendId.collectAsStateWithLifecycle().value ?: (animalById(animal)?.trait ?: ""),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.height(14.dp))
-                    Box(Modifier.padding(horizontal = 20.dp)) {
-                        PrimaryButton(stringResource(R.string.change_avatar), onClick = { vm.open(ProfileSheet.Animal) })
-                    }
-                    if (account == null) {
-                        Spacer(Modifier.height(16.dp))
-                        Text(
-                            stringResource(R.string.guest_pitch),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 20.dp),
-                        )
-                        Spacer(Modifier.height(12.dp))
-                        Box(Modifier.padding(horizontal = 20.dp)) { PrimaryButton(stringResource(R.string.sign_in_or_create), onClick = onSignIn) }
-                    }
-                }
+            Text(
+                stringResource(R.string.tab_profile),
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 12.dp),
+            )
+
+            // One card on the person's cover: avatar (pencil edits it), name, ID, top badge, level, streak and countries.
+            ProfileCard(
+                cover = shownCover,
+                face = shownFace,
+                name = account?.nickname ?: stringResource(R.string.guest),
+                friendId = friendIdNow ?: animalById(animal)?.trait,
+                badges = myBadges,
+                progress = progress,
+                ring = premium.ring,
+                alive = premium.active,
+                onEditAvatar = { editTab = EditTab.Avatar },
+                onLevel = { youSheet = "rewards" },
+                stats = {
+                    CardStatChip("\uD83D\uDD25 ${engage?.streak?.count ?: 0}") { youSheet = "passport" }
+                    Spacer(Modifier.width(10.dp))
+                    val n = engage?.passport?.size ?: 0
+                    CardStatChip("\uD83C\uDF0D " + androidx.compose.ui.res.pluralStringResource(R.plurals.countries_talked, n, n)) { countriesOpen = true }
+                },
+            )
+            Spacer(Modifier.height(12.dp))
+            PrimaryButton(stringResource(R.string.edit_profile), onClick = { editTab = EditTab.Avatar }, icon = Icons.Rounded.Edit)
+            if (account == null) {
+                Spacer(Modifier.height(8.dp))
+                Text(stringResource(R.string.guest_pitch), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 4.dp))
+                Spacer(Modifier.height(8.dp))
+                PrimaryButton(stringResource(R.string.sign_in_or_create), onClick = onSignIn)
             }
 
-            // One row for everything personal; the details live on their own screen.
+            // Badges: one row that scrolls sideways, and the switch for showing them to other people.
             Spacer(Modifier.height(16.dp))
             Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface) {
-                SettingRow(Icons.Rounded.Person, stringResource(R.string.my_profile), stringResource(R.string.my_profile_desc)) { myProfileOpen = true }
-            }
-            val engage by engageVm.engage.collectAsStateWithLifecycle()
-            val films by engageVm.films.collectAsStateWithLifecycle()
-            // Plus, as a card of its own rather than one more row.
-            Spacer(Modifier.height(20.dp))
-            Box(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp))
-                    .background(androidx.compose.ui.graphics.Brush.linearGradient(
-                        if (premium.active) listOf(androidx.compose.ui.graphics.Color(0xFFB8860B), androidx.compose.ui.graphics.Color(0xFFF5C451))
-                        else listOf(app.talklive.ui.theme.LocalAccents.current.a, app.talklive.ui.theme.LocalAccents.current.a),
-                    ))
-                    .clickable { plusWhy = app.talklive.ui.engage.PlusWhy(); youSheet = "plus" }.padding(18.dp),
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    app.talklive.ui.components.PlusGem(36.dp)
-                    Spacer(Modifier.width(14.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.plus), style = MaterialTheme.typography.titleLarge, color = androidx.compose.ui.graphics.Color.White)
-                        Text(
-                            when {
-                                !premium.active -> stringResource(R.string.plus_card_pitch)
-                                premium.expiresAt != null -> stringResource(R.string.plus_until, java.text.DateFormat.getDateInstance().format(java.util.Date(premium.expiresAt!!)))
-                                else -> stringResource(R.string.plus_active)
-                            },
-                            style = MaterialTheme.typography.bodyMedium, color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.9f),
+                Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp)) {
+                    val badgesHidden by vm.badgesHidden.collectAsStateWithLifecycle()
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(stringResource(R.string.section_badges), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                            Text(
+                                stringResource(R.string.badges_talked, app.talklive.ui.badges.hoursText(myBadges?.hours ?: 0.0)),
+                                style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Text(stringResource(R.string.show_badges), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.width(8.dp))
+                        Switch(
+                            checked = !badgesHidden,
+                            onCheckedChange = { on -> vm.setShowBadges(on) { ok -> if (!ok) vm.saved = context.getString(R.string.t_couldnt_send) } },
+                            colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary),
                         )
                     }
-                    Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = androidx.compose.ui.graphics.Color.White)
+                    Spacer(Modifier.height(10.dp))
+                    BadgeShelf(myBadges, Modifier.fillMaxWidth())
                 }
             }
-            Section(stringResource(R.string.section_help)) {
-                SettingRow(Icons.Rounded.Feedback, stringResource(R.string.news_title), stringResource(R.string.news_row_desc)) { youSheet = "news" }
-                SettingRow(Icons.Rounded.CardGiftcard, stringResource(R.string.invite_title), null) { youSheet = "invite" }
-            }
-            if (myProfileOpen) androidx.compose.ui.window.Dialog(
-                onDismissRequest = { myProfileOpen = false },
-                properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
-            ) {
-                Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    Box(Modifier.fillMaxSize()) {
-                        Column(Modifier.fillMaxSize().statusBarsPadding()) {
-                            Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                androidx.compose.material3.IconButton(onClick = { myProfileOpen = false }) {
-                                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.back), tint = MaterialTheme.colorScheme.onBackground)
-                                }
-                                Text(stringResource(R.string.my_profile), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
-                            }
-                            Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
-                                Section(stringResource(R.string.section_avatar)) {
-                                    SettingRow(Icons.Rounded.Face, stringResource(R.string.change_avatar), animalById(shownFace)?.name) { vm.open(ProfileSheet.Animal) }
-                                }
-                Section(stringResource(R.string.section_cover)) {
-                    app.talklive.ui.profile.CoverPicker(
-                        current = shownCover, plus = premium.active,
-                        onPick = { id ->
-                            vm.setCover(id) { r ->
-                                if (r == null) vm.saved = context.getString(R.string.cover_saved)
-                                else if (r == "plus") { plusWhy = app.talklive.ui.engage.PlusWhy(app.talklive.ui.engage.PlusReason.Cover); youSheet = "plus-locked" }
-                                else vm.saved = context.getString(R.string.cover_error)
-                            }
-                        },
-                        onLocked = { plusWhy = app.talklive.ui.engage.PlusWhy(app.talklive.ui.engage.PlusReason.Cover); youSheet = "plus-locked" },
-                        modifier = Modifier.padding(16.dp),
-                    )
-                }
 
-                Section(stringResource(R.string.section_about)) {
-                    SettingRow(Icons.Rounded.Person, stringResource(R.string.display_name), account?.nickname ?: stringResource(R.string.not_set)) {
-                        if (account != null) vm.open(ProfileSheet.Nickname) else onSignIn()
-                    }
-                    // Tap to copy your ID (with a little "Copied" moment); accounts edit it with the pencil.
-                    var idCopied by remember { mutableStateOf(false) }
-                    LaunchedEffect(idCopied) { if (idCopied) { kotlinx.coroutines.delay(1600); idCopied = false } }
-                    val clip = androidx.compose.ui.platform.LocalClipboardManager.current
-                    val friendIdNow by vm.myFriendId.collectAsStateWithLifecycle()
+            // Settings: compact, grouped. The details live on their own pages.
+            Spacer(Modifier.height(16.dp))
+            Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface) {
+                Column {
                     SettingRow(
-                        Icons.Rounded.Tag, stringResource(R.string.your_friend_id),
-                        if (idCopied) stringResource(R.string.copied) else friendIdNow ?: "…",
-                        onClick = { friendIdNow?.let { clip.setText(androidx.compose.ui.text.AnnotatedString(it)); idCopied = true } },
-                        trailing = {
-                            if (account != null) androidx.compose.material3.IconButton(onClick = { vm.open(ProfileSheet.FriendId) }) { Icon(Icons.Rounded.Edit, stringResource(R.string.edit), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
-                            else androidx.compose.animation.Crossfade(idCopied, label = "c") { c -> Icon(if (c) Icons.Rounded.Check else Icons.Rounded.ContentCopy, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        Icons.Rounded.WorkspacePremium, stringResource(R.string.plus),
+                        when {
+                            !premium.active -> stringResource(R.string.plus_card_pitch)
+                            premium.expiresAt != null -> stringResource(R.string.plus_until, java.text.DateFormat.getDateInstance().format(java.util.Date(premium.expiresAt!!)))
+                            else -> stringResource(R.string.plus_active)
                         },
-                    )
-                    val myGender by engageVm.myGender.collectAsStateWithLifecycle()
+                    ) { plusWhy = app.talklive.ui.engage.PlusWhy(); youSheet = "plus" }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface) {
+                Column {
+                                    val notifOn = rememberNotificationsAllowed()
+                val notifState by vm.notif.state.collectAsStateWithLifecycle()
+                val offCount = notifState.values.count { !it }
+                    SettingRow(
+                        if (notifOn) Icons.Rounded.Notifications else Icons.Rounded.NotificationsOff,
+                        stringResource(R.string.notif_settings_title),
+                        when { !notifOn -> stringResource(R.string.notif_row_blocked); offCount == 0 -> stringResource(R.string.notif_row_all); else -> stringResource(R.string.notif_row_some) },
+                    ) { youSheet = "notifications" }
+                    SettingRow(Icons.Rounded.Shield, stringResource(R.string.settings_privacy_safety), null) { page = ProfilePage.Privacy }
+                    SettingRow(Icons.Rounded.VolumeUp, stringResource(R.string.settings_appearance_sound), null) { page = ProfilePage.Appearance }
+                    SettingRow(Icons.Rounded.Person, stringResource(R.string.section_account), account?.email?.ifBlank { null } ?: account?.username) { page = ProfilePage.Account }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface) {
+                Column {
+                    SettingRow(Icons.Rounded.SupportAgent, stringResource(R.string.settings_help), null) { page = ProfilePage.Help }
+                    SettingRow(Icons.Rounded.Feedback, stringResource(R.string.news_title), null) { youSheet = "news" }
+                    SettingRow(Icons.Rounded.CardGiftcard, stringResource(R.string.invite_title), null) { youSheet = "invite" }
+                }
+            }
+
+            if (editTab != null) EditProfileDialog(
+                initialTab = editTab ?: EditTab.Avatar,
+                vm = vm, engageVm = engageVm,
+                onSignIn = onSignIn,
+                onPlus = { why -> plusWhy = app.talklive.ui.engage.PlusWhy(why); youSheet = "plus-locked" },
+                onRewards = { youSheet = "rewards" },
+                onClose = { editTab = null },
+            )
+            if (countriesOpen) CountriesSheet(engage) { countriesOpen = false }
+
+            page?.let { pg ->
+                SettingsPageDialog(
+                    title = stringResource(when (pg) {
+                        ProfilePage.Privacy -> R.string.settings_privacy_safety
+                        ProfilePage.Appearance -> R.string.settings_appearance_sound
+                        ProfilePage.Account -> R.string.section_account
+                        ProfilePage.Help -> R.string.settings_help
+                    }),
+                    snackbar = snackbar,
+                    onBack = { page = null },
+                ) {
+                    when (pg) {
+                        ProfilePage.Privacy -> {
+                            Section(stringResource(R.string.section_about)) {
+                                                    val myGender by engageVm.myGender.collectAsStateWithLifecycle()
                     val ageGroup by engageVm.ageGroup.collectAsStateWithLifecycle()
                     val flags by engageVm.flags.collectAsStateWithLifecycle()
                     SettingRow(Icons.Rounded.Face, stringResource(R.string.i_am), genderLabel(myGender)) { youSheet = "gender" }
@@ -302,75 +298,8 @@ fun ProfileScreen(
                             onAppeal = { scope.launch { vm.saved = context.getString(if (engageVm.appealVoice()) R.string.voice_appeal_sent else R.string.voice_appeal_later) } },
                         )
                     }
-                }
-
-                Section(stringResource(R.string.section_badges)) {
-                    Column(Modifier.fillMaxWidth().padding(16.dp)) {
-                        Text(
-                            stringResource(R.string.badges_body, String.format(java.util.Locale.getDefault(), "%.1f", myBadges?.hours ?: 0.0)),
-                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Spacer(Modifier.height(12.dp))
-                        BadgeShelf(myBadges, Modifier.fillMaxWidth())
-                        val badgesHidden by vm.badgesHidden.collectAsStateWithLifecycle()
-                        Spacer(Modifier.height(8.dp))
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Column(Modifier.weight(1f)) {
-                                Text(stringResource(R.string.show_badges), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-                                Text(stringResource(R.string.show_badges_desc), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            Switch(
-                                checked = !badgesHidden,
-                                onCheckedChange = { on -> vm.setShowBadges(on) { ok -> if (!ok) vm.saved = context.getString(R.string.t_couldnt_send) } },
-                                colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary),
-                            )
-                        }
-                    }
-                }
-                Section(stringResource(R.string.section_you)) {
-                    SettingRow(
-                        Icons.Rounded.Star, stringResource(R.string.rewards_title),
-                        progress?.let { stringResource(R.string.rewards_summary, it.level, it.points) } ?: stringResource(R.string.rewards_row_body),
-                    ) { youSheet = "rewards" }
-                    SettingRow(Icons.Rounded.Public, stringResource(R.string.passport), stringResource(R.string.passport_count, engage?.passport?.size ?: 0)) { youSheet = "passport" }
-                }
-                            }
-                        }
-                        SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
-                    }
-                }
-            }
-            when (youSheet) {
-                "passport" -> engage?.let { app.talklive.ui.engage.StreakSheet(it, onDismiss = { youSheet = null }, premium = premium.active, restoring = engageVm.restoring, onRestore = engageVm::restoreStreak, onPlus = { plusWhy = it; youSheet = "plus-locked" }) } ?: run { youSheet = null }
-                "films" -> app.talklive.ui.engage.FilmsSheet(engageVm, films, premium.active, onPlus = { plusWhy = app.talklive.ui.engage.PlusWhy(); youSheet = "plus-locked" }) { youSheet = null }
-                "rewards" -> app.talklive.ui.rewards.RewardsDialog { youSheet = null }
-                "invite" -> app.talklive.ui.engage.InviteSheet(engageVm) { youSheet = null }
-                "notifications" -> NotificationSettingsSheet(vm.notif) { youSheet = null }
-                "feedback" -> app.talklive.ui.engage.FeedbackSheet(onSend = { engageVm.sendFeedback(it); vm.saved = context.getString(R.string.feedback_thanks) }) { youSheet = null }
-                "problem" -> app.talklive.ui.engage.FeedbackSheet(problem = true, onSend = { engageVm.sendFeedback(it, problem = true); vm.saved = context.getString(R.string.problem_thanks) }) { youSheet = null }
-                "news" -> androidx.compose.ui.window.Dialog(
-                    onDismissRequest = { youSheet = null },
-                    properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
-                ) { app.talklive.ui.posts.NewsScreen(hiltViewModel(), onBack = { youSheet = null }) }
-                "support" -> androidx.compose.ui.window.Dialog(
-                    onDismissRequest = { youSheet = null },
-                    properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
-                ) { app.talklive.ui.support.SupportScreen(onBack = { youSheet = null }) }
-                "gender" -> ChoiceDialog(stringResource(R.string.i_am), listOf("male", "female", "unspecified"), engageVm.myGender.value, { genderLabel(it) }, { engageVm.setMyGender(it) }) { youSheet = null }
-                "age" -> ChoiceDialog(stringResource(R.string.age_group), listOf("18-24", "25-34", "35-44", "45-54", "55+", "unspecified"), engageVm.ageGroup.value, { if (it == "unspecified") stringResource(R.string.gender_unspecified) else it }, { engageVm.setAgeGroup(it) }) { youSheet = null }
-                "plus", "plus-locked" -> app.talklive.ui.engage.PlusSheet(premium, signedIn = account != null, onSignIn = { youSheet = null; onSignIn() }, onDismiss = { youSheet = null }, onInvite = { youSheet = "invite" }, passFirst = youSheet == "plus-locked", why = plusWhy)
-            }
-
-            if (account != null) {
-                Section(stringResource(R.string.section_account)) {
-                    SettingRow(Icons.Rounded.Mail, stringResource(R.string.recovery_email), account?.email?.ifBlank { null } ?: stringResource(R.string.not_set)) {
-                        vm.open(ProfileSheet.Email)
-                    }
-                    SettingRow(Icons.Rounded.Key, stringResource(R.string.change_password), null) { vm.open(ProfileSheet.Password) }
-                }
-            }
-
-            val hideStatus by vm.hideStatus.collectAsStateWithLifecycle()
+                                        val hideStatus by vm.hideStatus.collectAsStateWithLifecycle()
             val acceptCalls by vm.acceptCalls.collectAsStateWithLifecycle()
             val blocked by vm.blocked.collectAsStateWithLifecycle()
             // Calls: how a call starts and who can ring you.
@@ -405,19 +334,9 @@ fun ProfileScreen(
                     vm.open(ProfileSheet.Blocked)
                 }
             }
-
-            Section(stringResource(R.string.notif_settings_title)) {
-                val notifOn = rememberNotificationsAllowed()
-                val notifState by vm.notif.state.collectAsStateWithLifecycle()
-                val offCount = notifState.values.count { !it }
-                SettingRow(
-                    if (notifOn) Icons.Rounded.Notifications else Icons.Rounded.NotificationsOff,
-                    stringResource(R.string.notif_settings_title),
-                    when { !notifOn -> stringResource(R.string.notif_row_blocked); offCount == 0 -> stringResource(R.string.notif_row_all); else -> stringResource(R.string.notif_row_some) },
-                ) { youSheet = "notifications" }
-            }
-
-            Section(stringResource(R.string.section_appearance)) {
+                        }
+                        ProfilePage.Appearance -> {
+                                        Section(stringResource(R.string.section_appearance)) {
                 val current by vm.theme.collectAsStateWithLifecycle()
                 ThemePicker(current, premium.active, onLocked = { plusWhy = app.talklive.ui.engage.PlusWhy(app.talklive.ui.engage.PlusReason.Theme); youSheet = "plus-locked" }, onPick = vm::setTheme)
                 val soundsOn by vm.sounds.collectAsStateWithLifecycle()
@@ -429,18 +348,16 @@ fun ProfileScreen(
                     Switch(checked = vibrationOn, onCheckedChange = vm::setVibration, colors = SwitchDefaults.colors(checkedTrackColor = MaterialTheme.colorScheme.primary))
                 })
             }
-
-            Section(stringResource(R.string.section_safety)) {
-                SettingRow(Icons.Rounded.SupportAgent, stringResource(R.string.support_title), stringResource(R.string.support_row)) { youSheet = "support" }
-                SettingRow(Icons.Rounded.BugReport, stringResource(R.string.problem_title), null) { youSheet = "problem" }
-                SettingRow(Icons.Rounded.Shield, stringResource(R.string.safety_tips), null) { open("safety") }
-                SettingRow(Icons.Rounded.Groups, stringResource(R.string.community_guidelines), null) { open("community-guidelines") }
-                SettingRow(Icons.Rounded.PrivacyTip, stringResource(R.string.privacy_policy), null) { open("privacy") }
-                SettingRow(Icons.Rounded.Gavel, stringResource(R.string.terms), null) { open("terms") }
-            }
-
-            if (account != null) {
-                Spacer(Modifier.height(16.dp))
+                        }
+                        ProfilePage.Account -> {
+                            if (account != null) {
+                                                Section(stringResource(R.string.section_account)) {
+                    SettingRow(Icons.Rounded.Mail, stringResource(R.string.recovery_email), account?.email?.ifBlank { null } ?: stringResource(R.string.not_set)) {
+                        vm.open(ProfileSheet.Email)
+                    }
+                    SettingRow(Icons.Rounded.Key, stringResource(R.string.change_password), null) { vm.open(ProfileSheet.Password) }
+                }
+                                                Spacer(Modifier.height(16.dp))
                 Text(
                     stringResource(R.string.signed_in_as, account!!.email.ifBlank { account!!.username }),
                     style = MaterialTheme.typography.bodyMedium,
@@ -472,6 +389,46 @@ fun ProfileScreen(
                         Text(stringResource(R.string.delete_account), style = MaterialTheme.typography.titleMedium, color = app.talklive.ui.theme.DangerText)
                     }
                 }
+                            } else {
+                                Spacer(Modifier.height(16.dp))
+                                Text(stringResource(R.string.guest_pitch), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Spacer(Modifier.height(12.dp))
+                                PrimaryButton(stringResource(R.string.sign_in_or_create), onClick = { page = null; onSignIn() })
+                            }
+                        }
+                        ProfilePage.Help -> {
+                                        Section(stringResource(R.string.section_safety)) {
+                SettingRow(Icons.Rounded.SupportAgent, stringResource(R.string.support_title), stringResource(R.string.support_row)) { youSheet = "support" }
+                SettingRow(Icons.Rounded.BugReport, stringResource(R.string.problem_title), null) { youSheet = "problem" }
+                SettingRow(Icons.Rounded.Shield, stringResource(R.string.safety_tips), null) { open("safety") }
+                SettingRow(Icons.Rounded.Groups, stringResource(R.string.community_guidelines), null) { open("community-guidelines") }
+                SettingRow(Icons.Rounded.PrivacyTip, stringResource(R.string.privacy_policy), null) { open("privacy") }
+                SettingRow(Icons.Rounded.Gavel, stringResource(R.string.terms), null) { open("terms") }
+            }
+                        }
+                    }
+                }
+            }
+
+                        when (youSheet) {
+                "passport" -> engage?.let { app.talklive.ui.engage.StreakSheet(it, onDismiss = { youSheet = null }, premium = premium.active, restoring = engageVm.restoring, onRestore = engageVm::restoreStreak, onPlus = { plusWhy = it; youSheet = "plus-locked" }) } ?: run { youSheet = null }
+                "films" -> app.talklive.ui.engage.FilmsSheet(engageVm, films, premium.active, onPlus = { plusWhy = app.talklive.ui.engage.PlusWhy(); youSheet = "plus-locked" }) { youSheet = null }
+                "rewards" -> app.talklive.ui.rewards.RewardsDialog { youSheet = null }
+                "invite" -> app.talklive.ui.engage.InviteSheet(engageVm) { youSheet = null }
+                "notifications" -> NotificationSettingsSheet(vm.notif) { youSheet = null }
+                "feedback" -> app.talklive.ui.engage.FeedbackSheet(onSend = { engageVm.sendFeedback(it); vm.saved = context.getString(R.string.feedback_thanks) }) { youSheet = null }
+                "problem" -> app.talklive.ui.engage.FeedbackSheet(problem = true, onSend = { engageVm.sendFeedback(it, problem = true); vm.saved = context.getString(R.string.problem_thanks) }) { youSheet = null }
+                "news" -> androidx.compose.ui.window.Dialog(
+                    onDismissRequest = { youSheet = null },
+                    properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+                ) { app.talklive.ui.posts.NewsScreen(hiltViewModel(), onBack = { youSheet = null }) }
+                "support" -> androidx.compose.ui.window.Dialog(
+                    onDismissRequest = { youSheet = null },
+                    properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+                ) { app.talklive.ui.support.SupportScreen(onBack = { youSheet = null }) }
+                "gender" -> ChoiceDialog(stringResource(R.string.i_am), listOf("male", "female", "unspecified"), engageVm.myGender.value, { genderLabel(it) }, { engageVm.setMyGender(it) }) { youSheet = null }
+                "age" -> ChoiceDialog(stringResource(R.string.age_group), listOf("18-24", "25-34", "35-44", "45-54", "55+", "unspecified"), engageVm.ageGroup.value, { if (it == "unspecified") stringResource(R.string.gender_unspecified) else it }, { engageVm.setAgeGroup(it) }) { youSheet = null }
+                "plus", "plus-locked" -> app.talklive.ui.engage.PlusSheet(premium, signedIn = account != null, onSignIn = { youSheet = null; onSignIn() }, onDismiss = { youSheet = null }, onInvite = { youSheet = "invite" }, passFirst = youSheet == "plus-locked", why = plusWhy)
             }
 
             Text(
@@ -483,7 +440,6 @@ fun ProfileScreen(
         }
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
     }
-
     if (confirmSignOut) account?.let { acc ->
         SignOutSheet(
             name = acc.nickname, email = acc.email, animal = animal,
@@ -502,6 +458,62 @@ fun ProfileScreen(
         }
     }
     vm.sheet?.let { sheet -> ProfileSheetHost(sheet, vm, animal, onSignIn, premium = plusNow.active, look = plusNow.look, lookFace = plusNow.lookFace, onPlus = { vm.close(); plusWhy = app.talklive.ui.engage.PlusWhy(app.talklive.ui.engage.PlusReason.Avatar); youSheet = "plus-locked" }, tier = vm.progress.collectAsStateWithLifecycle().value?.tier ?: "none", onRewards = { vm.close(); youSheet = "rewards" }) }
+}
+
+
+/** A full-screen settings page: back arrow, title, and the sections in a scroller. */
+@Composable
+private fun SettingsPageDialog(title: String, snackbar: SnackbarHostState, onBack: () -> Unit, content: @Composable () -> Unit) {
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onBack,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+    ) {
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            Box(Modifier.fillMaxSize()) {
+                Column(Modifier.fillMaxSize().statusBarsPadding()) {
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        androidx.compose.material3.IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.back), tint = MaterialTheme.colorScheme.onBackground)
+                        }
+                        Text(title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
+                    }
+                    Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(horizontal = 16.dp).padding(bottom = 24.dp)) {
+                        content()
+                    }
+                }
+                SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
+            }
+        }
+    }
+}
+
+/** The countries talked to, as a scrollable list: flag, name and how many times (when the server counts them). */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CountriesSheet(engage: app.talklive.engage.Engage?, onDismiss: () -> Unit) {
+    val rows = remember(engage) {
+        (engage?.passport.orEmpty()).map { it to (engage?.passportCounts?.get(it) ?: 0) }
+            .sortedWith(compareByDescending<Pair<String, Int>> { it.second }.thenBy { app.talklive.ui.engage.countryName(it.first) })
+    }
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.background) {
+        Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 20.dp).padding(bottom = 16.dp)) {
+            Text(stringResource(R.string.countries_sheet_title), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
+            Spacer(Modifier.height(12.dp))
+            if (rows.isEmpty()) {
+                Text(stringResource(R.string.countries_empty), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else androidx.compose.foundation.lazy.LazyColumn(Modifier.fillMaxWidth().heightIn(max = 460.dp)) {
+                items(rows.size) { i ->
+                    val (cc, count) = rows[i]
+                    Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(app.talklive.ui.social.flag(cc) ?: "\uD83C\uDFF3\uFE0F", style = MaterialTheme.typography.headlineSmall)
+                        Spacer(Modifier.width(14.dp))
+                        Text(app.talklive.ui.engage.countryName(cc), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.weight(1f))
+                        if (count > 0) Text(stringResource(R.string.country_times, count), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
