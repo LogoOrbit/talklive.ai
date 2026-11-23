@@ -680,6 +680,7 @@ const I18N_STRINGS = Object.assign(window.I18N_STRINGS || {}, {
     "men": "Men",
     "women": "Women",
     "genderFilterNoteLink": "How this works",
+    "chatPrefNote": "Male and Female need Plus.",
     "termsLoading": "Loading the Terms & Conditions…",
     "termsOpenPage": "Open them on their own page",
     "fvFriendPromptTitle": "Enjoyed talking with {name}?",
