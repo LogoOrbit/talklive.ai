@@ -104,11 +104,12 @@ fun NewsScreen(vm: PostsViewModel, onBack: () -> Unit) {
                         }
                     }
                     state.posts.isEmpty() && (state.loading || !state.loaded && !state.error) -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-                    else -> Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
+                    else -> Column(Modifier.fillMaxSize().padding(32.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             stringResource(if (state.error) R.string.news_error else R.string.news_empty),
                             style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        if (state.error) TextButton(onClick = { vm.load() }) { Text(stringResource(R.string.story_retry)) }
                     }
                 }
             }

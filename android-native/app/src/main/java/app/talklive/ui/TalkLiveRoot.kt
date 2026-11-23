@@ -317,7 +317,8 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
     val postsVm: app.talklive.ui.posts.PostsViewModel = hiltViewModel()
     val postsState by postsVm.state.collectAsStateWithLifecycle()
     var showNews by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { postsVm.loadOnce() }
+    // Also when the connection comes back: a post that failed to load at a cold start shows up then.
+    LaunchedEffect(connected) { if (connected) postsVm.loadOnce() }
     if (showNews) androidx.compose.ui.window.Dialog(
         onDismissRequest = { showNews = false },
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),

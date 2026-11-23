@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
@@ -52,37 +53,52 @@ data class PostsState(
  */
 @Singleton
 class PostsRepository @Inject constructor(private val identity: IdentityStore) {
-    private val http = Http.withTimeout(12)
+    private val http = Http.withTimeout(20)
     private val _state = MutableStateFlow(PostsState())
     val state: StateFlow<PostsState> = _state
 
     @Volatile private var fetchedOnce = false
 
-    /** Home: fetch once per app open; later calls are free. */
+    /**
+     * Home: fetch once per app open; later calls are free. Only a fetch that worked counts:
+     * the first one often runs before the network is up at a cold start, and counting that
+     * failure left Home without the latest post (and the news empty) until the app restarted.
+     */
     suspend fun loadOnce() { if (!fetchedOnce) load() }
 
-    suspend fun load() {
-        fetchedOnce = true
+    private val loadLock = kotlinx.coroutines.sync.Mutex()
+
+    suspend fun load() = loadLock.withLock {
         _state.update { it.copy(loading = true, error = false) }
-        val result = withContext(Dispatchers.IO) {
-            runCatching {
-                val url = "${ServerConfig.url}/api/posts".toHttpUrl().newBuilder()
-                    .addQueryParameter("clientId", identity.clientId)
-                    .addQueryParameter("identityToken", identity.identityToken ?: "")
-                    .build()
-                http.newCall(Request.Builder().url(url).build()).execute().use { res ->
-                    if (!res.isSuccessful) error("http ${res.code}")
-                    JSONObject(res.body?.string().orEmpty())
-                }
-            }.getOrNull()
+        // A few tries with a short back-off: a phone waking up or switching networks drops the first one.
+        var result: JSONObject? = null
+        for (attempt in 0 until 3) {
+            result = fetch()
+            if (result != null) break
+            kotlinx.coroutines.delay(800L * (attempt + 1))
         }
         if (result == null) {
             _state.update { it.copy(loading = false, error = !it.loaded) }
-            return
+            return@withLock
         }
+        fetchedOnce = true
         val arr = result.optJSONArray("posts")
-        val posts = if (arr == null) emptyList() else (0 until arr.length()).mapNotNull { arr.optJSONObject(it)?.let(::parsePost) }
+        // One odd item must not take the whole list down with it.
+        val posts = if (arr == null) emptyList() else (0 until arr.length()).mapNotNull { i -> runCatching { arr.optJSONObject(i)?.let(::parsePost) }.getOrNull() }
         _state.value = PostsState(posts, result.optBoolean("canComment"), loading = false, error = false, loaded = true)
+    }
+
+    private suspend fun fetch(): JSONObject? = withContext(Dispatchers.IO) {
+        runCatching {
+            val url = "${ServerConfig.url}/api/posts".toHttpUrl().newBuilder()
+                .addQueryParameter("clientId", identity.clientId)
+                .addQueryParameter("identityToken", identity.identityToken ?: "")
+                .build()
+            http.newCall(Request.Builder().url(url).header("Accept", "application/json").build()).execute().use { res ->
+                if (!res.isSuccessful) error("http ${res.code}")
+                JSONObject(res.body?.string().orEmpty())
+            }
+        }.getOrNull()
     }
 
     /** One reaction per person: the same type again removes it. Shown at once, undone if the server refuses. */
