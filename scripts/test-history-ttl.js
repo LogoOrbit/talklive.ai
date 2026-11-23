@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Recent people are kept for 7 days; a conversation between two people who
+// Recent people are kept for 30 days; a conversation between two people who
 // are not friends goes once it has left both their recent lists. Boots the
 // server on a seeded store and reads back what it saved.
 'use strict';
@@ -21,7 +21,7 @@ function ok(name, cond, detail) {
 }
 
 const now = Date.now();
-const old = now - 8 * 24 * 60 * 60 * 1000;
+const old = now - 31 * 24 * 60 * 60 * 1000;
 const row = (clientId, ts) => ({ clientId, username: clientId, countryCode: 'IN', mode: 'chat', ts });
 fs.writeFileSync(FILE, JSON.stringify({
   accounts: {},
@@ -55,7 +55,7 @@ fs.writeFileSync(FILE, JSON.stringify({
     }
     await wait(3500); // the 2s debounced save
     const s = JSON.parse(fs.readFileSync(FILE, 'utf8')).social;
-    ok('history older than 7 days is dropped', !s.chatHistory.c_ann && !s.chatHistory.c_cat, s.chatHistory);
+    ok('history older than 30 days is dropped', !s.chatHistory.c_ann && !s.chatHistory.c_cat, s.chatHistory);
     ok('fresh history rows stay', s.chatHistory.c_dan && s.chatHistory.c_dan.length === 1
       && s.chatHistory.c_dan[0].clientId === 'c_zed' && s.chatHistory.c_eve.length === 1, s.chatHistory);
     ok('friends keep their conversation', !!s.friendChats['c_ann|c_bob'], Object.keys(s.friendChats));

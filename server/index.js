@@ -2662,10 +2662,9 @@ const lastSeen = new Map();
 // Voice and text matches both land here, so it is sized for a session of
 // skipping: ten was gone after a few minutes of "next", taking with it the one
 // person worth calling back.
-// Ten since October 2026: the client shows the last 10 calls (5 on the home
-// rail), so the rest was stored for nobody. Rows also expire after a day
-// (CHAT_HISTORY_TTL_MS).
-const MAX_CHAT_HISTORY = 20;
+// Rows expire after 30 days (CHAT_HISTORY_TTL_MS); the cap only bounds how
+// much one profile can hold.
+const MAX_CHAT_HISTORY = 50;
 const MAX_NOTIFICATIONS = 50;
 // Pending requests and queued notifications older than this are dead weight:
 // nobody acts on a month-old "wants to talk".
@@ -2917,14 +2916,17 @@ function snapshotOf(clientId, viewerClientId) {
   const sock = getSocketByClientId(clientId);
   const live = sock ? profiles.get(sock.id) : null;
   if (live) return { username: live.username, countryCode: live.country, avatar: shownAvatar(live) };
+  // Offline: the name and country come from the saved row, but the face is
+  // always the current one (account / last noted face), never a stale or empty copy.
+  const face = (saved) => resolveFace(clientId, null, saved || null);
   const friend = (friends.get(viewerClientId) || new Map()).get(clientId);
-  if (friend) return { username: friend.username, countryCode: friend.countryCode, avatar: friend.avatar || null };
+  if (friend) return { username: friend.username, countryCode: friend.countryCode, avatar: face(friend.avatar) };
   const past = (chatHistory.get(viewerClientId) || []).find((e) => e.clientId === clientId);
-  if (past) return { username: past.username, countryCode: past.countryCode, avatar: past.avatar || null };
+  if (past) return { username: past.username, countryCode: past.countryCode, avatar: face(past.avatar) };
   const req = (friendRequests.get(viewerClientId) || new Map()).get(clientId)
     || (sentRequests.get(viewerClientId) || new Map()).get(clientId);
-  if (req) return { username: req.username, countryCode: req.countryCode, avatar: req.avatar || null };
-  return { username: '', countryCode: '', avatar: null };
+  if (req) return { username: req.username, countryCode: req.countryCode, avatar: face(req.avatar) };
+  return { username: '', countryCode: '', avatar: clientId ? face(null) : null };
 }
 
 // The point before which `viewer` has cleared their copy of a conversation.
@@ -3014,10 +3016,10 @@ function dropFromChatHistory(ownerClientId, otherClientId) {
   if (left.length) chatHistory.set(ownerClientId, left); else chatHistory.delete(ownerClientId);
 }
 
-// Recent people (the call and chat history) is kept for a week. Forever, for
+// Recent people (the call and chat history) is kept for 30 days. Forever, for
 // everyone who ever visited, was 15,000 lists and ~10MB of the store by October
 // 2026; one day was so short people thought their history had been lost.
-const CHAT_HISTORY_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const CHAT_HISTORY_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 // Drop history rows older than a day, then the conversations nobody can open
 // any more: one between two people who are not friends is reached only from
@@ -3047,6 +3049,64 @@ function pruneChatHistory(now = Date.now()) {
     if (clips.length) store.deleteVoiceNotes(clips).catch(() => {});
     changed = true;
   }
+  return changed;
+}
+
+// One-time clean-up at boot for the shorter free list (spec section 8): anyone
+// without Plus who is stored wearing a Plus face - account record, last noted
+// face, or the face copied into other people's friend and history rows - is
+// switched to a free face of the same kind. The chosen Plus face is remembered
+// (plusFaces) so it returns with Plus. Idempotent: a second run changes nothing.
+function migratePlusFaces() {
+  let changed = false;
+  const lockedPlus = (cid, key) => {
+    if (!key || !isPlusFace(key) || isPremium(cid)) return false;
+    const look = store.plusLook(cid);
+    return !(look && (!look.face || look.face === key));
+  };
+  const remember = (cid, key) => {
+    if (!store.data.plusFaces[cid]) store.data.plusFaces[cid] = { face: key, free: freeFaceOf(key) };
+  };
+  const slot = (free) => (free.startsWith('a:') ? free.slice(2) : free);
+  for (const [usernameLower, rec] of Object.entries(store.data.accounts || {})) {
+    const cid = rec.clientId;
+    // Cloud settings may carry the face too (a client-defined key such as animal / avatar).
+    const cloud = store.data.accountSettings && store.data.accountSettings[usernameLower];
+    if (cid && cloud) {
+      for (const k of ['animal', 'avatar', 'face']) {
+        const ck = typeof cloud[k] === 'string' ? faceKey(cloud[k]) : null;
+        if (lockedPlus(cid, ck)) { cloud[k] = cloud[k].startsWith('a:') ? freeFaceOf(ck) : (cloud[k].startsWith('c:') ? freeFaceOf(ck) : slot(freeFaceOf(ck))); changed = true; }
+      }
+    }
+    const key = faceKey(rec.animal);
+    if (!cid || !lockedPlus(cid, key)) continue;
+    const free = freeFaceOf(key);
+    remember(cid, key);
+    const acc = accounts.get(usernameLower);
+    if (acc) acc.animal = slot(free);
+    rec.animal = slot(free);
+    persistAccount(usernameLower);
+    store.noteFace(cid, free);
+    changed = true;
+  }
+  for (const [cid, face] of Object.entries(store.data.heldFace || {})) {
+    const key = faceKey(face);
+    if (!lockedPlus(cid, key)) continue;
+    remember(cid, key);
+    store.noteFace(cid, freeFaceOf(key));
+    changed = true;
+  }
+  const fix = (cid, entry) => {
+    const key = entry && faceKey(entry.avatar);
+    if (!lockedPlus(cid, key)) return;
+    entry.avatar = freeFaceOf(key);
+    changed = true;
+  };
+  for (const m of friends.values()) for (const [fid, entry] of m) fix(fid, entry);
+  for (const list of chatHistory.values()) for (const e of list) fix(e && e.clientId, e);
+  for (const m of friendRequests.values()) for (const [fid, entry] of m) fix(fid, entry);
+  for (const m of sentRequests.values()) for (const [fid, entry] of m) fix(fid, entry);
+  if (changed) store.save();
   return changed;
 }
 
@@ -3535,7 +3595,8 @@ function liveCountryFor(clientId, saved) {
 function liveAvatarFor(clientId, fallback) {
   const sock = getSocketByClientId(clientId);
   const profile = sock ? profiles.get(sock.id) : null;
-  return shownAvatar(profile) || fallback || null;
+  const live = profile ? (profile.avatar || (profile.animal ? `a:${profile.animal}` : null)) : null;
+  return resolveFace(clientId, live, fallback || null);
 }
 
 const FREE_HISTORY = 3;
@@ -3640,7 +3701,7 @@ function syncClientState(socket, clientId) {
     blocked: blockedList,
     muted: Array.from(mutedChats.get(clientId) || []),
     // The person's own talk-time badges and effective cover.
-    ...profileExtras(clientId),
+    ...ownExtras(clientId),
   });
 }
 
@@ -4531,13 +4592,17 @@ function placeFromHints(timezone, acceptLanguage) {
 // The picture friends and recent people see. Most people never pick an
 // avatar, but everyone who calls has a spirit animal - without this fallback
 // their friends saw a blank silhouette for someone they knew as "the Fox".
-// The faces free accounts may pick: five animals and five movie characters.
-// Every other animal and character is Plus. Mirrored by FREE_FACES in
-// public/animals.js and android AnimalUi.kt; keep the three lists identical.
+// The faces free accounts may pick: five animals and five movie characters
+// (spec section 8). Every other animal and character is Plus. Mirrored by
+// FREE_FACES in public/animals.js and android AnimalUi.kt; keep the lists identical.
 const FREE_FACES = new Set([
-  'a:lion', 'a:fox', 'a:cat',
-  'c:wizard', 'c:pirate', 'c:robot',
+  'a:cat', 'a:fox', 'a:panda', 'a:rabbit', 'a:dog',
+  'c:wizard', 'c:pirate', 'c:robot', 'c:queen', 'c:artist',
 ]);
+// What someone without Plus is switched to when they wear a Plus face.
+const FREE_ANIMAL_FALLBACK = 'a:cat';
+const FREE_CHARACTER_FALLBACK = 'c:wizard';
+function freeFaceOf(key) { return key && key.startsWith('c:') ? FREE_CHARACTER_FALLBACK : FREE_ANIMAL_FALLBACK; }
 // Special faces are earned with points, never bought (server/progress.js):
 // silver_knight, gold_phoenix and diamond_legend unlock at Silver, Gold and Diamond.
 const progress = createProgress({ store });
@@ -4574,11 +4639,45 @@ function faceAllowed(clientId, value, premium) {
   const look = store.plusLook(clientId);
   return !!look && (!look.face || look.face === faceKey(value));
 }
+// A Plus face worn without Plus is shown as the free face of the same kind
+// (never as nothing: a person always has a face other people can see).
+function effectiveFace(clientId, face) {
+  const key = faceKey(face);
+  if (!key) return face || null; // gendered busts and empty values pass through
+  return faceAllowed(clientId, key, isPremium(clientId)) ? face : freeFaceOf(key);
+}
+// Someone who never picked a face still has one: stable per profile, so every
+// screen shows the same animal for them. Chosen from the free animals.
+function defaultFaceFor(clientId) {
+  const animals = [...FREE_FACES].filter((f) => f.startsWith('a:'));
+  let h = 0;
+  const id = String(clientId || '');
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return animals[h % animals.length];
+}
+// The face saved with the account that owns this profile (a signed-in person
+// seen while offline, or on another device whose profile has no face yet).
+function accountFaceFor(clientId) {
+  const usernameLower = clientId && store.findUsernameByClientId(clientId);
+  const acc = usernameLower && (accounts.get(usernameLower) || (store.data.accounts || {})[usernameLower]);
+  return (acc && faceKey(acc.animal)) || null;
+}
+// THE one place a person's current face is worked out, for every payload that
+// shows someone else: the live profile first, then the account's saved face,
+// the face last noted for the profile, the stored snapshot the caller holds,
+// and finally a stable free default. Never null for a real clientId.
+function resolveFace(clientId, liveFace, snapshotFace) {
+  const held = clientId ? store.heldFace(clientId) : null;
+  const candidates = [liveFace, accountFaceFor(clientId), held || null, snapshotFace];
+  for (const c of candidates) {
+    if (c) return effectiveFace(clientId, c) || defaultFaceFor(clientId);
+  }
+  return clientId ? defaultFaceFor(clientId) : null;
+}
 function shownAvatar(p) {
   if (!p) return null;
   const face = p.avatar || (p.animal ? `a:${p.animal}` : null);
-  if (face && !faceAllowed(p.clientId, face, isPremium(p.clientId))) return null;
-  return face;
+  return resolveFace(p.clientId, face, null);
 }
 
 // --- Covers, badges and the Plus look (spec sections 3-6) -------------------
@@ -4598,7 +4697,13 @@ function effectiveCover(clientId) {
 }
 // Added to every profile another person can see.
 function profileExtras(clientId) {
-  return { badges: Badges.badgesFor(store, clientId), cover: effectiveCover(clientId) };
+  const hidden = !!(store.data.hideBadges && store.data.hideBadges[clientId]);
+  return { badges: hidden ? null : Badges.badgesFor(store, clientId), cover: effectiveCover(clientId) };
+}
+// The same for the person's own devices: they always see their badges.
+function ownExtras(clientId) {
+  const hidden = !!(store.data.hideBadges && store.data.hideBadges[clientId]);
+  return { badges: Badges.badgesFor(store, clientId), cover: effectiveCover(clientId), badgesHidden: hidden };
 }
 function disappearingSeconds(a, b) {
   return disappearing.has(pairKey(a, b)) ? Math.round(DISAPPEAR_MS / 1000) : 0;
@@ -4624,7 +4729,7 @@ function reconcilePlusFace(clientId, animal, avatar) {
   if (key && isPlusFace(key)) {
     const look = store.plusLook(clientId);
     if (look && (!look.face || look.face === key)) return { animal, avatar, change: null };
-    const free = key.startsWith('c:') ? 'c:wizard' : 'a:lion';
+    const free = freeFaceOf(key);
     store.data.plusFaces[clientId] = { face: key, free };
     store.save();
     return { ...faceSlots(free), change: 'ended' };
@@ -4659,7 +4764,111 @@ function recordTalkWithBadges(profile, seconds) {
     emitToClient(cid, 'badges', after);
     resyncWatchers(cid);
   }
+  scheduleRankRefresh();
 }
+// Top-talker ranks (spec section 9): recomputed at boot and after call ends,
+// at most once a minute.
+const RANK_REFRESH_MS = Number(process.env.RANK_REFRESH_MS) || 60000;
+let rankRefreshAt = 0;
+let rankTimer = null;
+function refreshRanks() {
+  rankRefreshAt = Date.now();
+  const changed = Badges.recomputeRanks(store, (cid) => !!store.findActiveBan(cid, '', {}));
+  for (const cid of changed) {
+    emitToClient(cid, 'badges', Badges.badgesFor(store, cid));
+    resyncWatchers(cid);
+  }
+  return changed;
+}
+function scheduleRankRefresh() {
+  if (rankTimer) return;
+  const wait = Math.max(0, rankRefreshAt + RANK_REFRESH_MS - Date.now());
+  rankTimer = setTimeout(() => { rankTimer = null; refreshRanks(); }, wait);
+  if (rankTimer.unref) rankTimer.unref();
+}
+// --- Likes = mutual match (spec section 8) ---------------------------------
+// A like is the record store.addLike keeps for "who liked you" (the same one the
+// in-call heart button writes). Two people who liked each other are a match:
+// the server makes them friends and both hear 'like-match'.
+const LIKE_BOOST_MS = 7 * 24 * 60 * 60 * 1000;
+const hasLiked = (fromClientId, toClientId) => store.likesFor(toClientId).some((l) => l.from === fromClientId);
+// Likes received in the last 7 days nudge a person up the matching order.
+function likeBoost(clientId) {
+  const cut = Date.now() - LIKE_BOOST_MS;
+  let n = 0;
+  for (const l of store.likesFor(clientId)) if (l.at >= cut) n++;
+  return Math.min(n, 4) * 0.5;
+}
+function likesSummary(clientId) {
+  const received = store.likesFor(clientId).filter((l) => !isBlockedPair(clientId, l.from));
+  const waiting = received.filter((l) => !hasLiked(clientId, l.from));
+  const out = { count: waiting.length, matches: received.length - waiting.length, people: [] };
+  // Only Plus sees who; everyone else gets the count and blurred faces.
+  if (isPremium(clientId)) {
+    out.people = waiting.slice(0, 30).map((l) => ({
+      clientId: l.from,
+      username: snapshotOf(l.from, clientId).username || l.username || '',
+      avatar: resolveFace(l.from, null, null),
+      ts: l.at,
+    }));
+  }
+  return out;
+}
+function pushLikes(clientId) {
+  emitToClient(clientId, 'likes', { count: likesSummary(clientId).count });
+}
+function likeMatchPayload(clientId, viewerClientId) {
+  const snap = snapshotOf(clientId, viewerClientId);
+  return {
+    clientId,
+    username: snap.username || '',
+    avatar: snap.avatar || resolveFace(clientId, null, null),
+    friendId: publicIdOf(clientId) || null,
+    ...profileExtras(clientId),
+  };
+}
+function makeLikeMatch(a, b) {
+  if (isBlockedPair(a, b)) return;
+  if (!isFriend(a, b)) {
+    const infoOf = (cid, viewer) => ({ ...snapshotOf(cid, viewer), temporary: !store.findUsernameByClientId(cid) });
+    addFriendPair(a, infoOf(a, b), b, infoOf(b, a));
+    reputation.note(a, 'friend', { from: b });
+    reputation.note(b, 'friend', { from: a });
+  }
+  store.recordFeature('like_match');
+  emitToClient(a, 'like-match', likeMatchPayload(b, a));
+  emitToClient(b, 'like-match', likeMatchPayload(a, b));
+  for (const cid of [a, b]) {
+    const sock = getSocketByClientId(cid);
+    if (sock) syncClientState(sock, cid);
+    else {
+      const other = cid === a ? b : a;
+      const name = snapshotOf(other, cid).username || 'Someone';
+      push.send(cid, { topic: `likematch:${other}`, title: "It's a match!", body: `You and ${name} liked each other.`, url: '/?open=friends', kind: 'social' }).catch(() => {});
+    }
+  }
+}
+// Records `me` liking `targetClientId`. Idempotent per pair. Returns
+// { ok, matched } or { ok:false, reason }.
+function recordLike(me, targetClientId) {
+  if (!me || !targetClientId || targetClientId === me.clientId) return { ok: false, reason: 'invalid' };
+  if (isBlockedPair(me.clientId, targetClientId)) return { ok: false, reason: 'blocked' };
+  const already = hasLiked(me.clientId, targetClientId);
+  if (!already) {
+    const snap = snapshotOf(me.clientId, targetClientId);
+    store.addLike(targetClientId, me.clientId, { username: me.username, country: snap.countryCode || me.country });
+    reputation.note(targetClientId, 'heart', { from: me.clientId });
+    store.recordFeature('like_partner');
+  }
+  const matched = hasLiked(targetClientId, me.clientId);
+  if (!already) {
+    if (matched) makeLikeMatch(me.clientId, targetClientId);
+    pushLikes(targetClientId);
+    pushLikes(me.clientId);
+  }
+  return { ok: true, matched };
+}
+
 function pushProgress(clientId) {
   const hasAccount = !!store.findUsernameByClientId(clientId);
   emitToClient(clientId, 'progress', progress.view(clientId, { hasAccount }));
@@ -5055,6 +5264,7 @@ function premiumStatusPayload(clientId, premium) {
     // swapped out while Plus is off), so every client follows it.
     ...ownLook(clientId),
     badges: Badges.badgesFor(store, clientId),
+    badgesHidden: !!(store.data.hideBadges && store.data.hideBadges[clientId]),
   };
 }
 
@@ -5816,6 +6026,7 @@ const PREMIUM_QUEUE_BONUS = 1000;
 function matchScore(a, b) {
   return sharedInterestCount(a, b) * 2 + (a.lang && a.lang === b.lang ? 1 : 0)
     + (b.premium ? PREMIUM_QUEUE_BONUS : 0)
+    + likeBoost(b.clientId)
     + genderRankBonus(a, b) + genderRankBonus(b, a);
 }
 
@@ -7287,6 +7498,14 @@ io.on('connection', (socket) => {
       authedAccount.animal = sentAnimal;
       persistAccount(socketAuth.get(socket.id));
     }
+    // A Plus face swapped for a free one (or put back) is written to the account
+    // that owns this profile too - even when this socket is not signed in - so
+    // other people's friend rows and profile sheets show the same face.
+    if (lookFix.change && sentAnimal) {
+      const ownerName = store.findUsernameByClientId(clientId);
+      const ownerAcc = ownerName && accounts.get(ownerName);
+      if (ownerAcc && ownerAcc.animal !== sentAnimal) { ownerAcc.animal = sentAnimal; persistAccount(ownerName); }
+    }
     patterns.onConnect({ ip: getClientIp(socket), clientId, username: chosenName || '' });
     profiles.set(socket.id, {
       clientId,
@@ -7390,7 +7609,7 @@ io.on('connection', (socket) => {
       country: geo.countryName,
       countryCode: geo.country,
       city: geo.city,
-      ...profileExtras(clientId),
+      ...ownExtras(clientId),
     });
 
     socket.emit('premium-status', premiumStatusPayload(clientId, premium));
@@ -7537,6 +7756,21 @@ io.on('connection', (socket) => {
     store.save();
     reply({ ok: true, cover: cover || null });
     emitToClient(me.clientId, 'profile-look', ownLook(me.clientId, 'cover'));
+    resyncWatchers(me.clientId);
+  });
+
+  // "Show badges on my profile": off hides badges from everyone else.
+  socket.on('show-badges', (payload, ack) => {
+    if (typeof payload === 'function') { ack = payload; payload = {}; }
+    const reply = typeof ack === 'function' ? ack : () => {};
+    const me = profiles.get(socket.id);
+    if (!me) return reply({ ok: false, reason: 'invalid' });
+    if (!socialRateOk('show-badges', me.clientId, 30, 60000)) return reply({ ok: false, reason: 'invalid' });
+    const on = !(payload && payload.on === false);
+    if (on) delete store.data.hideBadges[me.clientId]; else store.data.hideBadges[me.clientId] = true;
+    store.save();
+    reply({ ok: true, on });
+    emitToClient(me.clientId, 'badges', { ...Badges.badgesFor(store, me.clientId), badgesHidden: !on });
     resyncWatchers(me.clientId);
   });
 
@@ -7784,6 +8018,32 @@ io.on('connection', (socket) => {
         online: clientSockets.has(l.from) && !statusHidden.get(l.from),
       })),
     });
+  });
+
+  // Like the person you just met (current partner, or anyone in recent history).
+  // Two likes make a match: both get 'like-match' and become friends.
+  socket.on('like-partner', (payload, ack) => {
+    if (typeof payload === 'function') { ack = payload; payload = {}; }
+    const reply = typeof ack === 'function' ? ack : () => {};
+    const me = profiles.get(socket.id);
+    if (!me) return reply({ ok: false, reason: 'not-registered' });
+    const target = validId(payload && payload.clientId);
+    if (!target || target === me.clientId) return reply({ ok: false, reason: 'invalid' });
+    if (!socialRateOk('like-partner', me.clientId, 60, 60000)) return reply({ ok: false, reason: 'rate' });
+    const partnerSock = partners.get(socket.id);
+    const partnerProfile = partnerSock ? profiles.get(partnerSock) : null;
+    const recent = (chatHistory.get(me.clientId) || []).some((e) => e.clientId === target);
+    if (!recent && !(partnerProfile && partnerProfile.clientId === target)) return reply({ ok: false, reason: 'not-recent' });
+    reply(recordLike(me, target));
+  });
+
+  // The likes badge and the "who liked you" list. `count` = likes received in
+  // the last 30 days that are not a match yet; `people` only for Plus.
+  socket.on('likes-summary', (ack) => {
+    if (typeof ack !== 'function') return;
+    const me = profiles.get(socket.id);
+    if (!me) return ack({ count: 0, matches: 0, people: [] });
+    ack(likesSummary(me.clientId));
   });
 
   // Personal online-status visibility: hides this user's status only from
@@ -8126,7 +8386,7 @@ io.on('connection', (socket) => {
       // that never got reciprocated stayed in memory for the process's life.
       set.ts = Date.now();
       // "Who liked you": kept per person, shown in full to Premium.
-      store.addLike(partner.clientId, seeker.clientId, { username: seeker.username, country: seeker.country });
+      recordLike(seeker, partner.clientId);
       if (!wasMutual && set.size === 2) {
         store.recordFeature('heart_mutual');
         store.recordFeatureUser('heart_mutual', seeker.clientId);
@@ -8485,7 +8745,7 @@ io.on('connection', (socket) => {
         friendId: publicIdOf(targetClientId) || displayFriendId(code),
         username: snap.username || (account && account.nickname) || 'Stranger',
         countryCode: snap.countryCode || '',
-        avatar: snap.avatar || null,
+        avatar: snap.avatar || resolveFace(targetClientId, null, null),
         temporary: isGuestFriendId(code),
         isFriend: isFriend(me.clientId, targetClientId),
         pending: (sentRequests.get(me.clientId) || new Map()).has(targetClientId),
@@ -10083,6 +10343,9 @@ store.ready.then(() => {
   // returning users can log in and see their friends/chats immediately.
   applyOwnerReset();
   hydrateFromStore();
+  Badges.recomputeRanks(store, (cid) => !!store.findActiveBan(cid, '', {}));
+  rankRefreshAt = Date.now();
+  if (migratePlusFaces()) persistSocial();
   // Expired history goes at once, not ten minutes after a deploy.
   if (pruneChatHistory()) persistSocial();
   seedLoginNetworks();

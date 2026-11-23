@@ -17,7 +17,7 @@ const CRITICAL = [
   'test-play-billing', 'test-nickname-rules', 'test-auth-sessions', 'test-client-ip', 'test-password-reset',
   'test-referral', 'test-premium-perks', 'test-avatar-tiers', 'test-subscribe', 'test-settings-merge', 'test-disappearing', 'test-store-compact', 'test-bot-quarantine', 'test-pricing', 'test-plus-sync',
   'test-social', 'test-social-safety', 'test-social-delivery', 'test-dm-receipts', 'test-dm-ack', 'test-social-extras',
-  'test-social-privacy', 'test-social-edit', 'test-friend-id', 'test-discovery', 'test-friend-sync',
+  'test-social-privacy', 'test-social-edit', 'test-friend-id', 'test-discovery', 'test-friend-sync', 'test-rank-badges', 'test-likes-match', 'test-avatar-visible',
   'test-chat-extras', 'test-chat-away', 'test-away-resume', 'test-captcha', 'test-chat-guard', 'test-chat-spam', 'test-link-filter', 'test-guard-policy', 'test-social-sharing',
   'test-matchmaking', 'test-malformed-packets', 'test-ban-evasion', 'test-rate-limits', 'test-text-normalize', 'test-spam-patterns', 'test-block-report', 'test-match-quality', 'test-sdp-tune', 'test-voice-notes', 'test-delete-account-purge', 'test-voice-gender', 'test-voice-filter', 'test-ban-appeal', 'test-major-offense', 'test-case-files',
 ];
