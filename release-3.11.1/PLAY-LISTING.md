@@ -1,130 +1,98 @@
-# TalkLive 3.11.1 (132) - Play release
+# TalkLive 3.11.1 (132) - Play listing
 
-Copy these into Play Console. Graphics are in `store/`.
+## App name (30 max)
+TalkLive: Voice Chat & Friends
 
-## Main store listing
+## Short description (80 max)
+Talk to real people worldwide by voice or text. Make friends, play, level up.
 
-**App name** (30 max)
-TalkLive
+## Full description (under 4000)
 
-**Short description** (80 max)
-Free voice calls and text chat with new people worldwide. No sign-up, no camera.
+TalkLive connects you with a real person somewhere in the world for a live voice call or a text chat. It's free, takes one tap, and needs no camera.
 
-**Full description**
+🎙️ RANDOM VOICE CALLS
+Tap Talk and hear a real voice in seconds. Calls are one-to-one, audio-only and never recorded. Mute, speaker, Next and reactions are on every call.
 
-TalkLive connects you with a real person somewhere in the world for a live
-voice call or a text chat - free, in one tap, with no account and no camera.
+💬 RANDOM TEXT CHAT
+Prefer typing? Start a private text chat with someone new. Reply, react, see when they're typing, send emoji and GIFs, and switch to a voice call when you're ready.
 
-TAP TO TALK
-Hear a real voice. Calls are one-to-one, audio-only and never recorded.
+👥 FRIENDS & MESSENGER-STYLE CHATS
+Liked the conversation? Add them as a friend. All your chats live in one inbox in Friends:
+• Messages with sent and seen ticks, typing and unread counts
+• Edit, delete and react to messages
+• Voice messages
+• Call friends directly, with ringing, missed calls and call back later
+• Pin, rename, mute or block anyone
+• Find people by friend ID and share yours
 
-TAP TO CHAT
-Prefer typing? Start a private text chat with someone new instead.
+🏆 REWARDS, LEVELS & BADGES
+• Earn points and level up every time you talk
+• Daily reward with a countdown to your next claim
+• Shiny badges and rank badges to show off
+• Daily streak 🔥, weekly stats and a passport of the countries you've talked to
 
-NO SIGN-UP, NO CAMERA, NO PHONE NUMBER
-Start in seconds. Nobody sees your face or your number. Create a free
-account only if you want to keep friends.
+🎨 MAKE IT YOURS
+• Spirit-animal, movie-character and special level avatars
+• Profile covers and a personal profile card
+• Favourite films and shows on your profile
+• Themes: Dark, Light, Ocean and Sunset
 
-MEET PEOPLE WORLDWIDE
-People from more than 150 countries use TalkLive. Prefer a country, pick a
-language, or leave it global for the fastest match. The app is available in
-17 languages.
+🎮 MINI GAMES
+Play Tic Tac Toe or Dots and Boxes with your partner during a call or a chat.
 
-MAKE FRIENDS
-Liked the conversation? Add them as a friend to message and call again
-later.
+🌍 MEET PEOPLE WORLDWIDE
+People from more than 150 countries use TalkLive. See who's online now and how many people are online in each country. Filter by interests and country, or stay global for the fastest match. Icebreakers help get the talk going.
 
-PRACTISE A LANGUAGE
-Practise spoken English - or Spanish, Arabic, Hindi, French and more - with
-native speakers, in real conversations.
+🗣️ PRACTISE A LANGUAGE
+Practise spoken English, Spanish, Arabic, Hindi, French and more with native speakers. The app itself is available in 17 languages.
 
-VOICE CHECK (OPTIONAL)
-Turn on the voice check to make the Men/Women filter more reliable. It is an estimate from your voice, not proof.
+❤️ LIKES & MATCHES
+Send a heart during a call. When you both send one, it's a match. See who liked you.
 
-SHARE YOUR SOCIALS
-You can swap Instagram, Snapchat and other handles, or move to another app.
+📰 TALKLIVE NEWS
+Updates and new features, right inside the app.
 
-SAFETY FIRST
-- Adults 18+ only
-- Report and Block on every call and chat
-- Automated safety checks and human moderation
-- Banned? You can appeal in the app
-- Clear community guidelines: talklive.app/community-guidelines
+⭐ TALKLIVE PLUS
+• Gender filter (Men or Women) and more country filters
+• Undo skip
+• See who liked you
+• All avatars, special faces and animated scenes
+Monthly, yearly or short passes (1, 7 or 15 days).
 
-Also: mini games in chat, GIFs, reactions, spirit-animal avatars and call
-history.
-
+🛡️ SAFETY FIRST
+• Adults 18+ only
+• Report and Block on every call and chat
+• Automated safety checks and human moderation
+• Optional voice check to make the gender filter more reliable (an estimate, not proof)
+• Banned? You can appeal from inside the app
+• Community guidelines: talklive.app/community-guidelines
 
 Website: https://talklive.app
 Support: info@talklive.app
 
-- Optional voice check for the Men/Women filter (an estimate, not proof)
-- Fairer matching: shorter waits, fewer repeat partners, a real wait estimate
-- "Match with anyone" if your filter finds nobody
-- Calls reconnect and resume more reliably
-- Chats catch up after a reconnect; delivered ticks; unread fixes
-- Banned? Appeal from inside the app
-- Clearer Plus prices
-```
-
-## What's new in 3.11.1
+## What's new (500 max)
 
 ```
-- Chats now live in Friends: a Messenger-style inbox
-- History shows only people you have met
-- Daily reward shows a countdown until the next claim
+- New Messenger-style inbox: all your chats now live in Friends
+- Rewards: earn points, level up, daily reward with countdown
+- Shiny badges, rank badges and level avatars
+- Profile card, profile covers and an edit profile screen
+- TalkLive News inside the app
+- Likes and matches, new Home chips, pull-to-refresh
+- Offline banner and smoother reconnects
+- History now shows only people you met
 - Speed and stability fixes
 ```
 
 ## App details
+- Category: Social
+- Tags: Social networking, Chat, Language learning
+- Contact email: info@talklive.app
+- Website: https://talklive.app
+- Privacy policy: https://talklive.app/privacy
 
-- **App category:** Social (alternative: Communication)
-- **Tags:** Social networking, Chat, Language learning
-- **Contact email:** info@talklive.app
-- **Website:** https://talklive.app
-- **Privacy policy:** https://talklive.app/privacy
-
-## Graphics (`store/`)
-
-| Play field | File |
-|---|---|
-| App icon (512x512) | `icon-512.png` |
-| Feature graphic (1024x500) | `feature-graphic.png` |
-| Phone screenshots (1080x1920) | `phone-home.png`, `phone-chat.png`, `phone-safety.png`, `phone-how.png` |
-
-## App content (Policy > App content)
-
-- **Target audience:** 18 and over only.
-- **Content rating questionnaire:** category "Social / communication".
-  Answer **yes** to "users can interact or exchange content with other
-  users" and to "shares user location" = **no**. Expect an adult (18+ /
-  Mature 17+) rating.
-- **Ads:** yes, the app contains ads (Google AdSense on the website).
-- **Data safety** - answer from `public/privacy.html`; summary:
-  - Data is encrypted in transit: **yes**.
-  - Users can request deletion: **yes** (info@talklive.app / account
-    settings).
-  - Collected: **Personal info** - email address and username (optional
-    account), user IDs; **Messages** - text chats (kept for a limited rolling
-    period for moderation) and friend voice messages; **Audio** - friend voice
-    messages only (live calls are never recorded); **App activity** -
-    interactions, settings, reports; **App info and performance** - crash and
-    error logs; **Device or other IDs** - IP address, session identifiers and
-    the push notification token.
-  - Purposes: app functionality, safety/fraud prevention, analytics,
-    advertising (AdSense).
-  - Shared with third parties: advertising data with Google (AdSense) and
-    analytics with Google Analytics.
-- **News app / COVID / government:** no.
-- **User-generated content:** yes - point to the Report/Block features and
-  the community guidelines.
-
-## Permissions declarations (Policy > App content)
-
-- **Foreground service: microphone** (`FOREGROUND_SERVICE_MICROPHONE`).
-  Use case: "Ongoing voice call". Explain: the app runs a foreground service
-  only while the user is on a voice call, so the call continues when they
-  switch apps or lock the screen; a notification shows for the whole call.
-  Play asks for a short video: start a call, press Home, show the "On a
-  TalkLive call" notification and that the call continues.
-- **Microphone** (`RECORD_AUDIO`): voice calls and voice notes between users.
+## Graphics
+- Icon 512x512: mobile/store/icon-512.png
+- Feature graphic 1024x500: android-native/play-screenshots/feature-graphic.png
+- Phone screenshots: android-native/play-screenshots/01-home.png to 08-plus_ready.png
+- Tablet: android-native/play-screenshots/tablet-7in-*.png, tablet-10in-*.png
