@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /** One row in the Chats list. */
@@ -74,6 +75,9 @@ class SocialViewModel @Inject constructor(
     fun retryStory() = repo.retryStory()
     fun dismissStoryUpload() = repo.dismissStoryUpload()
     fun markStorySeen(ownerId: String, id: String) = repo.markStorySeen(ownerId, id)
+    fun likeStory(ownerId: String, id: String, on: Boolean) = repo.likeStory(ownerId, id, on)
+    fun answerStory(ownerId: String, id: String, emoji: String? = null, text: String? = null) =
+        viewModelScope.launch { repo.answerStory(ownerId, id, emoji, text) }
     val liked = repo.liked
     val likeMatches = repo.likeMatches
     fun likePartner(id: String) = repo.likePartner(id)

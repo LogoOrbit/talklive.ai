@@ -5997,10 +5997,12 @@ function renderFriendChatMessages(opts = {}) {
     const el = document.createElement('div');
     el.className = `chat-msg ${mine ? 'me' : 'them'}`;
     el.dataset.ts = String(ts);
+    if (m.story) appendStoryQuote(el, m.story, mine);
     if (m.text) {
       const body = document.createElement('span');
       body.className = 'chat-msg-text';
       body.textContent = m.text;
+      if (m.story && m.story.kind === 'react') body.style.fontSize = '40px';
       el.appendChild(body);
     }
     if (m.voice) appendVoicePlayer(el, m, activeFriendChatId);
@@ -6571,6 +6573,42 @@ socket.on('voice-note-state', ({ clientId, state, fromUsername, accepted, declin
     showToast(t('vnDeclined', { name }), 'neutral');
   }
 });
+
+// A reply or reaction to a story carries a small tile of that story, as on Instagram.
+const STORY_QUOTE_BG = {
+  blue: ['#2a6fe8', '#1d3f9e'], purple: ['#8b5cf6', '#4c1d95'], pink: ['#ec4899', '#9d174d'], orange: ['#f97316', '#b45309'],
+  green: ['#22c55e', '#166534'], teal: ['#14b8a6', '#0f766e'], dark: ['#1f2937', '#030712'], sunset: ['#fb7185', '#f59e0b'],
+  ocean: ['#06b6d4', '#4f46e5'], berry: ['#db2777', '#7c3aed'],
+};
+function appendStoryQuote(el, st, mine) {
+  const wrap = document.createElement('div');
+  wrap.className = 'chat-story-quote';
+  wrap.style.cssText = 'display:flex;flex-direction:column;gap:4px;margin-bottom:6px';
+  const label = document.createElement('small');
+  label.style.opacity = '.8';
+  const react = st.kind === 'react';
+  label.textContent = react
+    ? t(mine ? 'storyReactedTheirs' : 'storyReactedYours', { e: st.emoji || '' })
+    : t(mine ? 'storyRepliedTheirs' : 'storyRepliedYours');
+  const tile = document.createElement('div');
+  const c = STORY_QUOTE_BG[st.bg] || STORY_QUOTE_BG.blue;
+  tile.style.cssText = `width:72px;height:112px;border-radius:10px;overflow:hidden;position:relative;display:grid;place-items:center;background:linear-gradient(135deg,${c[0]},${c[1]})`;
+  if (st.gif && /^https:\/\//.test(st.gif)) {
+    const img = document.createElement('img');
+    img.src = st.gif; img.alt = ''; img.loading = 'lazy';
+    img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover';
+    tile.appendChild(img);
+  }
+  if (st.text) {
+    const tx = document.createElement('span');
+    tx.textContent = st.text;
+    tx.style.cssText = 'position:relative;color:#fff;font-size:10px;font-weight:700;text-align:center;padding:5px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical';
+    tile.appendChild(tx);
+  }
+  wrap.appendChild(label);
+  wrap.appendChild(tile);
+  el.appendChild(wrap);
+}
 
 function appendVoicePlayer(el, m, chatWith) {
   if (!VoiceNotes) return;

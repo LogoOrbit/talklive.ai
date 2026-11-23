@@ -159,6 +159,8 @@ data class ChatMessage(
     val voiceId: String? = null,
     /** Disappearing messages: when this one goes (null = it stays). */
     val exp: Long? = null,
+    /** A reply or reaction to a story: which one. */
+    val story: StoryRef? = null,
 ) {
     companion object {
         fun from(o: JSONObject, me: String): ChatMessage {
@@ -189,6 +191,10 @@ data class ChatMessage(
                 else -> MsgStatus.Sent
             },
             exp = o.optLong("exp").takeIf { it > 0 },
+            story = o.optJSONObject("story")?.let { st ->
+                StoryRef(st.optString("id"), st.optString("owner"), st.optString("kind", "reply"), st.optNullableString("emoji"),
+                    st.optString("text"), st.optString("bg", "blue"), st.optNullableString("gif"))
+            },
         )
     }
 }
@@ -229,9 +235,21 @@ data class StoryGif(val url: String, val preview: String, val w: Int, val h: Int
 /** A story: text on a colour, with GIFs on it. Gone after 24 hours. */
 data class Story(
     val id: String, val text: String, val bg: String, val gifs: List<StoryGif>, val ts: Long, val seen: Boolean,
-    /** Who has seen it; only for your own stories. */
-    val views: List<String> = emptyList(),
-)
+    /** Who has seen it; only for your own stories (likes first, each with any reaction they sent). */
+    val viewers: List<StoryViewerInfo> = emptyList(),
+    /** You put a heart on this friend's story. */
+    val liked: Boolean = false,
+    /** Hearts on your own story. */
+    val likeCount: Int = 0,
+) {
+    val views: List<String> get() = viewers.map { it.name }
+}
+
+/** One person who saw your story. */
+data class StoryViewerInfo(val clientId: String, val name: String, val liked: Boolean, val reaction: String?)
+
+/** A reply or reaction message points at the story it answered (shown above the message in the inbox). */
+data class StoryRef(val id: String, val owner: String, val kind: String, val emoji: String?, val text: String, val bg: String, val gif: String?)
 
 /** One circle in the stories row: you, or a friend with live stories. */
 data class StoryPerson(val clientId: String, val mine: Boolean, val name: String, val animal: String?, val stories: List<Story>) {

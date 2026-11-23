@@ -734,7 +734,10 @@ class SocialRepository @Inject constructor(
                                     o.optDouble("x", 0.5).toFloat(), o.optDouble("y", 0.5).toFloat())
                             },
                             ts = s.optLong("ts"), seen = s.optBoolean("seen"),
-                            views = (0 until v.length()).mapNotNull { v.optJSONObject(it) }.map { o -> o.optString("name").ifBlank { "A friend" } },
+                            viewers = (0 until v.length()).mapNotNull { v.optJSONObject(it) }.map { o ->
+                                StoryViewerInfo(o.optString("clientId"), o.optString("name").ifBlank { "A friend" }, o.optBoolean("liked"), o.optNullableString("reaction"))
+                            },
+                            liked = s.optBoolean("liked"), likeCount = s.optInt("likeCount"),
                         )
                     },
                 )
@@ -819,6 +822,28 @@ class SocialRepository @Inject constructor(
             socket.askWith("story-delete", JSONObject().put("id", id))
             refreshStories()
         }
+    }
+
+    /** A heart on a friend's story; shown at once, taken back if the server says no. */
+    fun likeStory(ownerId: String, id: String, on: Boolean) {
+        fun set(v: Boolean) = _stories.update { list ->
+            list.map { p -> if (p.clientId != ownerId) p else p.copy(stories = p.stories.map { if (it.id == id) it.copy(liked = v, seen = true) else it }) }
+        }
+        set(on)
+        scope.launch {
+            val r = socket.askWith("story-like", JSONObject().put("clientId", ownerId).put("id", id).put("on", on))
+            if (r?.optBoolean("ok") != true) set(!on)
+        }
+    }
+
+    /** A quick emoji or a written reply to a friend's story: it goes to their inbox. Returns true when sent. */
+    suspend fun answerStory(ownerId: String, id: String, emoji: String? = null, text: String? = null): Boolean {
+        val payload = JSONObject().put("clientId", ownerId).put("id", id)
+        val r = if (emoji != null) socket.askWith("story-react", payload.put("emoji", emoji))
+        else socket.askWith("story-reply", payload.put("text", text.orEmpty()))
+        val ok = r?.optBoolean("ok") == true
+        _toasts.tryEmit(UiText.Res(if (ok) R.string.story_sent else R.string.t_couldnt_send))
+        return ok
     }
 
     fun markStorySeen(ownerId: String, id: String) {
@@ -947,6 +972,10 @@ class SocialRepository @Inject constructor(
         val id = o.optString("id")
         val ts = o.optLong("ts")
         updateThread(to) { list -> list.map { if (it.id == id && it.status.rank < MsgStatus.Sent.rank) it.copy(status = MsgStatus.Sent, ts = ts) else it } }
+        // A story reply or reaction was sent from the story viewer, not the thread: add it there.
+        if (o.optJSONObject("story") != null) updateThread(to) { list ->
+            if (list.any { it.id == id }) list else list + ChatMessage.from(o, identity.clientId).copy(mine = true)
+        }
         bumpLast(to, LastMessage(true, o.optString("text"), !o.isNull("gif"), !o.isNull("voice"), ts, o.optBoolean("seen"), o.optBoolean("delivered") || o.optBoolean("seen"), id))
         // A resend answered from the stored copy already knows how far it got.
         if (o.optBoolean("seen")) raiseReceipt(to, MsgStatus.Seen, setOf(id))

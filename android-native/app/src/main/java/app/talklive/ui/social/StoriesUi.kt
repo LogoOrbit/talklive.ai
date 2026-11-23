@@ -6,6 +6,15 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.material.icons.automirrored.rounded.Send
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -93,6 +102,9 @@ private val StoryBgs: Map<String, List<Color>> = linkedMapOf(
     "berry" to listOf(Color(0xFFDB2777), Color(0xFF7C3AED)),
 )
 private fun bgBrush(key: String) = Brush.linearGradient(StoryBgs[key] ?: StoryBgs.getValue("blue"))
+
+/** A story's background colour, for the inbox's story previews. */
+fun storyBrush(key: String) = bgBrush(key)
 private val StoryRing = Brush.linearGradient(listOf(Color(0xFFF59E0B), Color(0xFFEC4899), Color(0xFF8B5CF6)))
 private const val MAX_GIFS = 6
 private const val MAX_TEXT = 700
@@ -222,7 +234,15 @@ fun StoryViewer(
     onDelete: (Story) -> Unit,
     onAdd: () -> Unit,
     onDismiss: () -> Unit,
+    onLike: (StoryPerson, Story, Boolean) -> Unit = { _, _, _ -> },
+    onReact: (StoryPerson, Story, String) -> Unit = { _, _, _ -> },
+    onReply: (StoryPerson, Story, String) -> Unit = { _, _, _ -> },
+    faceOf: (String) -> String? = { null },
 ) {
+    var reply by remember { mutableStateOf("") }
+    var replying by remember { mutableStateOf(false) }
+    val replyFocus = remember { androidx.compose.ui.focus.FocusRequester() }
+    val focus = androidx.compose.ui.platform.LocalFocusManager.current
     var pi by remember { mutableIntStateOf(startPerson.coerceIn(0, (people.size - 1).coerceAtLeast(0))) }
     var si by remember { mutableIntStateOf(people.getOrNull(pi)?.stories?.indexOfFirst { !it.seen }?.coerceAtLeast(0) ?: 0) }
     var progress by remember { mutableFloatStateOf(0f) }
@@ -241,13 +261,21 @@ fun StoryViewer(
     }
     fun prev() { if (si > 0) si-- else progress = 0f }
     if (person == null || story == null) { LaunchedEffect(Unit) { onDismiss() }; return }
+    fun sendReply() {
+        val t = reply.trim()
+        if (t.isEmpty()) return
+        onReply(person, story, t)
+        reply = ""; replying = false; focus.clearFocus()
+    }
+    // The heart pops when it is tapped (or a story is double-tapped).
+    val heartPop by androidx.compose.animation.core.animateFloatAsState(if (story.liked) 1f else 0.9f, androidx.compose.animation.core.spring(dampingRatio = 0.35f, stiffness = 600f), label = "heart")
     LaunchedEffect(pi, si) {
         if (!person.mine && !story.seen) onSeen(person, story)
         progress = 0f
         var elapsed = 0L
         while (elapsed < STORY_MS) {
             delay(32)
-            if (!paused && !showViews) elapsed += 32
+            if (!paused && !showViews && !replying) elapsed += 32
             progress = elapsed / STORY_MS.toFloat()
         }
         next()
@@ -257,7 +285,21 @@ fun StoryViewer(
             StoryCanvas(story.bg, story.gifs, story.text, Modifier.pointerInput(pi, si) {
                 detectTapGestures(
                     onPress = { paused = true; tryAwaitRelease(); paused = false },
-                    onTap = { o -> if (o.x < size.width * 0.33f) prev() else next() },
+                    onTap = { o -> if (replying) { focus.clearFocus(); replying = false } else if (o.x < size.width * 0.33f) prev() else next() },
+                    // Double tap likes a friend's story, as on Instagram.
+                    onDoubleTap = { if (!person.mine && !story.liked) onLike(person, story, true) },
+                )
+            }.pointerInput(pi, si) {
+                // Swipe up: your own story shows who saw it; a friend's opens the reply box with reactions.
+                // Swipe down closes the viewer.
+                var dy = 0f
+                detectVerticalDragGestures(
+                    onDragStart = { dy = 0f },
+                    onVerticalDrag = { _, d -> dy += d },
+                    onDragEnd = {
+                        if (dy < -80f) { if (person.mine) showViews = true else { replying = true; replyFocus.requestFocus() } }
+                        else if (dy > 160f) onDismiss()
+                    },
                 )
             })
             Column(Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(Color(0x88000000), Color.Transparent))).statusBarsPadding().padding(12.dp)) {
@@ -285,10 +327,20 @@ fun StoryViewer(
                     .navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(Modifier.clip(CircleShape).clickable { showViews = true }.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Rounded.Visibility, null, tint = Color.White, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(story.views.size.toString(), color = Color.White, fontWeight = FontWeight.Bold)
+                // Swipe up (or tap) for who saw it, like Instagram.
+                Column(Modifier.clip(RoundedCornerShape(14.dp)).clickable { showViews = true }.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Rounded.KeyboardArrowUp, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Rounded.Visibility, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(story.viewers.size.toString(), color = Color.White, fontWeight = FontWeight.Bold)
+                        if (story.likeCount > 0) {
+                            Spacer(Modifier.width(10.dp))
+                            Icon(Icons.Rounded.Favorite, null, tint = Color(0xFFFF3B5C), modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text(story.likeCount.toString(), color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
                 Spacer(Modifier.weight(1f))
                 StoryPill(stringResource(R.string.story_add), Icons.Rounded.Add) { onDismiss(); onAdd() }
@@ -297,21 +349,91 @@ fun StoryViewer(
                     onDelete(story)
                     if (person.stories.size <= 1) onDismiss() else if (si >= person.stories.size - 1) si--
                 }
+            } else Column(
+                Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xAA000000))))
+                    .navigationBarsPadding().imePadding().padding(horizontal = 12.dp, vertical = 10.dp),
+            ) {
+                // Quick reactions, shown while replying (swipe up or tap the reply box), as on Instagram.
+                androidx.compose.animation.AnimatedVisibility(replying) {
+                    Row(Modifier.fillMaxWidth().padding(bottom = 10.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
+                        STORY_REACTIONS.forEach { e ->
+                            Text(e, fontSize = 30.sp, modifier = Modifier.clip(CircleShape).clickable {
+                                onReact(person, story, e); replying = false; focus.clearFocus()
+                            }.padding(6.dp))
+                        }
+                    }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.foundation.text.BasicTextField(
+                        value = reply,
+                        onValueChange = { reply = it.take(1000) },
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.White),
+                        cursorBrush = androidx.compose.ui.graphics.SolidColor(Color.White),
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Send),
+                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSend = { sendReply() }),
+                        modifier = Modifier.weight(1f).focusRequester(replyFocus)
+                            .onFocusChanged { replying = it.isFocused || reply.isNotEmpty() }
+                            .border(1.dp, Color.White.copy(alpha = 0.7f), CircleShape).padding(horizontal = 16.dp, vertical = 12.dp),
+                        decorationBox = { inner ->
+                            Box {
+                                if (reply.isEmpty()) Text(stringResource(R.string.story_reply_to, person.name), color = Color.White.copy(alpha = 0.75f), maxLines = 1)
+                                inner()
+                            }
+                        },
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    if (reply.isNotBlank()) IconButton(onClick = { sendReply() }) {
+                        Icon(Icons.AutoMirrored.Rounded.Send, stringResource(R.string.send), tint = Color.White)
+                    } else IconButton(onClick = { onLike(person, story, !story.liked) }) {
+                        Icon(
+                            if (story.liked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                            stringResource(R.string.story_like),
+                            tint = if (story.liked) Color(0xFFFF3B5C) else Color.White,
+                            modifier = Modifier.size(28.dp).graphicsLayer { scaleX = heartPop; scaleY = heartPop },
+                        )
+                    }
+                }
             }
             if (showViews) Box(Modifier.fillMaxSize().background(Color(0x66000000)).clickable { showViews = false }) {
                 Column(
-                    Modifier.align(Alignment.BottomCenter).fillMaxWidth().clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
-                        .background(MaterialTheme.colorScheme.surface).navigationBarsPadding().padding(20.dp),
+                    Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(0.6f).clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
+                        .background(MaterialTheme.colorScheme.surface).clickable(enabled = false) {}.navigationBarsPadding().padding(20.dp),
                 ) {
-                    Text(stringResource(R.string.story_seen_by), style = MaterialTheme.typography.titleMedium)
+                    Box(Modifier.align(Alignment.CenterHorizontally).size(40.dp, 4.dp).clip(CircleShape).background(MaterialTheme.colorScheme.outlineVariant))
+                    Spacer(Modifier.height(12.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Rounded.Visibility, null, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(R.string.story_seen_by) + " · " + story.viewers.size, style = MaterialTheme.typography.titleMedium)
+                        if (story.likeCount > 0) {
+                            Spacer(Modifier.width(12.dp))
+                            Icon(Icons.Rounded.Favorite, null, tint = Color(0xFFFF3B5C), modifier = Modifier.size(18.dp))
+                            Text(" " + story.likeCount, style = MaterialTheme.typography.titleMedium)
+                        }
+                    }
                     Spacer(Modifier.height(10.dp))
-                    if (story.views.isEmpty()) Text(stringResource(R.string.story_no_views), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    story.views.forEach { Text(it, modifier = Modifier.padding(vertical = 6.dp)) }
+                    if (story.viewers.isEmpty()) Text(stringResource(R.string.story_no_views), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    androidx.compose.foundation.lazy.LazyColumn {
+                        items(story.viewers.size) { k ->
+                            val v = story.viewers[k]
+                            Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                AnimalAvatar(faceOf(v.clientId), v.name, 36.dp)
+                                Spacer(Modifier.width(12.dp))
+                                Text(v.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f), maxLines = 1)
+                                v.reaction?.let { Text(it, fontSize = 20.sp); Spacer(Modifier.width(8.dp)) }
+                                if (v.liked) Icon(Icons.Rounded.Favorite, null, tint = Color(0xFFFF3B5C), modifier = Modifier.size(20.dp))
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
+
+/** The quick reactions under a friend's story (the server accepts exactly these). */
+val STORY_REACTIONS = listOf("😂", "😮", "😍", "😢", "👏", "🔥", "🎉", "💯")
 
 @Composable
 private fun StoryPill(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {

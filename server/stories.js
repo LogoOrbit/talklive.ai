@@ -144,7 +144,7 @@ function createStories({ store, cleanGif, friendIdsOf, isBlockedPair, checkText 
     return friendIdsOf(viewer).includes(ownerId);
   }
 
-  function shape(s, viewer, ownerId, nameOf) {
+  function shape(s, viewer, ownerId, nameOf, faceOf) {
     const mine = viewer === ownerId;
     const likes = Array.isArray(s.likes) ? s.likes : [];
     const reacts = s.reacts && typeof s.reacts === 'object' ? s.reacts : {};
@@ -152,7 +152,7 @@ function createStories({ store, cleanGif, friendIdsOf, isBlockedPair, checkText 
     if (mine) {
       // Like Instagram: people who liked it first, then everyone else, newest first.
       const order = s.views.slice().reverse().sort((a, b) => (likes.includes(b) ? 1 : 0) - (likes.includes(a) ? 1 : 0));
-      out.views = order.map((cid) => ({ clientId: cid, name: nameOf ? nameOf(cid) : null, liked: likes.includes(cid), reaction: reacts[cid] || null }));
+      out.views = order.map((cid) => ({ clientId: cid, name: nameOf ? nameOf(cid) : null, avatar: faceOf ? faceOf(cid, null) : null, liked: likes.includes(cid), reaction: reacts[cid] || null }));
       out.likeCount = likes.length;
     }
     return out;
@@ -178,7 +178,7 @@ function createStories({ store, cleanGif, friendIdsOf, isBlockedPair, checkText 
         mine: cid === viewer,
         name: (cid !== viewer && nameOf && nameOf(cid)) || (last && last.name) || 'Someone',
         avatar: faceOf ? faceOf(cid, last && last.avatar) : (last && last.avatar) || null,
-        stories: list.map((s) => shape(s, viewer, cid, nameOf)),
+        stories: list.map((s) => shape(s, viewer, cid, nameOf, faceOf)),
       });
     }
     const [me, ...rest] = out;

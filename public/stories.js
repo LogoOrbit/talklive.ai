@@ -103,7 +103,18 @@
     + '.tl-st-confirm h3{margin:0 0 6px;font-size:18px}.tl-st-confirm p{margin:0 0 16px;opacity:.75;font-size:14px;line-height:1.4}'
     + '.tl-st-confirm .row{display:flex;flex-direction:column;gap:8px}.tl-st-confirm button{border:0;border-radius:12px;padding:12px;font:inherit;font-weight:800;cursor:pointer}'
     + '.tl-st-confirm .keep{background:var(--accent,#2a6fe8);color:#fff}.tl-st-confirm .drop{background:transparent;color:#ef4444}'
-    + '.tl-st-list{position:absolute;left:0;right:0;bottom:0;max-height:50%;overflow:auto;z-index:6;background:#111827f5;border-radius:18px 18px 0 0;padding:14px}.tl-st-list h3{margin:0 0 10px;font-size:16px}.tl-st-list div{padding:6px 0;opacity:.9}';
+    + '.tl-st-list{position:absolute;left:0;right:0;bottom:0;max-height:60%;overflow:auto;z-index:6;background:#111827f5;border-radius:18px 18px 0 0;padding:14px;animation:tlStUp .22s ease-out}.tl-st-list h3{margin:0 0 10px;font-size:16px}.tl-st-list>div{padding:6px 0;opacity:.95;display:flex;align-items:center;gap:10px}'
+    + '.tl-st-list .tl-st-av{width:34px;height:34px;border-radius:50%;overflow:hidden;display:grid;place-items:center;flex:none}.tl-st-list .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tl-st-list .rx{font-size:20px}.tl-st-list .hv{color:#ff3b5c}'
+    + '@keyframes tlStUp{from{transform:translateY(40%);opacity:0}to{transform:none;opacity:1}}'
+    + '.tl-st-up{display:flex;flex-direction:column;align-items:center;line-height:1}.tl-st-up b{font-size:11px;opacity:.8}'
+    + '.tl-st-reply{position:absolute;left:0;right:0;bottom:0;z-index:4;padding:10px 12px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(#0000,#000b)}'
+    + '.tl-st-rrow{display:flex;gap:8px;align-items:center}.tl-st-rin{flex:1;min-width:0;border:1px solid #fffb;border-radius:999px;background:#0003;color:#fff;font:inherit;padding:11px 16px;outline:0}.tl-st-rin::placeholder{color:#fffc}'
+    + '.tl-st-heart,.tl-st-send{border:0;background:none;color:#fff;font-size:28px;line-height:1;cursor:pointer;padding:4px 6px;transition:transform .2s}.tl-st-heart.on{color:#ff3b5c;transform:scale(1.12)}.tl-st-send{font-size:15px;font-weight:800}'
+    + '.tl-st-quick{display:none;justify-content:space-around;margin-bottom:10px}.tl-st-reply.open .tl-st-quick{display:flex}.tl-st-quick button{border:0;background:none;font-size:30px;cursor:pointer;padding:4px;transition:transform .15s}.tl-st-quick button:hover{transform:scale(1.2)}'
+    + '.tl-st-pop{position:absolute;left:50%;top:50%;z-index:7;font-size:96px;transform:translate(-50%,-50%) scale(.2);opacity:0;animation:tlStPop .8s ease-out;pointer-events:none;color:#ff3b5c}'
+    + '@keyframes tlStPop{30%{transform:translate(-50%,-50%) scale(1.1);opacity:1}70%{opacity:1}to{transform:translate(-50%,-60%) scale(1);opacity:0}}'
+    + '.tl-st-toast{position:absolute;left:50%;bottom:90px;transform:translateX(-50%);z-index:8;background:#fff;color:#111;padding:8px 14px;border-radius:999px;font-weight:700;font-size:14px}';
+  var STORY_REACTIONS = ['😂', '😮', '😍', '😢', '👏', '🔥', '🎉', '💯'];
 
   function injectCss() {
     if (document.getElementById('tl-st-css')) return;
@@ -318,20 +329,48 @@
       frame.addEventListener('pointerdown', function () { paused = true; });
       frame.addEventListener('pointerup', function () { paused = false; });
       frame.addEventListener('pointerleave', function () { paused = false; });
+      function toast(text) {
+        var t = el('div', 'tl-st-toast', esc(text));
+        frame.appendChild(t);
+        setTimeout(function () { t.remove(); }, 1600);
+      }
+      function viewersList() {
+        if (frame.querySelector('.tl-st-list')) return;
+        paused = true;
+        var views = s.views || [];
+        var head = esc(tr('storySeenBy', 'Seen by')) + ' · ' + views.length + (s.likeCount ? ' &nbsp;<span class="hv">♥</span> ' + s.likeCount : '');
+        var list = el('div', 'tl-st-list', '<h3>' + head + '</h3>');
+        if (!views.length) list.appendChild(el('div', '', esc(tr('storyNoViews', 'No one yet'))));
+        views.forEach(function (v) {
+          var row = el('div', '', '<span class="tl-st-av">' + face(v.avatar || null, 34) + '</span><span class="nm">' + esc(v.name || tr('aFriend', 'A friend')) + '</span>'
+            + (v.reaction ? '<span class="rx">' + esc(v.reaction) + '</span>' : '') + (v.liked ? '<span class="hv">♥</span>' : ''));
+          list.appendChild(row);
+        });
+        list.addEventListener('click', function () { list.remove(); paused = false; });
+        frame.appendChild(list);
+      }
+      var reply = null, input = null;
+      function like(on) {
+        s.liked = on;
+        if (reply) reply.querySelector('.tl-st-heart').classList.toggle('on', on);
+        if (reply) reply.querySelector('.tl-st-heart').textContent = on ? '♥' : '♡';
+        if (on) { var pop = el('div', 'tl-st-pop', '♥'); frame.appendChild(pop); setTimeout(function () { pop.remove(); }, 850); }
+        ask('story-like', { clientId: p.clientId, id: s.id, on: on }).then(function (r) { if (!r || !r.ok) { s.liked = !on; show(); } });
+      }
+      function openReply() { if (!reply) return; reply.classList.add('open'); paused = true; input.focus(); }
+      function sent(r) {
+        toast(r && r.ok ? tr('storySent', 'Sent to their inbox') : tr('couldntSend', 'Could not send'));
+        if (reply) reply.classList.remove('open');
+        if (input) { input.value = ''; input.blur(); }
+        paused = false;
+      }
       if (p.mine) {
         var foot = el('div', 'tl-st-foot');
         var views = (s.views || []);
-        var vb = el('button', 'tl-st-views');
+        var vb = el('button', 'tl-st-views tl-st-up');
         vb.type = 'button';
-        vb.textContent = '👁 ' + tr('storyViews', '{n} views', { n: views.length });
-        vb.addEventListener('click', function () {
-          paused = true;
-          var list = el('div', 'tl-st-list', '<h3>' + esc(tr('storySeenBy', 'Seen by')) + '</h3>');
-          if (!views.length) list.appendChild(el('div', '', esc(tr('storyNoViews', 'No one yet'))));
-          views.forEach(function (v) { list.appendChild(el('div', '', esc(v.name || tr('aFriend', 'A friend')))); });
-          list.addEventListener('click', function () { list.remove(); paused = false; });
-          frame.appendChild(list);
-        });
+        vb.innerHTML = '<b>⌃</b><span>👁 ' + esc(tr('storyViews', '{n} views', { n: views.length })) + (s.likeCount ? ' · <span style="color:#ff3b5c">♥</span> ' + s.likeCount : '') + '</span>';
+        vb.addEventListener('click', viewersList);
         foot.appendChild(vb);
         var sp = el('span'); sp.style.flex = '1'; foot.appendChild(sp);
         var add = el('button', 'tl-st-btn', esc(tr('storyAdd', 'Add')));
@@ -348,7 +387,54 @@
         });
         foot.appendChild(add); foot.appendChild(del);
         frame.appendChild(foot);
+      } else {
+        // A friend's story: reply, react or like, as on Instagram. Replies and
+        // reactions go to their inbox with a preview of this story.
+        reply = el('div', 'tl-st-reply');
+        var quick = el('div', 'tl-st-quick');
+        STORY_REACTIONS.forEach(function (e) {
+          var b = el('button', '', e);
+          b.type = 'button';
+          b.addEventListener('click', function (ev) { ev.stopPropagation(); ask('story-react', { clientId: p.clientId, id: s.id, emoji: e }).then(sent); });
+          quick.appendChild(b);
+        });
+        reply.appendChild(quick);
+        var row = el('div', 'tl-st-rrow');
+        input = el('input', 'tl-st-rin');
+        input.type = 'text'; input.maxLength = 1000; input.enterKeyHint = 'send';
+        input.placeholder = tr('storyReplyTo', 'Reply to {name}…', { name: p.name });
+        var heart = el('button', 'tl-st-heart' + (s.liked ? ' on' : ''), s.liked ? '♥' : '♡');
+        heart.type = 'button'; heart.setAttribute('aria-label', tr('storyLike', 'Like'));
+        var send = el('button', 'tl-st-send', esc(tr('send', 'Send')));
+        send.type = 'button'; send.style.display = 'none';
+        function doSend() {
+          var t = input.value.trim();
+          if (!t) return;
+          ask('story-reply', { clientId: p.clientId, id: s.id, text: t }).then(sent);
+        }
+        input.addEventListener('focus', function () { reply.classList.add('open'); paused = true; });
+        input.addEventListener('input', function () { var has = !!input.value.trim(); send.style.display = has ? '' : 'none'; heart.style.display = has ? 'none' : ''; });
+        input.addEventListener('keydown', function (e) { e.stopPropagation(); if (e.key === 'Enter') doSend(); if (e.key === 'Escape') { input.blur(); reply.classList.remove('open'); paused = false; } });
+        input.addEventListener('blur', function () { if (!input.value.trim()) setTimeout(function () { if (document.activeElement !== input) { reply.classList.remove('open'); paused = false; } }, 200); });
+        heart.addEventListener('click', function () { like(!s.liked); });
+        send.addEventListener('click', doSend);
+        ['pointerdown', 'pointerup'].forEach(function (ev) { reply.addEventListener(ev, function (e) { e.stopPropagation(); }); });
+        row.appendChild(input); row.appendChild(heart); row.appendChild(send);
+        reply.appendChild(row);
+        frame.appendChild(reply);
+        // Double tap likes, as on Instagram.
+        frame.addEventListener('dblclick', function (e) { if (!reply.contains(e.target) && !s.liked) like(true); });
       }
+      // Swipe up: your own story shows who saw it; a friend's opens the reply box. Swipe down closes.
+      var y0 = null;
+      frame.addEventListener('touchstart', function (e) { y0 = e.touches[0].clientY; }, { passive: true });
+      frame.addEventListener('touchend', function (e) {
+        if (y0 == null) return;
+        var dy = e.changedTouches[0].clientY - y0;
+        y0 = null;
+        if (dy < -70) { if (p.mine) viewersList(); else openReply(); }
+        else if (dy > 120 && !(reply && reply.classList.contains('open'))) close();
+      });
       m.appendChild(frame);
       var bar = bars.children[si].firstChild;
       elapsed = 0; start = performance.now();

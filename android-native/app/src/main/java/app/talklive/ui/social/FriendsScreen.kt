@@ -386,6 +386,10 @@ fun FriendsScreen(
             onDelete = { st -> vm.deleteStory(st.id) },
             onAdd = { composingStory = true },
             onDismiss = { viewingStory = null },
+            onLike = { p, st, on -> vm.likeStory(p.clientId, st.id, on) },
+            onReact = { p, st, e -> vm.answerStory(p.clientId, st.id, emoji = e) },
+            onReply = { p, st, t -> vm.answerStory(p.clientId, st.id, text = t) },
+            faceOf = { id -> (friends.firstOrNull { it.clientId == id } ?: history.firstOrNull { it.clientId == id })?.animal },
         )
     }
     if (showCallLog) CallLogSheet(

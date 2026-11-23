@@ -701,7 +701,9 @@ internal fun MessageBubble(
                             Text(preview(q), color = fg.copy(alpha = 0.85f), style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         }
                     }
+                    m.story?.let { st -> StoryQuote(st, m.mine, fg) }
                     when {
+                        m.story?.kind == "react" && m.text.isNotBlank() -> Text(m.text, fontSize = 40.sp)
                         m.gifUrl != null -> AsyncImage(
                             model = m.gifUrl, contentDescription = "GIF", contentScale = ContentScale.Crop,
                             modifier = Modifier.width(220.dp).heightIn(min = 120.dp, max = 220.dp).clip(RoundedCornerShape(12.dp)),
@@ -1026,4 +1028,30 @@ internal fun Modifier.jumpHighlight(on: Boolean): Modifier {
     val a by androidx.compose.animation.core.animateFloatAsState(if (on) 0.22f else 0f, androidx.compose.animation.core.tween(350), label = "jump")
     val c = MaterialTheme.colorScheme.primary
     return this.clip(RoundedCornerShape(12.dp)).background(c.copy(alpha = a))
+}
+
+
+/** Above a story reply or reaction: which story it was about, as a small tile of it. */
+@Composable
+private fun StoryQuote(st: app.talklive.social.StoryRef, mine: Boolean, fg: Color) {
+    val label = when {
+        st.kind == "react" && mine -> stringResource(app.talklive.R.string.story_reacted, st.emoji ?: "")
+        st.kind == "react" -> stringResource(app.talklive.R.string.story_reacted_you, st.emoji ?: "")
+        mine -> stringResource(app.talklive.R.string.story_replied)
+        else -> stringResource(app.talklive.R.string.story_replied_you)
+    }
+    Column(Modifier.padding(bottom = 6.dp)) {
+        Text(label, color = fg.copy(alpha = 0.8f), style = MaterialTheme.typography.labelMedium)
+        Spacer(Modifier.height(4.dp))
+        Box(
+            Modifier.size(width = 72.dp, height = 112.dp).clip(RoundedCornerShape(10.dp)).background(storyBrush(st.bg)),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (st.gif != null) AsyncImage(model = st.gif, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(10.dp)))
+            if (st.text.isNotBlank()) Text(
+                st.text, color = Color.White, style = MaterialTheme.typography.labelSmall, maxLines = 5,
+                overflow = TextOverflow.Ellipsis, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.padding(6.dp),
+            )
+        }
+    }
 }
