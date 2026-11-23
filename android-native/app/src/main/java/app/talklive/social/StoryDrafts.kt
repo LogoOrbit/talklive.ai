@@ -5,8 +5,10 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /** An unfinished story: kept on the phone until it is posted or discarded. */
-data class StoryDraft(val text: String, val bg: String, val gifs: List<StoryGif>) {
-    val isEmpty: Boolean get() = text.isBlank() && gifs.isEmpty()
+data class StoryDraft(val text: String, val bg: String, val gifs: List<StoryGif>, val layers: List<StoryLayer> = emptyList()) {
+    val isEmpty: Boolean get() = text.isBlank() && gifs.isEmpty() && layers.isEmpty()
+    /** What older apps show: the words on it, one per line. */
+    val summary: String get() = (listOf(text) + layers.filter { it.kind == "text" }.map { it.text }).filter { it.isNotBlank() }.joinToString("\n")
 }
 
 /**
@@ -23,19 +25,21 @@ object StoryDrafts {
     fun load(): StoryDraft? = runCatching {
         val o = JSONObject(prefs?.getString("draft", null) ?: return null)
         val arr = o.optJSONArray("gifs") ?: JSONArray()
+        val ls = o.optJSONArray("layers") ?: JSONArray()
         StoryDraft(
             o.optString("text"), o.optString("bg", "blue"),
-            (0 until arr.length()).mapNotNull { arr.optJSONObject(it) }.map {
-                StoryGif(it.optString("url"), it.optString("preview"), it.optInt("w"), it.optInt("h"), it.optDouble("x", 0.5).toFloat(), it.optDouble("y", 0.5).toFloat())
-            },
+            (0 until arr.length()).mapNotNull { arr.optJSONObject(it) }.map { storyGifFrom(it) },
+            (0 until ls.length()).mapNotNull { ls.optJSONObject(it) }.map { StoryLayer.from(it) },
         ).takeIf { !it.isEmpty }
     }.getOrNull()
 
     fun save(d: StoryDraft) {
         if (d.isEmpty) { clear(); return }
         val arr = JSONArray()
-        d.gifs.forEach { arr.put(JSONObject().put("url", it.url).put("preview", it.preview).put("w", it.w).put("h", it.h).put("x", it.x.toDouble()).put("y", it.y.toDouble())) }
-        prefs?.edit()?.putString("draft", JSONObject().put("text", d.text).put("bg", d.bg).put("gifs", arr).toString())?.apply()
+        d.gifs.forEach { arr.put(it.json()) }
+        val ls = JSONArray()
+        d.layers.forEach { ls.put(it.json()) }
+        prefs?.edit()?.putString("draft", JSONObject().put("text", d.text).put("bg", d.bg).put("gifs", arr).put("layers", ls).toString())?.apply()
     }
 
     fun clear() { prefs?.edit()?.remove("draft")?.apply() }

@@ -66,10 +66,12 @@
     + '.tl-st-plus{position:absolute;right:-1px;bottom:-1px;width:22px;height:22px;border-radius:50%;background:#2a6fe8;color:#fff;display:grid;place-items:center;font-size:17px;font-weight:800;border:2px solid var(--bg-2,#141a2b)}'
     + '.tl-st-name{max-width:68px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
     + '.tl-st-modal{position:fixed;inset:0;z-index:3200;background:#000;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s}.tl-st-modal.in{opacity:1}'
-    + '.tl-st-frame{position:relative;width:100vw;height:100vh;height:100dvh;overflow:hidden;border-radius:0;color:#fff}'
+    + '.tl-st-frame{position:relative;width:100vw;height:100vh;height:100dvh;overflow:hidden;border-radius:0;color:#fff;container-type:inline-size}'
+    + '.tl-st-layer{position:absolute;max-width:82cqw;text-align:center;font-family:inherit;font-size:7.5cqw;font-weight:800;line-height:1.2;white-space:pre-wrap;word-break:break-word;text-shadow:0 3px 10px rgba(0,0,0,.3);pointer-events:none;transform-origin:center}'
+    + '.tl-st-layer.emoji{font-size:17cqw;text-shadow:none;line-height:1}.tl-st-layer.pill{text-shadow:none;border-radius:12px;padding:6px 12px}'
     + '@media (min-width:700px){.tl-st-frame{border-radius:18px;height:min(92dvh,calc(100vw * 16 / 9));width:calc(min(92dvh,calc(100vw * 16 / 9)) * 9 / 16)}}'
     + '.tl-st-text{position:absolute;left:8%;right:8%;top:50%;transform:translateY(-50%);text-align:center;font-family:inherit;font-size:clamp(22px,7vmin,34px);font-weight:800;line-height:1.25;white-space:pre-wrap;word-break:break-word;text-shadow:0 2px 12px rgba(0,0,0,.25);pointer-events:none}'
-    + '.tl-st-gif{position:absolute;width:38%;transform:translate(-50%,-50%);border-radius:10px;touch-action:none;user-select:none;-webkit-user-drag:none}'
+    + '.tl-st-gif{position:absolute;width:40%;transform:translate(-50%,-50%);border-radius:10px;touch-action:none;user-select:none;-webkit-user-drag:none}'
     + '.tl-st-gif img{width:100%;display:block;border-radius:10px;pointer-events:none}'
     + '.tl-st-gif .tl-st-gx{position:absolute;top:-10px;right:-10px;width:26px;height:26px;border-radius:50%;border:0;background:#000c;color:#fff;font-size:16px;cursor:pointer}'
     + '.tl-st-top{position:absolute;left:0;right:0;top:0;padding:10px 12px;background:linear-gradient(#0008,#0000);z-index:3}'
@@ -252,6 +254,10 @@
     });
   }
 
+  function lightColor(h) {
+    var n = parseInt(h.slice(1), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.6;
+  }
   function storyNode(s) {
     var frame = el('div', 'tl-st-frame');
     frame.style.background = BGS[s.bg] || BGS.blue;
@@ -259,12 +265,28 @@
       var w = el('div', 'tl-st-gif');
       w.style.left = (g.x * 100) + '%';
       w.style.top = (g.y * 100) + '%';
+      if (g.s || g.r) w.style.transform = 'translate(-50%,-50%) rotate(' + (+g.r || 0) + 'deg) scale(' + (+g.s || 1) + ')';
       var img = document.createElement('img');
       img.src = g.url; img.alt = 'GIF'; img.loading = 'eager';
       w.appendChild(img);
       frame.appendChild(w);
     });
-    if (s.text) frame.appendChild(el('div', 'tl-st-text')).textContent = s.text;
+    // Words and emoji placed, sized and turned anywhere (newer stories); sizes follow the
+    // story's width (cqw), so it looks the same as on the phone that made it.
+    var layers = s.layers || [];
+    layers.forEach(function (l) {
+      var d = el('div', 'tl-st-layer' + (l.t === 'emoji' ? ' emoji' : '') + (l.b ? ' pill' : ''));
+      d.textContent = l.text;
+      d.style.left = (l.x * 100) + '%';
+      d.style.top = (l.y * 100) + '%';
+      d.style.transform = 'translate(-50%,-50%) rotate(' + (+l.r || 0) + 'deg) scale(' + (+l.s || 1) + ')';
+      if (l.t === 'text') {
+        var c = /^#[0-9a-f]{6}$/i.test(l.c || '') ? l.c : '#ffffff';
+        if (l.b) { d.style.background = c; d.style.color = lightColor(c) ? '#111111' : '#ffffff'; } else d.style.color = c;
+      }
+      frame.appendChild(d);
+    });
+    if (!layers.length && s.text) frame.appendChild(el('div', 'tl-st-text')).textContent = s.text;
     return frame;
   }
 

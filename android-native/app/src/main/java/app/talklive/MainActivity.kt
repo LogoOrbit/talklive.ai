@@ -31,12 +31,30 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var engage: app.talklive.engage.EngageRepository
     @Inject lateinit var social: app.talklive.social.SocialRepository
 
+    /**
+     * Run at the screen's fastest refresh rate (90/120/144 Hz) at its current resolution, so
+     * scrolling and animations are as smooth as the phone allows. Android still lowers it to
+     * save battery when nothing moves.
+     */
+    private fun preferHighRefreshRate() {
+        runCatching {
+            @Suppress("DEPRECATION")
+            val display = if (android.os.Build.VERSION.SDK_INT >= 30) display else windowManager.defaultDisplay
+            val current = display?.mode ?: return
+            val best = display.supportedModes
+                .filter { it.physicalWidth == current.physicalWidth && it.physicalHeight == current.physicalHeight }
+                .maxByOrNull { it.refreshRate } ?: return
+            window.attributes = window.attributes.apply { preferredDisplayModeId = best.modeId }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         // Only a fresh launch: a rotation or theme change re-runs onCreate with
         // the same intent, and a shortcut launch started a second call.
         if (savedInstanceState == null) handle(intent)
+        preferHighRefreshRate()
         setContent {
             val theme by themeStore.theme.collectAsStateWithLifecycle()
             val dark = theme.isDark

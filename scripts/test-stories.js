@@ -120,6 +120,25 @@ function connect(id, name) {
     const feedA3 = await ask(a, 'stories-get');
     ok('a like can be taken back', unliked.ok && feedA3.people[0].stories[0].likeCount === 0, feedA3.people[0].stories[0]);
 
+    // Layers: text and emoji anywhere, moved, sized and turned.
+    const lay = await ask(a, 'story-post', { text: '', bg: 'blue', gifs: [{ ...gif, s: 1.6, r: 12 }], layers: [
+      { t: 'text', text: 'Hi there', x: 0.3, y: 0.2, s: 2, r: -15, c: '#facc15', b: true },
+      { t: 'emoji', text: '🔥', x: 0.8, y: 0.9, s: 9, r: 400 },
+      { t: 'text', text: 'see https://spam.example', x: 0.5, y: 0.5 },
+    ] });
+    ok('a story with a link in a text layer is refused', lay.ok === false, lay);
+    const lay2 = await ask(a, 'story-post', { text: '', bg: 'blue', gifs: [{ ...gif, s: 1.6, r: 12 }], layers: [
+      { t: 'text', text: 'Hi there', x: 0.3, y: 0.2, s: 2, r: -15, c: '#facc15', b: true },
+      { t: 'emoji', text: '🔥', x: 0.8, y: 0.9, s: 9, r: 400 },
+      { t: 'bogus', text: 'x' },
+    ] });
+    ok('a layered story posts', lay2.ok === true, lay2);
+    const fl = await ask(b, 'stories-get');
+    const ls = fl.people.find((p) => p.clientId === A).stories.find((x) => x.id === lay2.id);
+    ok('layers come back clamped and cleaned', ls && ls.layers.length === 2 && ls.layers[0].c === '#facc15' && ls.layers[0].b === true
+      && ls.layers[1].s === 5 && ls.layers[1].r === 180 && ls.gifs[0].s === 1.6 && ls.gifs[0].r === 12, ls);
+    await ask(a, 'story-delete', { id: lay2.id });
+
     // Games with a friend from the chat, no call.
     const gotInvite = once(b, 'friend-game');
     a.emit('friend-game', { toClientId: B, data: { type: 'invite', game: 'ttt' } });

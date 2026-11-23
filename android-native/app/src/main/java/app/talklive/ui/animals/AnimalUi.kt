@@ -97,7 +97,7 @@ fun AnimalAvatar(animalId: String?, name: String?, size: Dp, modifier: Modifier 
                 // still, drawn once and cached, so scrolling stays smooth and memory stays low.
                 else if (a.premium) {
                     if (!reduce && size >= 72.dp && !lowEndDevice()) LivingFace(face.icon, a.name, Modifier.size(size))
-                    else Image(painterResource(face.icon), contentDescription = a.name, modifier = Modifier.size(size))
+                    else FaceImage(face.icon, a.name, Modifier.size(size))
                 }
                 else if (LocalPlusAvatar.current && !reduce) LiveFace(face, size, fill)
                 else Image(painterResource(face.icon), contentDescription = a.name, modifier = Modifier.size(size * fill))
@@ -297,7 +297,10 @@ fun AnimalGrid(
                     // Stills in the grid (drawn once, cached), and only the chosen face moves: a grid
                     // of live vector animations re-drew every face each frame and made scrolling lag.
                     // Tapping a locked face opens its live preview.
-                    else if (!on || lowEnd) Image(painterResource(a.icon), a.name, Modifier.fillMaxWidth(if (a.premium) 0.86f else 0.72f).aspectRatio(1f).clip(CircleShape))
+                    else if (!on || lowEnd) {
+                        if (a.premium) FaceImage(a.icon, a.name, Modifier.fillMaxWidth(0.86f).aspectRatio(1f).clip(CircleShape))
+                        else Image(painterResource(a.icon), a.name, Modifier.fillMaxWidth(0.72f).aspectRatio(1f).clip(CircleShape))
+                    }
                     else LivingFace(a.icon, a.name, Modifier.fillMaxWidth(if (a.premium) 0.86f else 0.72f).aspectRatio(1f).clip(CircleShape))
                     if (specialLocked) androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Lock, null, tint = app.talklive.ui.theme.GoldText, modifier = Modifier.align(Alignment.TopEnd).size(14.dp))
                     if (isPlusFace(a.id)) Box(Modifier.align(Alignment.TopEnd)) {

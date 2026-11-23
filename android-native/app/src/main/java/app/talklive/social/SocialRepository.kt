@@ -214,10 +214,16 @@ class SocialRepository @Inject constructor(
                 _typing.value = emptySet(); _myFriendId.value = null; _gates.value = emptyMap()
                 _voice.value = emptyMap(); _blocked.value = emptyList(); _activity.value = emptyList()
                 _muted.value = emptySet(); _myBadges.value = null; _myCover.value = null; _stories.value = emptyList()
+                SocialCache.clear()
             }
         }
         socket.on("register-result") { a -> (a.firstOrNull() as? JSONObject)?.let { applyOwn(it) } }
         socket.on("state-sync") { a -> (a.firstOrNull() as? JSONObject)?.let { scope.launch { onStateSync(it) } } }
+        // What the app last knew shows at once; the network then brings it up to date.
+        scope.launch {
+            runCatching { SocialCache.state(identity.clientId)?.let { onStateSync(it, fromCache = true) } }
+            runCatching { SocialCache.stories(identity.clientId)?.let { showStories(it) } }
+        }
         socket.on("like-match") { a ->
             val o = a.firstOrNull() as? JSONObject ?: return@on
             val who = Person.from(o)
@@ -560,6 +566,12 @@ class SocialRepository @Inject constructor(
      */
     fun loadThread(clientId: String) {
         loadingOlder.remove(clientId)
+        // The conversation as last seen shows at once (nothing to wait for); the newest page follows.
+        if (_threads.value[clientId].isNullOrEmpty()) scope.launch {
+            SocialCache.thread(identity.clientId, clientId)?.let { cached ->
+                if (_threads.value[clientId].isNullOrEmpty()) runCatching { onHistory(cached, fromCache = true) }
+            }
+        }
         socket.emit("get-friend-chat", JSONObject().put("friendClientId", clientId).put("limit", PAGE))
     }
 
@@ -717,6 +729,13 @@ class SocialRepository @Inject constructor(
             val r = socket.ask("stories-get") ?: return@launch
             if (!r.optBoolean("ok")) return@launch
             val arr = r.optJSONArray("people") ?: return@launch
+            SocialCache.saveStories(identity.clientId, arr)
+            showStories(arr)
+        }
+    }
+
+    private fun showStories(arr: JSONArray) {
+        run {
             _stories.value = (0 until arr.length()).mapNotNull { arr.optJSONObject(it) }.map { p ->
                 val st = p.optJSONArray("stories") ?: JSONArray()
                 StoryPerson(
@@ -729,10 +748,8 @@ class SocialRepository @Inject constructor(
                         val v = s.optJSONArray("views") ?: JSONArray()
                         Story(
                             id = s.optString("id"), text = s.optString("text"), bg = s.optString("bg", "blue"),
-                            gifs = (0 until g.length()).mapNotNull { g.optJSONObject(it) }.map { o ->
-                                StoryGif(o.optString("url"), o.optString("preview"), o.optInt("w"), o.optInt("h"),
-                                    o.optDouble("x", 0.5).toFloat(), o.optDouble("y", 0.5).toFloat())
-                            },
+                            gifs = (0 until g.length()).mapNotNull { g.optJSONObject(it) }.map { storyGifFrom(it) },
+                            layers = s.optJSONArray("layers")?.let { la -> (0 until la.length()).mapNotNull { la.optJSONObject(it) }.map { StoryLayer.from(it) } }.orEmpty(),
                             ts = s.optLong("ts"), seen = s.optBoolean("seen"),
                             viewers = (0 until v.length()).mapNotNull { v.optJSONObject(it) }.map { o ->
                                 StoryViewerInfo(o.optString("clientId"), o.optString("name").ifBlank { "A friend" }, o.optBoolean("liked"), o.optNullableString("reaction"))
@@ -774,8 +791,11 @@ class SocialRepository @Inject constructor(
         }
         _storyUpload.value = StoryUpload(StoryUpload.Stage.Sending)
         val arr = JSONArray()
-        d.gifs.forEach { arr.put(JSONObject().put("url", it.url).put("preview", it.preview).put("w", it.w).put("h", it.h).put("x", it.x.toDouble()).put("y", it.y.toDouble())) }
-        val r = socket.askWith("story-post", JSONObject().put("text", d.text.trim()).put("bg", d.bg).put("gifs", arr))
+        d.gifs.forEach { arr.put(it.json()) }
+        val ls = JSONArray()
+        d.layers.forEach { ls.put(it.json()) }
+        // "text" carries the words too, so apps from before layers still show something.
+        val r = socket.askWith("story-post", JSONObject().put("text", d.summary.trim().take(700)).put("bg", d.bg).put("gifs", arr).put("layers", ls))
         if (r == null || !r.optBoolean("ok")) {
             _storyUpload.value = StoryUpload(StoryUpload.Stage.Failed, r?.optString("error")?.ifBlank { null } ?: "Could not post. Tap to try again.")
             return
@@ -902,7 +922,8 @@ class SocialRepository @Inject constructor(
 
     // --- Server events -----------------------------------------------------
 
-    private fun onStateSync(o: JSONObject) {
+    private fun onStateSync(o: JSONObject, fromCache: Boolean = false) {
+        if (!fromCache) SocialCache.saveState(identity.clientId, o)
         applyOwn(o)
         _friends.value = o.optJSONArray("friends").people().keepingReceipts(_friends.value)
         _requests.value = o.optJSONArray("friendRequests").people()
@@ -923,7 +944,7 @@ class SocialRepository @Inject constructor(
             }
         }
         _unread.value = counts
-        waiting.forEach { (from, ids) -> ackReceived(from, ids) }
+        if (!fromCache) waiting.forEach { (from, ids) -> ackReceived(from, ids) }
         _blocked.value = o.optJSONArray("blocked")?.let { arr ->
             (0 until arr.length()).mapNotNull { arr.optJSONObject(it) }.map {
                 BlockedPerson(it.optString("clientId"), it.optString("username").ifBlank { "Someone" }, it.optBoolean("wasFriend"))
@@ -997,8 +1018,9 @@ class SocialRepository @Inject constructor(
         updateThread(to) { list -> list.map { if (it.id == id) it.copy(status = MsgStatus.Failed, failReason = reason) else it } }
     }
 
-    private fun onHistory(o: JSONObject) {
+    private fun onHistory(o: JSONObject, fromCache: Boolean = false) {
         val id = o.optString("friendClientId")
+        if (!fromCache && !o.optBoolean("older")) SocialCache.saveThread(identity.clientId, o)
         o.optString("voice").takeIf { it.isNotBlank() }?.let { v -> _voice.update { it + (id to v) } }
         o.optString("gate").takeIf { it.isNotBlank() }?.let { g -> _gates.update { it + (id to g) } }
         o.optJSONObject("disappearing")?.let { d -> _disappearing.update { it + (id to Disappearing(d.optBoolean("on"), d.optBoolean("byMe"))) } }
@@ -1009,8 +1031,10 @@ class SocialRepository @Inject constructor(
         if (paged) {
             _hasOlder.update { if (o.optBoolean("hasMore")) it + id else it - id }
         }
-        loadingOlder.remove(id)
-        ackReceived(id, fromServer.filter { !it.mine }.map { it.id })
+        if (!fromCache) {
+            loadingOlder.remove(id)
+            ackReceived(id, fromServer.filter { !it.mine }.map { it.id })
+        }
         if (o.optBoolean("older")) {
             // An older page goes in front of what is already loaded.
             updateThread(id) { local -> fromServer.filter { m -> local.none { it.id == m.id } } + local }

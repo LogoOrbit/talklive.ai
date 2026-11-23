@@ -13,6 +13,10 @@ const TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_TEXT = 700;
 const MAX_GIFS = 6;
 const MAX_ACTIVE = 30;
+const MAX_LAYERS = 20;
+const MIN_SCALE = 0.3;
+const MAX_SCALE = 5;
+const TEXT_COLORS = ['#ffffff', '#111111', '#facc15', '#ef4444', '#3b82f6', '#22c55e', '#ec4899', '#a855f7', '#f97316'];
 const BACKGROUNDS = ['blue', 'purple', 'pink', 'orange', 'green', 'teal', 'dark', 'sunset', 'ocean', 'berry'];
 
 function createStories({ store, cleanGif, friendIdsOf, isBlockedPair, checkText }) {
@@ -39,6 +43,9 @@ function createStories({ store, cleanGif, friendIdsOf, isBlockedPair, checkText 
     return changed;
   }
 
+  function clean(t) { return t.replace(/\r\n/g, '\n').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').trim(); }
+  function scaleOf(v) { const n = Number(v); return Number.isFinite(n) ? Math.min(MAX_SCALE, Math.max(MIN_SCALE, n)) : 1; }
+  function turnOf(v) { const n = Number(v); return Number.isFinite(n) ? Math.max(-180, Math.min(180, n)) : 0; }
   function clamp01(v) {
     const n = Number(v);
     return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0.5;
@@ -52,11 +59,25 @@ function createStories({ store, cleanGif, friendIdsOf, isBlockedPair, checkText 
       : '';
     const gifs = (Array.isArray(raw.gifs) ? raw.gifs : []).slice(0, MAX_GIFS).map((g) => {
       const c = cleanGif(g);
-      return c ? { url: c.url, preview: c.preview, w: c.w, h: c.h, x: clamp01(g.x), y: clamp01(g.y) } : null;
+      return c ? { url: c.url, preview: c.preview, w: c.w, h: c.h, x: clamp01(g.x), y: clamp01(g.y), s: scaleOf(g.s), r: turnOf(g.r) } : null;
     }).filter(Boolean);
-    if (!text && !gifs.length) return { ok: false, error: 'Write something or add a GIF.' };
-    if (text && checkText) {
-      const bad = checkText(author.clientId, text);
+    // Text and emoji placed anywhere on the story, each moved, sized and turned on its own.
+    const layers = (Array.isArray(raw.layers) ? raw.layers : []).slice(0, MAX_LAYERS).map((l) => {
+      if (!l || typeof l !== 'object') return null;
+      const kind = l.t === 'emoji' ? 'emoji' : l.t === 'text' ? 'text' : null;
+      const body = typeof l.text === 'string' ? clean(l.text).slice(0, kind === 'emoji' ? 16 : 300) : '';
+      if (!kind || !body) return null;
+      const out = { t: kind, text: body, x: clamp01(l.x), y: clamp01(l.y), s: scaleOf(l.s), r: turnOf(l.r) };
+      if (kind === 'text') {
+        out.c = TEXT_COLORS.includes(l.c) ? l.c : '#ffffff';
+        if (l.b === true) out.b = true;
+      }
+      return out;
+    }).filter(Boolean);
+    if (!text && !gifs.length && !layers.length) return { ok: false, error: 'Write something or add a GIF.' };
+    const words = [text, ...layers.filter((l) => l.t === 'text').map((l) => l.text)].filter(Boolean).join('\n');
+    if (words && checkText) {
+      const bad = checkText(author.clientId, words);
       if (bad) return { ok: false, error: bad };
     }
     const list = live(all()[author.clientId]);
@@ -66,6 +87,7 @@ function createStories({ store, cleanGif, friendIdsOf, isBlockedPair, checkText 
       text,
       bg: BACKGROUNDS.includes(raw.bg) ? raw.bg : 'blue',
       gifs,
+      layers,
       ts: Date.now(),
       name: String(author.name || 'Someone').slice(0, 40),
       avatar: author.avatar || null,
@@ -148,7 +170,7 @@ function createStories({ store, cleanGif, friendIdsOf, isBlockedPair, checkText 
     const mine = viewer === ownerId;
     const likes = Array.isArray(s.likes) ? s.likes : [];
     const reacts = s.reacts && typeof s.reacts === 'object' ? s.reacts : {};
-    const out = { id: s.id, text: s.text, bg: s.bg, gifs: s.gifs, ts: s.ts, seen: mine || s.views.includes(viewer), liked: likes.includes(viewer) };
+    const out = { id: s.id, text: s.text, bg: s.bg, gifs: s.gifs, layers: s.layers || [], ts: s.ts, seen: mine || s.views.includes(viewer), liked: likes.includes(viewer) };
     if (mine) {
       // Like Instagram: people who liked it first, then everyone else, newest first.
       const order = s.views.slice().reverse().sort((a, b) => (likes.includes(b) ? 1 : 0) - (likes.includes(a) ? 1 : 0));
@@ -192,7 +214,7 @@ function createStories({ store, cleanGif, friendIdsOf, isBlockedPair, checkText 
     return me ? [me, ...rest] : rest;
   }
 
-  return { post, remove, markSeen, like, noteReaction, snapshot, find, feed, prune, canSee, TTL_MS, MAX_GIFS, MAX_TEXT, BACKGROUNDS };
+  return { TEXT_COLORS, post, remove, markSeen, like, noteReaction, snapshot, find, feed, prune, canSee, TTL_MS, MAX_GIFS, MAX_TEXT, BACKGROUNDS };
 }
 
 module.exports = { createStories };

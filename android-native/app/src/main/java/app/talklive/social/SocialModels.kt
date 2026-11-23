@@ -230,11 +230,36 @@ data class Disappearing(val on: Boolean, val byMe: Boolean = false, val byName: 
 data class LikesSummary(val count: Int = 0, val matches: Int = 0, val people: List<Person> = emptyList())
 
 /** A GIF placed on a story; [x] and [y] are its centre, 0..1 across and down. */
-data class StoryGif(val url: String, val preview: String, val w: Int, val h: Int, val x: Float, val y: Float)
+data class StoryGif(val url: String, val preview: String, val w: Int, val h: Int, val x: Float, val y: Float, val s: Float = 1f, val r: Float = 0f)
+
+/**
+ * Text or an emoji placed on a story: centre ([x], [y], 0..1), size [s] (1 = normal) and turn [r] in degrees.
+ * Text has a colour [c] and may sit on a highlight pill [b].
+ */
+data class StoryLayer(val id: Long, val kind: String, val text: String, val x: Float, val y: Float, val s: Float = 1f, val r: Float = 0f, val c: String = "#ffffff", val b: Boolean = false) {
+    fun json(): org.json.JSONObject = org.json.JSONObject().put("t", kind).put("text", text).put("x", x.toDouble()).put("y", y.toDouble())
+        .put("s", s.toDouble()).put("r", r.toDouble()).also { if (kind == "text") { it.put("c", c); if (b) it.put("b", true) } }
+
+    companion object {
+        private var seq = System.nanoTime()
+        fun nextId(): Long = ++seq
+        fun from(o: org.json.JSONObject) = StoryLayer(nextId(), o.optString("t", "text"), o.optString("text"),
+            o.optDouble("x", 0.5).toFloat(), o.optDouble("y", 0.5).toFloat(), o.optDouble("s", 1.0).toFloat(), o.optDouble("r", 0.0).toFloat(),
+            o.optString("c", "#ffffff"), o.optBoolean("b"))
+    }
+}
+
+fun StoryGif.json(): org.json.JSONObject = org.json.JSONObject().put("url", url).put("preview", preview).put("w", w).put("h", h)
+    .put("x", x.toDouble()).put("y", y.toDouble()).put("s", s.toDouble()).put("r", r.toDouble())
+
+fun storyGifFrom(o: org.json.JSONObject) = StoryGif(o.optString("url"), o.optString("preview"), o.optInt("w"), o.optInt("h"),
+    o.optDouble("x", 0.5).toFloat(), o.optDouble("y", 0.5).toFloat(), o.optDouble("s", 1.0).toFloat(), o.optDouble("r", 0.0).toFloat())
 
 /** A story: text on a colour, with GIFs on it. Gone after 24 hours. */
 data class Story(
     val id: String, val text: String, val bg: String, val gifs: List<StoryGif>, val ts: Long, val seen: Boolean,
+    /** Text and emoji placed on it (newer stories); when present, [text] is only a summary. */
+    val layers: List<StoryLayer> = emptyList(),
     /** Who has seen it; only for your own stories (likes first, each with any reaction they sent). */
     val viewers: List<StoryViewerInfo> = emptyList(),
     /** You put a heart on this friend's story. */

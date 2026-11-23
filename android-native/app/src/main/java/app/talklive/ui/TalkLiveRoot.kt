@@ -761,6 +761,9 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                         onMute = vm::toggleMute,
                         onSpeaker = vm::toggleSpeaker,
                         onEnd = vm::end,
+                        bands = { voiceBands },
+                        onMessage = fp?.let { p -> { callMinimized = true; tab = MainTab.Friends; openChat = p.clientId } },
+                        onGame = { showGames = true },
                     )
                 } else CallScreen(
                     state = state,
@@ -910,6 +913,7 @@ private fun MainScreen(vm: TalkViewModel, onSignIn: () -> Unit) {
                 animal = social.person(inc.fromClientId)?.animal,
                 onAccept = { withMic { social.answer(true) } },
                 onDecline = { social.answer(false) },
+                onQuickReply = { text -> social.send(inc.fromClientId, text, null) },
             )
             out != null -> OutgoingCallScreen(out, onCancel = social::cancelCall)
         }

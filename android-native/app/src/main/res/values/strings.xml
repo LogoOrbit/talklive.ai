@@ -1046,6 +1046,10 @@
     <string name="story_reply_to">Reply to %1$s…</string>
     <string name="story_like">Like</string>
     <string name="play_game">Play a game</string>
+    <string name="call_reply_busy">Can’t talk right now</string>
+    <string name="call_reply_later">I’ll call you back soon</string>
+    <string name="call_reply_text">Text me?</string>
+    <string name="story_tap_to_write">Tap to write, or add emoji and GIFs</string>
     <string name="plus_face_preview">TalkLive Plus exclusive</string>
     <string name="plus_face_unlock">Unlock with Plus</string>
     <string name="story_sent">Sent to their inbox</string>

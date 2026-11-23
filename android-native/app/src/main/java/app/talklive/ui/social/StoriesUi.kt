@@ -103,8 +103,11 @@ private val StoryBgs: Map<String, List<Color>> = linkedMapOf(
 )
 private fun bgBrush(key: String) = Brush.linearGradient(StoryBgs[key] ?: StoryBgs.getValue("blue"))
 
-/** A story's background colour, for the inbox's story previews. */
+/** A story's background colour, for the inbox's story previews and the editor. */
 fun storyBrush(key: String) = bgBrush(key)
+
+/** The story colours, in picker order. */
+val StoryBgKeys: List<String> get() = StoryBgs.keys.toList()
 private val StoryRing = Brush.linearGradient(listOf(Color(0xFFF59E0B), Color(0xFFEC4899), Color(0xFF8B5CF6)))
 private const val MAX_GIFS = 6
 private const val MAX_TEXT = 700
@@ -201,28 +204,10 @@ fun FriendStoryBubble(p: StoryPerson, onOpen: () -> Unit) {
     }
 }
 
-/** A story as it looks: the colour, the GIFs where they were put, the text in the middle. */
+/** A story as it looks: the colour, then GIFs, emoji and words where they were put. */
 @Composable
-private fun StoryCanvas(bg: String, gifs: List<StoryGif>, text: String?, modifier: Modifier = Modifier) {
-    BoxWithConstraints(modifier.fillMaxSize().background(bgBrush(bg))) {
-        val w = constraints.maxWidth.toFloat()
-        val h = constraints.maxHeight.toFloat()
-        val gifW = maxWidth * 0.4f
-        val gifWpx = with(LocalDensity.current) { gifW.toPx() }
-        gifs.forEach { g ->
-            val ratio = if (g.w > 0 && g.h > 0) g.h.toFloat() / g.w else 0.75f
-            AsyncImage(
-                model = g.url, contentDescription = "GIF", contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .offset { IntOffset((g.x * w - gifWpx / 2).roundToInt(), (g.y * h - gifWpx * ratio / 2).roundToInt()) }
-                    .width(gifW).height(gifW * ratio).clip(RoundedCornerShape(10.dp)),
-            )
-        }
-        if (!text.isNullOrBlank()) Text(
-            text, color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 34.sp, textAlign = TextAlign.Center,
-            modifier = Modifier.align(Alignment.Center).padding(horizontal = 28.dp),
-        )
-    }
+private fun StoryCanvas(story: Story, modifier: Modifier = Modifier) {
+    StoryLayersCanvas(bgBrush(story.bg), story.gifs, story.layers, story.text, modifier)
 }
 
 /** Full-screen story viewer: bars at the top, tap right/left to move, hold to pause. */
@@ -282,7 +267,7 @@ fun StoryViewer(
     }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         Box(Modifier.fillMaxSize().background(Color.Black)) {
-            StoryCanvas(story.bg, story.gifs, story.text, Modifier.pointerInput(pi, si) {
+            StoryCanvas(story, Modifier.pointerInput(pi, si) {
                 detectTapGestures(
                     onPress = { paused = true; tryAwaitRelease(); paused = false },
                     onTap = { o -> if (replying) { focus.clearFocus(); replying = false } else if (o.x < size.width * 0.33f) prev() else next() },
@@ -447,160 +432,3 @@ private fun StoryPill(label: String, icon: androidx.compose.ui.graphics.vector.I
     }
 }
 
-/** Writing a story: type on a colour, add emoji, drop GIFs and drag them where you want. */
-@Composable
-fun StoryComposer(onPost: (app.talklive.social.StoryDraft) -> Unit, onDismiss: () -> Unit) {
-    // A saved draft comes back exactly as it was left.
-    val saved = remember { app.talklive.social.StoryDrafts.load() }
-    var bg by remember { mutableStateOf(saved?.bg?.takeIf { it in StoryBgs } ?: StoryBgs.keys.random()) }
-    var text by remember { mutableStateOf(saved?.text.orEmpty()) }
-    val gifs = remember { mutableStateListOf<StoryGif>().apply { saved?.gifs?.let { addAll(it) } } }
-    var panel by remember { mutableStateOf<String?>(null) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var confirmLeave by remember { mutableStateOf(false) }
-    val posting = false
-    fun draft() = app.talklive.social.StoryDraft(text, bg, gifs.toList())
-    // Every edit is kept, so Back, a phone call or the app closing never loses it.
-    LaunchedEffect(text, bg, gifs.toList()) { app.talklive.social.StoryDrafts.save(draft()) }
-    // Back and the X go through the same door: nothing to lose closes; otherwise ask first.
-    fun requestClose() {
-        when {
-            panel != null -> panel = null
-            draft().isEmpty -> { app.talklive.social.StoryDrafts.clear(); onDismiss() }
-            else -> confirmLeave = true
-        }
-    }
-    val context = LocalContext.current
-    val gifApi = remember { runCatching { dagger.hilt.android.EntryPointAccessors.fromApplication(context.applicationContext, app.talklive.ui.chat.GifEntryPoint::class.java).gifs() }.getOrNull() }
-    val emptyMsg = stringResource(R.string.story_empty)
-    val maxGifsMsg = stringResource(R.string.story_max_gifs, MAX_GIFS)
-    LaunchedEffect(error) { if (error != null) { delay(2600); error = null } }
-
-    Dialog(onDismissRequest = { requestClose() }, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
-        BoxWithConstraints(Modifier.fillMaxSize().background(bgBrush(bg))) {
-            val w = constraints.maxWidth.toFloat()
-            val h = constraints.maxHeight.toFloat()
-            val gifW = maxWidth * 0.4f
-            val gifWpx = with(LocalDensity.current) { gifW.toPx() }
-            // The GIFs, each dragged on its own; the small × takes one off.
-            gifs.forEachIndexed { i, g ->
-                val ratio = if (g.w > 0 && g.h > 0) g.h.toFloat() / g.w else 0.75f
-                Box(
-                    Modifier
-                        .offset { IntOffset((g.x * w - gifWpx / 2).roundToInt(), (g.y * h - gifWpx * ratio / 2).roundToInt()) }
-                        .width(gifW).height(gifW * ratio)
-                        .pointerInput(g.url, i) {
-                            detectDragGestures { change, drag ->
-                                change.consume()
-                                val cur = gifs.getOrNull(i) ?: return@detectDragGestures
-                                gifs[i] = cur.copy(x = (cur.x + drag.x / w).coerceIn(0f, 1f), y = (cur.y + drag.y / h).coerceIn(0f, 1f))
-                            }
-                        },
-                ) {
-                    AsyncImage(model = g.url, contentDescription = "GIF", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(10.dp)))
-                    Box(
-                        Modifier.align(Alignment.TopEnd).offset(8.dp, (-8).dp).size(26.dp).clip(CircleShape).background(Color(0xCC000000))
-                            .clickable { gifs.removeAt(i) },
-                        contentAlignment = Alignment.Center,
-                    ) { Icon(Icons.Rounded.Close, null, tint = Color.White, modifier = Modifier.size(16.dp)) }
-                }
-            }
-            Box(Modifier.align(Alignment.Center).fillMaxWidth().padding(horizontal = 24.dp), contentAlignment = Alignment.Center) {
-                if (text.isEmpty()) Text(stringResource(R.string.story_placeholder), color = Color.White.copy(alpha = 0.65f), fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
-                BasicTextField(
-                    text, { text = it.take(MAX_TEXT) },
-                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 34.sp, textAlign = TextAlign.Center),
-                    cursorBrush = SolidColor(Color.White), modifier = Modifier.fillMaxWidth(),
-                )
-            }
-            // Top: close, then emoji and GIF on the right.
-            Row(Modifier.fillMaxWidth().statusBarsPadding().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { requestClose() }) { Icon(Icons.Rounded.Close, stringResource(R.string.close), tint = Color.White) }
-                Text(stringResource(R.string.new_story), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                Spacer(Modifier.weight(1f))
-                ToolButton("😊") { panel = if (panel == "emoji") null else "emoji" }
-                Spacer(Modifier.width(8.dp))
-                if (gifApi != null) ToolButton("GIF") { panel = if (panel == "gif") null else "gif" }
-            }
-            // Bottom: colours and Post.
-            Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().imePadding().navigationBarsPadding()) {
-                when (panel) {
-                    "emoji" -> LazyVerticalGrid(
-                        GridCells.Adaptive(44.dp),
-                        Modifier.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)).background(Color(0xF0111827)).padding(8.dp),
-                    ) {
-                        items(StoryEmojis.size) { k ->
-                            val e = StoryEmojis[k]
-                            Box(Modifier.size(44.dp).clip(RoundedCornerShape(8.dp)).clickable { text = (text + e).take(MAX_TEXT) }, contentAlignment = Alignment.Center) {
-                                Text(e, fontSize = 26.sp)
-                            }
-                        }
-                    }
-                    "gif" -> if (gifApi != null) Box(
-                        Modifier.fillMaxWidth().height(320.dp).clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)).background(MaterialTheme.colorScheme.surface),
-                    ) {
-                        app.talklive.ui.chat.GifPanel(gifApi) { g ->
-                            if (gifs.size >= MAX_GIFS) { error = maxGifsMsg } else {
-                                gifs.add(StoryGif(g.url, g.preview, g.w, g.h, 0.3f + Math.random().toFloat() * 0.4f, 0.25f + Math.random().toFloat() * 0.4f))
-                                panel = null
-                            }
-                        }
-                    }
-                }
-                Row(
-                    Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0x88000000)))).padding(horizontal = 12.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    LazyRow(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(StoryBgs.keys.toList()) { k ->
-                            Box(
-                                Modifier.size(if (k == bg) 32.dp else 28.dp).clip(CircleShape).background(bgBrush(k))
-                                    .border(2.dp, if (k == bg) Color.White else Color.White.copy(alpha = 0.4f), CircleShape)
-                                    .clickable { bg = k },
-                            )
-                        }
-                    }
-                    Spacer(Modifier.width(10.dp))
-                    Box(
-                        Modifier.clip(CircleShape).background(Color.White).clickable(enabled = !posting) {
-                            if (text.isBlank() && gifs.isEmpty()) { error = emptyMsg; return@clickable }
-                            // Posting carries on in the background; the ring on "Your story" shows it.
-                            val d = draft()
-                            app.talklive.social.StoryDrafts.save(d)
-                            onPost(d)
-                            onDismiss()
-                        }.padding(horizontal = 20.dp, vertical = 10.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        if (posting) CircularProgressIndicator(Modifier.size(20.dp), color = Color.Black, strokeWidth = 2.dp)
-                        else Text(stringResource(R.string.story_post), color = Color.Black, fontWeight = FontWeight.ExtraBold)
-                    }
-                }
-            }
-            if (confirmLeave) androidx.compose.material3.AlertDialog(
-                onDismissRequest = { confirmLeave = false },
-                title = { Text(stringResource(R.string.story_leave_title)) },
-                text = { Text(stringResource(R.string.story_leave_body)) },
-                confirmButton = { androidx.compose.material3.TextButton(onClick = { confirmLeave = false }) { Text(stringResource(R.string.story_keep_editing)) } },
-                dismissButton = {
-                    androidx.compose.material3.TextButton(onClick = { confirmLeave = false; app.talklive.social.StoryDrafts.clear(); onDismiss() }) {
-                        Text(stringResource(R.string.story_discard), color = Color(0xFFEF4444))
-                    }
-                },
-            )
-            error?.let {
-                Text(
-                    it, color = Color.White, fontWeight = FontWeight.Bold,
-                    modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 64.dp).clip(CircleShape).background(Color(0xFFDC2626)).padding(horizontal = 14.dp, vertical = 8.dp),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ToolButton(label: String, onClick: () -> Unit) {
-    Box(Modifier.size(44.dp).clip(CircleShape).background(Color(0x66000000)).clickable(onClick = onClick), contentAlignment = Alignment.Center) {
-        Text(label, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = if (label.length > 2) 13.sp else 20.sp)
-    }
-}

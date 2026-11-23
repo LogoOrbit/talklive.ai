@@ -33,6 +33,7 @@ class TalkLiveApplication : Application(), coil.ImageLoaderFactory {
         super.onCreate()
         CrashReporter.sendPending(this, socket)
         app.talklive.social.StoryDrafts.init(this)
+        app.talklive.social.SocialCache.init(this)
         engage.loadFlags()
         sounds.start()
         app.talklive.sound.Tap.sounds = fx
