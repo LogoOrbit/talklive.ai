@@ -65,6 +65,11 @@ class SocialViewModel @Inject constructor(
     fun person(id: String): Person? = repo.person(id)
     fun knownFace(id: String): String? = repo.knownFace(id)
     val likes = repo.likes
+    val stories = repo.stories
+    fun refreshStories() = repo.refreshStories()
+    suspend fun postStory(text: String, bg: String, gifs: List<app.talklive.social.StoryGif>) = repo.postStory(text, bg, gifs)
+    fun deleteStory(id: String) = repo.deleteStory(id)
+    fun markStorySeen(ownerId: String, id: String) = repo.markStorySeen(ownerId, id)
     val liked = repo.liked
     val likeMatches = repo.likeMatches
     fun likePartner(id: String) = repo.likePartner(id)

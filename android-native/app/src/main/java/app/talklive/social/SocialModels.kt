@@ -222,3 +222,18 @@ data class Disappearing(val on: Boolean, val byMe: Boolean = false, val byName: 
 
 /** Likes (spec 8): how many people liked you, how many became matches, and (Plus only) who. */
 data class LikesSummary(val count: Int = 0, val matches: Int = 0, val people: List<Person> = emptyList())
+
+/** A GIF placed on a story; [x] and [y] are its centre, 0..1 across and down. */
+data class StoryGif(val url: String, val preview: String, val w: Int, val h: Int, val x: Float, val y: Float)
+
+/** A story: text on a colour, with GIFs on it. Gone after 24 hours. */
+data class Story(
+    val id: String, val text: String, val bg: String, val gifs: List<StoryGif>, val ts: Long, val seen: Boolean,
+    /** Who has seen it; only for your own stories. */
+    val views: List<String> = emptyList(),
+)
+
+/** One circle in the stories row: you, or a friend with live stories. */
+data class StoryPerson(val clientId: String, val mine: Boolean, val name: String, val animal: String?, val stories: List<Story>) {
+    val unseen: Boolean get() = stories.any { !it.seen }
+}

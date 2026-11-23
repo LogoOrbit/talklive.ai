@@ -171,6 +171,10 @@ fun FriendsScreen(
     val friendIds = friends.map { it.clientId }.toSet()
     val met = history.filter { it.clientId !in friendIds }
     val likes by vm.likes.collectAsStateWithLifecycle()
+    val stories by vm.stories.collectAsStateWithLifecycle()
+    var composingStory by rememberSaveable { mutableStateOf(false) }
+    var viewingStory by remember { mutableStateOf<Int?>(null) }
+    LaunchedEffect(Unit) { vm.refreshStories() }
     val sorted = friends.sortedWith(compareByDescending<Person> { it.pinned }.thenByDescending { it.online }.thenBy { it.displayName.lowercase() })
 
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
@@ -215,7 +219,7 @@ fun FriendsScreen(
         val refreshScope = rememberCoroutineScope()
         app.talklive.ui.components.SlidePullToRefresh(
             refreshing = refreshing,
-            onRefresh = { refreshing = true; refreshScope.launch { vm.refresh(); refreshing = false } },
+            onRefresh = { refreshing = true; vm.refreshStories(); refreshScope.launch { vm.refresh(); refreshing = false } },
             modifier = Modifier.weight(1f),
         ) {
         // No stretch overscroll here: on some phones it blanked the whole list while scrolling.
@@ -231,8 +235,16 @@ fun FriendsScreen(
             // Online now: a strip of round avatars, like the top of Messenger.
             val onlineNow = sorted.filter { it.online }
             val hasLikes = likes.count > 0 || likes.people.isNotEmpty()
-            if (top && (onlineNow.isNotEmpty() || hasLikes)) item(key = "online-strip") {
+            if (top) item(key = "online-strip") {
                 LazyRow(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    // Stories first, like Messenger and Instagram: yours, then friends with new ones.
+                    item(key = "my-story") {
+                        val me = stories.firstOrNull { it.mine }
+                        MyStoryBubble(me, onAdd = { composingStory = true }, onOpen = { viewingStory = stories.indexOf(me) })
+                    }
+                    stories.forEachIndexed { i, p ->
+                        if (!p.mine && p.stories.isNotEmpty()) item(key = "st" + p.clientId) { FriendStoryBubble(p) { viewingStory = i } }
+                    }
                     // Likes: one compact bubble at the start of the strip, not a big card.
                     if (hasLikes) item(key = "likes") { LikesBubble(likes, onPerson = { profileOf = it }, onPlus = onPlus) }
                     items(onlineNow, key = { "o" + it.clientId }) { p ->
@@ -366,6 +378,16 @@ fun FriendsScreen(
     }
 
     if (inFriends) ChatActions(vm, chatMenu) { chatMenu = null }
+    if (composingStory) StoryComposer(onPost = { t, b, g -> vm.postStory(t, b, g) }, onDismiss = { composingStory = false })
+    viewingStory?.let { i ->
+        StoryViewer(
+            stories, i,
+            onSeen = { p, st -> vm.markStorySeen(p.clientId, st.id) },
+            onDelete = { st -> vm.deleteStory(st.id) },
+            onAdd = { composingStory = true },
+            onDismiss = { viewingStory = null },
+        )
+    }
     if (showCallLog) CallLogSheet(
         onDismiss = { showCallLog = false },
         onCallBack = { id ->

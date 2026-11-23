@@ -1031,4 +1031,15 @@
     <string name="call_log_no_answer">No answer</string>
     <string name="likes_short">Likes</string>
     <string name="private_call">Private call</string>
+    <!-- Stories -->
+    <string name="your_story">Your story</string>
+    <string name="new_story">New story</string>
+    <string name="story_add">Add story</string>
+    <string name="story_post">Post</string>
+    <string name="story_placeholder">Type something…</string>
+    <string name="story_empty">Write something or add a GIF</string>
+    <string name="story_max_gifs">Up to %1$d GIFs</string>
+    <string name="story_seen_by">Seen by</string>
+    <string name="story_delete">Delete</string>
+    <string name="story_no_views">No one yet</string>
 </resources>

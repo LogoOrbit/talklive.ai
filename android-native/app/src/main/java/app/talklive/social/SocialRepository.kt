@@ -114,6 +114,10 @@ class SocialRepository @Inject constructor(
 
     private val _incoming = MutableStateFlow<IncomingCall?>(null)
     val incoming: StateFlow<IncomingCall?> = _incoming
+    private val _stories = MutableStateFlow<List<StoryPerson>>(emptyList())
+    /** Your stories first, then friends with live stories (unseen first). */
+    val stories: StateFlow<List<StoryPerson>> = _stories
+
     private val _callDeclined = MutableSharedFlow<String>(extraBufferCapacity = 8)
     /** A ringing friend call this person turned down (for the call log). */
     val callDeclined: SharedFlow<String> = _callDeclined
@@ -209,7 +213,7 @@ class SocialRepository @Inject constructor(
                 _history.value = emptyList(); _unread.value = emptyMap(); _threads.value = emptyMap(); _hasOlder.value = emptySet()
                 _typing.value = emptySet(); _myFriendId.value = null; _gates.value = emptyMap()
                 _voice.value = emptyMap(); _blocked.value = emptyList(); _activity.value = emptyList()
-                _muted.value = emptySet(); _myBadges.value = null; _myCover.value = null
+                _muted.value = emptySet(); _myBadges.value = null; _myCover.value = null; _stories.value = emptyList()
             }
         }
         socket.on("register-result") { a -> (a.firstOrNull() as? JSONObject)?.let { applyOwn(it) } }
@@ -346,6 +350,7 @@ class SocialRepository @Inject constructor(
             val o = a.firstOrNull() as? JSONObject ?: return@on
             toActivity(o)?.let { item -> scope.launch { _activity.update { listOf(item) + it.filterNot { x -> x.id == item.id } } } }
         }
+        socket.on("stories-changed") { _ -> refreshStories() }
         socket.on("call-back-request") { a ->
             val o = a.firstOrNull() as? JSONObject ?: return@on
             _incoming.value = IncomingCall(o.optString("fromClientId"), o.optString("username").ifBlank { "Someone" }, o.optNullableString("countryCode"))
@@ -395,6 +400,7 @@ class SocialRepository @Inject constructor(
                 if (e != ServerEvent.Registered) return@collect
                 ackedIds.clear()
                 refreshLikes()
+                refreshStories()
                 val since = changesSince
                 changesSince = socket.serverNow
                 if (since > 0) socket.emit("get-friend-changes", JSONObject().put("since", since))
@@ -702,6 +708,63 @@ class SocialRepository @Inject constructor(
         socket.emit("mark-messages-read", JSONObject().put("friendClientId", clientId))
         // With read receipts off the badge still clears, but nobody sees "Seen".
         if (privacy?.readReceipts?.value != false) socket.emit("chat-seen", JSONObject().put("friendClientId", clientId))
+    }
+
+    // --- Stories ------------------------------------------------------------
+
+    fun refreshStories() {
+        scope.launch {
+            val r = socket.ask("stories-get") ?: return@launch
+            if (!r.optBoolean("ok")) return@launch
+            val arr = r.optJSONArray("people") ?: return@launch
+            _stories.value = (0 until arr.length()).mapNotNull { arr.optJSONObject(it) }.map { p ->
+                val st = p.optJSONArray("stories") ?: JSONArray()
+                StoryPerson(
+                    clientId = p.optString("clientId"),
+                    mine = p.optBoolean("mine"),
+                    name = p.optString("name").ifBlank { "Someone" },
+                    animal = animalOf(p.optNullableString("avatar")),
+                    stories = (0 until st.length()).mapNotNull { st.optJSONObject(it) }.map { s ->
+                        val g = s.optJSONArray("gifs") ?: JSONArray()
+                        val v = s.optJSONArray("views") ?: JSONArray()
+                        Story(
+                            id = s.optString("id"), text = s.optString("text"), bg = s.optString("bg", "blue"),
+                            gifs = (0 until g.length()).mapNotNull { g.optJSONObject(it) }.map { o ->
+                                StoryGif(o.optString("url"), o.optString("preview"), o.optInt("w"), o.optInt("h"),
+                                    o.optDouble("x", 0.5).toFloat(), o.optDouble("y", 0.5).toFloat())
+                            },
+                            ts = s.optLong("ts"), seen = s.optBoolean("seen"),
+                            views = (0 until v.length()).mapNotNull { v.optJSONObject(it) }.map { o -> o.optString("name").ifBlank { "A friend" } },
+                        )
+                    },
+                )
+            }
+        }
+    }
+
+    /** Posts a story; null on success, else what to tell the person. */
+    suspend fun postStory(text: String, bg: String, gifs: List<StoryGif>): String? {
+        val arr = JSONArray()
+        gifs.forEach { arr.put(JSONObject().put("url", it.url).put("preview", it.preview).put("w", it.w).put("h", it.h).put("x", it.x.toDouble()).put("y", it.y.toDouble())) }
+        val r = socket.askWith("story-post", JSONObject().put("text", text).put("bg", bg).put("gifs", arr))
+            ?: return "No connection. Try again."
+        if (!r.optBoolean("ok")) return r.optString("error").ifBlank { "Could not post. Try again." }
+        refreshStories()
+        return null
+    }
+
+    fun deleteStory(id: String) {
+        scope.launch {
+            socket.askWith("story-delete", JSONObject().put("id", id))
+            refreshStories()
+        }
+    }
+
+    fun markStorySeen(ownerId: String, id: String) {
+        _stories.update { list ->
+            list.map { p -> if (p.clientId != ownerId) p else p.copy(stories = p.stories.map { if (it.id == id) it.copy(seen = true) else it }) }
+        }
+        socket.emit("story-seen", JSONObject().put("clientId", ownerId).put("id", id))
     }
 
     // --- Friend calls ------------------------------------------------------

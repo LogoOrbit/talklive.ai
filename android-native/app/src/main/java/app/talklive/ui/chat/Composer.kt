@@ -434,7 +434,7 @@ private fun TabIcon(e: String, selected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun GifPanel(api: GifApi, onPick: (Gif) -> Unit) {
+internal fun GifPanel(api: GifApi, onPick: (Gif) -> Unit) {
     var query by remember { mutableStateOf("") }
     var results by remember { mutableStateOf(api.cached("")) }
     LaunchedEffect(query) {
