@@ -83,6 +83,10 @@ sealed interface ServerEvent {
     data class Signal(val data: JSONObject) : ServerEvent
     data class PartnerLeft(val reason: String, val username: String) : ServerEvent
     data class PartnerMic(val muted: Boolean) : ServerEvent
+    /** Nobody has been talking: the call ends in [endsInMs] unless someone speaks or taps "Still here". */
+    data class SilenceWarning(val endsInMs: Long) : ServerEvent
+    /** Speech or "Still here" (from either side) cleared the silence warning. */
+    data object SilenceCleared : ServerEvent
     data class SearchRefused(val reason: String) : ServerEvent
     data object Banned : ServerEvent
 }

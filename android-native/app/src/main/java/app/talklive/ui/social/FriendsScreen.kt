@@ -99,9 +99,16 @@ import app.talklive.ui.main.MainTab
 import app.talklive.ui.theme.Danger
 import kotlinx.coroutines.launch
 
+/** The Friends tab shows friends and requests; the History tab shows the people met at random. */
+enum class FriendsPane { Friends, History }
+
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalking: () -> Unit, onPlus: () -> Unit = {}) {
+fun FriendsScreen(
+    vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalking: () -> Unit, onPlus: () -> Unit = {},
+    pane: FriendsPane = FriendsPane.Friends, onChats: (() -> Unit)? = null, unreadChats: Int = 0,
+) {
+    val inFriends = pane == FriendsPane.Friends
     var profileOf by remember { mutableStateOf<Person?>(null) }
     profileOf?.let { p ->
         val friendsNow by vm.friends.collectAsStateWithLifecycle()
@@ -151,8 +158,13 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
 
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
         Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 16.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.tab_friends), style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onBackground)
+            Text(stringResource(if (inFriends) R.string.tab_friends else R.string.tab_history), style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onBackground)
             Spacer(Modifier.weight(1f))
+            if (inFriends && onChats != null) IconButton(onClick = onChats) {
+                androidx.compose.material3.BadgedBox(badge = {
+                    if (unreadChats > 0) androidx.compose.material3.Badge(containerColor = MaterialTheme.colorScheme.primary) { Text(if (unreadChats > 99) "99+" else unreadChats.toString()) }
+                }) { Icon(androidx.compose.material.icons.Icons.AutoMirrored.Rounded.Chat, stringResource(R.string.tab_chats)) }
+            }
             IconButton(onClick = { showActivity = true; vm.markActivitySeen() }) {
                 androidx.compose.material3.BadgedBox(badge = {
                     if (activity.isNotEmpty()) androidx.compose.material3.Badge(containerColor = MaterialTheme.colorScheme.primary) { Text(activity.size.toString()) }
@@ -161,8 +173,8 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
             FilledTonalIconButton(onClick = { adding = true }) { Icon(Icons.Rounded.PersonAdd, stringResource(R.string.add_friend)) }
         }
 
-        if (friends.isEmpty() && requests.isEmpty() && met.isEmpty()) {
-            Box(Modifier.weight(1f)) { EmptyTab(MainTab.Friends, onStart = onStartTalking, showTitle = false) }
+        if (if (inFriends) friends.isEmpty() && requests.isEmpty() else met.isEmpty() && historyHidden == 0) {
+            Box(Modifier.weight(1f)) { EmptyTab(if (inFriends) MainTab.Friends else MainTab.History, onStart = onStartTalking, showTitle = false) }
             return@Column
         }
 
@@ -174,12 +186,12 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
             modifier = Modifier.weight(1f),
         ) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 16.dp)) {
-            item(key = "notify") { NotificationsBanner() }
-            item(key = "likes") {
+            if (inFriends) item(key = "notify") { NotificationsBanner() }
+            if (inFriends) item(key = "likes") {
                 val likes by vm.likes.collectAsStateWithLifecycle()
                 LikesRow(likes, onPerson = { profileOf = it }, onPlus = onPlus)
             }
-            if (requests.isNotEmpty()) {
+            if (inFriends && requests.isNotEmpty()) {
                 item { SectionLabel(stringResource(R.string.friend_requests, requests.size)) }
                 items(requests, key = { "r" + it.clientId }) { p ->
                     RequestCard(p, onAccept = { vm.respond(p.clientId, true) }, onDecline = { vm.respond(p.clientId, false) })
@@ -187,7 +199,7 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
             }
             // Who you met at random, split by how: voice calls (call them back)
             // and text chats, so each is easy to find again.
-            if (met.isNotEmpty()) item(key = "kept30") {
+            if (!inFriends && met.isNotEmpty()) item(key = "kept30") {
                 Text(
                     stringResource(R.string.history_kept_30),
                     style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
@@ -196,7 +208,7 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
             }
             val talked = met.filter { it.mode == "talk" }.take(10)
             val chatted = met.filter { it.mode != "talk" }
-            if (talked.isNotEmpty()) {
+            if (!inFriends && talked.isNotEmpty()) {
                 item(key = "h-talked") { SectionLabel(stringResource(R.string.talked_on_call, talked.size)) }
                 item(key = "row-talked") {
                     LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -213,7 +225,7 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
                     }
                 }
             }
-            if (chatted.isNotEmpty()) {
+            if (!inFriends && chatted.isNotEmpty()) {
                 item(key = "h-chatted") { SectionLabel(stringResource(R.string.chatted_by_text)) }
                 item(key = "row-chatted") {
                     LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -230,7 +242,7 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
                 }
             }
             // Free profiles list their last 3 people; the rest wait for Plus.
-            if (historyHidden > 0) item(key = "h-locked") {
+            if (!inFriends && historyHidden > 0) item(key = "h-locked") {
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)
                         .clip(RoundedCornerShape(16.dp))
@@ -252,7 +264,7 @@ fun FriendsScreen(vm: SocialViewModel, onOpenChat: (String) -> Unit, onStartTalk
             listOf(
                 R.string.friends_online to sorted.filter { it.online },
                 R.string.friends_offline to sorted.filter { !it.online },
-            ).filter { it.second.isNotEmpty() }.forEach { (label, group) ->
+            ).filter { inFriends && it.second.isNotEmpty() }.forEach { (label, group) ->
                 item(key = "h$label") { SectionLabel(stringResource(label, group.size)) }
                 items(group, key = { "f" + it.clientId }) { p ->
                     FriendRow(

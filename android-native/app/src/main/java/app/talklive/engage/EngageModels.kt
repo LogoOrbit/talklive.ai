@@ -8,7 +8,7 @@ data class Streak(val count: Int, val best: Int, val doneToday: Boolean, val los
 data class Week(val calls: Int, val countries: Int, val longestSeconds: Int)
 
 /** Daily streak, country passport and this week's stats (server/engage.js). */
-data class Engage(val streak: Streak, val passport: List<String>, val week: Week) {
+data class Engage(val streak: Streak, val passport: List<String>, val week: Week, val passportCounts: Map<String, Int> = emptyMap()) {
     companion object {
         fun from(o: JSONObject): Engage {
             val s = o.optJSONObject("streak") ?: JSONObject()
@@ -18,6 +18,7 @@ data class Engage(val streak: Streak, val passport: List<String>, val week: Week
                 Streak(s.optInt("count"), s.optInt("best"), s.optBoolean("doneToday"), s.optJSONObject("lost")?.optInt("count") ?: 0, s.optJSONObject("lost")?.optBoolean("restorable") == true, if (s.isNull("freezesLeft") || !s.has("freezesLeft")) null else s.optInt("freezesLeft")),
                 (0 until p.length()).map { p.optString(it) }.filter { it.length == 2 },
                 Week(w.optInt("calls"), w.optInt("countries"), w.optInt("longest")),
+                o.optJSONObject("passportCounts")?.let { pc -> pc.keys().asSequence().filter { it.length == 2 }.associateWith { pc.optInt(it) } } ?: emptyMap(),
             )
         }
     }

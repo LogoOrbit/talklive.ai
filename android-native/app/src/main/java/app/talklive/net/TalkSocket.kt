@@ -212,6 +212,11 @@ class TalkSocket(private val identity: IdentityStore, private val privacy: app.t
             val o = args.firstObject()
             _events.tryEmit(ServerEvent.PartnerLeft(o?.optString("reason") ?: "left", o?.optString("username").orEmpty()))
         }
+        socket.on("silence-warning") { args ->
+            val ms = args.firstObject()?.optLong("endsInMs", 60_000L) ?: 60_000L
+            _events.tryEmit(ServerEvent.SilenceWarning(ms.coerceIn(1_000L, 120_000L)))
+        }
+        socket.on("silence-cleared") { _events.tryEmit(ServerEvent.SilenceCleared) }
         socket.on("partner-mic-state") { args ->
             _events.tryEmit(ServerEvent.PartnerMic(args.firstOrNull() == true))
         }

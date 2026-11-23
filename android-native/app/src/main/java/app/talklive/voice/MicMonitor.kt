@@ -158,6 +158,7 @@ class MicMonitor(
     /** A call's audio is up. [voice]: the server asked this phone for a voice summary in this call. */
     fun start(voice: Boolean = false) {
         val gen = generation.incrementAndGet()
+        spoken.set(0)
         val collect = voice && _enabled.value
         resetWindow = true
         listening = collect
@@ -176,6 +177,11 @@ class MicMonitor(
     }
 
     fun setMuted(m: Boolean) { muted = m }
+
+    private val spoken = AtomicInteger()
+
+    /** Milliseconds of this phone's own speech since the last call to this, 0..10000 (muted time never counts). */
+    fun takeSpokenMs(): Int = spoken.getAndSet(0).coerceIn(0, 10_000)
 
     private fun stopListening() {
         listening = false
@@ -214,6 +220,8 @@ class MicMonitor(
         // Shouting, on every ~10 ms chunk.
         var sq = 0.0
         for (v in chunk) sq += v * v
+        // Speech time for the anti-cheat reports: chunks above a quiet threshold count.
+        if (Math.sqrt(sq / maxOf(1, n)) > SPEECH_RMS) spoken.addAndGet((n * 1000L / maxOf(1, rate)).toInt())
         shout.feed(Math.sqrt(sq / maxOf(1, n)), now)?.let { r ->
             if (now - lastShoutAlert > 60_000) {
                 lastShoutAlert = now
@@ -254,6 +262,8 @@ class MicMonitor(
 
     companion object {
         const val BLOCK = 2048
+        /** Chunk loudness (RMS of -1..1 samples, about -36 dBFS) above which a 10 ms chunk counts as speech. */
+        const val SPEECH_RMS = 0.016
         /** Voiced frames in the first summary (~4 s of voiced speech), and in the longer one. */
         const val FIRST = 80
         const val SECOND = 200

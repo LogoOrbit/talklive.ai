@@ -208,6 +208,8 @@ fun AnimalGrid(
     // The account's level tier (none, silver, gold, diamond): special faces open with it, never with Plus.
     tier: String = "none",
     onSpecialLocked: (String) -> Unit = {},
+    // Edit profile: locked faces can still be picked to preview; saving is what asks for Plus or a level.
+    previewLocked: Boolean = false,
 ) {
     // The face worn when the grid opened stays pickable: nobody loses the avatar they had.
     val held = remember { selected }
@@ -252,7 +254,8 @@ fun AnimalGrid(
                     .then(if (isPlusFace(a.id)) Modifier.border(1.5.dp, app.talklive.ui.components.PlusGold.copy(alpha = 0.7f), RoundedCornerShape(20.dp)) else Modifier)
                     .clickable(remember { MutableInteractionSource() }, indication = null) {
                         haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        if (specialLocked) onSpecialLocked(a.id)
+                        if (previewLocked) onSelect(a.id)
+                        else if (specialLocked) onSpecialLocked(a.id)
                         else if (isPlusFace(a.id) && !unlocked(a.id)) onLocked() else onSelect(a.id)
                     }
                     .padding(vertical = 10.dp),

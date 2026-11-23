@@ -14,12 +14,16 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.automirrored.rounded.Chat
-import androidx.compose.material.icons.outlined.GraphicEq
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.rounded.GraphicEq
+import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.People
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
@@ -51,17 +55,33 @@ import app.talklive.ui.theme.BrandTeal
 import app.talklive.ui.theme.BrandBlue
 
 enum class MainTab(val label: Int, val icon: ImageVector, val selectedIcon: ImageVector) {
-    Talk(R.string.tab_talk, Icons.Outlined.GraphicEq, Icons.Rounded.GraphicEq),
+    Talk(R.string.tab_home, Icons.Outlined.Home, Icons.Rounded.Home),
+    // Chats is not on the bar: it opens from the Friends screen.
     Chats(R.string.tab_chats, Icons.AutoMirrored.Outlined.Chat, Icons.AutoMirrored.Rounded.Chat),
     Friends(R.string.tab_friends, Icons.Outlined.People, Icons.Rounded.People),
+    History(R.string.tab_history, Icons.Outlined.History, Icons.Rounded.History),
+    // Filters is an action: it opens the filters sheet rather than a screen.
+    Filters(R.string.tab_filters, Icons.Outlined.Tune, Icons.Rounded.Tune),
     Profile(R.string.tab_profile, Icons.Outlined.Person, Icons.Rounded.Person),
+    ;
+
+    companion object {
+        /** What the bottom bar shows, in order. */
+        val bar: List<MainTab> = listOf(Talk, Friends, History, Filters, Profile)
+    }
 }
 
 @Composable
-fun TabBar(selected: MainTab, onSelect: (MainTab) -> Unit, badges: Map<MainTab, Int> = emptyMap()) {
+fun TabBar(
+    selected: MainTab,
+    onSelect: (MainTab) -> Unit,
+    badges: Map<MainTab, Int> = emptyMap(),
+    // Profile shows the person's own small avatar instead of an icon; the argument is "selected".
+    profileIcon: (@Composable (Boolean) -> Unit)? = null,
+) {
     val haptics = LocalHapticFeedback.current
     NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
-        MainTab.entries.forEach { tab ->
+        MainTab.bar.forEach { tab ->
             val on = tab == selected
             NavigationBarItem(
                 selected = on,
@@ -75,7 +95,10 @@ fun TabBar(selected: MainTab, onSelect: (MainTab) -> Unit, badges: Map<MainTab, 
                         androidx.compose.animation.AnimatedVisibility(count > 0, enter = androidx.compose.animation.scaleIn(), exit = androidx.compose.animation.scaleOut()) {
                             Badge(containerColor = MaterialTheme.colorScheme.primary) { Text(if (count > 99) "99+" else count.toString()) }
                         }
-                    }) { BouncyIcon(if (on) tab.selectedIcon else tab.icon, on) }
+                    }) {
+                        if (tab == MainTab.Profile && profileIcon != null) profileIcon(on)
+                        else BouncyIcon(if (on) tab.selectedIcon else tab.icon, on)
+                    }
                 },
                 label = { Text(stringResource(tab.label), style = MaterialTheme.typography.labelMedium) },
                 colors = NavigationBarItemDefaults.colors(
@@ -108,6 +131,7 @@ private fun BouncyIcon(icon: ImageVector, selected: Boolean) {
 fun EmptyTab(tab: MainTab, onStart: () -> Unit, showTitle: Boolean = true) {
     val (title, body) = when (tab) {
         MainTab.Chats -> R.string.chats_empty_title to R.string.chats_empty_body
+        MainTab.History -> R.string.history_empty_title to R.string.history_empty_body
         else -> R.string.friends_empty_title to R.string.friends_empty_body
     }
     Column(

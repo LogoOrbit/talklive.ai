@@ -44,6 +44,8 @@ sealed interface CallNotice {
     data class PartnerLeft(val name: String, val dropped: Boolean) : CallNotice
     data class CallEnded(val name: String) : CallNotice
     data class Refused(val reason: String) : CallNotice
+    /** The server ended the call: nobody was talking. */
+    data object Silence : CallNotice
 }
 
 enum class LinkQuality { Good, Fair, Poor }
@@ -95,6 +97,8 @@ data class CallState(
     val voiceInviteDeclined: Boolean = false,
     /** This person's own Men / Women filter chose the current partner ("Not who I filtered for"). */
     val filtered: Boolean = false,
+    /** Epoch ms when the server ends a silent call unless someone speaks or taps "Still here"; null = no warning. */
+    val silenceEndsAt: Long? = null,
 )
 
 /**
@@ -169,6 +173,7 @@ class CallManager @Inject constructor(
     private val pendingSignals = mutableListOf<JSONObject>()
     /** The pairing this call belongs to; signals stamped with another `pid` are dropped. */
     private var pairId: String? = null
+    private var activityJob: Job? = null
 
     // Recovery of a broken media path, as on the website: ICE restarts with
     // backoff (SdpTune.restartDelayMs) and a bound, inside a 30 s window after
@@ -486,10 +491,18 @@ class CallManager @Inject constructor(
             }
             is ServerEvent.Signal -> onSignal(e.data)
             is ServerEvent.PartnerMic -> _state.update { it.copy(partnerMuted = e.muted) }
+            is ServerEvent.SilenceWarning -> if (phase is CallPhase.Connected && _state.value.mode == CallMode.Talk) {
+                _state.update { it.copy(silenceEndsAt = System.currentTimeMillis() + e.endsInMs) }
+            }
+            ServerEvent.SilenceCleared -> _state.update { it.copy(silenceEndsAt = null) }
             is ServerEvent.PartnerLeft -> if (!switchingToVoice && (phase is CallPhase.Connecting || phase is CallPhase.Connected)) {
                 resumeJob?.cancel()
                 teardown()
-                if (_state.value.friendCall) {
+                if (e.reason == "silence") {
+                    // The server ended a call nobody was talking in: stop here, do not start another search.
+                    audio.stop()
+                    _state.update { CallState(speakerOn = it.speakerOn, mode = it.mode, notice = CallNotice.Silence) }
+                } else if (_state.value.friendCall) {
                     audio.stop()
                     _state.update { CallState(speakerOn = it.speakerOn, notice = CallNotice.CallEnded(e.username.ifBlank { "Your friend" })) }
                 } else {
@@ -623,6 +636,7 @@ class CallManager @Inject constructor(
         session = s
         mic.setMuted(_state.value.muted || _state.value.onHold)
         mic.start(voice = m.voice)
+        startActivityReports(id)
         val silent = _state.value.muted || _state.value.onHold
         s.setMuted(silent)
         if (silent) socket.emit("mic-state", true)
@@ -844,7 +858,9 @@ class CallManager @Inject constructor(
         statsJob?.cancel()
         statsJob = null
         _remoteLevel.value = 0f
-        _state.update { it.copy(unstable = false, quality = LinkQuality.Good) }
+        activityJob?.cancel()
+        activityJob = null
+        _state.update { it.copy(unstable = false, quality = LinkQuality.Good, silenceEndsAt = null) }
         matchId++
         watchdog?.cancel()
         watchdog = null
@@ -864,6 +880,29 @@ class CallManager @Inject constructor(
         session = null
     }
 
+    /**
+     * Anti-cheat (spec 10): every 10 s of a voice call, tell the server how many milliseconds this
+     * phone's own microphone heard speech. A text chat never calls this.
+     */
+    private fun startActivityReports(id: Int) {
+        activityJob?.cancel()
+        mic.takeSpokenMs() // start from zero
+        activityJob = scope.launch {
+            while (id == matchId) {
+                delay(ACTIVITY_WINDOW_MS)
+                if (id != matchId) break
+                val pid = pairId ?: continue
+                socket.emit("voice-activity", JSONObject().put("pairId", pid).put("spokeMs", mic.takeSpokenMs()))
+            }
+        }
+    }
+
+    /** "Still here": answers the silence warning for both sides. */
+    fun stillHere() = scope.launch {
+        _state.update { it.copy(silenceEndsAt = null) }
+        socket.emit("still-here", JSONObject().apply { pairId?.let { put("pairId", it) } })
+    }
+
     private fun searchOpts() = JSONObject().put("mode", _state.value.mode.wire).apply { identity.animal?.let { put("animal", it) } }
 
     private fun setPhase(p: CallPhase) = _state.update { it.copy(phase = p) }
@@ -880,5 +919,7 @@ class CallManager @Inject constructor(
         const val RECOVER_WINDOW_MS = 30_000L
         /** After a socket reconnect, how long to wait for the server to hand our call back. */
         const val RESUME_WAIT_MS = 6_000L
+        /** How often `voice-activity` is reported. */
+        const val ACTIVITY_WINDOW_MS = 10_000L
     }
 }

@@ -51,6 +51,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -124,7 +126,7 @@ fun HomeScreen(
                 maxLines = 1, softWrap = false, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
-            StatusChip(premium, progress, roomy, onPlus, onRewards)
+            StatusChip(premium, progress, roomy, onPlus, onRewards, claimReady = progress?.canClaim == true)
             if (showTheme) IconButton(onClick = onToggleTheme) {
                 Icon(
                     if (dark) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
@@ -136,8 +138,6 @@ fun HomeScreen(
                 AnimalAvatar(animal, name, 36.dp, Modifier.clip(CircleShape).clickable(onClick = onProfile))
             }
         }
-        // Streak and the countries online now: one slim row of small chips.
-        QuickChips(engage, onStreak, online, connected, onFindIn)
 
         // The orb takes whatever height is left and shrinks to fit it, so on a
         // short phone the buttons below never get squeezed.
@@ -229,9 +229,14 @@ fun HomeScreen(
 
 /** One pill for Plus and level: the gem side opens Plus (free accounts), the star side opens Rewards. */
 @Composable
-private fun StatusChip(premium: Boolean, progress: app.talklive.progress.Progress?, wide: Boolean, onPlus: () -> Unit, onRewards: () -> Unit) {
+private fun StatusChip(premium: Boolean, progress: app.talklive.progress.Progress?, wide: Boolean, onPlus: () -> Unit, onRewards: () -> Unit, claimReady: Boolean = false) {
     if (premium && progress == null) return
-    Row(Modifier.padding(end = 4.dp).clip(CircleShape), verticalAlignment = Alignment.CenterVertically) {
+    // A claim is waiting: the chip bounces gently and carries a pulsing dot until it is claimed.
+    val still = app.talklive.ui.theme.LocalReduceMotion.current
+    val pulse = rememberInfiniteTransition(label = "claim")
+    val bounce by pulse.animateFloat(0f, -3f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "bounce")
+    val dot by pulse.animateFloat(0.55f, 1f, infiniteRepeatable(tween(650), RepeatMode.Reverse), label = "dot")
+    Row(Modifier.padding(end = 4.dp).graphicsLayer { translationY = if (claimReady && !still) bounce.dp.toPx() else 0f }.clip(CircleShape), verticalAlignment = Alignment.CenterVertically) {
         if (!premium) Row(
             Modifier.background(app.talklive.ui.components.BrandGradient).tapOnce(windowMs = 700, onClick = onPlus).padding(horizontal = 9.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -249,6 +254,15 @@ private fun StatusChip(premium: Boolean, progress: app.talklive.progress.Progres
             Icon(androidx.compose.material.icons.Icons.Rounded.Star, null, tint = app.talklive.ui.rewards.tierColor(progress.tier), modifier = Modifier.size(15.dp))
             Spacer(Modifier.width(3.dp))
             Text(stringResource(R.string.level_chip, progress.level), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
+            if (claimReady) {
+                Spacer(Modifier.width(5.dp))
+                val ready = stringResource(R.string.daily_ready_cd)
+                Box(
+                    Modifier.size(9.dp).graphicsLayer { val s = if (still) 1f else dot; scaleX = s; scaleY = s; alpha = if (still) 1f else dot }
+                        .clip(CircleShape).background(Color(0xFFEF4444))
+                        .semantics { contentDescription = ready },
+                )
+            }
         }
     }
 }

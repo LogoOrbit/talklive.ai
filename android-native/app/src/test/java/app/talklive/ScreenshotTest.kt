@@ -116,6 +116,7 @@ class ScreenshotTest {
             onSignIn = {},
             vm = app.talklive.ui.profile.ProfileViewModel(app.talklive.call.CallManager(socket, app.talklive.net.IceServerApi(ctx), app.talklive.call.RtcFactory(ctx, mic), app.talklive.call.AudioRouter(ctx), identity, ctx, mic), AuthRepository(ctx, socket, identity), identity, app.talklive.data.ThemeStore(ctx), app.talklive.sound.Sounds(ctx), app.talklive.data.PrivacyStore(ctx), socket, app.talklive.social.SocialRepository(socket, identity), app.talklive.progress.ProgressRepository(socket, identity), app.talklive.data.NotifSettings(ctx, socket)),
             engageVm = app.talklive.ui.engage.EngageViewModel(engage, mic),
+            initialPage = app.talklive.ui.profile.ProfilePage.Privacy,
         )
     }
     private fun socialVm(seed: app.talklive.social.SocialRepository.() -> Unit = {}): app.talklive.ui.social.SocialViewModel {

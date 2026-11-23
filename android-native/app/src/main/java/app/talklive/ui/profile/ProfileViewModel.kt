@@ -50,6 +50,30 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch { onResult(social.setCover(id)) }
     }
 
+    /**
+     * Edit profile > Save: applies only what changed (a null argument is left alone).
+     * Returns null when everything saved, "plus" when the server wants Plus for the cover, else a short message.
+     */
+    suspend fun saveProfile(face: String?, cover: String?, nick: String?, handle: String?): String? {
+        face?.let { auth.setAnimal(it) }
+        if (cover != null) {
+            val r = social.setCover(cover)
+            if (r == "plus") return "plus"
+            if (r != null) return "Could not save the cover"
+        }
+        if (nick != null) {
+            when (val r = auth.updateNickname(nick)) {
+                is AuthResult.Error -> return r.message
+                else -> Unit
+            }
+        }
+        if (handle != null) {
+            val r = social.setHandle(handle)
+            if (r.isFailure) return app.talklive.ui.components.friendlyError(r.exceptionOrNull()?.message)
+        }
+        return null
+    }
+
     fun setHideStatus(v: Boolean) {
         privacy.setHideStatus(v)
         socket.emit("set-status-visibility", org.json.JSONObject().put("hidden", v))

@@ -42,10 +42,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -101,13 +104,69 @@ fun NewsScreen(vm: PostsViewModel, onBack: () -> Unit) {
     }
 }
 
+/** The pinned-post pushpin: domed blue head, darker collar, silver needle, tilted 28 degrees, in a soft blue disc. */
+@Composable
+fun PinIcon(modifier: Modifier = Modifier) {
+    val desc = stringResource(R.string.post_pinned)
+    androidx.compose.foundation.Canvas(
+        modifier.size(20.dp).clip(CircleShape).background(app.talklive.ui.theme.BrandBlue.copy(alpha = 0.14f))
+            .semantics { contentDescription = desc },
+    ) {
+        val u = size.minDimension / 20f
+        rotate(28f, pivot = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f)) {
+            // Needle.
+            drawRoundRect(
+                brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                    listOf(androidx.compose.ui.graphics.Color(0xFFE5E9F0), androidx.compose.ui.graphics.Color(0xFF8B95A7)),
+                    startY = 11.5f * u, endY = 17.5f * u,
+                ),
+                topLeft = androidx.compose.ui.geometry.Offset(9.4f * u, 11.5f * u),
+                size = androidx.compose.ui.geometry.Size(1.2f * u, 6f * u),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(0.6f * u),
+            )
+            // Collar.
+            drawRoundRect(
+                color = androidx.compose.ui.graphics.Color(0xFF174BB0),
+                topLeft = androidx.compose.ui.geometry.Offset(6.6f * u, 9.6f * u),
+                size = androidx.compose.ui.geometry.Size(6.8f * u, 2.2f * u),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(1f * u),
+            )
+            // Domed head.
+            val head = androidx.compose.ui.graphics.Path().apply {
+                moveTo(6.2f * u, 9.8f * u)
+                cubicTo(6.2f * u, 4.2f * u, 13.8f * u, 4.2f * u, 13.8f * u, 9.8f * u)
+                close()
+            }
+            drawPath(
+                head,
+                androidx.compose.ui.graphics.Brush.linearGradient(
+                    listOf(androidx.compose.ui.graphics.Color(0xFF5AA2FF), androidx.compose.ui.graphics.Color(0xFF1F5FD6)),
+                    start = androidx.compose.ui.geometry.Offset(7f * u, 4.5f * u), end = androidx.compose.ui.geometry.Offset(13f * u, 10f * u),
+                ),
+            )
+            // Highlight.
+            drawOval(
+                color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.85f),
+                topLeft = androidx.compose.ui.geometry.Offset(7.8f * u, 6f * u),
+                size = androidx.compose.ui.geometry.Size(1.6f * u, 2.2f * u),
+            )
+        }
+    }
+}
+
 @Composable
 private fun PostHeader(post: Post) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Image(painterResource(R.drawable.logo), null, Modifier.size(38.dp).clip(CircleShape))
         Spacer(Modifier.width(10.dp))
         Column {
-            Text(stringResource(R.string.from_talklive), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.from_talklive), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
+                if (post.pinned) {
+                    Spacer(Modifier.width(6.dp))
+                    PinIcon()
+                }
+            }
             Text(ago(post.createdAt), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
