@@ -628,5 +628,12 @@
     s.async = true;
     document.head.appendChild(s);
   })();
+  // Stories (stories.js): friends' 24-hour text and GIF stories in the Friends panel.
+  (function () {
+    var s = document.createElement('script');
+    s.src = '/stories.js?v=c86308a9f0';
+    s.async = true;
+    document.head.appendChild(s);
+  })();
   syncWithServer();
 })();

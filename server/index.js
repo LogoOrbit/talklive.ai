@@ -59,6 +59,7 @@ const Engage = require('./engage');
 const { createAdmin, applyOwnerReset } = require('./admin');
 const { createSupport } = require('./support');
 const { createPosts, isVerifiedAccount, mediaHandler } = require('./posts');
+const { createStories } = require('./stories');
 const { createProgress, SPECIAL_FACES } = require('./progress');
 const Badges = require('./badges');
 const { createGameTracker } = require('./game-tracker');
@@ -3651,6 +3652,41 @@ function liveAvatarFor(clientId, fallback) {
   const live = profile ? (profile.avatar || (profile.animal ? `a:${profile.animal}` : null)) : null;
   return resolveFace(clientId, live, fallback || null);
 }
+
+// Stories (server/stories.js): friends see each other's for 24 hours.
+const stories = createStories({
+  store,
+  cleanGif,
+  friendIdsOf: (cid) => Array.from((friends.get(cid) || new Map()).keys()),
+  isBlockedPair: (a, b) => isBlockedPair(a, b),
+  checkText: (cid, text) => {
+    if (containsLink(text)) return 'Links are not allowed in stories.';
+    if (UNSAFE_RE.test(text)) return 'That story is not allowed.';
+    const spam = chatSpam(cid, text, { rate: false });
+    return spam ? 'That story is not allowed.' : null;
+  },
+});
+function storiesFeed(viewer) {
+  const mine = friends.get(viewer) || new Map();
+  return stories.feed(viewer, {
+    faceOf: (cid, saved) => liveAvatarFor(cid, saved),
+    nameOf: (cid) => {
+      const f = mine.get(cid);
+      return f ? (f.nickname || f.username || null) : null;
+    },
+  });
+}
+// A friend posted or removed a story: their friends who are online refresh the row.
+function notifyStoryFriends(clientId) {
+  for (const fid of (friends.get(clientId) || new Map()).keys()) {
+    if (isBlockedPair(clientId, fid)) continue;
+    const s = getSocketByClientId(fid);
+    if (s) s.emit('stories-changed', { clientId });
+  }
+  const own = getSocketByClientId(clientId);
+  if (own) own.emit('stories-changed', { clientId });
+}
+setInterval(() => { try { stories.prune(); } catch { /* next time */ } }, 30 * 60000).unref();
 
 const FREE_HISTORY = 3;
 function syncClientState(socket, clientId) {
@@ -8335,6 +8371,43 @@ io.on('connection', (socket) => {
 
   // The likes badge and the "who liked you" list. `count` = likes received in
   // the last 30 days that are not a match yet; `people` only for Plus.
+  // --- Stories: text + emoji + GIFs for friends, gone after 24 hours ---------
+  socket.on('stories-get', (ack) => {
+    if (typeof ack !== 'function') return;
+    const me = profiles.get(socket.id);
+    if (!me || !socialRateOk('stories-get', me.clientId, 60, 60000)) return ack({ ok: false, people: [] });
+    ack({ ok: true, people: storiesFeed(me.clientId) });
+  });
+  socket.on('story-post', (payload, ack) => {
+    const reply = typeof ack === 'function' ? ack : () => {};
+    const me = profiles.get(socket.id);
+    if (!me) return reply({ ok: false, error: 'Not connected.' });
+    if (!ageGate('friends').ok) return reply({ ok: false, error: 'Stories are not available.' });
+    if (!socialRateOk('story-post', me.clientId, 10, 10 * 60000)) return reply({ ok: false, error: 'Too many stories. Try again in a few minutes.' });
+    const r = stories.post({ clientId: me.clientId, name: me.username, avatar: liveAvatarFor(me.clientId, null) }, payload);
+    if (!r.ok) return reply(r);
+    reply({ ok: true, id: r.story.id });
+    notifyStoryFriends(me.clientId);
+  });
+  socket.on('story-delete', ({ id } = {}, ack) => {
+    const reply = typeof ack === 'function' ? ack : () => {};
+    const me = profiles.get(socket.id);
+    if (!me || typeof id !== 'string') return reply({ ok: false });
+    const ok = stories.remove(me.clientId, id);
+    reply({ ok });
+    if (ok) notifyStoryFriends(me.clientId);
+  });
+  socket.on('story-seen', ({ clientId, id } = {}) => {
+    const me = profiles.get(socket.id);
+    const owner = validId(clientId);
+    if (!me || !owner || typeof id !== 'string') return;
+    if (!socialRateOk('story-seen', me.clientId, 120, 60000)) return;
+    if (stories.markSeen(me.clientId, owner, id)) {
+      const s = getSocketByClientId(owner);
+      if (s) s.emit('stories-changed', { clientId: owner });
+    }
+  });
+
   socket.on('likes-summary', (ack) => {
     if (typeof ack !== 'function') return;
     const me = profiles.get(socket.id);

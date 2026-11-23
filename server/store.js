@@ -268,6 +268,8 @@ function defaults() {
     // A Plus face replaced when Plus ended, so it can come back with Plus:
     // clientId -> { face: 'a:panda', free: 'a:lion' }.
     plusFaces: {},
+    // Friends' 24-hour stories (server/stories.js): clientId -> [story].
+    stories: {},
     // Owner posts shown on the home page (server/posts.js).
     posts: [],
     // Built-in news items already added (server/news-seed.js): id -> true.
@@ -371,6 +373,7 @@ function applyParsed(parsed) {
   data.covers = parsed.covers || {};
   data.hideBadges = parsed.hideBadges || {};
   data.plusFaces = parsed.plusFaces || {};
+  data.stories = parsed.stories && typeof parsed.stories === 'object' ? parsed.stories : {};
   data.posts = Array.isArray(parsed.posts) ? parsed.posts : [];
   data.newsSeeded = parsed.newsSeeded || {};
   data.accountSettings = parsed.accountSettings || {};
@@ -2844,7 +2847,7 @@ function deleteAccount(usernameLower) {
 // exception: a live Stripe or Play subscription must keep its record so a
 // renewal or refund notice still finds it, so only the extras go.
 function purgeClientData(clientId) {
-  for (const key of ['engage', 'favFilms', 'talkTime', 'likes', 'push', 'notifPrefs', 'plusLook', 'heldFace', 'progress', 'covers', 'hideBadges', 'plusFaces',
+  for (const key of ['engage', 'favFilms', 'talkTime', 'likes', 'push', 'notifPrefs', 'plusLook', 'heldFace', 'progress', 'covers', 'hideBadges', 'plusFaces', 'stories',
     'contactConsent', 'contactCapture', 'identityEpochs', 'voice']) {
     if (data[key]) delete data[key][clientId];
   }
