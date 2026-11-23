@@ -142,3 +142,22 @@ verified account to comment"). Reacting/commenting updates counts live.
 - Art: more special than hour badges (crown/trophy motif, gold for #1, silver #2, bronze #3, platinum-blue #4/#5), shiny and animated.
 - Dashboard Badges view shows the current top 5 with their rank badge.
 - Setting `show-badges` `{ on }` -> ack `{ ok, on }` (default on, stored per profile/account). When off, the server sends `badges: null` to OTHER people; the owner still gets their own badges plus `badgesHidden: true` in own state. Toggle lives in My Profile > Badges ("Show badges on my profile").
+
+## 10. Round 3 (Nov 23): simple profile, anti-cheat, daily claim
+
+**Profile (app + web).** App bottom bar: Home, Friends, History, Filters, **Profile** (replaces More; icon = own avatar). Web: the same Profile page/sheet from the header avatar.
+- Profile screen top: one profile card on its cover background: avatar (small pencil overlay; tapping opens Edit profile on the Avatar tab), name, ID, top badge, level chip (app), and a stats row: streak chip (🔥 N) and a single countries button ("🌍 N countries") that opens a scrollable list of the countries talked to (flag, name, count). Streak and countries are removed from Home everywhere.
+- Under the card: one "Edit profile" button, then the Settings list (compact, grouped: Plus, Notifications, Privacy & safety, Appearance & sound, Account, Help, News, Invite). Nothing else; no long scroll on a normal phone for the top part.
+- Edit profile: live preview of the card at the top that updates as you choose; below it three tabs: Avatar | Cover | Name (display name + ID). Save / Cancel. Badges shelf + "Show badges" switch live on the Profile screen under the card (one horizontal row).
+- Home (web): no "Today's question", no weekly recap ("Last week: ..."), no streak/countries, no avatar picker. Home (app): same.
+- Hours text: whole hours "12h" (floor); under 1h show minutes "40m". Never "1.0h".
+
+**Daily reward (app).** On the first app open after `canClaim` becomes true, show an attractive "Daily reward" sheet (gift animation, +1 point, Claim button). If dismissed, the level chip in the top bar shows a pulsing dot/bounce until claimed; tapping it opens Rewards with Claim.
+
+**Anti-cheat: only active talk counts.**
+- During a voice call each client sends `voice-activity` `{ pairId, spokeMs }` every 10 s: milliseconds its own mic detected speech (local VAD) in that window, 0..10000. Text chats do not send it.
+- Server keeps, per call, the last 20 s of reports from each side. A 10 s window is ACTIVE when both sides reported spokeMs >= 1000 within the last 20 s. `talkTime.active` += active seconds at call end (cap: the call's real length). Only `active` seconds (plus the pre-cutover total stored once as `talkTime.base`) feed badges, rank badges, hour displays, progress and streaks. Dashboard keeps showing raw seconds and adds an Active column.
+- A client that sends no reports earns 0 active seconds (old or modified clients cannot farm).
+- Silence auto-end: if neither side reported speech in the first 60 s after connect, or both sides reported 0 for 120 s straight, server emits `silence-warning` `{ endsInMs: 60000 }` to both; UI shows a 60 s countdown with "Still here" button. Speech from either side or `still-here` from either side -> `silence-cleared` to both. Otherwise the server ends the call (both get `partner-left` `{ reason: 'silence' }`, UI: "Call ended: no one was talking"). Pairs where either side never sent any `voice-activity` (old clients) are not auto-ended.
+
+**Hardening.** Every reward/feature is decided on the server only: daily claim timing, invite redeem, rank/hour badges, covers, faces (Plus and special), likes, posts, Plus features. Rate-limit every new event; validate payload types/lengths; never trust client-sent premium, tier, face unlock, hours or timestamps.
