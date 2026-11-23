@@ -27,7 +27,7 @@ function once(sock, ev, ms = 5000) {
     sock.on(ev, on);
   });
 }
-const ask = (sock, ev, payload) => new Promise((res) => (payload === undefined ? sock.emit(ev, res) : sock.emit(ev, payload, res)));
+const _ask = (sock, ev, payload) => new Promise((res) => (payload === undefined ? sock.emit(ev, res) : sock.emit(ev, payload, res)));
 function connect(id, name, deviceId) {
   const s = io(BASE, { transports: ['websocket'], forceNew: true });
   s.on('state-sync', (st) => { s.lastState = st; });
