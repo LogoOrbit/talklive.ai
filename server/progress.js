@@ -82,11 +82,25 @@ function createProgress({ store, now = () => Date.now() }) {
     };
   }
 
-  function claim(clientId) {
+  // The daily claim is decided here, on the server clock. `ctx.deviceKey`: a
+  // device (or network) that already claimed in the last 24 h under another
+  // profile cannot claim again, so a handful of throwaway profiles on one device
+  // do not each collect a point.
+  function claim(clientId, ctx = {}) {
     const r = rec(clientId);
     const t = now();
     const nextClaimAt = (r.lastClaimAt || 0) + DAY_MS;
     if (r.lastClaimAt && t < nextClaimAt) return { ok: false, reason: 'wait', nextClaimAt };
+    const key = typeof ctx.deviceKey === 'string' && ctx.deviceKey ? ctx.deviceKey.slice(0, 80) : '';
+    if (key) {
+      if (!store.data.claimDevices) store.data.claimDevices = {};
+      const dev = store.data.claimDevices;
+      const prev = dev[key];
+      if (prev && prev.by !== clientId && t - prev.at < DAY_MS) return { ok: false, reason: 'wait', nextClaimAt: prev.at + DAY_MS };
+      dev[key] = { by: clientId, at: t };
+      const keys = Object.keys(dev);
+      if (keys.length > 5000) for (const k of keys) if (t - dev[k].at >= DAY_MS) delete dev[k];
+    }
     r.points = (r.points || 0) + CLAIM_POINTS;
     r.lastClaimAt = t;
     store.save();
@@ -107,6 +121,9 @@ function createProgress({ store, now = () => Date.now() }) {
     if (owner === clientId) return { ok: false, reason: 'own' };
     if (ctx.ownerHasAccount && !ctx.ownerHasAccount(owner)) return { ok: false, reason: 'invalid' };
     if (ctx.sameDevice && ctx.sameDevice(owner)) return { ok: false, reason: 'same-device' };
+    // Several accounts from one device or network: only the first redeem counts.
+    const refused = ctx.refuse && ctx.refuse(owner);
+    if (refused) return { ok: false, reason: refused };
     const me = rec(clientId);
     me.redeemedCode = code;
     me.points = (me.points || 0) + REDEEM_POINTS;

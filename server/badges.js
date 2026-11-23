@@ -1,7 +1,7 @@
 // Talk-time badges (docs/SPEC-PROFILE-PROGRESS-POSTS.md, section 3).
 //
 // Nothing is stored: a badge is held once a person's total call time reaches
-// its threshold, so it is computed from store.data.talkTime[clientId].seconds.
+// its threshold, so it is computed from the counted talk time (base + active, see countedSeconds).
 
 const BADGES = [
   { id: 'b1', name: 'First Words', hours: 1 },
@@ -26,7 +26,15 @@ const RANK_BADGES = [
   { id: 'top4', rank: 4, name: '#4 Top Talker' },
   { id: 'top5', rank: 5, name: '#5 Top Talker' },
 ];
-let ranks = new Map(); // clientId -> 1..5
+let ranks = new Map();
+
+// Seconds that count (spec section 10): the total from before active-talk
+// counting (`base`) plus active talk. Raw `seconds` is what the dashboard shows.
+function countedSeconds(rec) {
+  if (!rec) return 0;
+  const base = rec.base === undefined ? Number(rec.seconds) || 0 : Number(rec.base) || 0;
+  return base + (Number(rec.active) || 0);
+} // clientId -> 1..5
 
 // Top 5 by talkTime.seconds (same numbers as the dashboard leaderboard).
 // `skip(clientId)` leaves out banned profiles. Returns the clientIds whose rank
@@ -34,9 +42,10 @@ let ranks = new Map(); // clientId -> 1..5
 function recomputeRanks(store, skip) {
   const rows = [];
   for (const [clientId, rec] of Object.entries(store.data.talkTime || {})) {
-    if (!rec || !(rec.seconds > 0)) continue;
+    const counted = countedSeconds(rec);
+    if (!(counted > 0)) continue;
     if (skip && skip(clientId)) continue;
-    rows.push([clientId, rec.seconds]);
+    rows.push([clientId, counted]);
   }
   rows.sort((x, y) => y[1] - x[1] || (x[0] < y[0] ? -1 : 1));
   const next = new Map();
@@ -63,7 +72,7 @@ function badgesForSeconds(seconds, rank = null) {
 
 function badgesFor(store, clientId) {
   const rec = clientId && store.data.talkTime ? store.data.talkTime[clientId] : null;
-  return badgesForSeconds(rec ? rec.seconds : 0, rankOf(clientId));
+  return badgesForSeconds(countedSeconds(rec), rankOf(clientId));
 }
 
 // For the owner dashboard: people by talk hours with the badge they hold, how
@@ -73,14 +82,14 @@ function dashboardView(store, { limit = 200 } = {}) {
   const rows = [];
   for (const [clientId, rec] of Object.entries(store.data.talkTime || {})) {
     if (!rec) continue;
-    const b = badgesForSeconds(rec.seconds, rankOf(clientId));
+    const b = badgesForSeconds(countedSeconds(rec), rankOf(clientId));
     for (const id of b.earned) if (id in counts) counts[id] += 1;
-    if (b.top) rows.push({ clientId, username: rec.username || '', country: rec.country || '', hours: b.hours, top: b.top, rank: b.rank, earned: b.earned.length });
+    if (b.top) rows.push({ clientId, username: rec.username || '', country: rec.country || '', hours: b.hours, rawHours: Math.round(((rec.seconds || 0) / 3600) * 10) / 10, activeHours: Math.round(((rec.active || 0) / 3600) * 10) / 10, top: b.top, rank: b.rank, earned: b.earned.length });
   }
   rows.sort((a, b) => b.hours - a.hours);
   const topFive = [...ranks.entries()].sort((x, y) => x[1] - y[1]).map(([clientId, rank]) => {
     const rec = (store.data.talkTime || {})[clientId] || {};
-    return { rank, id: `top${rank}`, name: RANK_BADGES[rank - 1].name, clientId, username: rec.username || '', country: rec.country || '', hours: Math.round(((rec.seconds || 0) / 3600) * 10) / 10 };
+    return { rank, id: `top${rank}`, name: RANK_BADGES[rank - 1].name, clientId, username: rec.username || '', country: rec.country || '', hours: Math.round((countedSeconds(rec) / 3600) * 10) / 10 };
   });
   return {
     badges: BADGES.map((b) => ({ ...b, count: counts[b.id] })),
@@ -91,4 +100,4 @@ function dashboardView(store, { limit = 200 } = {}) {
   };
 }
 
-module.exports = { BADGES, RANK_BADGES, recomputeRanks, rankOf, badgesForSeconds, badgesFor, dashboardView };
+module.exports = { countedSeconds, BADGES, RANK_BADGES, recomputeRanks, rankOf, badgesForSeconds, badgesFor, dashboardView };

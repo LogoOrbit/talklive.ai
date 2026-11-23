@@ -1195,6 +1195,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
         online: !!st.online,
         calls: t.calls || 0,
         talkSeconds: t.seconds || 0,
+        activeSeconds: badges.countedSeconds(t),
         longestCall: t.longest || 0,
         lastTalkAt: t.lastAt || null,
         messages: strangerMessages + friendMessages,
@@ -1571,9 +1572,12 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
     for (const [clientId, r] of Object.entries(store.data.talkTime || {})) {
       let seconds = r.seconds || 0;
       let calls = r.calls || 0;
+      // Active = what counts for badges: base + active talk (all time), or the
+      // active talk of the range.
+      let active = badges.countedSeconds(r);
       if (days) {
-        seconds = 0; calls = 0;
-        for (const [k, d] of Object.entries(r.days || {})) if (k >= since) { seconds += d.s || 0; calls += d.n || 0; }
+        seconds = 0; calls = 0; active = 0;
+        for (const [k, d] of Object.entries(r.days || {})) if (k >= since) { seconds += d.s || 0; calls += d.n || 0; active += d.a || 0; }
       }
       if (!calls) continue;
       const key = store.findUsernameByClientId(clientId);
@@ -1584,6 +1588,8 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
         account: acc ? (acc.username || key) : null,
         country: r.country || '',
         seconds,
+        active,
+        base: days ? 0 : (r.base || 0),
         calls,
         avg: Math.round(seconds / calls),
         longest: r.longest || 0,
@@ -2304,8 +2310,8 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
       csv = toCsv(['when', 'username', 'country', 'text'],
         store.data.feedback.map((f) => [isoOr(f.ts), f.username || '', f.country || '', f.text || '']));
     } else if (kind === 'talktime') {
-      csv = toCsv(['username', 'account', 'client_id', 'country', 'talk_seconds', 'conversations', 'avg_seconds', 'longest_seconds', 'last_talked'],
-        talkTimeRows(String(req.query.range || 'all')).map((r) => [r.username, r.account || '', r.clientId, r.country, r.seconds, r.calls, r.avg, r.longest, isoOr(r.lastAt)]));
+      csv = toCsv(['username', 'account', 'client_id', 'country', 'talk_seconds', 'active_seconds', 'conversations', 'avg_seconds', 'longest_seconds', 'last_talked'],
+        talkTimeRows(String(req.query.range || 'all')).map((r) => [r.username, r.account || '', r.clientId, r.country, r.seconds, r.active, r.calls, r.avg, r.longest, isoOr(r.lastAt)]));
     } else if (kind === 'daily-log') {
       csv = toCsv(['day_utc', 'visits', 'unique_visitors', 'repeat_visits', 'registered_users', 'app_people', 'new_people', 'returning_people', 'talk_seconds', 'calls', 'messages', 'clicks', 'games', 'voice_notes', 'signups', 'peak_online', 'estimated'],
         dailyRows().map((r) => [r.day, r.visits, r.uniques, r.repeat, r.registered, r.people, r.newPeople, r.returningPeople, r.talkSeconds, r.calls, r.messages, r.clicks, r.games, r.voiceNotes, r.signups, r.peakOnline, r.est.join(' ')]));
