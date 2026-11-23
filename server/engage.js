@@ -21,6 +21,7 @@ function emptyRecord() {
   return {
     streak: { count: 0, best: 0, last: '', freezeWeek: '' },
     passport: [],
+    passportCounts: {},
     week: { week: '', calls: 0, countries: [], longest: 0 },
     prevWeek: null,
     merged: false,
@@ -34,6 +35,9 @@ function normalise(rec) {
   return {
     streak: Object.assign(base.streak, rec.streak || {}),
     passport: Array.isArray(rec.passport) ? rec.passport.slice(0, PASSPORT_MAX) : [],
+    passportCounts: rec.passportCounts && typeof rec.passportCounts === 'object' && !Array.isArray(rec.passportCounts)
+      ? Object.fromEntries(Object.entries(rec.passportCounts).filter(([k, v]) => validCountry(k) && Number(v) > 0).slice(0, PASSPORT_MAX).map(([k, v]) => [k, Math.floor(Number(v))]))
+      : {},
     week: Object.assign(base.week, rec.week || {}),
     prevWeek: rec.prevWeek || null,
     merged: !!rec.merged,
@@ -129,6 +133,10 @@ function noteCall(input, { country, seconds, now = Date.now(), tz, plus = false 
     rec.passport.push(country);
     result.stamp = { country, total: rec.passport.length };
   }
+  // Calls per country (only countries in the passport).
+  if (validCountry(country) && rec.passport.includes(country)) {
+    rec.passportCounts[country] = (rec.passportCounts[country] || 0) + 1;
+  }
 
   rec.week.calls += 1;
   rec.goodCalls += 1;
@@ -179,6 +187,7 @@ function view(input, { now = Date.now(), tz, plus = false } = {}) {
       freezesLeft: plus ? plusFreezesLeft(s, today, true) : null,
     },
     passport: rec.passport.slice(),
+    passportCounts: { ...rec.passportCounts },
     week: { calls: rec.week.calls, countries: rec.week.countries.length, longest: rec.week.longest },
     prevWeek: rec.prevWeek,
     merged: rec.merged,

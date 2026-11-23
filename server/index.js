@@ -605,6 +605,8 @@ const posts = createPosts({
   httpRateLimit,
   validIdentityToken,
   isVerifiedClient,
+  isBanned: (clientId) => !!store.findActiveBan(clientId, '', {}),
+  resolveAvatar: (clientId, stored) => liveAvatarFor(clientId, stored),
   identify: (clientId) => {
     const usernameLower = store.findUsernameByClientId(clientId);
     const acc = usernameLower && accounts.get(usernameLower);
@@ -1643,6 +1645,12 @@ function rememberDevice(clientId, deviceId) {
   deviceByClient.set(clientId, deviceId);
   if (deviceByClient.size > DEVICE_BY_CLIENT_MAX) deviceByClient.delete(deviceByClient.keys().next().value);
 }
+// A hashed key for the device behind a socket (never the raw id), for the
+// once-a-day claim and once-ever redeem limits.
+function deviceKeyOf(socket) {
+  const id = socket && socket.data && socket.data.deviceId;
+  return id ? crypto.createHash('sha256').update(String(id)).digest('hex').slice(0, 24) : '';
+}
 function deviceIdOfClient(clientId) {
   for (const p of profiles.values()) if (p.clientId === clientId && p.deviceId) return p.deviceId;
   return deviceByClient.get(clientId) || null;
@@ -2500,11 +2508,12 @@ socketAuth.set = function set(socketId, usernameLower) {
     else if (profile.ageGroup && profile.ageGroup !== 'unspecified') { account.ageGroup = profile.ageGroup; persistAccount(usernameLower); }
   }
   if (profile && account && account.animal) {
+    // The account's saved face is only worn if this profile may wear it.
+    const face = safeAccountFace(profile.clientId, account.animal);
     // A character face lives in the avatar slot; an animal in the animal slot.
-    if (sanitizeAnimal(account.animal)) profile.animal = account.animal;
-    else if (sanitizeFace(account.animal)) { profile.animal = null; profile.avatar = account.animal; }
-    // The account's saved face is already earned, so it is the one held.
-    if (profile.clientId) store.noteFace(profile.clientId, faceKey(account.animal) || '');
+    if (sanitizeAnimal(face)) profile.animal = face;
+    else if (sanitizeFace(face)) { profile.animal = null; profile.avatar = face; }
+    if (profile.clientId) store.noteFace(profile.clientId, faceKey(face) || '');
   } else if (profile && account && profile.animal) { account.animal = profile.animal; persistAccount(usernameLower); }
   return result;
 };
@@ -2523,6 +2532,19 @@ const googleAccounts = new Map(); // Google "sub" id -> username (lowercase)
 // written once and never repointed - see store.setAccountClientId - so signing
 // in from a fresh browser can't swap the account's real profile for an empty
 // one.
+// A copy of cloud settings without any face value the profile may not wear (a
+// Plus face without Plus, a special face below its tier).
+function withoutLockedFaces(clientId, settings) {
+  if (!settings || typeof settings !== 'object') return settings;
+  const out = {};
+  for (const [k, v] of Object.entries(settings)) {
+    if (typeof v === 'string' && (faceKey(v) || sanitizeAvatar(v))) {
+      if (!clientId || !faceAllowed(clientId, v, isPremium(clientId))) continue;
+    }
+    out[k] = v;
+  }
+  return out;
+}
 function linkAccountProfile(usernameLower, socketId) {
   const profile = profiles.get(socketId);
   const currentClientId = profile ? profile.clientId : null;
@@ -2535,7 +2557,7 @@ function linkAccountProfile(usernameLower, socketId) {
     if (linked && currentClientId) store.moveReferralClaim(currentClientId, linked);
   }
   // The account's settings travel with every sign-in, on any device.
-  const settings = store.getAccountSettings(usernameLower);
+  const settings = withoutLockedFaces(linked, store.getAccountSettings(usernameLower));
   if (!linked || linked === currentClientId) return { settings };
   return { profileClientId: linked, identityToken: signIdentity(linked), settings };
 }
@@ -4626,18 +4648,38 @@ function isPlusFace(value) {
   const key = faceKey(value);
   return !!key && !FREE_FACES.has(key) && !isSpecialFace(key);
 }
-// Whether this person may wear the face. Locked faces need Plus or the invite
-// reward - except the one they already wear: avatars that were free before the
-// list shrank are kept, and a person the server has never seen is taken as
-// already wearing what they send. Only a CHANGE to a locked face is refused.
+// Whether this person may wear the face. A Plus face needs Plus (or the invite
+// reward's look, which covers one face); a special face needs its tier. Nothing
+// the client says (or "already wears") unlocks anything: the server decides.
 function faceAllowed(clientId, value, premium) {
   // A special face is only for someone who has reached its tier, Plus or not.
   if (isSpecialFace(faceKey(value))) return progress.faceUnlocked(clientId, faceKey(value));
   if (!isPlusFace(value) || premium) return true;
-  const held = store.heldFace(clientId);
-  if (held === undefined || held === faceKey(value)) return true;
   const look = store.plusLook(clientId);
   return !!look && (!look.face || look.face === faceKey(value));
+}
+// An account's saved face in the account's own format ('cat', 'c:wizard'), with
+// a locked one swapped for the free face of its kind.
+function safeAccountFace(clientId, value) {
+  const key = faceKey(value);
+  if (!key || !value) return value || null;
+  if (faceAllowed(clientId, key, isPremium(clientId))) return value;
+  const free = freeFaceOf(key);
+  return free.startsWith('a:') ? free.slice(2) : free;
+}
+function accountFaceOut(usernameLower, account) {
+  const cid = usernameLower && store.getAccountClientId(usernameLower);
+  return cid ? safeAccountFace(cid, account && account.animal) : (account && account.animal && !isPlusFace(account.animal) && !isSpecialFace(faceKey(account.animal)) ? account.animal : null);
+}
+// What a person's other-facing payloads say about their animal / character: the
+// resolved face, never the raw slot (a locked face is shown as the free one).
+function shownAnimal(p) {
+  const a = p && p.animal ? effectiveFace(p.clientId, `a:${p.animal}`) : null;
+  return a && a.startsWith('a:') ? a.slice(2) : null;
+}
+function shownCharacter(p) {
+  const c = p && typeof p.avatar === 'string' && p.avatar.slice(0, 2) === 'c:' ? effectiveFace(p.clientId, p.avatar) : null;
+  return c && c.startsWith('c:') ? c.slice(2) : null;
 }
 // A Plus face worn without Plus is shown as the free face of the same kind
 // (never as nothing: a person always has a face other people can see).
@@ -4755,10 +4797,10 @@ function syncPlusLook(clientId) {
 function ownLook(clientId, reason) {
   return { face: liveAvatarFor(clientId, null), cover: effectiveCover(clientId), ...(reason ? { reason } : {}) };
 }
-function recordTalkWithBadges(profile, seconds) {
+function recordTalkWithBadges(profile, seconds, active = 0) {
   const cid = profile.clientId;
   const before = Badges.badgesFor(store, cid).top;
-  store.recordTalkTime(cid, seconds, { username: profile.username, country: profile.countryName || profile.country });
+  store.recordTalkTime(cid, seconds, { username: profile.username, country: profile.countryName || profile.country, active });
   const after = Badges.badgesFor(store, cid);
   if (after.top !== before) {
     emitToClient(cid, 'badges', after);
@@ -5002,8 +5044,8 @@ function onlinePeopleList() {
       countryCode: p.country,
       country: p.countryName,
       gender: p.gender || 'unspecified',
-      avatar: p.avatar || null,
-      animal: p.animal || null,
+      avatar: p.avatar ? effectiveFace(p.clientId, p.avatar) : null,
+      animal: shownAnimal(p),
       // Shown to a partner the moment a match connects (publicProfile), so
       // listing a few here reveals nothing a match would not - and it is what
       // lets search and "you both like" work on this list.
@@ -5561,6 +5603,7 @@ function parkPairing(socketId, profile) {
   rec.timer.unref?.();
   parkedPairings.set(profile.clientId, rec);
   parkedSockets.add(socketId);
+  pauseCallActivity(profile.pairId);
   return true;
 }
 
@@ -5604,10 +5647,150 @@ function resumeParked(socket, clientId) {
   socket.emit('call-resumed', { mode: me.mode || 'talk', pairId: me.pairId, partner: publicProfile(partnerProfile) });
   // Messages the other side sent while this one was offline.
   for (const m of rec.pending) socket.emit('chat-message', m);
+  resumeCallActivity(me.pairId, me.clientId, socket.id);
   partnerSocket.emit('partner-resumed', { pairId: me.pairId });
   partnerSocket.emit('partner-away', { away: false });
   store.recordFeature('call_resumed');
   return true;
+}
+
+
+// --- Active talk and silence auto-end (spec section 10) -----------------------
+// Clients send 'voice-activity' { pairId, spokeMs } about every 10 s during a
+// voice call. A 10 s stretch is ACTIVE when both sides reported >= ACTIVE_MIN_MS
+// of speech within the last ACTIVE_LOOKBACK_MS. Active seconds (never more than
+// the call's real length) are what badges, ranks and streaks count. A side that
+// sends nothing earns 0. The state is keyed by pairId and only exists once a
+// report arrived; pairs where either side never reported (old clients, text
+// chats) are never auto-ended.
+const VA_MIN_GAP_MS = Number(process.env.VOICE_ACTIVITY_MIN_GAP_MS) || 4000; // ~1 report / 5 s / socket
+const VA_WINDOW_MS = 10000;
+const ACTIVE_MIN_MS = 1000;
+const ACTIVE_LOOKBACK_MS = 20000;
+const SILENCE_FIRST_MS = Number(process.env.SILENCE_FIRST_MS) || 60000;
+const SILENCE_GAP_MS = Number(process.env.SILENCE_GAP_MS) || 120000;
+const SILENCE_GRACE_MS = Number(process.env.SILENCE_GRACE_MS) || 60000;
+const callActivity = new Map(); // pairId -> state
+
+function callStateFor(profile, socketId) {
+  const pairId = profile && profile.pairId;
+  if (!pairId || !profile.matchedAt) return null;
+  let st = callActivity.get(pairId);
+  if (!st) {
+    st = { pairId, reports: new Map(), sid: new Map(), startedAt: profile.matchedAt, lastEvalAt: profile.matchedAt, creditMs: 0,
+      lastSpeechAt: profile.matchedAt, everSpoke: false, warnedAt: 0, timer: null, paused: false };
+    callActivity.set(pairId, st);
+  }
+  return st;
+}
+function activityPeers(st) {
+  const out = [];
+  for (const sid of st.sid.values()) { const s = io.sockets.sockets.get(sid); if (s) out.push(s); }
+  return out;
+}
+function endCallActivity(pairId) {
+  const st = callActivity.get(pairId);
+  if (!st) return 0;
+  clearTimeout(st.timer);
+  callActivity.delete(pairId);
+  return st.creditMs;
+}
+function clearSilenceWarning(st) {
+  if (!st.warnedAt) return;
+  st.warnedAt = 0;
+  for (const s of activityPeers(st)) s.emit('silence-cleared');
+}
+function armSilence(st) {
+  clearTimeout(st.timer);
+  st.timer = null;
+  if (st.paused) return;
+  const bothSent = st.reports.size >= 2;
+  let at;
+  if (st.warnedAt) at = st.warnedAt + SILENCE_GRACE_MS;
+  else if (bothSent) at = st.lastSpeechAt + (st.everSpoke ? SILENCE_GAP_MS : SILENCE_FIRST_MS);
+  else at = Date.now() + 5000; // wait for the other side's first report
+  st.timer = setTimeout(() => silenceTick(st), Math.max(100, at - Date.now()));
+  if (st.timer.unref) st.timer.unref();
+}
+function silenceTick(st) {
+  st.timer = null;
+  if (callActivity.get(st.pairId) !== st) return;
+  const ids = [...st.sid.values()];
+  const live = ids.length >= 2 && ids.every((id) => partners.has(id) && profiles.get(id) && profiles.get(id).pairId === st.pairId);
+  if (!live) { endCallActivity(st.pairId); return; }
+  const now = Date.now();
+  if (st.warnedAt) {
+    if (now >= st.warnedAt + SILENCE_GRACE_MS) {
+      const [a, b] = ids;
+      const sa = io.sockets.sockets.get(a);
+      store.recordFeature('silence_end');
+      if (sa) sa.emit('partner-left', { reason: 'silence', username: (profiles.get(b) || {}).username || '' });
+      disconnectPartner(a, { silence: true });
+      return;
+    }
+  } else if (st.reports.size >= 2 && now >= st.lastSpeechAt + (st.everSpoke ? SILENCE_GAP_MS : SILENCE_FIRST_MS)) {
+    st.warnedAt = now;
+    for (const s of activityPeers(st)) s.emit('silence-warning', { endsInMs: SILENCE_GRACE_MS });
+    store.recordFeature('silence_warning');
+  }
+  armSilence(st);
+}
+// Speech (or "still here") from either side.
+function noteCallLife(st) {
+  st.lastSpeechAt = Date.now();
+  st.everSpoke = true; // after speech or a "still here" the long gap applies
+  clearSilenceWarning(st);
+  armSilence(st);
+}
+// A parked pairing (someone's connection dropped) must not be auto-ended.
+function pauseCallActivity(pairId) {
+  const st = pairId && callActivity.get(pairId);
+  if (!st) return;
+  st.paused = true;
+  clearTimeout(st.timer); st.timer = null;
+  clearSilenceWarning(st);
+}
+function resumeCallActivity(pairId, clientId, socketId) {
+  const st = pairId && callActivity.get(pairId);
+  if (!st) return;
+  st.paused = false;
+  if (st.sid.has(clientId)) st.sid.set(clientId, socketId);
+  st.lastSpeechAt = Date.now();
+  st.lastEvalAt = Date.now();
+  armSilence(st);
+}
+function noteVoiceActivity(socket, payload) {
+  const me = profiles.get(socket.id);
+  const partnerId = partners.get(socket.id);
+  if (!me || !partnerId || !payload || typeof payload !== 'object') return;
+  const partner = profiles.get(partnerId);
+  if (!partner || me.mode === 'chat') return;
+  if (typeof payload.pairId !== 'string' || payload.pairId.length > 40 || payload.pairId !== me.pairId || me.pairId !== partner.pairId) return;
+  const spokeMs = payload.spokeMs;
+  if (typeof spokeMs !== 'number' || !Number.isFinite(spokeMs)) return;
+  const now = Date.now();
+  // One report per ~5 s per socket; extra ones are dropped, not counted.
+  if (socket.vaAt && now - socket.vaAt < VA_MIN_GAP_MS) return;
+  socket.vaAt = now;
+  const ms = Math.max(0, Math.min(VA_WINDOW_MS, Math.round(spokeMs)));
+  const st = callStateFor(me, socket.id);
+  if (!st || st.paused) return;
+  st.sid.set(me.clientId, socket.id);
+  st.sid.set(partner.clientId, partnerId);
+  const mine = st.reports.get(me.clientId) || [];
+  mine.push({ t: now, ms });
+  while (mine.length && now - mine[0].t > ACTIVE_LOOKBACK_MS) mine.shift();
+  st.reports.set(me.clientId, mine);
+  // Credit the time since the last report if both sides spoke within the lookback.
+  const elapsed = Math.max(0, Math.min(VA_WINDOW_MS, now - st.lastEvalAt));
+  // Until both sides have reported there is nothing to credit yet, so the clock
+  // for the first window stays at the start of the call.
+  if (st.reports.size >= 2) st.lastEvalAt = now;
+  if (st.reports.size >= 2) {
+    const spoke = (list) => (list || []).some((r) => now - r.t <= ACTIVE_LOOKBACK_MS && r.ms >= ACTIVE_MIN_MS);
+    if ([...st.reports.values()].every(spoke)) st.creditMs += elapsed;
+  }
+  if (ms > 0) noteCallLife(st); else armSilence(st);
 }
 
 function disconnectPartner(socketId, opts = {}) {
@@ -5625,6 +5808,7 @@ function disconnectPartner(socketId, opts = {}) {
 
   const profile = profiles.get(socketId) || opts.selfProfile;
   const partnerProfile = profiles.get(partnerId);
+  const endedPairId = (profile && profile.pairId) || (partnerProfile && partnerProfile.pairId) || '';
   const startedAt = (profile && profile.matchedAt) || (partnerProfile && partnerProfile.matchedAt) || 0;
   if (startedAt) {
     const ms = Date.now() - startedAt;
@@ -5635,6 +5819,8 @@ function disconnectPartner(socketId, opts = {}) {
       if (partnerProfile) settleReferral(partnerProfile.clientId);
     }
   }
+  // Whatever the way out (failed, quarantined, skip, leave), the timers go.
+  const creditedMs = endedPairId ? endCallActivity(endedPairId) : 0;
   if (profile) { profile.matchedAt = 0; profile.mx = null; profile.mPos = false; profile.micMuted = false; }
   if (partnerProfile) { partnerProfile.matchedAt = 0; partnerProfile.mx = null; partnerProfile.mPos = false; partnerProfile.micMuted = false; }
 
@@ -5644,12 +5830,14 @@ function disconnectPartner(socketId, opts = {}) {
     // Nothing a quarantined pair does is anyone's talk time, streak or stats.
     if (startedAt && !opts.failed && !quarantined(profile, socketId)) {
       const seconds = Math.round((Date.now() - startedAt) / 1000);
+      const activeSecs = Math.max(0, Math.min(seconds, Math.round(creditedMs / 1000)));
       patterns.onPairEnd({ left: partnerProfile.clientId, leftName: partnerProfile.username, seconds });
       noteCallForAnalytics(socketId, profile, partnerId, partnerProfile, seconds);
-      recordEngageCall(profile, partnerProfile.country, seconds);
-      recordEngageCall(partnerProfile, profile.country, seconds);
-      recordTalkWithBadges(profile, seconds);
-      recordTalkWithBadges(partnerProfile, seconds);
+      // Only active talk counts for streaks, badges and ranks (spec section 10).
+      recordEngageCall(profile, partnerProfile.country, activeSecs);
+      recordEngageCall(partnerProfile, profile.country, activeSecs);
+      recordTalkWithBadges(profile, seconds, activeSecs);
+      recordTalkWithBadges(partnerProfile, seconds, activeSecs);
       const a = noteConversationLength(profile.clientId, partnerProfile.clientId, seconds);
       const b = noteConversationLength(partnerProfile.clientId, profile.clientId, seconds);
       if (a || b) {
@@ -5666,7 +5854,7 @@ function disconnectPartner(socketId, opts = {}) {
     // told: one is a decision about you, the other is a phone that went into a
     // tunnel. The name rides along so the other side can say who it was.
     partnerSocket.emit('partner-left', {
-      reason: opts.failed ? 'failed' : (opts.dropped ? 'disconnected' : 'left'),
+      reason: opts.silence ? 'silence' : (opts.failed ? 'failed' : (opts.dropped ? 'disconnected' : 'left')),
       username: profile ? profile.username : '',
     });
   }
@@ -5766,10 +5954,10 @@ function publicProfile(p) {
     // City is deliberately not sent: it is estimated from the IP address,
     // nothing on the call screen shows it, and a stranger has no use for it.
     interests: p.interests,
-    animal: p.animal || null,
+    animal: shownAnimal(p),
     // A movie-character avatar (`c:<id>`), shown on the partner card like an
     // animal. Only characters: the plain faces are gendered and stay private.
-    character: typeof p.avatar === 'string' && p.avatar.slice(0, 2) === 'c:' ? p.avatar.slice(2) : null,
+    character: shownCharacter(p),
     // The picture they chose (or their spirit animal), the same one their
     // friends and recent people already see - so live chat faces match.
     avatar: shownAvatar(p),
@@ -6398,6 +6586,8 @@ const HANDLE_RE = /^([a-z0-9_.]{1,20})#(\d{1,4})$/;
 // shared before this rule still looks up; accountHandle() replaces it.
 const ID_RE = /^[a-z]{1,16}#\d{1,4}$/;
 const ID_NAME_RE = /^[a-z]{1,16}$/;
+// Names that read as the service or its staff: never handed out as an ID.
+const RESERVED_HANDLES = new Set(['talklive', 'talk', 'live', 'admin', 'administrator', 'owner', 'support', 'help', 'staff', 'team', 'official', 'moderator', 'mod', 'system', 'root', 'security', 'billing', 'plus', 'anthropic']);
 function normalizeHandle(raw) {
   if (typeof raw !== 'string') return null;
   const v = raw.trim().replace(/^@/, '').replace(/\s+/g, '').toLowerCase();
@@ -6881,7 +7071,7 @@ io.on('connection', (socket) => {
       ok: true,
       username,
       nickname: account.nickname,
-      animal: account.animal || null,
+      animal: accountFaceOut(usernameLower, account),
       gender: account.gender || null,
       ageGroup: account.ageGroup || null,
       email: account.email || '',
@@ -6914,7 +7104,7 @@ io.on('connection', (socket) => {
       ok: true,
       username: usernameLower,
       nickname: account.nickname,
-      animal: account.animal || null,
+      animal: accountFaceOut(usernameLower, account),
       gender: account.gender || null,
       ageGroup: account.ageGroup || null,
       email: account.email || '',
@@ -6933,7 +7123,10 @@ io.on('connection', (socket) => {
   socket.on('settings-save', ({ settings, times } = {}) => {
     const usernameLower = socketAuth.get(socket.id);
     if (!usernameLower) return;
-    store.mergeAccountSettings(usernameLower, settings, times && typeof times === 'object' ? times : {});
+    // Cloud settings are preferences, not entitlements: a face in them is only
+    // kept if this account may wear it (the face itself is the account's record).
+    const cid = store.getAccountClientId(usernameLower);
+    store.mergeAccountSettings(usernameLower, withoutLockedFaces(cid, settings), times && typeof times === 'object' ? times : {});
   });
 
   socket.on('logout', ({ token, pushToken, pushEndpoint, all } = {}) => {
@@ -7012,7 +7205,7 @@ io.on('connection', (socket) => {
         ok: true,
         username,
         nickname: account.nickname,
-        animal: account.animal || null,
+        animal: accountFaceOut(username.toLowerCase(), account),
         gender: account.gender || null,
         ageGroup: account.ageGroup || null,
         email: account.email || '',
@@ -7329,7 +7522,7 @@ io.on('connection', (socket) => {
         ok: true,
         username: usernameLower,
         nickname: account.nickname,
-        animal: account.animal || null,
+        animal: accountFaceOut(usernameLower, account),
         gender: account.gender || null,
         ageGroup: account.ageGroup || null,
         email: account.email || '',
@@ -7476,13 +7669,19 @@ io.on('connection', (socket) => {
     // A locked face is only accepted if it is the one already worn; anything
     // else falls back to what this person had (see faceAllowed).
     if (!faceAllowed(clientId, sentAnimal, premium) || !faceAllowed(clientId, sentAvatar, premium)) {
-      const held = store.heldFace(clientId) || null;
-      sentAnimal = held && held.startsWith('a:') ? held.slice(2) : held;
+      const tried = faceKey(sentAvatar) || faceKey(sentAnimal);
+      const heldNow = store.heldFace(clientId) || null;
+      const held = heldNow && faceAllowed(clientId, heldNow, premium) ? heldNow : freeFaceOf(tried);
+      sentAnimal = held.startsWith('a:') ? held.slice(2) : held;
       sentAvatar = held;
     }
     // Plus faces only last as long as Plus does (and come back with it).
     const lookFix = reconcilePlusFace(clientId, sentAnimal, sentAvatar);
     if (lookFix.change) { sentAnimal = lookFix.animal; sentAvatar = lookFix.avatar; }
+    // Last line of defence: whatever got here, a face this person may not wear
+    // is never stored, noted or shown.
+    if (!faceAllowed(clientId, sentAnimal, premium)) sentAnimal = freeFaceOf(faceKey(sentAnimal)).replace(/^a:/, '');
+    if (!faceAllowed(clientId, sentAvatar, premium)) sentAvatar = freeFaceOf(faceKey(sentAvatar));
     store.noteFace(clientId, faceKey(sentAvatar) || faceKey(sentAnimal) || '');
     const sentGender = audience.normGender(data.gender);
     const sentAge = audience.normAge(data.ageGroup);
@@ -7710,7 +7909,9 @@ io.on('connection', (socket) => {
   socket.on('progress-claim', (ack) => {
     const me = profiles.get(socket.id);
     if (!me || typeof ack !== 'function') return;
-    const r = progress.claim(me.clientId);
+    if (!socialRateOk('progress-claim', me.clientId, 10, 60000)) return ack({ ok: false, reason: 'wait' });
+    // One claim per device a day, whichever profile it is made under.
+    const r = progress.claim(me.clientId, { deviceKey: deviceKeyOf(socket) });
     if (!r.ok) return ack(r);
     store.recordFeature('progress_claim');
     ack({ ...progressView(me.clientId), ok: true });
@@ -7730,6 +7931,19 @@ io.on('connection', (socket) => {
       ownerHasAccount: (owner) => !!store.findUsernameByClientId(owner),
       // The same checks that stop an invite from a friend's own network or
       // device counting for the inviter (see referralOwnerNets).
+      // One redeem per device ever, and at most 5 per network a day: a pile of
+      // accounts made on one phone or one connection must not farm invite points.
+      refuse: () => {
+        if (!store.data.claimDevices) store.data.claimDevices = {};
+        const dk = deviceKeyOf(socket);
+        const dev = dk ? `redeem:${dk}` : '';
+        const net = `redeemnet:${referralNet(getClientIp(socket))}`;
+        const t = Date.now();
+        if (dev && store.data.claimDevices[dev]) return 'same-device';
+        const n = store.data.claimDevices[net];
+        if (n && t - n.at < 86400000 && n.n >= 5) return 'rate';
+        return null;
+      },
       sameDevice: (owner) => {
         const mine = new Set([referralNet(getClientIp(socket)), ...referralOwnerNets(me.clientId)]);
         if (referralOwnerNets(owner).some((n) => mine.has(n))) return true;
@@ -7738,6 +7952,15 @@ io.on('connection', (socket) => {
       },
     });
     if (!r.ok) return ack({ ok: false, reason: r.reason });
+    {
+      const t = Date.now();
+      const cd = store.data.claimDevices;
+      const dk = deviceKeyOf(socket);
+      if (dk) cd[`redeem:${dk}`] = { by: me.clientId, at: t };
+      const nk = `redeemnet:${referralNet(getClientIp(socket))}`;
+      cd[nk] = cd[nk] && t - cd[nk].at < 86400000 ? { n: cd[nk].n + 1, at: cd[nk].at } : { n: 1, at: t };
+      store.save();
+    }
     store.recordFeature('progress_redeem');
     ack({ ok: true, points: r.points });
     pushProgress(me.clientId);
@@ -7772,6 +7995,19 @@ io.on('connection', (socket) => {
     reply({ ok: true, on });
     emitToClient(me.clientId, 'badges', { ...Badges.badgesFor(store, me.clientId), badgesHidden: !on });
     resyncWatchers(me.clientId);
+  });
+
+  // Active-talk report (spec section 10) and the "Still here" answer.
+  socket.on('voice-activity', (payload) => { noteVoiceActivity(socket, payload); });
+  socket.on('still-here', () => {
+    const me = profiles.get(socket.id);
+    if (!me || !partners.has(socket.id) || !me.pairId) return;
+    const now = Date.now();
+    if (socket.stillAt && now - socket.stillAt < 1000) return;
+    socket.stillAt = now;
+    const st = callActivity.get(me.pairId);
+    if (!st || st.paused || !st.warnedAt) return;
+    noteCallLife(st);
   });
 
   // Give the just-connected client its initial count right away, then tell
@@ -8029,7 +8265,7 @@ io.on('connection', (socket) => {
     if (!me) return reply({ ok: false, reason: 'not-registered' });
     const target = validId(payload && payload.clientId);
     if (!target || target === me.clientId) return reply({ ok: false, reason: 'invalid' });
-    if (!socialRateOk('like-partner', me.clientId, 60, 60000)) return reply({ ok: false, reason: 'rate' });
+    if (!socialRateOk('like-partner', me.clientId, 20, 60000) || !socialRateOk('like-partner-day', me.clientId, 300, 24 * 3600000)) return reply({ ok: false, reason: 'rate' });
     const partnerSock = partners.get(socket.id);
     const partnerProfile = partnerSock ? profiles.get(partnerSock) : null;
     const recent = (chatHistory.get(me.clientId) || []).some((e) => e.clientId === target);
@@ -8777,6 +9013,12 @@ io.on('connection', (socket) => {
     }
     if (!next) {
       return reply({ ok: false, error: 'Use 1-16 letters, then # and 1-4 numbers - like anakin#1101.' });
+    }
+    if (RESERVED_HANDLES.has(next.split('#')[0])) return reply({ ok: false, error: 'That name is reserved. Pick another.' });
+    {
+      const sc = talkguard.check(next.split('#')[0], { source: 'handle', fromClientId: store.getAccountClientId(usernameLower) });
+      const th = talkguard.thresholds();
+      if (sc && (sc.abuse >= th.strike || sc.sexual >= 0.85)) return reply({ ok: false, error: 'Pick a different name.' });
     }
     const current = accountHandle(usernameLower);
     if (next === current) return reply({ ok: true, friendId: current, unchanged: true });

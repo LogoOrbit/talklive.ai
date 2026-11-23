@@ -110,8 +110,12 @@ function connect(name) {
     a.emit('find-partner', { mode: 'talk' });
     await wait(150);
     b.emit('find-partner', { mode: 'talk' });
-    await ma;
+    const mm = await ma;
     await wait(1300);
+    // Only active talk counts (both sides report speech), so both report.
+    a.emit('voice-activity', { pairId: mm.pairId, spokeMs: 5000 });
+    b.emit('voice-activity', { pairId: mm.pairId, spokeMs: 5000 });
+    await wait(300);
     const update = once(a, 'engage-update');
     b.emit('leave');
     const u = await update.catch(() => null);

@@ -259,6 +259,8 @@ function defaults() {
     // Points and invite state per profile (server/progress.js):
     // clientId -> { points, lastClaimAt, redeemedCode, invites: [clientId], inviteBatchesPaid }.
     progress: {},
+    // Hashed device / network keys for the daily claim and invite redeem limits.
+    claimDevices: {},
     // Profile cover per profile (server/index.js, set-cover): clientId -> id such as 'grad:dawn'.
     covers: {},
     // clientId -> true for people who hid their badges from others.
@@ -341,6 +343,11 @@ function applyParsed(parsed) {
   data.referrals = { ...defaults().referrals, ...(parsed.referrals || {}) };
   data.push = parsed.push || {};
   data.talkTime = parsed.talkTime || {};
+  // One-time cutover to active-talk counting (spec section 10): a record from
+  // before it keeps its whole total as `base`, so existing badges stay.
+  for (const rec of Object.values(data.talkTime)) {
+    if (rec && typeof rec === 'object' && rec.base === undefined) { rec.base = Number(rec.seconds) || 0; rec.active = Number(rec.active) || 0; }
+  }
   data.msgCounts = parsed.msgCounts && parsed.msgCounts.users
     ? parsed.msgCounts
     : { since: Date.now(), users: {}, base: null };
@@ -2677,7 +2684,8 @@ function mergeAccountSettings(usernameLower, incoming, times = {}) {
   let changed = false;
   for (const [k, v] of Object.entries(incoming).slice(0, 60)) {
     if (!SETTING_KEY.test(k) || k === '_t') continue;
-    const t = Number(times && times[k]) || 0;
+    // A client clock far in the future must not freeze a setting.
+    const t = Math.min(Number(times && times[k]) || 0, Date.now() + 5 * 60 * 1000);
     // No time given (older apps): only fills a setting the account has never had.
     if (!t ? k in cur : t <= (Number(curT[k]) || 0)) continue;
     if (!(typeof v === 'boolean' || (typeof v === 'number' && Number.isFinite(v)) || (typeof v === 'string' && v.length <= 60))) continue;
@@ -3645,11 +3653,15 @@ function compactStore() {
 }
 
 // Add one finished conversation of `seconds` to `clientId`'s running total.
+// `info.active`: the seconds of it that were active talk (both sides speaking),
+// never more than `seconds`. Only base + active feeds badges and ranks.
 function recordTalkTime(clientId, seconds, info = {}) {
   if (!clientId || !(seconds > 0)) return;
   const now = Date.now();
+  const active = Math.max(0, Math.min(seconds, Math.round(Number(info.active) || 0)));
   let rec = data.talkTime[clientId];
-  if (!rec) rec = data.talkTime[clientId] = { seconds: 0, calls: 0, longest: 0, days: {} };
+  if (!rec) rec = data.talkTime[clientId] = { seconds: 0, calls: 0, longest: 0, days: {}, base: 0, active: 0 };
+  rec.active = (rec.active || 0) + active;
   if (info.username) rec.username = String(info.username).slice(0, 40);
   if (info.country) rec.country = String(info.country).slice(0, 60);
   rec.seconds += seconds;
@@ -3661,6 +3673,7 @@ function recordTalkTime(clientId, seconds, info = {}) {
   const d = days[key] || (days[key] = { s: 0, n: 0 });
   d.s += seconds;
   d.n += 1;
+  d.a = (d.a || 0) + active;
   const keys = Object.keys(days).sort();
   while (keys.length > TALK_DAYS) delete days[keys.shift()];
   save();

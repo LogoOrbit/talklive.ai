@@ -58,12 +58,15 @@ function mineOf(post, clientId) {
   return REACTION_TYPES.find((t) => ((post.reactions && post.reactions[t]) || []).includes(clientId)) || null;
 }
 const visible = (post) => (post.comments || []).filter((c) => !c.hidden);
-function publicComment(c) {
-  const out = { id: c.id, name: c.name || '', avatar: c.avatar || null, handle: c.handle || '', text: c.text, ts: c.ts };
+// `faceOf(clientId, stored)`: the comment author's face as it is NOW (a Plus
+// face stored with an old comment is shown as the free one once Plus is gone).
+function publicComment(c, faceOf) {
+  const avatar = faceOf && c.clientId ? faceOf(c.clientId, c.avatar || null) : (c.avatar || null);
+  const out = { id: c.id, name: c.name || '', avatar: avatar || null, handle: c.handle || '', text: c.text, ts: c.ts };
   if (c.admin) out.admin = true;
   return out;
 }
-function publicPost(post, clientId) {
+function publicPost(post, clientId, faceOf) {
   const vis = visible(post);
   return {
     id: post.id,
@@ -75,7 +78,7 @@ function publicPost(post, clientId) {
     counts: counts(post),
     mine: mineOf(post, clientId),
     commentCount: vis.length,
-    comments: vis.slice(-PUBLIC_COMMENTS).map(publicComment),
+    comments: vis.slice(-PUBLIC_COMMENTS).map((c) => publicComment(c, faceOf)),
   };
 }
 function ownerPost(post) {
@@ -101,7 +104,9 @@ const order = (list) => list.slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinn
 //   isVerifiedClient(cid)         signed-in account with Google or a verified email
 //   identify(cid)                 { name, avatar, handle } shown beside a comment
 //   textCheck(cid, text)          null to allow, or a reason string to refuse
-function createPosts({ store, httpRateLimit, validIdentityToken, isVerifiedClient, identify, textCheck, now = () => Date.now() }) {
+//   isBanned(cid)                 true for a banned profile (cannot react or comment)
+//   resolveAvatar(cid, stored)    the author's current, allowed face
+function createPosts({ store, httpRateLimit, validIdentityToken, isVerifiedClient, identify, textCheck, isBanned, resolveAvatar, now = () => Date.now() }) {
   const list = () => {
     if (!Array.isArray(store.data.posts)) store.data.posts = [];
     return store.data.posts;
@@ -131,7 +136,7 @@ function createPosts({ store, httpRateLimit, validIdentityToken, isVerifiedClien
     const cid = known ? clientId : '';
     res.setHeader('Cache-Control', 'no-store');
     res.json({
-      posts: order(list()).map((p) => publicPost(p, cid)),
+      posts: order(list()).map((p) => publicPost(p, cid, resolveAvatar)),
       canComment: !!cid && !!isVerifiedClient(cid),
     });
   });
@@ -141,6 +146,7 @@ function createPosts({ store, httpRateLimit, validIdentityToken, isVerifiedClien
     if (!identityOk(b.clientId, b.identityToken)) return res.status(401).json({ ok: false, reason: 'identity' });
     const post = find(req.params.id);
     if (!post) return res.status(404).json({ ok: false, reason: 'missing' });
+    if (isBanned && isBanned(b.clientId)) return res.status(403).json({ ok: false, reason: 'banned' });
     const type = b.type === null || b.type === undefined ? null : String(b.type);
     if (type !== null && !REACTION_TYPES.includes(type)) return res.status(400).json({ ok: false, reason: 'invalid' });
     if (!post.reactions) post.reactions = {};
@@ -151,7 +157,7 @@ function createPosts({ store, httpRateLimit, validIdentityToken, isVerifiedClien
     }
     if (type) post.reactions[type].push(b.clientId);
     store.save();
-    res.json(publicPost(post, b.clientId));
+    res.json(publicPost(post, b.clientId, resolveAvatar));
   });
 
   router.post('/:id/comments', httpRateLimit('posts-comment', 30, 60000), (req, res) => {
@@ -159,9 +165,13 @@ function createPosts({ store, httpRateLimit, validIdentityToken, isVerifiedClien
     if (!identityOk(b.clientId, b.identityToken)) return res.status(401).json({ ok: false, reason: 'identity' });
     const post = find(req.params.id);
     if (!post) return res.status(404).json({ ok: false, reason: 'missing' });
+    if (isBanned && isBanned(b.clientId)) return res.status(403).json({ ok: false, reason: 'banned' });
     if (!isVerifiedClient(b.clientId)) return res.status(403).json({ ok: false, reason: 'verify' });
     const text = cleanText(b.text, MAX_COMMENT + 1);
     if (!text || text.length > MAX_COMMENT) return res.status(400).json({ ok: false, reason: 'invalid' });
+    // The same words twice in a row on one post are spam, not a conversation.
+    const mine = (post.comments || []).filter((c) => c.clientId === b.clientId).slice(-1)[0];
+    if (mine && mine.text === text) return res.status(409).json({ ok: false, reason: 'duplicate' });
     if (!commentRateOk(b.clientId)) return res.status(429).json({ ok: false, reason: 'rate' });
     if (textCheck && textCheck(b.clientId, text)) return res.status(422).json({ ok: false, reason: 'blocked' });
     const who = identify(b.clientId) || {};
@@ -178,7 +188,7 @@ function createPosts({ store, httpRateLimit, validIdentityToken, isVerifiedClien
     post.comments.push(comment);
     while (post.comments.length > MAX_COMMENTS) post.comments.shift();
     store.save();
-    res.json({ ok: true, comment: publicComment(comment), commentCount: visible(post).length });
+    res.json({ ok: true, comment: publicComment(comment, resolveAvatar), commentCount: visible(post).length });
   });
 
   // --- Owner API (mounted inside the authenticated /owner/api router) --------

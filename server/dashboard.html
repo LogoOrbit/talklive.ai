@@ -3304,7 +3304,7 @@ async function viewAccounts(){
 
 /* ---------- users: every person with their profile and activity ---------- */
 let usrQ='',usrWho='accounts',usrSort='talkSeconds',usrDir=-1,usrOpen='';
-const USR_COLS=[['username','User'],['email','Email'],['friends','Friends'],['calls','Calls'],['talkSeconds','Talk time'],['messages','Messages'],['lastSeen','Last seen']];
+const USR_COLS=[['username','User'],['email','Email'],['friends','Friends'],['calls','Calls'],['talkSeconds','Talk time'],['activeSeconds','Active'],['messages','Messages'],['lastSeen','Last seen']];
 const hrs=(s)=>{const h=(s||0)/3600;return h>=10?Math.round(h)+' h':h>=0.1?h.toFixed(1)+' h':'0 h';};
 function userFace(x,size){
   const box=(inner,extra)=>`<span class="uface" style="width:${size}px;height:${size}px;${extra||''}">${inner}</span>`;
@@ -3324,6 +3324,7 @@ function userProfileRow(x){
     ['Friends',num(x.friends)],
     ['Calls / chats',num(x.calls)],
     ['Talk time',dur(x.talkSeconds)+' ('+hrs(x.talkSeconds)+')'],
+    ['Active talk (counts for badges)',dur(x.activeSeconds)+' ('+hrs(x.activeSeconds)+')'],
     ['Longest call',x.longestCall?dur(x.longestCall):null],
     ['Last talked',x.lastTalkAt?fmtTs(x.lastTalkAt):null],
     ['Messages sent',num(x.messages)+' ('+num(x.strangerMessages)+' to strangers, '+num(x.friendMessages)+' to friends)'],
@@ -3352,7 +3353,7 @@ async function viewUsers(){
     return String(va||'').localeCompare(String(vb||''))*usrDir;
   });
   const shown=rows.slice(0,500);
-  const th=USR_COLS.map(([k,l])=>`<th class="sortable${['friends','calls','talkSeconds','messages'].includes(k)?' num':''}" data-us="${k}">${l} <span class="ar">${usrSort===k?(usrDir<0?'▼':'▲'):'↕'}</span></th>`).join('');
+  const th=USR_COLS.map(([k,l])=>`<th class="sortable${['friends','calls','talkSeconds','activeSeconds','messages'].includes(k)?' num':''}" data-us="${k}">${l} <span class="ar">${usrSort===k?(usrDir<0?'▼':'▲'):'↕'}</span></th>`).join('');
   const since=r.msgSince&&!r.msgHistory?` Messages are counted from ${esc(fmtTs(r.msgSince))}; older ones are added once the chat log has loaded.`:'';
   $('#main').innerHTML=`<div class="grid tiles anim" style="margin-top:0">
     <div class="tile"><div class="k">${usrWho==='all'?'People':'Accounts'}</div><div class="v grad" data-count="${all.length}">0</div><div class="s">${usrWho==='all'?'accounts + active guests':'registered users'}</div></div>
@@ -3377,6 +3378,7 @@ async function viewUsers(){
     <td class="num">${num(x.friends)}</td>
     <td class="num">${num(x.calls)}</td>
     <td class="num" style="white-space:nowrap"><b>${hrs(x.talkSeconds)}</b><div class="muted" style="font-size:.75rem">${dur(x.talkSeconds)}</div></td>
+    <td class="num" style="white-space:nowrap" title="Counts for badges (before the cutover + active talk)"><b>${hrs(x.activeSeconds)}</b></td>
     <td class="num">${num(x.messages)}</td>
     <td>${x.online?'<span class="pill good">online</span>':x.lastSeen?ago(x.lastSeen):'-'}</td>
     <td><button class="lnk">${usrOpen===id?'Hide':'Profile'}</button></td></tr>
@@ -3471,8 +3473,8 @@ async function viewBadges(){
     <td style="min-width:160px"><div style="display:flex;align-items:center;gap:8px"><div style="height:10px;border-radius:99px;background:var(--accent);width:${Math.max(2,b.count/max*100)}%;max-width:110px"></div><b>${num(b.count)}</b></div></td></tr>`).join('')}
   </table></div>
   <div class="card anim"><h2>People by talk hours <span class="sub">top ${num(r.rows.length)}</span></h2>
-  <table><tr><th class="num">#</th><th>User</th><th>Country</th><th class="num">Hours</th><th>Top badge</th><th class="num">Badges</th></tr>
-  ${r.rows.map((x,i)=>`<tr><td class="num muted">${i+1}</td><td><b>${esc(x.username||x.clientId)}</b></td><td>${esc(x.country)}</td><td class="num">${x.hours}</td><td><span class="pill info">${esc(nameOf[x.top]||x.top)}</span></td><td class="num">${x.earned}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">Nobody has reached the first badge (1 hour) yet.</td></tr>'}
+  <table><tr><th class="num">#</th><th>User</th><th>Country</th><th class="num">Hours (counted)</th><th class="num">Raw hours</th><th class="num">Active hours</th><th>Top badge</th><th class="num">Badges</th></tr>
+  ${r.rows.map((x,i)=>`<tr><td class="num muted">${i+1}</td><td><b>${esc(x.username||x.clientId)}</b></td><td>${esc(x.country)}</td><td class="num">${x.hours}</td><td class="num muted">${x.rawHours}</td><td class="num">${x.activeHours}</td><td><span class="pill info">${esc(nameOf[x.top]||x.top)}</span></td><td class="num">${x.earned}</td></tr>`).join('')||'<tr><td colspan="8" class="muted">Nobody has reached the first badge (1 hour) yet.</td></tr>'}
   </table></div>`;
 }
 
@@ -3557,13 +3559,14 @@ async function viewTalkTime(){
     <input id="ttQ" class="grow" placeholder="Search name, account, country…" value="${esc(ttQ)}">
     <a class="lnk" data-export="talktime" href="/owner/api/export/talktime.csv?range=${ttRange}" download>Export CSV</a>
   </div>
-  <table><tr><th class="num">#</th><th>User</th><th>Country</th><th>Talk time</th><th class="num">Conversations</th><th class="num">Avg</th><th class="num">Longest call</th><th>Last talked</th></tr>
+  <table><tr><th class="num">#</th><th>User</th><th>Country</th><th>Talk time</th><th class="num" title="Counts for badges: talk time before the cutover plus active talk (both sides speaking)">Active</th><th class="num">Conversations</th><th class="num">Avg</th><th class="num">Longest call</th><th>Last talked</th></tr>
   ${shown.map((x,i)=>`<tr><td class="num muted">${i+1}</td>
     <td><b>${esc(x.username)}</b>${x.account?` <span class="pill info" title="Registered account">${esc(x.account)}</span>`:''}</td>
     <td>${esc(x.country||'')}</td>
     <td style="min-width:160px"><div style="display:flex;align-items:center;gap:8px"><div class="cbar" style="height:10px;border-radius:99px;background:var(--accent);width:${Math.max(2,x.seconds/max*100)}%;max-width:110px"></div><b style="white-space:nowrap">${dur(x.seconds)}</b></div></td>
+    <td class="num" title="${x.base?'base '+dur(x.base)+' + ':''}active talk">${dur(x.active||0)}</td>
     <td class="num">${num(x.calls)}</td><td class="num">${dur(x.avg)}</td><td class="num">${dur(x.longest)}</td>
-    <td>${x.lastAt?ago(x.lastAt):'-'}</td></tr>`).join('')||`<tr><td colspan="8" class="muted">${all.length?'No one matches these filters.':'No finished conversations recorded yet. Talk time is counted from now on, when a call or chat ends.'}</td></tr>`}
+    <td>${x.lastAt?ago(x.lastAt):'-'}</td></tr>`).join('')||`<tr><td colspan="9" class="muted">${all.length?'No one matches these filters.':'No finished conversations recorded yet. Talk time is counted from now on, when a call or chat ends.'}</td></tr>`}
   </table></div>`;
   animateCounters();
   document.querySelectorAll('#ttRange button').forEach(b=>b.onclick=()=>{ttRange=b.dataset.r;viewTalkTime();});
