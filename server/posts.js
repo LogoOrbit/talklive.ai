@@ -83,6 +83,7 @@ function publicComment(c, faceOf) {
   const out = { id: c.id, name: c.name || '', avatar: avatar || null, handle: c.handle || '', text: c.text, ts: c.ts };
   if (c.admin) out.admin = true;
   if (c.liked) out.liked = true;
+  if (c.editedAt) out.editedAt = c.editedAt;
   if (c.replyTo) { out.replyTo = c.replyTo; out.replyToName = c.replyToName || ''; }
   return out;
 }
@@ -319,6 +320,19 @@ function createPosts({ store, httpRateLimit, validIdentityToken, isVerifiedClien
       post.comments.splice(i, 1);
       store.save();
       audit(req, 'post_comment_delete', `${post.id}/${req.params.cid}`);
+      res.json({ ok: true, post: ownerPost(post) });
+    });
+
+    // The owner edits one of TalkLive's own comments.
+    r.post('/api/posts/:id/comments/:cid/edit', (req, res) => {
+      const post = find(req.params.id);
+      const c = post && (post.comments || []).find((x) => x.id === req.params.cid);
+      if (!c) return bad(res, 'No such comment.', 404);
+      if (!c.admin) return bad(res, 'Only TalkLive comments can be edited.', 403);
+      const text = cleanText((req.body || {}).text, MAX_COMMENT);
+      if (!text) return bad(res, 'A comment needs some text.');
+      if (text !== c.text) { c.text = text; c.editedAt = now(); store.save(); }
+      audit(req, 'post_comment_edit', `${post.id}/${c.id}`);
       res.json({ ok: true, post: ownerPost(post) });
     });
 

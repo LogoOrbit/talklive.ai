@@ -151,6 +151,9 @@ ok('no email, no google, or no account is not verified', !Posts.isVerifiedAccoun
     const rcm = rc.comments[rc.comments.length - 1];
     ok('owner can reply to one comment', rcm.admin === true && rcm.replyTo === 'cz' && rcm.replyToName === 'S');
     ok('the commenter is notified of the reply', notified.length === 1 && notified[0].cid === 'someone1' && notified[0].postId === a.id && notified[0].text === 'Hi S');
+    const edc = (await call('POST /api/posts/:id/comments/:cid/edit', { params: { id: a.id, cid: rcm.id }, body: { text: 'Hi S, welcome' } })).body.post;
+    ok('owner can edit a TalkLive comment', edc.comments.find((c) => c.id === rcm.id).text === 'Hi S, welcome' && !!edc.comments.find((c) => c.id === rcm.id).editedAt);
+    ok('owner cannot edit someone else\'s comment', (await call('POST /api/posts/:id/comments/:cid/edit', { params: { id: a.id, cid: 'cz' }, body: { text: 'x' } })).code === 403);
     ok('reply to a missing comment is refused', (await call('POST /api/posts/:id/reply', { params: { id: a.id }, body: { text: 'x', replyTo: 'nope' } })).code === 404);
     store.data.posts.find((p) => p.id === a.id).comments.pop();
     await call('POST /api/posts/:id/comments/:cid/delete', { params: { id: a.id, cid: 'cz' } });

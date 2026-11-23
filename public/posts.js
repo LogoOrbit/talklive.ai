@@ -157,7 +157,7 @@
       var name = c.admin ? 'TalkLive' : (c.name || tr('someone', 'Someone'));
       return '<div class="tl-cm' + (c.replyTo ? ' tl-cm-reply' : '') + '">' + faceFor(c) + '<div class="tl-cm-body"><div class="tl-cm-name">' + esc(name)
         + (c.admin ? '<span class="tl-post-tag">' + esc(tr('adminBadge', 'Admin')) + '</span>' : '')
-        + '<span class="tl-cm-time">' + esc(when(c.ts)) + '</span></div>'
+        + '<span class="tl-cm-time">' + esc(when(c.ts)) + (c.editedAt ? ' · ' + esc(tr('postEdited', 'edited')) : '') + '</span></div>'
         + (c.replyTo ? '<div class="tl-cm-re">' + esc(tr('postReplyingTo', 'Replying to {name}', { name: c.replyToName || tr('someone', 'Someone') })) + '</div>' : '')
         + '<p class="tl-cm-text">' + esc(c.text) + '</p>'
         + (c.liked ? '<div class="tl-cm-liked">\u2764\ufe0f ' + esc(tr('postLikedByTalkLive', 'Liked by TalkLive')) + '</div>' : '')

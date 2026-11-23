@@ -3480,6 +3480,7 @@ async function viewBadges(){
 }
 
 /* ---------- posts: write, pin and moderate the home-page feed ---------- */
+let pstEditOpen=null;const pstEditDrafts={};
 let pstEditing=null,pstReplyOpen=null,pstKind='post',pstFilter='all';const pstDrafts={};
 const PST_TAGS={update:'Update',feature:'New feature',upcoming:'Coming soon',fix:'Fix',event:'Event'};
 const PST_REACT={like:'👍',love:'❤️',haha:'😆',wow:'😮',sad:'😢'};
@@ -3487,9 +3488,10 @@ function pstCard(p){
   const c=p.counts||{};
   const reacts=Object.keys(PST_REACT).filter(k=>c[k]).map(k=>`${PST_REACT[k]} ${num(c[k])}`).join(' · ');
   const comments=(p.comments||[]).map(m=>`<div class="pst-c${m.hidden?' hid':''}" data-c="${esc(m.id)}">
-    <div><b>${esc(m.name||'Someone')}</b>${m.admin?' <span class="pill good">Admin</span>':''}${m.handle&&!m.admin?` <span class="muted">${esc(m.handle)}</span>`:''}${m.hidden?' <span class="pill warn">Hidden</span>':''} <span class="muted">${ago(m.ts)}</span></div>
+    <div><b>${esc(m.name||'Someone')}</b>${m.admin?' <span class="pill good">Admin</span>':''}${m.handle&&!m.admin?` <span class="muted">${esc(m.handle)}</span>`:''}${m.hidden?' <span class="pill warn">Hidden</span>':''} <span class="muted">${ago(m.ts)}${m.editedAt?' · edited':''}</span></div>
     ${m.replyTo?`<div class="muted" style="font-size:12px">↳ replying to ${esc(m.replyToName||'a comment')}</div>`:''}<div class="pst-t">${esc(m.text)}</div>
-    <div class="pst-a"><button class="lnk" data-act="replyc" data-p="${esc(p.id)}" data-c="${esc(m.id)}">↩ Reply</button>${m.admin?'':`<button class="lnk" data-act="likec" data-p="${esc(p.id)}" data-c="${esc(m.id)}" data-v="${m.liked?0:1}">${m.liked?'❤️ Liked':'♡ Like'}</button><button class="lnk" data-act="hide" data-p="${esc(p.id)}" data-c="${esc(m.id)}" data-h="${m.hidden?0:1}">${m.hidden?'Unhide':'Hide'}</button>`}<button class="lnk" data-act="delc" data-p="${esc(p.id)}" data-c="${esc(m.id)}">Delete</button></div>
+    <div class="pst-a"><button class="lnk" data-act="replyc" data-p="${esc(p.id)}" data-c="${esc(m.id)}">↩ Reply</button>${m.admin?`<button class="lnk" data-act="editc" data-p="${esc(p.id)}" data-c="${esc(m.id)}">✎ Edit</button>`:''}${m.admin?'':`<button class="lnk" data-act="likec" data-p="${esc(p.id)}" data-c="${esc(m.id)}" data-v="${m.liked?0:1}">${m.liked?'❤️ Liked':'♡ Like'}</button><button class="lnk" data-act="hide" data-p="${esc(p.id)}" data-c="${esc(m.id)}" data-h="${m.hidden?0:1}">${m.hidden?'Unhide':'Hide'}</button>`}<button class="lnk" data-act="delc" data-p="${esc(p.id)}" data-c="${esc(m.id)}">Delete</button></div>
+    ${m.admin?`<div class="pst-ec"${pstEditOpen===m.id?'':' hidden'} style="display:flex;gap:8px;margin-top:6px"><input class="pst-edit" data-c="${esc(m.id)}" maxlength="500" value="${esc(pstEditDrafts[m.id]!==undefined?pstEditDrafts[m.id]:m.text)}"><button class="lnk" data-act="savec" data-p="${esc(p.id)}" data-c="${esc(m.id)}" style="cursor:pointer">Save</button></div>`:''}
     <div class="pst-rc"${pstReplyOpen===m.id?'':' hidden'} style="display:flex;gap:8px;margin-top:6px"><input class="pst-reply" data-c="${esc(m.id)}" maxlength="500" placeholder="Reply to ${esc(m.name||'Someone')} as TalkLive…" value="${esc(pstDrafts[m.id]||'')}"><button class="lnk" data-act="reply" data-p="${esc(p.id)}" data-c="${esc(m.id)}" style="cursor:pointer">Send</button></div></div>`).join('');
   return `<div class="card anim pst" data-id="${esc(p.id)}">
     <h2>${p.kind==='news'?`<span class="pill good">News${p.tag?' · '+esc(PST_TAGS[p.tag]||p.tag):''}</span> `:''}${p.pinned?'<span class="pill info">Pinned</span>':''} <span class="sub">${new Date(p.createdAt).toLocaleString()}${p.editedAt?' · edited '+ago(p.editedAt):''}</span></h2>
@@ -3520,13 +3522,13 @@ async function viewPosts(){
   const busy=document.activeElement;
   if(renderedTab==='posts'&&busy&&$('#main').contains(busy)&&/^(INPUT|TEXTAREA)$/.test(busy.tagName))return;
   /* Nor wipe a half-written reply to a comment. */
-  if(renderedTab==='posts'&&Object.values(pstDrafts).some(v=>v&&v.trim()))return;
+  if(renderedTab==='posts'&&(Object.values(pstDrafts).some(v=>v&&v.trim())||pstEditOpen))return;
   const r=await vapi('posts');
   const list=r.posts||[];
   const ed=pstEditing&&list.find(p=>p.id===pstEditing);
   const kind=ed?(ed.kind||'post'):pstKind;
   const shown=pstFilter==='all'?list:list.filter(p=>(p.kind||'post')===pstFilter);
-  $('#main').innerHTML=`<style>.pst-t{white-space:pre-wrap;word-break:break-word}.pst-a{display:flex;gap:12px;flex-wrap:wrap}.pst-a .lnk{background:none;cursor:pointer}.pst-cs{margin-top:10px;border-top:1px solid var(--ring)}.pst-c{padding:8px 0;border-bottom:1px solid var(--ring)}.pst-c.hid{opacity:.55}.pst-rc[hidden]{display:none!important}</style>
+  $('#main').innerHTML=`<style>.pst-t{white-space:pre-wrap;word-break:break-word}.pst-a{display:flex;gap:12px;flex-wrap:wrap}.pst-a .lnk{background:none;cursor:pointer}.pst-cs{margin-top:10px;border-top:1px solid var(--ring)}.pst-c{padding:8px 0;border-bottom:1px solid var(--ring)}.pst-c.hid{opacity:.55}.pst-rc[hidden],.pst-ec[hidden]{display:none!important}</style>
   <div class="card anim"><h2>${ed?(kind==='news'?'Edit news':'Edit post'):(kind==='news'?'New news':'New post')} <span class="sub">${kind==='news'?'shown in TalkLive News on the website and in the app':'shown in "From TalkLive" on the home page'}</span></h2>
     <div class="seg" style="display:flex;gap:6px;margin-bottom:10px">${['post','news'].map(k=>`<button class="btn ${kind===k?'':'ghost'}" data-kind="${k}" style="width:auto;margin:0">${k==='news'?'News':'Post'}</button>`).join('')}</div>
     ${kind==='news'?`<input id="pstTitle" maxlength="140" placeholder="Title, e.g. Voice filters are here" value="${ed?esc(ed.title||''):''}" style="margin-bottom:8px">
@@ -3562,6 +3564,10 @@ async function viewPosts(){
   };
   const cancel=$('#pstCancel');if(cancel)cancel.onclick=()=>{pstEditing=null;renderedTab=null;viewPosts();};
   const run=async(fn,msg)=>{try{await fn();if(msg)toast(msg,'','good');renderedTab=null;viewPosts();}catch(e){toast('Failed',e.message,'bad');}};
+  $('#main').querySelectorAll('.pst-ec .pst-edit').forEach(i=>{
+    i.oninput=()=>{pstEditDrafts[i.dataset.c]=i.value;};
+    i.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();i.parentNode.querySelector('[data-act="savec"]').click();}else if(e.key==='Escape'){delete pstEditDrafts[i.dataset.c];pstEditOpen=null;renderedTab=null;viewPosts();}};
+  });
   $('#main').querySelectorAll('.pst-rc .pst-reply').forEach(i=>{
     i.oninput=()=>{pstDrafts[i.dataset.c]=i.value;};
     i.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();i.parentNode.querySelector('[data-act="reply"]').click();}};
@@ -3574,6 +3580,8 @@ async function viewPosts(){
     else if(a==='hide')run(()=>post('posts/'+p+'/comments/'+encodeURIComponent(b.dataset.c)+'/hide',{hidden:b.dataset.h==='1'}));
     else if(a==='delc'){if(confirm('Delete this comment?'))run(()=>post('posts/'+p+'/comments/'+encodeURIComponent(b.dataset.c)+'/delete'),'Comment deleted');}
     else if(a==='likec')run(()=>post('posts/'+p+'/comments/'+encodeURIComponent(b.dataset.c)+'/like',{liked:b.dataset.v==='1'}));
+    else if(a==='editc'){const c=b.dataset.c,f=b.closest('.pst-c').querySelector('.pst-ec');f.hidden=!f.hidden;pstEditOpen=f.hidden?null:c;if(f.hidden)delete pstEditDrafts[c];else{const i=f.querySelector('input');i.focus();i.select();}}
+    else if(a==='savec'){const c=b.dataset.c,i=b.parentNode.querySelector('.pst-edit');if(i&&i.value.trim())run(async()=>{await post('posts/'+p+'/comments/'+encodeURIComponent(c)+'/edit',{text:i.value});delete pstEditDrafts[c];pstEditOpen=null;},'Comment updated');}
     else if(a==='replyc'){const c=b.dataset.c,f=b.closest('.pst-c').querySelector('.pst-rc');f.hidden=!f.hidden;pstReplyOpen=f.hidden?null:c;if(!f.hidden)f.querySelector('input').focus();}
     else if(a==='reply'){const i=b.parentNode.querySelector('.pst-reply'),c=b.dataset.c;if(i&&i.value.trim())run(async()=>{await post('posts/'+p+'/reply',c?{text:i.value,replyTo:c}:{text:i.value});if(c){delete pstDrafts[c];pstReplyOpen=null;}},'Reply posted');}
   });
