@@ -964,3 +964,7 @@ html:not(.tl-set-css) .tl-set-page { visibility: hidden; }
 .tl-set-link-row:hover { background: var(--set-soft); }
 .tl-set-link-row .tl-set-hero-go { margin-inline-start: auto; opacity: 0.6; display: grid; place-items: center; }
 .tl-set-link-row .tl-set-hero-go svg { width: 18px; height: 18px; }
+
+/* Display name: the allowed characters and the result of Save, under the field. */
+.tl-set-hint { margin: 6px 0 0; font-size: 12.5px; line-height: 1.4; color: var(--muted, #8a90a8); }
+.tl-set-hint:empty { display: none; }

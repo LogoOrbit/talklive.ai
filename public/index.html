@@ -223,7 +223,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
         { "@type": "Question", "name": "What languages does TalkLive support?", "acceptedAnswer": { "@type": "Answer", "text": "TalkLive is available in 17 languages: English, Spanish, Portuguese, French, German, Russian, Turkish, Arabic, Persian, Hindi, Bengali, Urdu, Indonesian, Italian, Japanese, Korean and Chinese. Right-to-left languages (Arabic, Persian and Urdu) are fully supported." } },
         { "@type": "Question", "name": "Is TalkLive safe?", "acceptedAnswer": { "@type": "Answer", "text": "It is built for adults 18 and over, with one-tap block and report, moderation and no voice recording. No service that connects strangers can promise perfect safety, so never share passwords, codes or money." } },
         { "@type": "Question", "name": "Can I choose to talk to men or women?", "acceptedAnswer": { "@type": "Answer", "text": "Yes, with Plus. The Men/Women filter is a Plus feature, and it is a preference, not a verified guarantee. Free users can still choose countries." } },
-        { "@type": "Question", "name": "Does TalkLive work on Android?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. It works in the browser on Android, iPhone and computers, and there is an Android app on Google Play." } },
+        { "@type": "Question", "name": "Does TalkLive work on Android?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. It works in the browser on Android, iPhone and computers, and an Android app is coming soon to Google Play." } },
         { "@type": "Question", "name": "How is TalkLive different from Omegle?", "acceptedAnswer": { "@type": "Answer", "text": "Omegle closed in 2023. TalkLive is a separate service with no connection to it. It is voice and text only with no video, limited to adults 18 and over, and needs no account." } },
         { "@type": "Question", "name": "Is TalkLive the same as Talkliv?", "acceptedAnswer": { "@type": "Answer", "text": "No. TalkLive is the free voice and text chat at talklive.app. It is not connected to other apps or sites with similar names." } },
         { "@type": "Question", "name": "Is TalkLive a dating app?", "acceptedAnswer": { "@type": "Answer", "text": "No. TalkLive is a random social conversation service for adults, not a dating or matchmaking service." } }
@@ -1236,6 +1236,8 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                   <input type="text" id="tempUsernameInput" class="search-input" maxlength="40" data-i18n-placeholder="tempUsernamePlaceholder" placeholder="Your display name" autocomplete="off" />
                   <button type="button" id="saveTempNameBtn" data-i18n="saveName">Save name</button>
                 </div>
+                <p id="tempNameHint" class="tl-set-hint" data-i18n="nickRulesHint">2 to 20 characters: letters and numbers in any language, with spaces or . _ - ' between them. No emoji, symbols or tags.</p>
+                <p id="tempNameStatus" class="tl-set-hint" role="status" aria-live="polite"></p>
               </div>
 
               <!-- The avatar grid is adopted by the Edit profile sheet while it is open. -->
@@ -1459,7 +1461,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                  that does something today. Everything below is still a price
                  nobody can pay - the banner says so before the first number
                  is read, and every buy button is disabled. -->
-            <p class="shop-note" data-i18n="shopAppNote">Buy passes and Plus in the TalkLive Android app. They work here too when you sign in.</p>
+            <p class="shop-note" data-i18n="shopAppNote2">Passes and Plus will be sold in the TalkLive Android app, coming soon to Google Play. They will work here too when you sign in.</p>
             <section class="pass-panel" aria-labelledby="passTitle">
               <div role="heading" aria-level="3" class="ui-h3" id="passTitle" data-i18n="passTitle">Choose your pass</div>
               <div id="passTiers" class="pass-tiers" role="radiogroup" aria-labelledby="passTitle"></div>
@@ -1483,7 +1485,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
                 <li><strong data-i18n="plusBThemes">Ocean and Sunset themes</strong></li>
               </ul>
             </section>
-            <a class="pass-buy pass-buy-link" id="shopAppLink" href="https://play.google.com/store/apps/details?id=app.talklive" rel="noopener" data-i18n="plusGetInApp2">Get it in the Android app</a>
+            <button type="button" class="pass-buy pass-buy-link" id="shopAppLink" data-i18n="plusWaitBtn">Notify me when Plus launches</button>
             <p class="shop-fine">
               <a href="/terms" data-i18n="termsOfService">Terms of Service</a> ·
               <a href="/privacy" data-i18n="privacyPolicy">Privacy Policy</a> ·
@@ -2096,7 +2098,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
     <div class="tt-in">
       <div class="tt-app tt-rv">
         <header class="tt-head">
-          <a class="tt-play" href="https://play.google.com/store/apps/details?id=app.talklive" target="_blank" rel="noopener"><svg class="tt-play-logo" viewBox="0 0 24 26" aria-hidden="true" focusable="false"><path fill="#00d7fe" d="M1.1.6C.8.9.6 1.4.6 2v22c0 .6.2 1.1.5 1.4l.1.1L13.5 13.2v-.3L1.2.5z"/><path fill="#ffce00" d="m17.6 17.3-4.1-4.1v-.3l4.1-4.1.1.1 4.9 2.8c1.4.8 1.4 2.1 0 2.9l-4.9 2.8z"/><path fill="#ff3a44" d="M17.7 17.3 13.5 13 1.1 25.4c.5.5 1.2.5 2.1.1l14.5-8.2"/><path fill="#00f076" d="M17.7 8.7 3.2.5C2.3 0 1.6.1 1.1.6L13.5 13z"/></svg><span><small>Get it on</small><b>Google Play</b></span></a>
+          <span class="tt-play"><svg class="tt-play-logo" viewBox="0 0 24 26" aria-hidden="true" focusable="false"><path fill="#00d7fe" d="M1.1.6C.8.9.6 1.4.6 2v22c0 .6.2 1.1.5 1.4l.1.1L13.5 13.2v-.3L1.2.5z"/><path fill="#ffce00" d="m17.6 17.3-4.1-4.1v-.3l4.1-4.1.1.1 4.9 2.8c1.4.8 1.4 2.1 0 2.9l-4.9 2.8z"/><path fill="#ff3a44" d="M17.7 17.3 13.5 13 1.1 25.4c.5.5 1.2.5 2.1.1l14.5-8.2"/><path fill="#00f076" d="M17.7 8.7 3.2.5C2.3 0 1.6.1 1.1.6L13.5 13z"/></svg><span><small>Coming soon on</small><b>Google Play</b></span></span>
           <h2 class="tt-h2" id="ttTitle">TalkLive for <span class="tt-accent">Android</span></h2>
           <p class="tt-lede">Voice calls, voice notes, your spirit animal and your friends, built for your phone. Here is a first look.</p>
         </header>
@@ -2338,7 +2340,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
        browser finish parsing and paint the page first. -->
   <script defer src="/vendor/socket.io.min.js?v=7bcff1b4f1"></script>
   <script defer src="countries.js?v=30bcd7f146"></script>
-  <script defer src="i18n.js?v=e7a4c2be74"></script>
+  <script defer src="i18n.js?v=f7ef5f817d"></script>
   <script defer src="chat-time.js?v=9d4e50bcf7"></script>
   <script defer src="animals.js?v=b06413711c"></script>
   <script defer src="characters.js?v=0da1f15e5d"></script>
@@ -2350,7 +2352,7 @@ if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.cl
   <script defer src="games.js?v=4a44d16cae"></script>
   <script defer src="nickname-rules.js?v=077c943b4d"></script>
   <script defer src="social-links.js?v=a4e5c724ac"></script>
-  <script defer src="app.js?v=54853a6376"></script>
+  <script defer src="app.js?v=a6ead1cc29"></script>
 
 <!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

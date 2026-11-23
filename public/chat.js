@@ -515,7 +515,7 @@
     if (!plusPopupLoad) {
       plusPopupLoad = new Promise(function (resolve, reject) {
         var sc = document.createElement('script');
-        sc.src = '/plus-app-popup.js?v=c7e9f97074';
+        sc.src = '/plus-app-popup.js?v=9b689db10e';
         sc.async = true;
         sc.onload = resolve;
         sc.onerror = function () { plusPopupLoad = null; reject(new Error('plus popup')); };
@@ -523,7 +523,7 @@
       });
     }
     plusPopupLoad.then(function () { window.TalkLivePlusPopup.open(); }).catch(function () {
-      window.open('https://play.google.com/store/apps/details?id=app.talklive', '_blank', 'noopener');
+      location.href = '/pricing';
     });
   }
   window.tlPlusPopup = openPlusPopup;
@@ -973,7 +973,11 @@
   });
 
   startBtn.addEventListener('click', function () { vibrate(10); initAudio(); requestStart(); });
+  // A match the server made while the Cancel was on its way is taken back on
+  // the server (undoCancelledPairing) and not shown here.
+  var searchCancelledAt = 0;
   cancelBtn.addEventListener('click', function () {
+    searchCancelledAt = Date.now();
     socket.emit('leave');
     goStart();
   });
@@ -1596,7 +1600,7 @@
     if (!settingsPanelLoading) {
       settingsPanelLoading = [];
       var s = document.createElement('script');
-      s.src = '/settings-panel.js?v=4baf9ad904';
+      s.src = '/settings-panel.js?v=0484df464a';
       s.async = true;
       s.onload = function () {
         window.TalkLiveSettingsPanel.ready.then(function () {
@@ -3721,6 +3725,7 @@
 
   socket.on('matched', function (data) {
     if (data.mode && data.mode !== 'chat') return; // safety: ignore stray voice matches
+    if (!searching && Date.now() - searchCancelledAt < 3000) return;
     pairIdNow = typeof data.pairId === 'string' ? data.pairId : null;
     searchAcked = true;
     sendAdsConversion();

@@ -344,7 +344,8 @@
       + '<div class="tlp-panel" data-panel="avatar"></div>'
       + '<div class="tlp-panel" data-panel="cover" hidden></div>'
       + '<div class="tlp-panel tlp-name-panel" data-panel="name" hidden>'
-      + '<label class="tlp-field"><span class="tlp-field-label" data-l="name"></span><input type="text" id="tlpName" class="search-input" maxlength="40" autocomplete="off" /></label>'
+      + '<label class="tlp-field"><span class="tlp-field-label" data-l="name"></span><input type="text" id="tlpName" class="search-input" maxlength="40" autocomplete="off" aria-describedby="tlpNameRules" /></label>'
+      + '<p class="tlp-field-note" id="tlpNameRules"></p>'
       + '<label class="tlp-field"><span class="tlp-field-label" data-l="id"></span><input type="text" id="tlpHandle" class="search-input" maxlength="21" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="name#1234" /></label>'
       + '<p class="tlp-field-note" id="tlpNameNote"></p>'
       + '</div>'
@@ -372,6 +373,7 @@
   function renderEditStatic() {
     var $ = function (sel) { return editSheet.querySelector(sel); };
     $('[data-act="cancel"]').textContent = tx('cancel', 'Cancel');
+    $('#tlpNameRules').textContent = tx('nickRulesHint', "2 to 20 characters: letters and numbers in any language, with spaces or . _ - ' between them. No emoji, symbols or tags.");
     $('[data-act="save"]').textContent = tx('save', 'Save');
     $('#tlpEditTitle').textContent = tx('editProfile', 'Edit profile');
     var labels = { avatar: tx('avatar', 'Avatar'), cover: tx('coverTitle', 'Cover'), name: tx('mpTabName', 'Name') };

@@ -666,7 +666,7 @@ app.post('/subscribe', httpRateLimit('subscribe', 5, 10 * 60000), express.json({
   }
   // "Notify me" sign-ups are waiting for one launch; say so, so the email
   // they get makes sense.
-  const launch = /^notify:/.test(source) ? (source === 'notify:shop' ? 'TalkLive match passes' : 'TalkLive Premium') : '';
+  const launch = /^notify:/.test(source) ? ({ 'notify:shop': 'TalkLive match passes', 'notify:plus': 'TalkLive Plus' }[source] || 'TalkLive Premium') : '';
   if (launch) {
     const sentLaunch = await mail.sendMail({
       to: email,
@@ -2885,7 +2885,7 @@ function recordChatHistory(ownerClientId, partner) {
   if (!list) { list = []; chatHistory.set(ownerClientId, list); }
   const idx = list.findIndex((e) => e.clientId === partner.clientId);
   const prev = idx !== -1 ? list.splice(idx, 1)[0] : null;
-  list.push({
+  const row = {
     clientId: partner.clientId,
     username: partner.username,
     countryCode: partner.country,
@@ -2895,8 +2895,23 @@ function recordChatHistory(ownerClientId, partner) {
     // Meeting the same person again is the strongest hint there is that they
     // are worth keeping, so the history remembers it.
     met: ((prev && prev.met) || (prev ? 1 : 0)) + 1,
-  });
+  };
+  list.push(row);
   while (list.length > MAX_CHAT_HISTORY) list.shift();
+  return { row, prev };
+}
+
+// Undo one side's recordChatHistory: the row it added goes, and the row it
+// replaced (same person met before) comes back as it was.
+function revertChatHistory(ownerClientId, undo) {
+  const list = chatHistory.get(ownerClientId);
+  if (!list || !undo || !undo.row) return;
+  const idx = list.indexOf(undo.row);
+  if (idx === -1) return;
+  list.splice(idx, 1);
+  if (undo.prev) list.push(undo.prev);
+  list.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  if (!list.length) chatHistory.delete(ownerClientId);
 }
 
 // How long the last conversation with `otherClientId` lasted, written onto
@@ -3146,8 +3161,13 @@ function migratePlusFaces() {
 // match, an accepted call-back or an in-chat voice invite - so either can
 // message, call back, add or report the other afterwards.
 function rememberPairing(sockA, profA, sockB, profB) {
-  recordChatHistory(profA.clientId, profB);
-  recordChatHistory(profB.clientId, profA);
+  const undoA = recordChatHistory(profA.clientId, profB);
+  const undoB = recordChatHistory(profB.clientId, profA);
+  // Kept for a moment so a Cancel that crossed this pairing on the wire can
+  // take it back (see undoCancelledPairing).
+  const pairUndo = { at: Date.now(), a: profA.clientId, b: profB.clientId, undoA, undoB };
+  profA.pairUndo = pairUndo;
+  profB.pairUndo = pairUndo;
   persistSocial();
   syncClientState(sockA, profA.clientId);
   syncClientState(sockB, profB.clientId);
@@ -5809,6 +5829,29 @@ function noteVoiceActivity(socket, payload) {
   if (ms > 0) noteCallLife(st); else armSilence(st);
 }
 
+// A Cancel (or closing the page) that arrives this soon after a pairing was
+// sent while the person was still searching: the server paired them, but they
+// never saw the match. Recording it put strangers they never met into both
+// people's Call History ("Met 2x" after two cancelled scans), so the pairing's
+// history rows are taken back before the pair is ended.
+const CANCEL_RACE_MS = 2000;
+function undoCancelledPairing(socketId) {
+  const partnerId = partners.get(socketId);
+  const me = profiles.get(socketId);
+  const them = partnerId && profiles.get(partnerId);
+  const u = me && me.pairUndo;
+  if (!them || !u || u !== them.pairUndo || Date.now() - u.at > CANCEL_RACE_MS) return false;
+  revertChatHistory(u.a, u.undoA);
+  revertChatHistory(u.b, u.undoB);
+  me.pairUndo = them.pairUndo = null;
+  persistSocial();
+  const partnerSocket = io.sockets.sockets.get(partnerId);
+  if (partnerSocket) syncClientState(partnerSocket, them.clientId);
+  const mine = io.sockets.sockets.get(socketId);
+  if (mine) syncClientState(mine, me.clientId);
+  return true;
+}
+
 function disconnectPartner(socketId, opts = {}) {
   const partnerId = partners.get(socketId);
   if (!partnerId) return null;
@@ -8370,7 +8413,8 @@ io.on('connection', (socket) => {
     const leftId = partners.get(socket.id);
     const left = leftId ? profiles.get(leftId) : null;
     const me = profiles.get(socket.id);
-    if (me && left) me.lastSkipped = { clientId: left.clientId, at: Date.now() };
+    const cancelled = undoCancelledPairing(socket.id);
+    if (me && left && !cancelled) me.lastSkipped = { clientId: left.clientId, at: Date.now() };
     disconnectPartner(socket.id);
     noteSearchAbandoned(socket.id);
     clearFromQueue(socket.id);
@@ -10301,6 +10345,7 @@ io.on('connection', (socket) => {
     // in a live call, which is held open for a moment (see parkPairing).
     if (!parkedSockets.has(socket.id)
       && !(INVOLUNTARY_DROPS.has(reason) && parkPairing(socket.id, profiles.get(socket.id)))) {
+      undoCancelledPairing(socket.id);
       disconnectPartner(socket.id, { dropped: true });
     }
     noteSearchAbandoned(socket.id);
