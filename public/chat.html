@@ -35,7 +35,7 @@
   document.head.appendChild(s);
 })();
 </script>
-<link rel="stylesheet" href="/chat.css?v=44db6728d8" />
+<link rel="stylesheet" href="/chat.css?v=58271b22e6" />
 <link rel="stylesheet" href="/chat-extras.css?v=4b7b6398b3" />
 <link rel="stylesheet" href="/games.css?v=2dd354f960" />
 <link rel="stylesheet" href="/ui.css?v=439264fdc4" />
@@ -248,78 +248,44 @@
 
         <!-- START -->
         <div id="viewStart" class="chat-view" aria-hidden="false">
-          <h1 class="chat-start-title" data-i18n="chatStartTitle">Chat with someone new</h1>
-          <p class="chat-start-sub" data-i18n="chatStartSub">Private · worldwide · free</p>
-          <div class="chat-start-actions">
-            <button type="button" id="startBtn" class="chat-start-btn" data-i18n-aria="startChatAria" aria-label="Start a text chat with a random person">
-              <span data-i18n="chatStartBtn">Start chatting</span>
-            </button>
-            <!-- The way across to the voice app. Text and voice are two halves
-                 of one product, and until now /chat was a dead end: the only
-                 call control on the page needed a partner you did not have
-                 yet. -->
-            <a id="callInsteadBtn" class="chat-start-alt" href="/" data-i18n-aria="chatCallInsteadAria" aria-label="Start a voice call with a random person instead">
-              <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
-              <span data-i18n="chatCallInstead">Call instead</span>
-            </a>
+          <div class="chat-hero">
+            <h1 class="chat-start-title" data-i18n="chatStartTitle">Chat with someone new</h1>
+            <p class="chat-start-sub" data-i18n="chatStartSub">Private · worldwide · free</p>
+            <div class="chat-start-actions">
+              <button type="button" id="startBtn" class="chat-start-btn" data-i18n-aria="startChatAria" aria-label="Start a text chat with a random person">
+                <span data-i18n="chatStartBtn">Start chatting</span>
+              </button>
+              <!-- The way across to the voice app. -->
+              <a id="callInsteadBtn" class="chat-start-alt" href="/" data-i18n-aria="chatCallInsteadAria" aria-label="Start a voice call with a random person instead">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                <span data-i18n="chatCallInstead">Call instead</span>
+              </a>
+            </div>
           </div>
 
-          <!-- Who you want to be matched with. Lives on the start view and
-               nowhere else, so it is there while you are deciding and gone the
-               moment you search or connect - the start view is hidden for both.
-               Male/Female are a Premium filter (the server ignores them on the
-               free tier), so they carry a bolt and free taps route to /pricing
-               instead of silently doing nothing. -->
+          <!-- Who you want to be matched with: one compact segmented control.
+               Male/Female are Plus (sold in the Android app); a free tap opens
+               the Plus popup and the choice stays on Everyone. Your avatar is
+               changed in Profile (the face in the top bar), as on the home page. -->
           <section class="pref-partner" aria-labelledby="prefPartnerLabel">
-            <p class="pref-partner-label" id="prefPartnerLabel">
-              <span data-i18n="preferredPartner">Preferred partner</span>
-              <span class="pref-partner-opt" data-i18n="optional">(optional)</span>
-            </p>
-            <div class="pref-cards" id="prefGenderGroup" data-value="any" role="group" aria-labelledby="prefPartnerLabel">
-              <button type="button" class="pref-card" data-value="male" aria-pressed="false">
-                <span class="pref-card-bolt premium-lock" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg>
-                </span>
-                <span class="pref-card-icon pref-icon-male" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="14" r="6"/><line x1="14.5" y1="9.5" x2="20" y2="4"/><polyline points="14.5 4 20 4 20 9.5"/></svg>
-                </span>
-                <span class="pref-card-name" data-i18n="male">Male</span>
-              </button>
+            <p class="pref-partner-label" id="prefPartnerLabel" data-i18n="preferredPartner">Preferred partner</p>
+            <div class="pref-seg" id="prefGenderGroup" data-value="any" role="group" aria-labelledby="prefPartnerLabel">
               <button type="button" class="pref-card" data-value="any" aria-pressed="true">
-                <span class="pref-card-icon pref-icon-any" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9a3 3 0 1 1 4 2.8c-.7.3-1 .9-1 1.7v.5"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
-                </span>
                 <span class="pref-card-name" data-i18n="everyone">Everyone</span>
               </button>
+              <button type="button" class="pref-card" data-value="male" aria-pressed="false">
+                <span class="pref-card-name" data-i18n="male">Male</span>
+                <span class="pref-card-bolt premium-lock" aria-hidden="true"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+              </button>
               <button type="button" class="pref-card" data-value="female" aria-pressed="false">
-                <span class="pref-card-bolt premium-lock" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg>
-                </span>
-                <span class="pref-card-icon pref-icon-female" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="6"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="9" y1="18" x2="15" y2="18"/></svg>
-                </span>
                 <span class="pref-card-name" data-i18n="female">Female</span>
+                <span class="pref-card-bolt premium-lock" aria-hidden="true"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
               </button>
             </div>
-            <p class="pref-partner-hint hidden" id="prefPremiumHint" role="status">
-              <span data-i18n="premiumGenderLocked">The gender filter is a Premium feature.</span>
-              <a href="/pricing" data-i18n="pricingLink">Pricing &amp; Premium</a>
-            </p>
-            <!-- What the filter matches on, said where it is used. -->
             <p class="pref-partner-note">
-              <span data-i18n="genderFilterNote">Gender is what each person picks for themselves. It is only checked by voice for people who turn on Voice check, and that check runs on their own device.</span>
+              <span data-i18n="chatPrefNote">Male and Female need Plus.</span>
               <a href="/privacy#gender" target="_blank" rel="noopener" data-i18n="genderFilterNoteLink">How this works</a>
             </p>
-          </section>
-
-          <!-- Spirit animal: the same picker as the voice app, sharing the same
-               localStorage key, so a choice made on either page follows the
-               user to the other. Vector icons from /animals.js, never emoji. -->
-          <section class="animal-picker" aria-labelledby="animalPickerTitle">
-            <h2 class="animal-picker-title" id="animalPickerTitle" data-i18n="pickAnimal">Your avatar</h2>
-            <p class="animal-picker-hint" data-i18n="pickAnimalHint">Everyone you talk to sees it - an easy way to start talking.</p>
-            <div class="animal-grid" id="animalGrid" role="radiogroup" data-i18n-aria="pickAnimal" aria-label="Your avatar"></div>
-            <p class="animal-chosen" id="animalChosen" aria-live="polite"></p>
           </section>
         </div>
 
@@ -818,7 +784,7 @@
   <script defer src="/config.js"></script>
   <script defer src="/vendor/socket.io.min.js?v=7bcff1b4f1"></script>
   <script defer src="/countries.js?v=30bcd7f146"></script>
-  <script defer src="/i18n.js?v=f3d00b1f82"></script>
+  <script defer src="/i18n.js?v=ef28540947"></script>
   <script defer src="/chat-time.js?v=9d4e50bcf7"></script>
   <script defer src="/animals.js?v=b06413711c"></script>
   <script defer src="/characters.js?v=0da1f15e5d"></script>
@@ -829,7 +795,7 @@
   <script defer src="/icebreakers.js?v=42657c1791"></script>
   <script defer src="/talkguard.js?v=2b180e6471"></script>
   <script defer src="/social-links.js?v=a4e5c724ac"></script>
-  <script defer src="/chat.js?v=055de516a3"></script>
+  <script defer src="/chat.js?v=ac1cff9b41"></script>
 
 <!-- Analytics tag, deliberately last: they are async, so their position
      does not change whether they run, only when they start competing with the

@@ -2901,8 +2901,8 @@ function renderPasses() {
 // The website cannot sell Plus (it is bought in the Android app); the pricing
 // page shows prices and the Play link, so every "get Plus" button goes there.
 function plusGo() {
-  [shopModal, document.getElementById('premiumUpsellModal')].forEach((m) => m && closeModal(m));
-  location.href = '/pricing';
+  if (shopModal) closeModal(shopModal);
+  openPlusPopup();
 }
 
 let shopPriced = false;
@@ -3242,6 +3242,7 @@ function revealSelectedAvatar() {
 avatarGrid.addEventListener('click', (e) => {
   const option = e.target.closest('.avatar-option');
   if (!option) return;
+  if (blockLockedSpecial(option.dataset.avatar)) return;
   pendingAvatar = option.dataset.avatar;
   renderAvatarGrid();          // move the tick to the one just picked
   document.dispatchEvent(new CustomEvent('tl-avatar-preview', { detail: pendingAvatar }));
@@ -3301,9 +3302,11 @@ function specialHint(id) {
   return t('specialFaceLocked', { tier: name === 'tier_' + tier ? tier.charAt(0).toUpperCase() + tier.slice(1) : name });
 }
 // Returns true (and says why) when a tapped face cannot be worn yet.
+// Plus faces and the level faces both open the one Plus popup; the face is
+// never applied.
 function blockLockedSpecial(id) {
-  if (specialUnlocked(id)) return false;
-  showToast(specialHint(id), 'info');
+  if (faceAllowed(id)) return false;
+  showPremiumUpsell();
   return true;
 }
 function decorateSpecialTile(btn, id) {
@@ -3907,7 +3910,7 @@ function myProfileIsOpen() { return !!(window.TalkLiveProfile && window.TalkLive
 function renderMyProfileCard() { if (window.TalkLiveProfile) window.TalkLiveProfile.render(); }
 function withProfileUi(cb) {
   if (window.TalkLiveProfile) { cb(window.TalkLiveProfile); return; }
-  loadLazyScript('profile', '/profile-ui.js?v=11736dcddc')
+  loadLazyScript('profile', '/profile-ui.js?v=db78d3fd70')
     .then(() => window.TalkLiveProfile.ready)
     .then(() => cb(window.TalkLiveProfile), () => showToast(t('errNoConnection'), 'warn'));
 }
@@ -12188,48 +12191,41 @@ window.addEventListener('load', () => setTimeout(() => {
   document.head.appendChild(s);
 }, 3000), { once: true });
 
-// The Plus dialog: the limit hit and what Plus adds. The feature just reached
-// for is lit and listed first; the rest follow in one fixed order, the same as
-// the pricing page and the Android app.
-const premiumUpsellModal = document.getElementById('premiumUpsellModal');
-const UPSELL_TITLES = {
-  gender: 'upsellGenderTitle', countries: 'upsellCountriesTitle', likes: 'upsellLikesTitle', undo: 'upsellUndoTitle', themes: 'upsellThemesTitle',
-  interests: 'plusTitleInterests', rematch: 'plusTitleRematch', history: 'plusTitleHistory', streak: 'plusTitleStreak',
-  films: 'plusTitleFilms', avatars: 'plusTitleAvatars', alive: 'plusTitleAlive',
-};
-let upsellPerk = null;
-// Closed some other way than the buttons (Escape, a back gesture): still a dismissal.
-function flushUpsellDismiss() {
-  if (upsellPerk && premiumUpsellModal.classList.contains('hidden') && window.PlusMoments) window.PlusMoments.restrictDismissed(upsellPerk);
-  upsellPerk = null;
+// The one Plus popup (public/plus-app-popup.js, lazy-loaded): every locked
+// feature on the site opens it and nothing else. Plus is sold only in the
+// Android app, so the popup is "Get TalkLive Plus in the Android app".
+const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=app.talklive';
+let plusPopupLoad = null;
+function openPlusPopup() {
+  if (window.TalkLivePlusPopup) { window.TalkLivePlusPopup.open(); return; }
+  if (!plusPopupLoad) {
+    plusPopupLoad = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = '/plus-app-popup.js?v=c7e9f97074';
+      s.async = true;
+      s.onload = resolve;
+      s.onerror = () => { plusPopupLoad = null; reject(new Error('plus popup')); };
+      document.head.appendChild(s);
+    });
+  }
+  plusPopupLoad.then(() => window.TalkLivePlusPopup.open()).catch(() => { window.open(PLAY_STORE_URL, '_blank', 'noopener'); });
 }
-function closeUpsell() {
-  closeModal(premiumUpsellModal);
-  flushUpsellDismiss();
-}
-function showPremiumUpsell(message, perk = 'countries') {
-  flushUpsellDismiss();
-  // A moment already dismissed this session is not shown again; the person still hears why it did nothing.
-  if (window.PlusMoments && !window.PlusMoments.allowRestrict(perk)) { showToast(message, 'plus'); return; }
-  document.getElementById('puTitle').textContent = t(UPSELL_TITLES[perk] || 'plusUpsellTitle');
-  const reason = document.getElementById('puReason');
-  reason.textContent = message || '';
-  reason.hidden = !message;
-  upsellPerk = perk;
+window.tlPlusPopup = openPlusPopup;
+// Message and perk are kept by the callers; the popup is the same for all.
+function showPremiumUpsell() {
   trackGrowthEvent('premium_upsell_view');
-  if (window.PlusMoments) window.PlusMoments.restrictShown(perk);
-  openModal(premiumUpsellModal);
+  openPlusPopup();
 }
-// Plus is sold in the Android app, which is not on Google Play yet: the box
-// says so and closes.
-document.getElementById('puNotifyBtn').addEventListener('click', () => {
-  trackGrowthEvent('premium_upsell_click');
-  if (window.PlusMoments) window.PlusMoments.restrictTapped();
-  upsellPerk = null;
-  closeModal(premiumUpsellModal);
-});
-document.getElementById('puCloseBtn').addEventListener('click', closeUpsell);
-premiumUpsellModal.addEventListener('click', (e) => { if (e.target === premiumUpsellModal) closeUpsell(); });
+window.showPremiumUpsell = showPremiumUpsell;
+// Any link to the pricing/Plus page from inside the app opens the popup
+// instead (Plus is not sold on the web). The footer's plain "Pricing" link is
+// a page link and stays.
+document.addEventListener('click', (e) => {
+  const a = e.target.closest && e.target.closest('a[href^="/pricing"], [data-plus-popup]');
+  if (!a || a.classList.contains('link-btn') || e.defaultPrevented || e.ctrlKey || e.metaKey || e.shiftKey) return;
+  e.preventDefault();
+  showPremiumUpsell();
+}, true);
 
 // Gender preference is premium-only. Intercept taps on Male/Female in the
 // capture phase so the pill never flips for free users.

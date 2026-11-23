@@ -507,10 +507,35 @@
   // Plus faces: open to Plus and to the invite reward's one face, and the face
   // already worn stays selectable so nobody loses the avatar they had.
   var faceLook = null;
-  function faceLockedNote() {
-    var s = t('premiumFaceLocked');
-    return s === 'premiumFaceLocked' ? 'This avatar comes with TalkLive Plus. Five animals and five characters are free.' : s;
+  // The one Plus popup (plus-app-popup.js, lazy-loaded). Every locked thing
+  // opens it and is never applied; Plus is sold only in the Android app.
+  var plusPopupLoad = null;
+  function openPlusPopup() {
+    if (window.TalkLivePlusPopup) { window.TalkLivePlusPopup.open(); return; }
+    if (!plusPopupLoad) {
+      plusPopupLoad = new Promise(function (resolve, reject) {
+        var sc = document.createElement('script');
+        sc.src = '/plus-app-popup.js?v=c7e9f97074';
+        sc.async = true;
+        sc.onload = resolve;
+        sc.onerror = function () { plusPopupLoad = null; reject(new Error('plus popup')); };
+        document.head.appendChild(sc);
+      });
+    }
+    plusPopupLoad.then(function () { window.TalkLivePlusPopup.open(); }).catch(function () {
+      window.open('https://play.google.com/store/apps/details?id=app.talklive', '_blank', 'noopener');
+    });
   }
+  window.tlPlusPopup = openPlusPopup;
+  window.showPremiumUpsell = function () { openPlusPopup(); };
+  // Links to the pricing page (favourite films, etc.) open the popup too.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="/pricing"], [data-plus-popup]');
+    if (!a || e.defaultPrevented || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    e.preventDefault();
+    openPlusPopup();
+  }, true);
+
   // The three level faces are unlocked by points, never by Plus.
   var myTier = 'none';
   var TIER_RANK = { none: 0, silver: 1, gold: 2, diamond: 3 };
@@ -543,7 +568,8 @@
       if (!specialOpen(id)) { btn.classList.add('is-locked'); btn.dataset.lock = '\u{1F512}'; btn.title = specialHint(id); }
     } else if (!Animals.isFree(id)) {
       btn.classList.add('tl-plus-face');
-      btn.dataset.lock = faceOk(id) ? '\u{1F48E}' : '\u{1F512}';
+      if (!faceOk(id)) { btn.classList.add('is-locked'); btn.dataset.lock = '\u{1F512}'; }
+      else btn.dataset.lock = '\u{1F48E}';
     }
     if (an) {
       btn.style.setProperty('--animal-color', Animals.color(an));
@@ -636,7 +662,7 @@
         renderAnimalPicker();
         return;
       }
-      if (!faceOk(option.dataset.avatar)) { flashSearchNote(specialOf(option.dataset.avatar) ? specialHint(option.dataset.avatar) : faceLockedNote()); return; }
+      if (!faceOk(option.dataset.avatar)) { openPlusPopup(); return; }
       setMyAvatarChoice(option.dataset.avatar);
     });
     renderAnimalPicker();
@@ -801,6 +827,7 @@
       var option = ev.target.closest('.animal-option');
       if (!option || !option.dataset.avatar) return;
       vibrate(10);
+      if (!faceOk(option.dataset.avatar)) { openPlusPopup(); return; }
       setMyAvatarChoice(option.dataset.avatar);
       refreshAnimalLabels(); // the start view's picker wears it too
       // A beat so the tick is visibly on the one just tapped before the panel
@@ -886,10 +913,9 @@
   // --- Preferred partner, on the start view only ----------------------------
   // It lives inside #viewStart, so searching or connecting hides it with the
   // rest of that view - there is nothing extra to hide by hand. Male/Female
-  // are a Premium filter the server drops on the free tier, so a free tap is
-  // sent to /pricing instead of quietly selecting a filter that does nothing.
+  // are a Plus filter the server drops on the free tier, so a free tap opens
+  // the Plus popup instead of quietly selecting a filter that does nothing.
   var prefGenderGroup = $('prefGenderGroup');
-  var prefPremiumHint = $('prefPremiumHint');
   var isPremiumUser = false;
 
   function setPrefCards(value) {
@@ -905,10 +931,9 @@
     if (!card) return;
     vibrate(10);
     if (!isPremiumUser && card.dataset.value !== 'any') {
-      prefPremiumHint.classList.remove('hidden');
+      openPlusPopup(); // Male/Female are Plus; the choice stays as it was
       return;
     }
-    prefPremiumHint.classList.add('hidden');
     savePrefGender(card.dataset.value);
     setPrefCards(myPrefGender);
     register(); // the preference is part of the profile, so push it now
@@ -924,14 +949,15 @@
     if (PLUS_THEMES.indexOf(theme) === -1) return;
     e.stopPropagation();
     e.preventDefault();
-    var msg = typeof t === 'function' ? t('premiumThemeLocked') : 'Ocean and Sunset themes come with Plus.';
-    if ($('reportNote')) flashSearchNote(msg); else alert(msg);
+    openPlusPopup();
   }, true);
   socket.on('premium-status', function (data) {
     isPremiumUser = !!(data && data.premium);
     faceLook = data && data.look ? data.look : null;
     followServerFace(data);
     renderAnimalPicker();
+    // A Male/Female choice left over from Plus does not outlive it.
+    if (!isPremiumUser && myPrefGender !== 'any') { savePrefGender('any'); setPrefCards('any'); }
     document.documentElement.classList.toggle('tl-free', !isPremiumUser);
     clearTimeout(themeRevertTimer);
     if (!isPremiumUser) themeRevertTimer = setTimeout(function () {
@@ -944,7 +970,6 @@
     document.querySelectorAll('.premium-lock').forEach(function (el) {
       el.classList.toggle('hidden', isPremiumUser);
     });
-    if (isPremiumUser) prefPremiumHint.classList.add('hidden');
   });
 
   startBtn.addEventListener('click', function () { vibrate(10); initAudio(); requestStart(); });

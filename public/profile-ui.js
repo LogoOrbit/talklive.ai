@@ -465,6 +465,8 @@
     if (tb) { setTab(tb.dataset.tab); return; }
     var cv = e.target.closest('[data-cover]');
     if (cv && editSheet.contains(cv)) {
+      // A Plus scene without Plus opens the Plus popup and is never applied.
+      if (window.TalkLiveCovers && window.TalkLiveCovers.isPlus(cv.dataset.cover) && !isPremiumUser) { askPlus(); return; }
       draft.cover = cv.dataset.cover;
       renderCoverPanel();
       refreshEdit();
@@ -478,15 +480,13 @@
     if (b.dataset.act === 'save') save();
   }
 
-  // Locked: say why. Plus things go to the Plus card; the level faces are
-  // earned by points in the Android app, so they get their own hint.
+  // Locked: the one Plus popup, over the editor so the draft is kept.
   function askPlus() {
-    // Over the editor (modals rise above the sheets), so the draft is kept.
     showPremiumUpsell('', 'avatars');
   }
   function blockedSave() {
     if (draft.avatar !== myAvatar && !faceAllowed(draft.avatar)) {
-      if (specialTierOf(draft.avatar)) { showToast(specialHint(draft.avatar), 'info'); setTab('avatar'); return true; }
+      setTab('avatar');
       askPlus();
       return true;
     }
