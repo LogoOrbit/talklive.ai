@@ -135,3 +135,10 @@ verified account to comment"). Reacting/commenting updates counts live.
 - Likes reuse the existing "who liked you" store (`store.addLike`); the in-call heart button feeds it too, so a heart can also complete a match. Match = both directions present within 30 days. `like-partner` failure reasons: `invalid`, `not-registered`, `not-recent`, `blocked`, `rate`. `like-match` also carries `friendId`. Web events `get-likes` and `mutual-heart` still work.
 - Ranking: likes received in the last 7 days add +0.5 each (max 4 counted) to that candidate's match score.
 - Android posts API: `GET /api/posts?clientId=&identityToken=`, `POST /api/posts/:id/react`, `POST /api/posts/:id/comments` need no cookies or CORS. `identityToken` is the token from the socket event `identity-token` `{ clientId, token }`; clientId must match `[A-Za-z0-9_-]{8,64}`. Without a valid pair GET still works (mine null, canComment false); react/comment return 401 `{ ok:false, reason:'identity' }`.
+
+## 9. Top-talker rank badges + hide badges
+
+- Rank badges `top1`..`top5` ("#1 Top Talker" crown, "#2 Top Talker", ... "#5 Top Talker"): held by the 5 people with the most total call time (`talkTime.seconds`, same numbers as the dashboard Talk time leaderboard). Recomputed automatically (on boot, after each call end at most once a minute). Accounts and guests both count; banned profiles are skipped. A rank badge outranks hour badges: when held it is the `top` badge shown by the name. Payload: `badges: { top, earned, hours, rank: 1..5|null }`, with `top1`..`top5` in `earned` when held.
+- Art: more special than hour badges (crown/trophy motif, gold for #1, silver #2, bronze #3, platinum-blue #4/#5), shiny and animated.
+- Dashboard Badges view shows the current top 5 with their rank badge.
+- Setting `show-badges` `{ on }` -> ack `{ ok, on }` (default on, stored per profile/account). When off, the server sends `badges: null` to OTHER people; the owner still gets their own badges plus `badgesHidden: true` in own state. Toggle lives in My Profile > Badges ("Show badges on my profile").
