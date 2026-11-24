@@ -422,7 +422,7 @@ function generateConclusion(runtime, report) {
 }
 
 // --- Module wiring ---
-function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate, deviceIdOfClient, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats, automod, talkguard, patterns, support, posts, grantPlus, onVoiceDecision, onAgeDecision }) {
+function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate, deviceIdOfClient, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats, automod, talkguard, patterns, support, posts, grantPlus, onVoiceDecision, onAgeDecision, onFriendRestriction }) {
   if (automod) automod.setAlert(sendAlertEmail);
   try { paymentLog.installPaymentLog(store); } catch (e) { console.log('[owner] payment log not installed:', e.message); }
   const router = express.Router();
@@ -1029,6 +1029,34 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
     store.audit('age_decision', reqIp(req), `${out.rec.state === 'cleared' ? 'Cleared' : 'Confirmed restriction for'} ${out.rec.username || clientId}: ${String(b.reason).trim().slice(0, 120)}`);
     if (onAgeDecision) onAgeDecision(clientId);
     res.json({ ok: true, case: out.rec });
+  });
+
+  // --- Friend restrictions ---------------------------------------------------
+  // A step short of a ban: for a number of days the person cannot send or
+  // accept friend requests. They can still talk, chat and use everything else.
+  router.get('/api/friend-restrictions', (req, res) => {
+    res.json({ restrictions: store.friendRestrictions(), now: Date.now() });
+  });
+  router.post('/api/friend-restrictions', (req, res) => {
+    const b = req.body || {};
+    let clientId = typeof b.clientId === 'string' ? b.clientId.trim().slice(0, 100) : '';
+    let account = typeof b.account === 'string' ? b.account.trim().slice(0, 100) : '';
+    // The dashboard's free-text box sends one value: an account name if one
+    // exists by that name, otherwise a client ID.
+    if (clientId && !account && store.getAccountClientId && store.getAccountClientId(clientId.toLowerCase())) { account = clientId; clientId = ''; }
+    const days = Math.round(Number(b.days));
+    if (!clientId && !account) return res.status(400).json({ error: 'Pick a user to restrict.' });
+    if (!(days >= 1 && days <= 365)) return res.status(400).json({ error: 'Choose 1 to 365 days.' });
+    const rec = store.addFriendRestriction({ clientId, account, username: b.username, reason: b.reason, days });
+    store.audit('friend_restrict', reqIp(req), `Restricted friend requests for ${rec.username || rec.clientId || rec.account} for ${days} day(s) - ${rec.reason || 'no reason'}`);
+    if (onFriendRestriction) onFriendRestriction(rec);
+    res.json({ ok: true, restriction: rec });
+  });
+  router.post('/api/friend-restrictions/lift', (req, res) => {
+    const rec = store.liftFriendRestriction((req.body || {}).id);
+    if (!rec) return res.status(404).json({ error: 'Restriction not found or already over.' });
+    store.audit('friend_unrestrict', reqIp(req), `Lifted friend restriction on ${rec.username || rec.clientId || rec.account}`);
+    res.json({ ok: true });
   });
 
   // --- TalkGuard model + behaviour patterns ---------------------------------

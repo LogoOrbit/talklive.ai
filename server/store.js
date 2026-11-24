@@ -123,6 +123,10 @@ function defaults() {
   return {
     admin: null, // { passwordHash, salt, totpSecret, createdAt }
     sessions: [], // { token, createdAt, expiresAt, ip }
+    // Friend restrictions: a lighter step than a ban. The person can still use
+    // the site but cannot send or accept friend requests until expiresAt.
+    // { id, clientId, account, username, reason, createdAt, expiresAt, liftedAt }
+    friendRestrictions: [],
     bans: [], // { id, clientId, ip, username, country, city, reason, createdAt, expiresAt, liftedAt }
     // Under-18 sign-up attempts: 'c:<clientId>' | 'i:<ip>' -> blocked-until ms.
     ageBlocks: {},
@@ -2486,6 +2490,47 @@ function unansweredAppeals() {
   return n;
 }
 
+// --- Friend restrictions ------------------------------------------------------
+// Timed and per person (profile and/or account). Everything else keeps working.
+function addFriendRestriction({ clientId, account, username, reason, days }) {
+  let acct = account ? String(account).toLowerCase() : '';
+  if (!clientId && acct) clientId = getAccountClientId(acct);
+  if (!acct && clientId) acct = findUsernameByClientId(clientId) || '';
+  const d = Math.min(Math.max(Math.round(Number(days)) || 1, 1), 365);
+  const now = Date.now();
+  const rec = {
+    id: crypto.randomUUID(),
+    clientId: clientId || null,
+    account: acct || null,
+    username: String(username || '').slice(0, 60) || acct || 'Unknown',
+    reason: String(reason || '').trim().slice(0, 300),
+    createdAt: now,
+    expiresAt: now + d * 86400000,
+    liftedAt: null,
+  };
+  if (!data.friendRestrictions) data.friendRestrictions = [];
+  data.friendRestrictions.unshift(rec);
+  if (data.friendRestrictions.length > 1000) data.friendRestrictions.pop();
+  save();
+  return rec;
+}
+function activeFriendRestriction(clientId, account) {
+  const acct = account ? String(account).toLowerCase() : (clientId ? findUsernameByClientId(clientId) || '' : '');
+  const now = Date.now();
+  return (data.friendRestrictions || []).find((r) => !r.liftedAt && r.expiresAt > now
+    && ((clientId && r.clientId === clientId) || (acct && r.account === acct))) || null;
+}
+function friendRestrictions() {
+  return (data.friendRestrictions || []).slice(0, 300);
+}
+function liftFriendRestriction(id) {
+  const r = (data.friendRestrictions || []).find((x) => x.id === id);
+  if (!r || r.liftedAt || r.expiresAt <= Date.now()) return null;
+  r.liftedAt = Date.now();
+  save();
+  return r;
+}
+
 function liftBan(banId) {
   const ban = data.bans.find((b) => b.id === banId);
   if (ban && !ban.liftedAt) {
@@ -4389,6 +4434,10 @@ module.exports = {
   engageGet,
   engageSet,
   voiceGet,
+  addFriendRestriction,
+  activeFriendRestriction,
+  friendRestrictions,
+  liftFriendRestriction,
   ageCaseGet,
   ageCaseSet,
   ageCases,

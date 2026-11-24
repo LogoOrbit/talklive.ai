@@ -1828,6 +1828,12 @@ const admin = createAdmin({
     const sock = sid ? io.sockets.sockets.get(sid) : null;
     if (sock && profiles.get(sid)) sendVoiceView(sock, profiles.get(sid));
   },
+  // A friend restriction was set: tell the person's screen if they are online.
+  onFriendRestriction: (rec) => {
+    const sid = rec.clientId ? clientSockets.get(rec.clientId) : null;
+    const sock = sid ? io.sockets.sockets.get(sid) : null;
+    if (sock) sock.emit('friend-restricted', { until: rec.expiresAt });
+  },
   // An age case was flagged or decided: tell the person's screen if they are online.
   onAgeDecision: (clientId) => {
     const sid = clientSockets.get(clientId);
@@ -4962,6 +4968,8 @@ function likeMatchPayload(clientId, viewerClientId) {
 }
 function makeLikeMatch(a, b) {
   if (isBlockedPair(a, b)) return;
+  // A friend restriction also stops the friendship a mutual like would make.
+  if (store.activeFriendRestriction(a, null) || store.activeFriendRestriction(b, null)) return;
   if (!isFriend(a, b)) {
     const infoOf = (cid, viewer) => ({ ...snapshotOf(cid, viewer), temporary: !store.findUsernameByClientId(cid) });
     addFriendPair(a, infoOf(a, b), b, infoOf(b, a));
@@ -7045,6 +7053,18 @@ io.on('connection', (socket) => {
 
   // Age-assurance gate for account, friends and premium features (fix list
   // 3.1). Answers { ok: true } while the ageAssurance flag is off.
+  // A moderator's friend restriction (dashboard > Bans): no sending or
+  // accepting friend requests until it ends. Everything else keeps working.
+  const friendRestrictionOf = () => {
+    const p = profiles.get(socket.id);
+    return p ? store.activeFriendRestriction(p.clientId, socketAuth.get(socket.id) || null) : null;
+  };
+  const friendRestrictedResult = (r) => ({
+    ok: false,
+    error: `You cannot add friends or send friend requests until ${new Date(r.expiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}.`,
+    restricted: true,
+    until: r.expiresAt,
+  });
   const ageGate = (feature) => {
     const p = profiles.get(socket.id);
     return ageAssurance.check(feature, { clientId: p && p.clientId, country: p && p.country });
@@ -9354,6 +9374,8 @@ io.on('connection', (socket) => {
     const me = profiles.get(socket.id);
     targetClientId = validId(targetClientId);
     if (!me || !targetClientId || targetClientId === me.clientId) return;
+    const fr = friendRestrictionOf();
+    if (fr) return socket.emit('friend-request-result', friendRestrictedResult(fr));
     const gate = ageGate('friends');
     if (!gate.ok) return socket.emit('friend-request-result', { ok: false, error: gate.message, ageCheck: gate.reason });
     // A restricted recipient cannot be added either.
@@ -9472,6 +9494,12 @@ io.on('connection', (socket) => {
     fromClientId = validId(fromClientId);
     if (!me || !fromClientId) return;
     if (accept) {
+      const fr = friendRestrictionOf();
+      if (fr) return socket.emit('friend-request-result', friendRestrictedResult(fr));
+      // Nor can a request from a restricted person be accepted meanwhile.
+      if (store.activeFriendRestriction(fromClientId, null)) {
+        return socket.emit('friend-request-result', { ok: false, error: 'Unable to accept this request right now.' });
+      }
       const gate = ageGate('friends');
       if (!gate.ok) return socket.emit('friend-request-result', { ok: false, error: gate.message, ageCheck: gate.reason });
     }
