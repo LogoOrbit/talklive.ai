@@ -516,6 +516,27 @@ table.heat{min-width:480px}table.heat td.num{border-radius:6px}
 .sheet .sbody{padding:14px 16px}
 .sheet label{display:block;font-size:.76rem;color:var(--muted);margin:12px 0 5px;text-transform:uppercase;letter-spacing:.05em}
 .sheet label:first-child{margin-top:0}
+/* Ban appeal decision box: option cards. Scoped so the global input/label
+   rules (width:100%, block uppercase labels) do not stretch radios/checkboxes. */
+.apx-sec{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 6px}
+.apx-ctx{border:1px solid var(--ring);border-radius:10px;padding:10px 12px;font-size:.86rem;line-height:1.5}
+.apx-ctx .m{color:var(--muted);font-size:.78rem}
+.apx-thread{border:1px solid var(--ring);border-radius:10px;padding:8px 12px;max-height:150px;overflow:auto;font-size:.88rem}
+.apx-thread .it{padding:4px 0}.apx-thread .it+.it{border-top:1px dashed var(--ring)}
+.apx-thread .me{color:var(--muted);margin-left:12px;font-size:.82rem}
+.apx-opts{display:grid;gap:6px}
+.sheet label.apx-opt{display:flex;gap:10px;align-items:flex-start;margin:0;padding:10px 12px;border:1px solid var(--ring);border-radius:10px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:.88rem!important;color:var(--text)!important;transition:border-color .15s,background .15s}
+.sheet label.apx-opt:hover{border-color:var(--muted)}
+.sheet label.apx-opt:has(input:checked){border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.apx-opt input[type=radio],.apx-opt input[type=checkbox]{width:16px;height:16px;padding:0;margin:2px 0 0;flex:none;accent-color:var(--accent);cursor:pointer}
+.apx-opt .t{flex:1;min-width:0}
+.apx-opt .t b{font-weight:600}
+.apx-opt .d{display:block;color:var(--muted);font-size:.78rem;margin-top:2px}
+.apx-opt select{width:auto;display:inline-block;padding:3px 8px;margin:0 4px;font-size:.84rem}
+.apx-tpl{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.apx-tpl button{font-size:.76rem;padding:4px 10px}
+.apx-sum{margin-top:12px;padding:9px 12px;border-radius:10px;background:var(--surface-2,rgba(127,127,127,.08));font-size:.84rem}
+.apx-sum ul{margin:4px 0 0 18px;padding:0}
 .sres{padding:6px 0}
 .sgroup{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:10px 16px 4px}
 .sitem{display:block;width:100%;text-align:left;background:transparent;border:0;color:var(--text);padding:8px 16px;font-size:.85rem;border-left:2px solid transparent}
@@ -2943,56 +2964,101 @@ async function viewBans(){
   document.querySelectorAll('[data-bf]').forEach(b=>b.onclick=()=>{banFilter=b.dataset.bf;load();});
 }
 let bansSnap={bans:[],now:0};
+const APX_MINOR=/minor|under ?18|underage|age/i;
+const APX_TPL={
+  reply:'Thanks for your message. We are reviewing your ban and will update you here.',
+  lift:'We have reviewed your appeal and lifted the ban. Please follow the community rules; another serious report can lead to a permanent ban.',
+  change:'We have reviewed your appeal and changed the length of your ban. You can use TalkLive again when it ends.',
+  keep:'We have reviewed your appeal and the ban stays in place.',
+  minor:'Saying you are 18 or older does not by itself end a review. Your account stays limited (text only, no friends) while a moderator checks it. Please do not give a false age.'
+};
 function replyAppeal(b,aid){
   const a=b&&(b.appeals||[]).find(x=>x.id===aid);if(!a)return;
   const same=x=>x.id!==b.id&&((b.account&&x.account===b.account)||(b.clientId&&x.clientId===b.clientId));
   const prev=(bansSnap.bans||[]).filter(same);
   const covers=[b.clientId?'profile':'',b.account?'account '+esc(b.account):'',b.deviceBound?'device':'',b.ip?'network':''].filter(Boolean).join(' · ');
-  const days=[1,3,7,14,30,60,90];
-  const thread=(b.appeals||[]).map(x=>`<div style="margin:4px 0"><span class="muted">${fmtTs(x.ts)}${x.id===aid?' · replying to this':''}</span><div class="txt">${esc(x.text)}</div>${x.reply?`<div class="muted" style="margin-left:10px">↳ you: ${esc(x.reply)}</div>`:''}</div>`).join('');
+  const isMinor=APX_MINOR.test(b.reason||'');
+  const canPerson=!!(b.clientId||b.account);
+  const days=[1,3,7,14,30,60,90,180,365];
+  const thread=(b.appeals||[]).map(x=>`<div class="it"><div class="m muted" style="font-size:.76rem">${fmtTs(x.ts)}${x.id===aid?' · <b>replying to this</b>':''}</div><div>${esc(x.text)}</div>${x.reply?`<div class="me">↳ you: ${esc(x.reply)}</div>`:''}</div>`).join('');
   modal(`Appeal from ${esc(b.username||'user')}`,
-    `<div class="fmsg" style="margin-bottom:10px">
-       <div><b>Ban</b>: ${esc(b.reason)}</div>
-       <div class="muted" style="font-size:.8rem;margin-top:2px">Set ${fmtTs(b.createdAt)} · ends ${fmtTs(b.expiresAt)} (${until(b.expiresAt)})${covers?' · covers '+covers:''}</div>
-       ${prev.length?`<div class="muted" style="font-size:.8rem;margin-top:2px">${prev.length} other ban${prev.length===1?'':'s'} on this person: ${prev.slice(0,3).map(x=>esc(x.reason)+' ('+ago(x.createdAt)+')').join('; ')}</div>`:'<div class="muted" style="font-size:.8rem;margin-top:2px">No other bans on this person.</div>'}
+    `<div class="apx-ctx">
+       <div><b>Ban:</b> ${esc(b.reason)} ${isMinor?'<span class="pill warn">possible minor</span>':''}</div>
+       <div class="m">Set ${fmtTs(b.createdAt)} · ends ${fmtTs(b.expiresAt)} (${until(b.expiresAt)})${covers?' · covers '+covers:''}</div>
+       <div class="m">${prev.length?`${prev.length} other ban${prev.length===1?'':'s'}: ${prev.slice(0,3).map(x=>esc(x.reason)+' ('+ago(x.createdAt)+')').join('; ')}`:'No other bans on this person.'}</div>
        ${b.caseId?`<div class="rowbtns" style="margin-top:6px"><button id="apCase">View case file (evidence)</button></div>`:''}
      </div>
-     <label>What they wrote</label><div class="fmsg" style="margin-bottom:10px;max-height:160px;overflow:auto">${thread}</div>
-     <label>Your reply <span style="text-transform:none;letter-spacing:0">(shown on their banned screen)</span></label><textarea id="apMsg" rows="4" maxlength="1000"></textarea>
-     <label style="margin-top:12px">What happens to them</label>
-     <div style="display:grid;gap:6px;font-size:.88rem">
-       <label style="display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:0"><input type="radio" name="apAct" value="reply" checked> Reply only. The ban stays as it is.</label>
-       <label style="display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:0"><input type="radio" name="apAct" value="lift"> Lift the ban now. They get in straight away.</label>
-       <label style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;text-transform:none;letter-spacing:0"><input type="radio" name="apAct" value="change"> Change the ban to last
-         <select id="apDur">${DUR.map(([v,l])=>`<option value="${v}"${v==='10080'?' selected':''}>${l}</option>`).join('')}</select> from now</label>
+     <div class="apx-sec">What they wrote</div>
+     <div class="apx-thread">${thread}</div>
+
+     <div class="apx-sec">What happens to them</div>
+     <div class="apx-opts">
+       <label class="apx-opt"><input type="radio" name="apAct" value="reply" checked><span class="t"><b>Reply only</b><span class="d">The ban stays as it is. Use this to ask for more information.</span></span></label>
+       <label class="apx-opt"><input type="radio" name="apAct" value="lift"><span class="t"><b>Lift the ban now</b><span class="d">They get back in straight away.</span></span></label>
+       <label class="apx-opt"><input type="radio" name="apAct" value="change"><span class="t"><b>Change the ban length</b> to <select id="apDur">${DUR.map(([v,l])=>`<option value="${v}"${v==='10080'?' selected':''}>${l}</option>`).join('')}</select> from now<span class="d">Shorter or longer than now. Currently ends ${until(b.expiresAt)}.</span></span></label>
+       <label class="apx-opt"><input type="radio" name="apAct" value="keep"><span class="t"><b>Decline the appeal</b><span class="d">Ban stays. Marked as kept in the audit log.</span></span></label>
      </div>
-     <label style="margin-top:12px">Also</label>
-     <div style="display:grid;gap:6px;font-size:.88rem">
-       <label style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;text-transform:none;letter-spacing:0"><input type="checkbox" id="apRF"> Stop friend requests (send and accept) for
-         <select id="apRFd">${days.map(d=>`<option value="${d}"${d===7?' selected':''}>${d} day${d===1?'':'s'}</option>`).join('')}</select></label>
-       <label style="display:flex;gap:8px;align-items:flex-start;text-transform:none;letter-spacing:0"><input type="checkbox" id="apAge" style="margin-top:3px"> <span>Keep them under age review. They stay restricted (text only, no friends, strict moderation) until you decide in <b>Safety › Age cases</b>. Use this when you lift a ban for a possible minor.</span></label>
+
+     <div class="apx-sec">Also</div>
+     <div class="apx-opts">
+       <label class="apx-opt"${canPerson?'':' style="opacity:.5"'}><input type="checkbox" id="apRF"${canPerson?'':' disabled'}><span class="t"><b>Stop friend requests</b> for <select id="apRFd">${days.map(d=>`<option value="${d}"${d===7?' selected':''}>${d} day${d===1?'':'s'}</option>`).join('')}</select><span class="d">They can't send or accept friend requests. Everything else works.</span></span></label>
+       <label class="apx-opt"${canPerson?'':' style="opacity:.5"'}><input type="checkbox" id="apAge"${canPerson?'':' disabled'}><span class="t"><b>Keep under age review</b><span class="d">Restricted (text only, no friends, strict moderation) until you decide in Safety › Age cases.${isMinor?' Recommended: this ban was for a possible minor.':''}</span></span></label>
      </div>
-     <div class="muted" style="font-size:.78rem;margin-top:8px">The reply shows on their banned screen now if they are online, otherwise the next time they sign in. They can appeal again after a reply (3 per ban). Every choice is saved to the audit log.</div>
-     <div class="rowbtns" style="margin-top:16px"><button id="apGo" class="danger" style="padding:9px 16px">Send reply and apply</button><button id="apCancel" style="padding:9px 16px">Cancel</button></div>`,
+
+     <div class="apx-sec">Your reply <span style="text-transform:none;letter-spacing:0">(shown on their banned screen)</span></div>
+     <div class="apx-tpl"><span class="muted" style="font-size:.76rem;align-self:center">Template:</span><button data-tpl="decision">Match decision</button>${isMinor?'<button data-tpl="minor">Age review</button>':''}</div>
+     <textarea id="apMsg" rows="4" maxlength="1000" placeholder="Write a reply…"></textarea>
+     <div class="muted" style="font-size:.74rem;text-align:right" id="apCount">0 / 1000</div>
+
+     <div class="apx-sum" id="apSum"></div>
+     <div class="muted" style="font-size:.74rem;margin-top:8px">Shown now if they are online, otherwise at their next sign-in. They can appeal again after a reply (3 per ban). Saved to the audit log.</div>
+     <div class="rowbtns" style="margin-top:14px"><button id="apGo" style="padding:9px 16px">Send reply</button><button id="apCancel" style="padding:9px 16px">Cancel</button></div>`,
     (sheet)=>{
-      const msg=sheet.querySelector('#apMsg');msg.focus();
-      sheet.querySelector('#apCancel').onclick=closeModal;
-      const cb=sheet.querySelector('#apCase');
-      if(cb)cb.onclick=()=>{caseOpen=b.caseId;go('cases');};
-      sheet.querySelector('#apGo').onclick=async()=>{
+      const q=(x)=>sheet.querySelector(x);
+      const msg=q('#apMsg'),go=q('#apGo'),sum=q('#apSum');
+      const act=()=>q('input[name=apAct]:checked').value;
+      const durLabel=()=>(DUR.find(d=>d[0]===q('#apDur').value)||['',''])[1];
+      const render=()=>{
+        const A=act(),items=[];
+        items.push(A==='lift'?'Lift the ban now':A==='change'?`Ban ends in ${durLabel()} from now`:A==='keep'?'Decline: the ban stays':'Ban stays as it is');
+        if(q('#apRF').checked)items.push(`No friend requests for ${q('#apRFd').value} day(s)`);
+        if(q('#apAge').checked)items.push('Restricted under age review until you decide');
+        items.push('Send your reply');
+        sum.innerHTML=`<b>This will:</b><ul>${items.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`;
+        go.textContent=A==='lift'?'Send and lift ban':A==='change'?'Send and change ban':A==='keep'?'Send and decline':'Send reply';
+        go.className=A==='lift'?'':'danger';
+        q('#apCount').textContent=msg.value.length+' / 1000';
+      };
+      // Picking a length or a day count turns its option on.
+      q('#apDur').onchange=()=>{sheet.querySelector('input[value=change]').checked=true;render();};
+      q('#apRFd').onchange=()=>{if(!q('#apRF').disabled)q('#apRF').checked=true;render();};
+      sheet.querySelectorAll('input[name=apAct]').forEach(r=>r.onchange=()=>{
+        // Lifting a ban for a possible minor defaults to keeping them under review.
+        if(r.value==='lift'&&isMinor&&canPerson)q('#apAge').checked=true;
+        render();
+      });
+      q('#apRF').onchange=render;q('#apAge').onchange=render;msg.oninput=render;
+      sheet.querySelectorAll('[data-tpl]').forEach(t=>t.onclick=()=>{
+        const k=t.dataset.tpl==='minor'?'minor':act();
+        msg.value=(msg.value.trim()?msg.value.trim()+'\n\n':'')+APX_TPL[k];render();msg.focus();
+      });
+      q('#apCancel').onclick=closeModal;
+      const cb=q('#apCase');if(cb)cb.onclick=()=>{caseOpen=b.caseId;go_('cases');};
+      go.onclick=async()=>{
         const text=msg.value.trim();
         if(text.length<2){toast('Write the reply','It cannot be empty.','warn');msg.focus();return;}
-        const action=sheet.querySelector('input[name=apAct]:checked').value;
-        const body={message:text,action};
-        if(action==='change')body.minutes=Number(sheet.querySelector('#apDur').value);
-        if(sheet.querySelector('#apRF').checked)body.restrictDays=Number(sheet.querySelector('#apRFd').value);
-        if(sheet.querySelector('#apAge').checked)body.ageReview=true;
+        const A=act(),body={message:text,action:A};
+        if(A==='change')body.minutes=Number(q('#apDur').value);
+        if(q('#apRF').checked)body.restrictDays=Number(q('#apRFd').value);
+        if(q('#apAge').checked)body.ageReview=true;
         sheet.querySelectorAll('button').forEach(x=>x.disabled=true);
         try{const r=await post('bans/'+encodeURIComponent(b.id)+'/appeals/'+encodeURIComponent(aid)+'/reply',body);closeModal();toast('Reply sent',(r.did&&r.did.length?r.did.join(', '):'They will see it on their banned screen.'),'good');load();}
         catch(e){sheet.querySelectorAll('button').forEach(x=>x.disabled=false);toast('Could not send reply',e.message,'bad');}
       };
+      render();msg.focus();
     },{mid:true});
 }
+const go_=(id)=>go(id);
 window.unban=async(id)=>{try{await post('unban',{banId:id});toast('Ban lifted','The user can connect again.','good');load();}catch(e){toast('Could not lift ban',e.message,'bad');}};
 
 /* ---------- cases: every warning and ban with its evidence ----------
