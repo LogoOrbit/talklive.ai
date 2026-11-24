@@ -795,7 +795,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
     if (!analytics.isValidTimezone(tz)) return res.status(400).json({ error: 'Unknown timezone.' });
     store.data.settings.timezone = tz;
     store.audit('timezone', reqIp(req), `Report timezone set to ${tz}`);
-    store.persistNow();
+    store.persistDurable();
     res.json({ ok: true, timezone: tz });
   });
 
@@ -1199,7 +1199,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
       store.data.errors = store.data.errors.filter((e) => e.id !== id);
       if (store.data.errors.length === before) return res.status(404).json({ error: 'Error not found.' });
     }
-    store.persistNow();
+    store.persistDurable();
     res.json({ ok: true, remaining: store.data.errors.length });
   });
 
@@ -2565,7 +2565,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
       store.data.settings.maintenance.message = message.trim().slice(0, 300);
     }
     store.audit('maintenance', reqIp(req), on ? 'Maintenance mode ON' : 'Maintenance mode OFF');
-    store.persistNow();
+    store.persistDurable();
     if (on) io.emit('maintenance', { message: store.data.settings.maintenance.message });
     res.json({ ok: true, maintenance: store.data.settings.maintenance });
   });
@@ -2593,7 +2593,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
         store.audit('site_mode', reqIp(req), on ? `Announcement ON: "${text}"` : 'Announcement OFF');
       }
     }
-    store.persistNow();
+    store.persistDurable();
     io.emit('siteModes', store.publicModes());
     res.json({ ok: true, modes: cur });
   });

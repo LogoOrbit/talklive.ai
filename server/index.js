@@ -743,7 +743,7 @@ async function applyPlayPurchase(clientId, token, sub, productId) {
   }
   if (step.op !== 'skip') {
     // A payment must survive a crash: write now rather than on the debounce.
-    store.persistNow();
+    store.persistDurable();
     await Promise.race([store.whenPersisted(), new Promise((r) => setTimeout(r, 8000))]);
     emitPremiumStatus(clientId);
   }
@@ -842,7 +842,7 @@ async function verifyPlayPass(req, res, clientId, productId, purchaseToken) {
       if (!existing || existing.revokedAt) store.recordFeature('premium_activated');
       store.recordFeature('pass_' + productId);
     }
-    store.persistNow();
+    store.persistDurable();
     await Promise.race([store.whenPersisted(), new Promise((r) => setTimeout(r, 8000))]);
     emitPremiumStatus(clientId);
   }
@@ -904,7 +904,7 @@ function grantPlusTo(whoRaw, daysRaw, by) {
   if (!clientId) clientId = store.getAccountClientId(who.toLowerCase());
   if (!clientId) return { ok: false, status: 404, error: 'No account found for ' + who };
   const p = store.extendPremium(clientId, days * 24 * 60 * 60 * 1000, { source: 'manual', lastEvent: 'manual:grant' });
-  store.persistNow();
+  store.persistDurable();
   emitPremiumStatus(clientId);
   console.log(`[premium] owner (${by}) granted ${days} day(s) of Plus to ${who}`);
   return { ok: true, clientId, expiresAt: p && p.expiresAt ? new Date(p.expiresAt).toISOString() : null, permanent: !!(p && !p.expiresAt) };

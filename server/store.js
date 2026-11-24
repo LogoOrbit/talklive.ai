@@ -1383,7 +1383,10 @@ let saveAfterLoad = false;
 // it holds in memory may be written after that.
 let restarting = false;
 
-function persistNow(throttlePg) {
+// `foreground`: write the volume copy synchronously and in full right now (so
+// a crash a moment later loses nothing) while Postgres still follows
+// PG_SAVE_EVERY_MS. See persistDurable.
+function persistNow(throttlePg, { foreground = false } = {}) {
   // Everything is being written now, so a debounced save already queued has
   // nothing left to do.
   if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
@@ -1400,7 +1403,7 @@ function persistNow(throttlePg) {
   stampMeta();
   const shrinking = checkShrink();
   if (shrinking) pendingShrinkSnapshot = true;
-  writeMirror(shrinking, throttlePg);
+  writeMirror(shrinking, throttlePg && !foreground);
   if (!pgLive()) return;
   if (throttlePg && !shrinking) persistPgThrottled();
   else { lastPgSaveAt = Date.now(); persistPg(); }
@@ -1421,6 +1424,16 @@ function persistNow(throttlePg) {
 // writes at once, so only a hard crash can lose the last minute.
 const SAVE_DEBOUNCE_MS = Number(process.env.SAVE_DEBOUNCE_MS)
   || (process.env.NODE_ENV === 'production' ? 60000 : 2000);
+
+// For changes that must survive a crash (payments, password changes, admin
+// actions): the volume copy - the live store - is written synchronously before
+// this returns, exactly as persistNow() does. Only the Postgres backup waits
+// for the next scheduled save (November 2026: each immediate Postgres save
+// rewrote the whole ~12MB document plus WAL, and these per-action writes were
+// draining the database's disk I/O budget). Shutdown still writes Postgres.
+function persistDurable() {
+  persistNow(true, { foreground: true });
+}
 
 function save() {
   // Shutting down: the server keeps answering until it exits, so a sign-in
@@ -4282,7 +4295,7 @@ function bumpIdentityEpoch(clientId) {
   if (!data.identityEpochs) data.identityEpochs = {};
   const next = identityEpoch(clientId) + 1;
   data.identityEpochs[clientId] = next;
-  persistNow();
+  persistDurable();
   return next;
 }
 
@@ -4333,6 +4346,7 @@ module.exports = {
   ready,
   save,
   persistNow,
+  persistDurable,
   dayKey,
   day,
   hour,
