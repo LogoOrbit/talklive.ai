@@ -133,6 +133,9 @@ function defaults() {
     // r: [retry ts], d: [[reporter hash, ts]], appeal, manual }. Estimates
     // only: no audio and no voice features are ever stored.
     voice: {},
+    // Age disputes (server/age-case.js): clientId -> case record. Evidence and
+    // decisions only; no ID images or birthdates are ever stored.
+    ageCases: {},
     // Trust scores (server/reputation.js): clientId -> [a, b, lastTs, quickRate].
     reputation: {},
     // Online match-quality model weights (server/match-model.js).
@@ -2632,6 +2635,19 @@ function voiceSet(clientId, rec) {
   if (rec) data.voice[clientId] = rec; else delete data.voice[clientId];
   save();
 }
+// Age disputes (server/age-case.js). A null record removes it.
+function ageCaseGet(clientId) {
+  return (data.ageCases && data.ageCases[clientId]) || null;
+}
+function ageCaseSet(clientId, rec) {
+  if (!clientId) return;
+  if (!data.ageCases) data.ageCases = {};
+  if (rec) data.ageCases[clientId] = rec; else delete data.ageCases[clientId];
+  save();
+}
+function ageCases() {
+  return Object.values(data.ageCases || {});
+}
 // Open appeals for the owner's review queue, oldest first.
 function voiceAppeals() {
   const out = [];
@@ -4373,6 +4389,9 @@ module.exports = {
   engageGet,
   engageSet,
   voiceGet,
+  ageCaseGet,
+  ageCaseSet,
+  ageCases,
   voiceSet,
   voiceAppeals,
   pruneVoice,

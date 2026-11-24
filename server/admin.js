@@ -21,6 +21,7 @@ const plusStats = require('./plus-stats');
 const paymentLog = require('./payment-log');
 const flags = require('./flags');
 const voiceCheck = require('./voice-check');
+const ageCase = require('./age-case');
 const badges = require('./badges');
 
 const SESSION_HOURS = 12;
@@ -421,7 +422,7 @@ function generateConclusion(runtime, report) {
 }
 
 // --- Module wiring ---
-function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate, deviceIdOfClient, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats, automod, talkguard, patterns, support, posts, grantPlus, onVoiceDecision }) {
+function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate, deviceIdOfClient, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats, automod, talkguard, patterns, support, posts, grantPlus, onVoiceDecision, onAgeDecision }) {
   if (automod) automod.setAlert(sendAlertEmail);
   try { paymentLog.installPaymentLog(store); } catch (e) { console.log('[owner] payment log not installed:', e.message); }
   const router = express.Router();
@@ -719,6 +720,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
         unhandledReports: store.data.reports.filter((r) => !r.handled).length,
         autoReview: automod ? automod.openReviews() : 0,
         voiceAppeals: store.voiceAppeals().length,
+        ageCases: store.ageCases().filter((c) => c.state === 'open').length,
         banAppeals: store.unansweredAppeals(),
         errors: store.data.errors.length,
         feedback: store.data.feedback.length,
@@ -984,6 +986,49 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
     store.audit('voice_appeal', reqIp(req), `${b.grant === true ? 'Granted' : 'Declined'} voice check review for ${next.appeal.username || clientId}`);
     if (onVoiceDecision) onVoiceDecision(clientId);
     res.json({ ok: true });
+  });
+
+  // --- Age disputes (server/age-case.js) -------------------------------------
+  // Someone flagged as a possible minor who says they are 18+. There is no
+  // third-party check: a moderator decides from the evidence, with a reason,
+  // and the person stays restricted until then. A claim never lifts anything.
+  router.get('/api/age-cases', (req, res) => {
+    const all = store.ageCases();
+    const counts = { open: 0, restricted: 0, cleared: 0 };
+    for (const c of all) if (counts[c.state] !== undefined) counts[c.state]++;
+    const order = { open: 0, restricted: 1, cleared: 2 };
+    const cases = all.slice().sort((a, b) => (order[a.state] - order[b.state]) || (b.updatedAt - a.updatedAt)).slice(0, 200);
+    res.json({ counts, cases });
+  });
+  router.post('/api/age-cases/flag', (req, res) => {
+    const b = req.body || {};
+    const clientId = typeof b.clientId === 'string' ? b.clientId.trim().slice(0, 100) : '';
+    const reason = String(b.reason || '').trim();
+    if (!clientId) return res.status(400).json({ error: 'Pick a user to flag.' });
+    if (reason.length < 5) return res.status(400).json({ error: 'Say why they look like a minor (at least 5 characters).' });
+    const rec = ageCase.flag(store.ageCaseGet(clientId), { clientId, username: b.username, account: b.account, source: 'moderator', reason });
+    store.ageCaseSet(clientId, rec);
+    store.audit('age_flag', reqIp(req), `Flagged ${rec.username || clientId} as a possible minor`);
+    if (onAgeDecision) onAgeDecision(clientId);
+    res.json({ ok: true, case: rec });
+  });
+  router.post('/api/age-cases/claim', (req, res) => {
+    const b = req.body || {};
+    const clientId = String(b.clientId || '');
+    const next = ageCase.addClaim(store.ageCaseGet(clientId), b.text, { source: 'moderator-note' });
+    if (!next) return res.status(400).json({ error: 'Write what they said, on a case that exists.' });
+    store.ageCaseSet(clientId, next);
+    res.json({ ok: true, case: next });
+  });
+  router.post('/api/age-cases/decide', (req, res) => {
+    const b = req.body || {};
+    const clientId = String(b.clientId || '');
+    const out = ageCase.decide(store.ageCaseGet(clientId), { outcome: b.outcome, reason: b.reason, by: 'owner' });
+    if (!out.ok) return res.status(400).json({ error: out.error });
+    store.ageCaseSet(clientId, out.rec);
+    store.audit('age_decision', reqIp(req), `${out.rec.state === 'cleared' ? 'Cleared' : 'Confirmed restriction for'} ${out.rec.username || clientId}: ${String(b.reason).trim().slice(0, 120)}`);
+    if (onAgeDecision) onAgeDecision(clientId);
+    res.json({ ok: true, case: out.rec });
   });
 
   // --- TalkGuard model + behaviour patterns ---------------------------------

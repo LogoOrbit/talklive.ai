@@ -52,6 +52,8 @@ setInterval(() => { try { store.compactStore(); store.pruneVoice(voiceCheck.empt
 const flags = require('./flags');
 const { minifiedScripts } = require('./minified');
 const ageAssurance = require('./age-assurance');
+const ageCase = require('./age-case');
+ageAssurance.setCaseLookup((clientId) => ageCase.isRestricted(store.ageCaseGet(clientId)));
 const mail = require('./mailer');
 const { renderEmail } = require('./email-layout');
 const { botLabel, isPrefetch, isBotUserAgent } = require('./bots');
@@ -1825,6 +1827,12 @@ const admin = createAdmin({
     const sid = clientSockets.get(clientId);
     const sock = sid ? io.sockets.sockets.get(sid) : null;
     if (sock && profiles.get(sid)) sendVoiceView(sock, profiles.get(sid));
+  },
+  // An age case was flagged or decided: tell the person's screen if they are online.
+  onAgeDecision: (clientId) => {
+    const sid = clientSockets.get(clientId);
+    const sock = sid ? io.sockets.sockets.get(sid) : null;
+    if (sock) sock.emit('age-restricted', { feature: 'account', restricted: ageAssurance.isRestricted(clientId) });
   },
 });
 app.use('/owner', admin.router);
@@ -9007,6 +9015,19 @@ io.on('connection', (socket) => {
     admin.sendAlertEmail('voice-appeal', 'TalkLive: a voice check review was requested',
       `${p.username} asked for their voice check to be reviewed by a person.\n\nReview it at ${OWNER_URL}#voice`);
     sendVoiceView(socket, p);
+    reply({ ok: true });
+  });
+
+  // "I am 18 or older", from someone a moderator is reviewing. It is recorded
+  // for the moderator and changes nothing by itself.
+  socket.on('age-claim', ({ text } = {}, ack) => {
+    const reply = typeof ack === 'function' ? ack : () => {};
+    const p = profiles.get(socket.id);
+    if (!p || !ageCase.isRestricted(store.ageCaseGet(p.clientId))) return reply({ ok: false });
+    if (!socialRateOk('age-claim', p.clientId, 3, 24 * 60 * 60000)) return reply({ ok: false, reason: 'limit' });
+    const next = ageCase.addClaim(store.ageCaseGet(p.clientId), typeof text === 'string' ? text : '', { source: 'user' });
+    if (!next) return reply({ ok: false });
+    store.ageCaseSet(p.clientId, next);
     reply({ ok: true });
   });
 

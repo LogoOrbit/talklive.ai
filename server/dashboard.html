@@ -1207,7 +1207,7 @@ const NAV=[
   ['Moderation',[
     ['reports','Reports',ico('reports'),[['reports','Reports','']]],
     ['chats','Messages',ico('chats'),[['chats','Chats',''],['voicenotes','Voice notes','']]],
-    ['automod','Safety',ico('automod'),[['automod','Auto-mod',''],['cases','Cases',''],['aiguard','AI guard',''],['voice','Voice check',''],['bans','Bans',''],['warnings','Warnings','']]],
+    ['automod','Safety',ico('automod'),[['automod','Auto-mod',''],['cases','Cases',''],['aiguard','AI guard',''],['voice','Voice check',''],['agecases','Age cases',''],['bans','Bans',''],['warnings','Warnings','']]],
     ['feedback','Feedback',ico('feedback'),[['feedback','Feedback','']]]]],
   ['People',[
     ['users','Users',ico('users'),[['users','All users',''],['accounts','Accounts',''],['talktime','Talk time',''],['badges','Badges',''],['data','User data','']]],
@@ -1248,6 +1248,7 @@ function navBadge(id){
   if(id==='automod'&&counts.autoReview)return `<span class="badge">${counts.autoReview}</span>`;
   if(id==='cases'&&counts.banAppeals)return `<span class="badge">${counts.banAppeals}</span>`;
   if(id==='bans'&&counts.banAppeals)return `<span class="badge">${counts.banAppeals}</span>`;
+  if(id==='agecases'&&counts.ageCases)return `<span class="badge">${counts.ageCases}</span>`;
   if(id==='voice'&&counts.voiceAppeals)return `<span class="badge">${counts.voiceAppeals}</span>`;
   if(id==='errors'&&counts.errors)return `<span class="badge" style="background:var(--serious)">${counts.errors}</span>`;
   return '';
@@ -1496,6 +1497,7 @@ async function load(force){
     else if(tab==='cases')await viewCases();
     else if(tab==='aiguard')await viewAiGuard();
     else if(tab==='voice')await viewVoice();
+    else if(tab==='agecases')await viewAgeCases();
     else if(tab==='chats')await viewChats();
     else if(tab==='voicenotes')await viewVoiceNotes();
     else if(tab==='users')await viewUsers();
@@ -2627,6 +2629,47 @@ async function viewVoice(){
 async function voiceDecide(clientId,grant){
   if(!confirm(grant?'Confirm the gender this person chose? It will count as checked.':'Decline this review?'))return;
   try{await post('voice/appeal',{clientId,grant});toast('Done','','good');load();}catch(e){toast('Failed',e.message,'bad');}
+}
+/* Age cases (server/age-case.js): someone flagged as a possible minor who says
+   they are 18+. No third-party check exists, so a person decides from the
+   evidence and writes a reason. A claim never lifts the restriction. */
+const AGE_STATE={open:['Needs a decision','warn'],restricted:['Restricted','crit'],cleared:['Cleared','good']};
+async function viewAgeCases(){
+  const r=await vapi('age-cases');
+  const c=r.counts;
+  const tile=(k,v,s,col)=>`<div class="tile"><div class="k">${k}</div><div class="v" ${col?`style="color:${col}"`:''} data-count="${v}">0</div><div class="s">${s}</div></div>`;
+  const row=a=>{
+    const st=AGE_STATE[a.state]||AGE_STATE.open;
+    return `<div class="fmsg"><div class="top"><span><b>${esc(a.username||'Unknown')}</b>${a.account?' · @'+esc(a.account):''} <span class="pill ${st[1]}">${st[0]}</span></span><span>opened ${ago(a.openedAt)} · updated ${ago(a.updatedAt)}</span></div>
+    <div class="txt"><b>Why flagged</b><ul style="margin:4px 0 8px 18px">${a.evidence.map(e=>`<li>${esc(e.text)} <span class="muted">· ${esc(e.source)} · ${fmtTs(e.at)}</span></li>`).join('')||'<li class="muted">no evidence recorded</li>'}</ul>
+    <b>What they said</b><ul style="margin:4px 0 8px 18px">${a.claims.map(e=>`<li>“${esc(e.text)}” <span class="muted">· ${esc(e.source)} · ${fmtTs(e.at)}</span></li>`).join('')||'<li class="muted">nothing yet</li>'}</ul>
+    ${a.decisions.length?`<b>Decisions</b><ul style="margin:4px 0 8px 18px">${a.decisions.map(d=>`<li>${d.outcome==='clear'?'Cleared':'Restricted'} by ${esc(d.by)}: ${esc(d.reason)} <span class="muted">· ${fmtTs(d.at)}</span></li>`).join('')}</ul>`:''}</div>
+    <div class="rowbtns"><button onclick="ageClaim('${jsq(a.clientId)}')">Log what they said</button>
+    ${a.state!=='restricted'?`<button class="danger" onclick="ageDecide('${jsq(a.clientId)}','restrict')">Keep restricted</button>`:''}
+    ${a.state!=='cleared'?`<button onclick="ageDecide('${jsq(a.clientId)}','clear')">Clear</button>`:''}</div></div>`;
+  };
+  $('#main').innerHTML=`<div class="grid tiles anim" style="margin-top:0">
+    ${tile('Needs a decision',c.open,'restricted until someone decides',c.open?'var(--warn)':'')}
+    ${tile('Restricted',c.restricted,'flag confirmed')}
+    ${tile('Cleared',c.cleared,'evidence did not support it','var(--good)')}
+  </div>
+  <div class="card anim"><h2>Age cases <span class="sub">flagged as a possible minor</span></h2>
+  ${r.cases.length?r.cases.map(row).join(''):'<div class="muted">No age cases.</div>'}
+  <p class="muted" style="font-size:.8rem;margin-top:8px">This is not age verification. Saying “I am 18+” proves nothing, so a claim is logged but never lifts a restriction by itself. Decide from the evidence, write a reason, and when it is truly unclear keep them restricted. Restricted people get text only, no friends and tighter moderation. Don't judge age from a photo or a voice.</p></div>
+  <div class="card anim"><h2>Flag someone <span class="sub">add a person to the queue</span></h2>
+  <div class="searchbar"><input id="agfId" placeholder="Client ID"><input id="agfName" placeholder="Username (optional)"><input id="agfWhy" placeholder="Why they look like a minor"><button class="btn" onclick="ageFlag()">Flag</button></div></div>`;
+}
+async function ageFlag(){
+  const clientId=$('#agfId').value.trim(),username=$('#agfName').value.trim(),reason=$('#agfWhy').value.trim();
+  try{await post('age-cases/flag',{clientId,username,reason});toast('Flagged','They are restricted until you decide.','good');load();}catch(e){toast('Failed',e.message,'bad');}
+}
+async function ageClaim(clientId){
+  const text=prompt('What did they say about their age?');if(!text)return;
+  try{await post('age-cases/claim',{clientId,text});toast('Logged','It does not lift the restriction.','good');load();}catch(e){toast('Failed',e.message,'bad');}
+}
+async function ageDecide(clientId,outcome){
+  const reason=prompt(outcome==='clear'?'Why does the evidence not support the flag? (required)':'Why keep them restricted? (required)');if(!reason)return;
+  try{await post('age-cases/decide',{clientId,outcome,reason});toast('Recorded','','good');load();}catch(e){toast('Failed',e.message,'bad');}
 }
 async function viewWarnings(){
   const r=await vapi('warnings');
