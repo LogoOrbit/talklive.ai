@@ -31,6 +31,10 @@ kill_timeout = 120
   # How long shutdown waits for the final Postgres save (must stay under
   # kill_timeout above).
   SHUTDOWN_PG_WAIT_MS = '100000'
+  # Routine Postgres backups every 6 hours (code default 2h). Each one rewrites
+  # the whole store plus WAL, and the free database's disk I/O budget ran out
+  # in November 2026. The volume stays the live copy, written within a minute.
+  PG_SAVE_EVERY_MS = '21600000'
   DATA_DIR = '/data'
   # Must match the domain the site actually canonicalises to. Every canonical
   # tag, the sitemap and robots.txt in public/ point at talklive.app, and any
