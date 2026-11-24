@@ -81,6 +81,8 @@ android {
             // Phones only: without this the APK also carried the WebRTC library
             // for desktop-emulator chips, which made the download twice the size.
             if (!abiSplit) ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
+            // Native symbols go inside the bundle, so Play can read native crashes and ANRs.
+            ndk { debugSymbolLevel = "SYMBOL_TABLE" }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
