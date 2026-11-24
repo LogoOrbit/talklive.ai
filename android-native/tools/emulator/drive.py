@@ -106,6 +106,24 @@ def step(name, ok, note=""):
         # What was on screen, so a failure can be read straight from the log.
         print("     on screen: " + " | ".join(screen_text()), flush=True)
 
+def jank(label, swipes=8, y1=1650, y2=750):
+    """Scrolls and reads Android's own frame statistics for the app: how many frames
+    missed their deadline. (The CI emulator draws in software, so absolute numbers are
+    worse than on a phone; they are for comparing runs.)"""
+    adb("shell", "dumpsys", "gfxinfo", PKG, "reset")
+    for i in range(swipes):
+        a, b = (y1, y2) if i % 2 == 0 else (y2, y1)
+        adb("shell", "input", "swipe", "540", str(a), "540", str(b), "260"); time.sleep(0.35)
+    out = adb("shell", "dumpsys", "gfxinfo", PKG).stdout
+    def g(rx):
+        m = re.search(rx, out)
+        return m.group(1) if m else "?"
+    frames = g(r"Total frames rendered: (\d+)")
+    janky = g(r"Janky frames: \d+ \(([\d.]+)%\)")
+    p50, p90, p99 = g(r"50th percentile: (\d+)ms"), g(r"90th percentile: (\d+)ms"), g(r"99th percentile: (\d+)ms")
+    note = f"frames {frames}, janky {janky}%, p50 {p50}ms, p90 {p90}ms, p99 {p99}ms"
+    step(f"Smoothness: {label}", frames != "?", note)
+
 def web_state():
     try:
         with open(os.path.join(OUT, "web-peer.json")) as f:
@@ -139,6 +157,15 @@ tap(r"i.m 18\+ and i agree")
 
 # 2. Setup: avatar, then about you.
 step("Pick an avatar", wait_for(r"surprise me", 20))
+# Scrolling the avatar grid, both tabs, measured.
+jank("avatar picker, animals", 8, 1700, 900)
+if tap(r"^characters$", 5):
+    jank("avatar picker, characters", 8, 1700, 900)
+    tap(r"^animals$", 5)
+# A locked Plus face opens its live preview first.
+if tap(r"^lion$|^tiger$|^dragon$", 5):
+    step("Locked Plus face opens a preview", wait_for(r"unlock with plus|plus exclusive", 6))
+    adb("shell", "input", "keyevent", "4"); time.sleep(1)
 tap(r"surprise me"); tap(r"^continue$")
 
 # 3. Home.
@@ -208,6 +235,45 @@ for tab in ["Chats", "Friends", "Profile"]:
 ok = tap(r"talklive plus", 10)
 step("Plus page", ok and wait_for(r"your profile with plus|start free trial|subscribe", 10))
 adb("shell", "input", "keyevent", "4"); time.sleep(1)
+
+# Stories: the editor (text, style, drag, emoji, undo/redo), posting, viewers.
+tap(r"^friends$", 8)
+jank("Friends tab scroll", 6, 1600, 800)
+ok = tap(r"your story", 8)
+step("Story editor opens", ok and wait_for(r"new story", 8))
+if ok:
+    tap(r"^aa$", 5)
+    time.sleep(1)
+    adb("shell", "input", "text", "Hello%sstory")
+    step("Typing: styles, colours, size slider", wait_for(r"typewriter|retro|neon", 6))
+    tap(r"^neon$", 4)
+    tap(r"^done$", 5)
+    step("Words placed on the story", wait_for(r"hello story", 6))
+    nd = find(r"hello story")
+    moved = False
+    if nd is not None:
+        x, y = center(nd)
+        adb("shell", "input", "swipe", str(x), str(y), str(x + 160), str(y - 320), "700"); time.sleep(1.2)
+        nd2 = find(r"hello story")
+        moved = nd2 is not None and center(nd2) != (x, y)
+    step("Words moved by dragging", moved)
+    tap(r"😊", 5)
+    tap(r"🔥", 5)
+    step("Emoji added", find(r"🔥") is not None)
+    tap(r"^undo$", 4)
+    gone = find(r"🔥") is None
+    tap(r"^redo$", 4)
+    back = find(r"🔥") is not None
+    step("Undo and Redo", gone and back, f"undo removed it: {gone}, redo brought it back: {back}")
+    tap(r"^post$", 5)
+    step("Story posts", wait_for(r"posted|your story", 15))
+    time.sleep(3)
+    if tap(r"your story", 8):
+        step("Own story opens", wait_for(r"hello story", 8))
+        adb("shell", "input", "swipe", "540", "1700", "540", "700", "250"); time.sleep(1.5)
+        step("Swipe up shows who saw it", wait_for(r"seen by", 6))
+        adb("shell", "input", "keyevent", "4"); time.sleep(1)
+        adb("shell", "input", "keyevent", "4"); time.sleep(1)
 
 # A random text chat with the website's text page, both directions.
 tap(r"^talk$", 8)
