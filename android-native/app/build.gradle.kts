@@ -162,6 +162,7 @@ dependencies {
     implementation(libs.webrtc)
     implementation(libs.coil.compose)
     implementation(libs.billing)
+    implementation(libs.play.app.update)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
     implementation(libs.androidx.lifecycle.process)

@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">TalkLive</string>
+    <string name="update_required_title">Update required</string>
+    <string name="update_required_body">A new version of TalkLive is available. Update to keep using the app.</string>
+    <string name="update_required_button">Update now</string>
     <string name="tagline">Talk to someone new, right now</string>
     <string name="connecting_wait">Connecting… just a moment</string>
     <string name="partner_offline_waiting">%1$s went offline - waiting for them…</string>
