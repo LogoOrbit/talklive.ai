@@ -123,6 +123,10 @@ function defaults() {
   return {
     admin: null, // { passwordHash, salt, totpSecret, createdAt }
     sessions: [], // { token, createdAt, expiresAt, ip }
+    // Friend restrictions: a lighter step than a ban. The person can still use
+    // the site but cannot send or accept friend requests until expiresAt.
+    // { id, clientId, account, username, reason, createdAt, expiresAt, liftedAt }
+    friendRestrictions: [],
     bans: [], // { id, clientId, ip, username, country, city, reason, createdAt, expiresAt, liftedAt }
     // Under-18 sign-up attempts: 'c:<clientId>' | 'i:<ip>' -> blocked-until ms.
     ageBlocks: {},
@@ -133,6 +137,9 @@ function defaults() {
     // r: [retry ts], d: [[reporter hash, ts]], appeal, manual }. Estimates
     // only: no audio and no voice features are ever stored.
     voice: {},
+    // Age disputes (server/age-case.js): clientId -> case record. Evidence and
+    // decisions only; no ID images or birthdates are ever stored.
+    ageCases: {},
     // Trust scores (server/reputation.js): clientId -> [a, b, lastTs, quickRate].
     reputation: {},
     // Online match-quality model weights (server/match-model.js).
@@ -1376,7 +1383,10 @@ let saveAfterLoad = false;
 // it holds in memory may be written after that.
 let restarting = false;
 
-function persistNow(throttlePg) {
+// `foreground`: write the volume copy synchronously and in full right now (so
+// a crash a moment later loses nothing) while Postgres still follows
+// PG_SAVE_EVERY_MS. See persistDurable.
+function persistNow(throttlePg, { foreground = false } = {}) {
   // Everything is being written now, so a debounced save already queued has
   // nothing left to do.
   if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
@@ -1393,7 +1403,7 @@ function persistNow(throttlePg) {
   stampMeta();
   const shrinking = checkShrink();
   if (shrinking) pendingShrinkSnapshot = true;
-  writeMirror(shrinking, throttlePg);
+  writeMirror(shrinking, throttlePg && !foreground);
   if (!pgLive()) return;
   if (throttlePg && !shrinking) persistPgThrottled();
   else { lastPgSaveAt = Date.now(); persistPg(); }
@@ -1414,6 +1424,16 @@ function persistNow(throttlePg) {
 // writes at once, so only a hard crash can lose the last minute.
 const SAVE_DEBOUNCE_MS = Number(process.env.SAVE_DEBOUNCE_MS)
   || (process.env.NODE_ENV === 'production' ? 60000 : 2000);
+
+// For changes that must survive a crash (payments, password changes, admin
+// actions): the volume copy - the live store - is written synchronously before
+// this returns, exactly as persistNow() does. Only the Postgres backup waits
+// for the next scheduled save (November 2026: each immediate Postgres save
+// rewrote the whole ~12MB document plus WAL, and these per-action writes were
+// draining the database's disk I/O budget). Shutdown still writes Postgres.
+function persistDurable() {
+  persistNow(true, { foreground: true });
+}
 
 function save() {
   // Shutting down: the server keeps answering until it exits, so a sign-in
@@ -2471,6 +2491,15 @@ function replyBanAppeal(banId, appealId, text) {
   return { ban, appeal: a };
 }
 
+// Change how long a ban lasts, counted from now (shorter or longer).
+function setBanExpiry(banId, minutes) {
+  const ban = data.bans.find((b) => b.id === banId);
+  if (!ban || ban.liftedAt) return null;
+  ban.expiresAt = Date.now() + Math.min(Math.max(Number(minutes) || 30, 30), 5 * 365 * 24 * 60) * 60000;
+  save();
+  return ban;
+}
+
 function markBanAppealsSeen(ban) {
   let changed = false;
   for (const a of ban.appeals || []) if (a.reply && !a.seenAt) { a.seenAt = Date.now(); changed = true; }
@@ -2481,6 +2510,47 @@ function unansweredAppeals() {
   let n = 0;
   for (const b of data.bans) if (!b.liftedAt) for (const a of b.appeals || []) if (!a.reply) n++;
   return n;
+}
+
+// --- Friend restrictions ------------------------------------------------------
+// Timed and per person (profile and/or account). Everything else keeps working.
+function addFriendRestriction({ clientId, account, username, reason, days }) {
+  let acct = account ? String(account).toLowerCase() : '';
+  if (!clientId && acct) clientId = getAccountClientId(acct);
+  if (!acct && clientId) acct = findUsernameByClientId(clientId) || '';
+  const d = Math.min(Math.max(Math.round(Number(days)) || 1, 1), 365);
+  const now = Date.now();
+  const rec = {
+    id: crypto.randomUUID(),
+    clientId: clientId || null,
+    account: acct || null,
+    username: String(username || '').slice(0, 60) || acct || 'Unknown',
+    reason: String(reason || '').trim().slice(0, 300),
+    createdAt: now,
+    expiresAt: now + d * 86400000,
+    liftedAt: null,
+  };
+  if (!data.friendRestrictions) data.friendRestrictions = [];
+  data.friendRestrictions.unshift(rec);
+  if (data.friendRestrictions.length > 1000) data.friendRestrictions.pop();
+  save();
+  return rec;
+}
+function activeFriendRestriction(clientId, account) {
+  const acct = account ? String(account).toLowerCase() : (clientId ? findUsernameByClientId(clientId) || '' : '');
+  const now = Date.now();
+  return (data.friendRestrictions || []).find((r) => !r.liftedAt && r.expiresAt > now
+    && ((clientId && r.clientId === clientId) || (acct && r.account === acct))) || null;
+}
+function friendRestrictions() {
+  return (data.friendRestrictions || []).slice(0, 300);
+}
+function liftFriendRestriction(id) {
+  const r = (data.friendRestrictions || []).find((x) => x.id === id);
+  if (!r || r.liftedAt || r.expiresAt <= Date.now()) return null;
+  r.liftedAt = Date.now();
+  save();
+  return r;
 }
 
 function liftBan(banId) {
@@ -2631,6 +2701,19 @@ function voiceSet(clientId, rec) {
   if (!data.voice) data.voice = {};
   if (rec) data.voice[clientId] = rec; else delete data.voice[clientId];
   save();
+}
+// Age disputes (server/age-case.js). A null record removes it.
+function ageCaseGet(clientId) {
+  return (data.ageCases && data.ageCases[clientId]) || null;
+}
+function ageCaseSet(clientId, rec) {
+  if (!clientId) return;
+  if (!data.ageCases) data.ageCases = {};
+  if (rec) data.ageCases[clientId] = rec; else delete data.ageCases[clientId];
+  save();
+}
+function ageCases() {
+  return Object.values(data.ageCases || {});
 }
 // Open appeals for the owner's review queue, oldest first.
 function voiceAppeals() {
@@ -4212,7 +4295,7 @@ function bumpIdentityEpoch(clientId) {
   if (!data.identityEpochs) data.identityEpochs = {};
   const next = identityEpoch(clientId) + 1;
   data.identityEpochs[clientId] = next;
-  persistNow();
+  persistDurable();
   return next;
 }
 
@@ -4263,6 +4346,7 @@ module.exports = {
   ready,
   save,
   persistNow,
+  persistDurable,
   dayKey,
   day,
   hour,
@@ -4373,6 +4457,14 @@ module.exports = {
   engageGet,
   engageSet,
   voiceGet,
+  setBanExpiry,
+  addFriendRestriction,
+  activeFriendRestriction,
+  friendRestrictions,
+  liftFriendRestriction,
+  ageCaseGet,
+  ageCaseSet,
+  ageCases,
   voiceSet,
   voiceAppeals,
   pruneVoice,

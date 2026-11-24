@@ -21,6 +21,7 @@ const plusStats = require('./plus-stats');
 const paymentLog = require('./payment-log');
 const flags = require('./flags');
 const voiceCheck = require('./voice-check');
+const ageCase = require('./age-case');
 const badges = require('./badges');
 
 const SESSION_HOURS = 12;
@@ -421,7 +422,7 @@ function generateConclusion(runtime, report) {
 }
 
 // --- Module wiring ---
-function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate, deviceIdOfClient, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats, automod, talkguard, patterns, support, posts, grantPlus, onVoiceDecision }) {
+function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate, deviceIdOfClient, deliverWarning, deliverFeedbackReply, getLiveGames, getUserStats, automod, talkguard, patterns, support, posts, grantPlus, onVoiceDecision, onAgeDecision, onFriendRestriction }) {
   if (automod) automod.setAlert(sendAlertEmail);
   try { paymentLog.installPaymentLog(store); } catch (e) { console.log('[owner] payment log not installed:', e.message); }
   const router = express.Router();
@@ -719,6 +720,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
         unhandledReports: store.data.reports.filter((r) => !r.handled).length,
         autoReview: automod ? automod.openReviews() : 0,
         voiceAppeals: store.voiceAppeals().length,
+        ageCases: store.ageCases().filter((c) => c.state === 'open').length,
         banAppeals: store.unansweredAppeals(),
         errors: store.data.errors.length,
         feedback: store.data.feedback.length,
@@ -793,7 +795,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
     if (!analytics.isValidTimezone(tz)) return res.status(400).json({ error: 'Unknown timezone.' });
     store.data.settings.timezone = tz;
     store.audit('timezone', reqIp(req), `Report timezone set to ${tz}`);
-    store.persistNow();
+    store.persistDurable();
     res.json({ ok: true, timezone: tz });
   });
 
@@ -986,6 +988,77 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
     res.json({ ok: true });
   });
 
+  // --- Age disputes (server/age-case.js) -------------------------------------
+  // Someone flagged as a possible minor who says they are 18+. There is no
+  // third-party check: a moderator decides from the evidence, with a reason,
+  // and the person stays restricted until then. A claim never lifts anything.
+  router.get('/api/age-cases', (req, res) => {
+    const all = store.ageCases();
+    const counts = { open: 0, restricted: 0, cleared: 0 };
+    for (const c of all) if (counts[c.state] !== undefined) counts[c.state]++;
+    const order = { open: 0, restricted: 1, cleared: 2 };
+    const cases = all.slice().sort((a, b) => (order[a.state] - order[b.state]) || (b.updatedAt - a.updatedAt)).slice(0, 200);
+    res.json({ counts, cases });
+  });
+  router.post('/api/age-cases/flag', (req, res) => {
+    const b = req.body || {};
+    const clientId = typeof b.clientId === 'string' ? b.clientId.trim().slice(0, 100) : '';
+    const reason = String(b.reason || '').trim();
+    if (!clientId) return res.status(400).json({ error: 'Pick a user to flag.' });
+    if (reason.length < 5) return res.status(400).json({ error: 'Say why they look like a minor (at least 5 characters).' });
+    const rec = ageCase.flag(store.ageCaseGet(clientId), { clientId, username: b.username, account: b.account, source: 'moderator', reason });
+    store.ageCaseSet(clientId, rec);
+    store.audit('age_flag', reqIp(req), `Flagged ${rec.username || clientId} as a possible minor`);
+    if (onAgeDecision) onAgeDecision(clientId);
+    res.json({ ok: true, case: rec });
+  });
+  router.post('/api/age-cases/claim', (req, res) => {
+    const b = req.body || {};
+    const clientId = String(b.clientId || '');
+    const next = ageCase.addClaim(store.ageCaseGet(clientId), b.text, { source: 'moderator-note' });
+    if (!next) return res.status(400).json({ error: 'Write what they said, on a case that exists.' });
+    store.ageCaseSet(clientId, next);
+    res.json({ ok: true, case: next });
+  });
+  router.post('/api/age-cases/decide', (req, res) => {
+    const b = req.body || {};
+    const clientId = String(b.clientId || '');
+    const out = ageCase.decide(store.ageCaseGet(clientId), { outcome: b.outcome, reason: b.reason, by: 'owner' });
+    if (!out.ok) return res.status(400).json({ error: out.error });
+    store.ageCaseSet(clientId, out.rec);
+    store.audit('age_decision', reqIp(req), `${out.rec.state === 'cleared' ? 'Cleared' : 'Confirmed restriction for'} ${out.rec.username || clientId}: ${String(b.reason).trim().slice(0, 120)}`);
+    if (onAgeDecision) onAgeDecision(clientId);
+    res.json({ ok: true, case: out.rec });
+  });
+
+  // --- Friend restrictions ---------------------------------------------------
+  // A step short of a ban: for a number of days the person cannot send or
+  // accept friend requests. They can still talk, chat and use everything else.
+  router.get('/api/friend-restrictions', (req, res) => {
+    res.json({ restrictions: store.friendRestrictions(), now: Date.now() });
+  });
+  router.post('/api/friend-restrictions', (req, res) => {
+    const b = req.body || {};
+    let clientId = typeof b.clientId === 'string' ? b.clientId.trim().slice(0, 100) : '';
+    let account = typeof b.account === 'string' ? b.account.trim().slice(0, 100) : '';
+    // The dashboard's free-text box sends one value: an account name if one
+    // exists by that name, otherwise a client ID.
+    if (clientId && !account && store.getAccountClientId && store.getAccountClientId(clientId.toLowerCase())) { account = clientId; clientId = ''; }
+    const days = Math.round(Number(b.days));
+    if (!clientId && !account) return res.status(400).json({ error: 'Pick a user to restrict.' });
+    if (!(days >= 1 && days <= 365)) return res.status(400).json({ error: 'Choose 1 to 365 days.' });
+    const rec = store.addFriendRestriction({ clientId, account, username: b.username, reason: b.reason, days });
+    store.audit('friend_restrict', reqIp(req), `Restricted friend requests for ${rec.username || rec.clientId || rec.account} for ${days} day(s) - ${rec.reason || 'no reason'}`);
+    if (onFriendRestriction) onFriendRestriction(rec);
+    res.json({ ok: true, restriction: rec });
+  });
+  router.post('/api/friend-restrictions/lift', (req, res) => {
+    const rec = store.liftFriendRestriction((req.body || {}).id);
+    if (!rec) return res.status(404).json({ error: 'Restriction not found or already over.' });
+    store.audit('friend_unrestrict', reqIp(req), `Lifted friend restriction on ${rec.username || rec.clientId || rec.account}`);
+    res.json({ ok: true });
+  });
+
   // --- TalkGuard model + behaviour patterns ---------------------------------
   router.get('/api/talkguard', (req, res) => {
     if (!talkguard) return res.status(503).json({ error: 'TalkGuard is not running.' });
@@ -1055,20 +1128,49 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
     res.json({ ok: true });
   });
 
-  // Answer a ban appeal. `action`: reply (just answer), keep (answer, ban stays)
-  // or lift (answer and lift the ban: the person leaves the banned screen now).
+  // Answer a ban appeal and decide what happens to the person, in one step.
+  //   action: reply (answer only), keep (answer, ban stays), lift (answer and
+  //           lift it: they leave the banned screen now) or change (answer and
+  //           set a new length from now, shorter or longer, `minutes`).
+  // Extras, on top of any action:
+  //   restrictDays  also stop friend requests for that many days (1-365)
+  //   ageReview     also open an age case: restricted until a moderator decides
   router.post('/api/bans/:id/appeals/:aid/reply', (req, res) => {
     const body = req.body || {};
     const text = String(body.message || '').trim().slice(0, 1000);
     if (text.length < 2) return res.status(400).json({ error: 'Write the reply first.' });
-    const action = ['lift', 'keep'].includes(body.action) ? body.action : 'reply';
+    const action = ['lift', 'keep', 'change'].includes(body.action) ? body.action : 'reply';
+    const minutes = Math.round(Number(body.minutes));
+    if (action === 'change' && !(minutes >= 30 && minutes <= 5 * 365 * 24 * 60)) return res.status(400).json({ error: 'Choose how long the ban should last.' });
+    const restrictDays = body.restrictDays ? Math.round(Number(body.restrictDays)) : 0;
+    if (body.restrictDays && !(restrictDays >= 1 && restrictDays <= 365)) return res.status(400).json({ error: 'Friend restriction: choose 1 to 365 days.' });
+    const ban = store.data.bans.find((b) => b.id === req.params.id);
+    if (!ban) return res.status(404).json({ error: 'Appeal not found.' });
+    const who = ban.username || ban.account || ban.clientId || ban.ip;
+    const wantsPerson = restrictDays || body.ageReview === true;
+    if (wantsPerson && !ban.clientId && !ban.account) return res.status(400).json({ error: 'This ban has no profile or account to restrict.' });
     const out = store.replyBanAppeal(req.params.id, req.params.aid, text);
     if (!out) return res.status(404).json({ error: 'Appeal not found.' });
-    const who = out.ban.username || out.ban.account || out.ban.clientId || out.ban.ip;
-    if (action === 'lift') store.liftBan(out.ban.id);
-    store.audit('ban-appeal-reply', reqIp(req), `Replied to ban appeal from ${who}${action === 'lift' ? ' and lifted the ban' : action === 'keep' ? ' and kept the ban' : ''}`);
-    if (pushBanUpdate) pushBanUpdate(out.ban);
-    res.json({ ok: true, lifted: action === 'lift' });
+    const did = [];
+    if (action === 'lift') { store.liftBan(ban.id); did.push('lifted the ban'); }
+    else if (action === 'change') { store.setBanExpiry(ban.id, minutes); did.push(`set the ban to ${minutes} min from now`); }
+    else if (action === 'keep') did.push('kept the ban');
+    if (restrictDays) {
+      const rec = store.addFriendRestriction({ clientId: ban.clientId, account: ban.account, username: ban.username, reason: `After ban appeal: ${ban.reason || 'no reason'}`, days: restrictDays });
+      did.push(`restricted friend requests for ${restrictDays} day(s)`);
+      if (onFriendRestriction) onFriendRestriction(rec);
+    }
+    if (body.ageReview === true) {
+      const cid = ban.clientId || store.getAccountClientId(ban.account);
+      if (cid) {
+        store.ageCaseSet(cid, ageCase.flag(store.ageCaseGet(cid), { clientId: cid, username: ban.username, account: ban.account, source: 'ban-appeal', reason: `Ban: ${ban.reason || 'no reason'}. They appealed: ${String(out.appeal.text || '').slice(0, 200)}` }));
+        did.push('opened an age review (restricted until decided)');
+        if (onAgeDecision) onAgeDecision(cid);
+      }
+    }
+    store.audit('ban-appeal-reply', reqIp(req), `Replied to ban appeal from ${who}${did.length ? ' and ' + did.join(', ') : ''}`);
+    if (pushBanUpdate) pushBanUpdate(ban);
+    res.json({ ok: true, lifted: action === 'lift', did });
   });
 
   router.post('/api/unban', (req, res) => {
@@ -1097,7 +1199,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
       store.data.errors = store.data.errors.filter((e) => e.id !== id);
       if (store.data.errors.length === before) return res.status(404).json({ error: 'Error not found.' });
     }
-    store.persistNow();
+    store.persistDurable();
     res.json({ ok: true, remaining: store.data.errors.length });
   });
 
@@ -2463,7 +2565,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
       store.data.settings.maintenance.message = message.trim().slice(0, 300);
     }
     store.audit('maintenance', reqIp(req), on ? 'Maintenance mode ON' : 'Maintenance mode OFF');
-    store.persistNow();
+    store.persistDurable();
     if (on) io.emit('maintenance', { message: store.data.settings.maintenance.message });
     res.json({ ok: true, maintenance: store.data.settings.maintenance });
   });
@@ -2491,7 +2593,7 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
         store.audit('site_mode', reqIp(req), on ? `Announcement ON: "${text}"` : 'Announcement OFF');
       }
     }
-    store.persistNow();
+    store.persistDurable();
     io.emit('siteModes', store.publicModes());
     res.json({ ok: true, modes: cur });
   });

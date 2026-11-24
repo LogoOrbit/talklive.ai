@@ -153,6 +153,9 @@ class ProfileViewModel @Inject constructor(
     }
     fun deleteAccount(secret: String) = run("Account deleted") { auth.deleteAccount(secret) }
 
+    fun guestName(): String = auth.guestName()
+    fun setGuestName(name: String) = auth.setGuestName(name)
+
     fun saveNickname(nick: String) = run("Name updated") { auth.updateNickname(nick) }
     fun saveEmail(email: String, password: String) = run("Recovery email updated") { auth.updateRecoveryEmail(email, password) }
     fun savePassword(current: String, new: String) = run("Password changed") { auth.changePassword(current, new) }

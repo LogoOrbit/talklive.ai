@@ -177,7 +177,7 @@ fun ProfileScreen(
             ProfileCard(
                 cover = shownCover,
                 face = shownFace,
-                name = account?.nickname ?: stringResource(R.string.guest),
+                name = account?.nickname ?: vm.guestName().ifBlank { stringResource(R.string.guest) },
                 friendId = friendIdNow ?: animalById(animal)?.trait,
                 badges = myBadges,
                 progress = progress,

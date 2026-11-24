@@ -977,7 +977,7 @@
     <string name="edit_tab_avatar">Avatar</string>
     <string name="edit_tab_cover">Cover</string>
     <string name="edit_tab_name">Name</string>
-    <string name="edit_name_signin">Sign in to change your name and ID.</string>
+    <string name="edit_name_signin">Sign in to also change your friend ID and keep your friends on every device.</string>
     <string name="edit_saved">Profile saved</string>
     <string name="edit_error">Couldn\'t save your profile. Try again.</string>
     <string name="edit_avatar_cd">Edit avatar</string>

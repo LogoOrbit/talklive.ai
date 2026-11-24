@@ -92,9 +92,16 @@ const RESTRICTED_PROFILE = Object.freeze({
   moderation: 'strict',  // tighter moderation defaults
 });
 
+// Moderator-managed age cases (server/age-case.js) live in the store; index.js
+// registers the lookup. Not behind a flag: a person a moderator is reviewing
+// stays restricted until it is decided.
+let caseLookup = null;
+function setCaseLookup(fn) { caseLookup = typeof fn === 'function' ? fn : null; }
+
 function isRestricted(clientId) {
   const s = statusByClient.get(clientId);
-  return !!s && s.status === 'minor';
+  if (s && s.status === 'minor') return true;
+  return !!(clientId && caseLookup && caseLookup(clientId));
 }
 
 // What a client may use. Unrestricted clients get null (no overrides).
@@ -156,9 +163,10 @@ function _reset() {
   statusByClient.clear();
   provider = null;
   config = { regions: [] };
+  caseLookup = null;
 }
 
 module.exports = {
   check, start, verify, registerProvider, reportAgeBand, restrictionsFor, isRestricted,
-  configure, RESTRICTED_PROFILE, _reset,
+  configure, setCaseLookup, RESTRICTED_PROFILE, _reset,
 };

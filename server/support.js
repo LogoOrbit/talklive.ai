@@ -388,7 +388,7 @@ function createSupport({ store, mail, push, contactTo, siteUrl, ownerUrl, httpRa
       s.conversations = s.conversations.filter((c) => c.id !== req.params.id);
       if (s.conversations.length === before) return res.status(404).json({ error: 'Conversation not found.' });
       store.audit('support-delete', reqIp(req), 'Deleted a support conversation');
-      store.persistNow();
+      store.persistDurable();
       res.json({ ok: true });
     });
 

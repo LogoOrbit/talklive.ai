@@ -516,6 +516,27 @@ table.heat{min-width:480px}table.heat td.num{border-radius:6px}
 .sheet .sbody{padding:14px 16px}
 .sheet label{display:block;font-size:.76rem;color:var(--muted);margin:12px 0 5px;text-transform:uppercase;letter-spacing:.05em}
 .sheet label:first-child{margin-top:0}
+/* Ban appeal decision box: option cards. Scoped so the global input/label
+   rules (width:100%, block uppercase labels) do not stretch radios/checkboxes. */
+.apx-sec{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 6px}
+.apx-ctx{border:1px solid var(--ring);border-radius:10px;padding:10px 12px;font-size:.86rem;line-height:1.5}
+.apx-ctx .m{color:var(--muted);font-size:.78rem}
+.apx-thread{border:1px solid var(--ring);border-radius:10px;padding:8px 12px;max-height:150px;overflow:auto;font-size:.88rem}
+.apx-thread .it{padding:4px 0}.apx-thread .it+.it{border-top:1px dashed var(--ring)}
+.apx-thread .me{color:var(--muted);margin-left:12px;font-size:.82rem}
+.apx-opts{display:grid;gap:6px}
+.sheet label.apx-opt{display:flex;gap:10px;align-items:flex-start;margin:0;padding:10px 12px;border:1px solid var(--ring);border-radius:10px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:.88rem!important;color:var(--text)!important;transition:border-color .15s,background .15s}
+.sheet label.apx-opt:hover{border-color:var(--muted)}
+.sheet label.apx-opt:has(input:checked){border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.apx-opt input[type=radio],.apx-opt input[type=checkbox]{width:16px;height:16px;padding:0;margin:2px 0 0;flex:none;accent-color:var(--accent);cursor:pointer}
+.apx-opt .t{flex:1;min-width:0}
+.apx-opt .t b{font-weight:600}
+.apx-opt .d{display:block;color:var(--muted);font-size:.78rem;margin-top:2px}
+.apx-opt select{width:auto;display:inline-block;padding:3px 8px;margin:0 4px;font-size:.84rem}
+.apx-tpl{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.apx-tpl button{font-size:.76rem;padding:4px 10px}
+.apx-sum{margin-top:12px;padding:9px 12px;border-radius:10px;background:var(--surface-2,rgba(127,127,127,.08));font-size:.84rem}
+.apx-sum ul{margin:4px 0 0 18px;padding:0}
 .sres{padding:6px 0}
 .sgroup{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:10px 16px 4px}
 .sitem{display:block;width:100%;text-align:left;background:transparent;border:0;color:var(--text);padding:8px 16px;font-size:.85rem;border-left:2px solid transparent}
@@ -1207,7 +1228,7 @@ const NAV=[
   ['Moderation',[
     ['reports','Reports',ico('reports'),[['reports','Reports','']]],
     ['chats','Messages',ico('chats'),[['chats','Chats',''],['voicenotes','Voice notes','']]],
-    ['automod','Safety',ico('automod'),[['automod','Auto-mod',''],['cases','Cases',''],['aiguard','AI guard',''],['voice','Voice check',''],['bans','Bans',''],['warnings','Warnings','']]],
+    ['automod','Safety',ico('automod'),[['automod','Auto-mod',''],['cases','Cases',''],['aiguard','AI guard',''],['voice','Voice check',''],['agecases','Age cases',''],['bans','Bans',''],['warnings','Warnings','']]],
     ['feedback','Feedback',ico('feedback'),[['feedback','Feedback','']]]]],
   ['People',[
     ['users','Users',ico('users'),[['users','All users',''],['accounts','Accounts',''],['talktime','Talk time',''],['badges','Badges',''],['data','User data','']]],
@@ -1248,6 +1269,7 @@ function navBadge(id){
   if(id==='automod'&&counts.autoReview)return `<span class="badge">${counts.autoReview}</span>`;
   if(id==='cases'&&counts.banAppeals)return `<span class="badge">${counts.banAppeals}</span>`;
   if(id==='bans'&&counts.banAppeals)return `<span class="badge">${counts.banAppeals}</span>`;
+  if(id==='agecases'&&counts.ageCases)return `<span class="badge">${counts.ageCases}</span>`;
   if(id==='voice'&&counts.voiceAppeals)return `<span class="badge">${counts.voiceAppeals}</span>`;
   if(id==='errors'&&counts.errors)return `<span class="badge" style="background:var(--serious)">${counts.errors}</span>`;
   return '';
@@ -1496,6 +1518,7 @@ async function load(force){
     else if(tab==='cases')await viewCases();
     else if(tab==='aiguard')await viewAiGuard();
     else if(tab==='voice')await viewVoice();
+    else if(tab==='agecases')await viewAgeCases();
     else if(tab==='chats')await viewChats();
     else if(tab==='voicenotes')await viewVoiceNotes();
     else if(tab==='users')await viewUsers();
@@ -2326,7 +2349,7 @@ async function viewBot(){
 const DUR=[['30','30 minutes'],['60','1 hour'],['360','6 hours'],['1440','1 day'],['4320','3 days'],['10080','7 days'],['43200','30 days'],['129600','90 days'],['525600','1 year'],['2628000','5 years']];
 const BAN_REASONS=['Nudity or sexual content','Harassment or abuse','Underage user','Spam or advertising','Scam or phishing','Hate speech','Repeated user reports','Owner ban'];
 function banButtons(u){
-  return `<div class="rowbtns">${warnBtn(u.clientId,u.account,u.username,u.country)}<button class="danger" onclick="banUser('${jsq(u.clientId)}','${jsq(u.ip||'')}','${jsq(u.username)}','${jsq(u.country||'')}','${jsq(u.city||'')}')">Ban…</button></div>`;
+  return `<div class="rowbtns">${warnBtn(u.clientId,u.account,u.username,u.country)}<button onclick="restrictFriends('${jsq(u.clientId)}','${jsq(u.account||'')}','${jsq(u.username)}')">Restrict friends…</button><button class="danger" onclick="banUser('${jsq(u.clientId)}','${jsq(u.ip||'')}','${jsq(u.username)}','${jsq(u.country||'')}','${jsq(u.city||'')}')">Ban…</button></div>`;
 }
 const warnBtn=(clientId,account,username,country,label)=>`<button class="warnb" onclick="warnUser('${jsq(clientId||'')}','${jsq(account||'')}','${jsq(username||'')}','${jsq(country||'')}')">${label||'Warn…'}</button>`;
 
@@ -2628,6 +2651,47 @@ async function voiceDecide(clientId,grant){
   if(!confirm(grant?'Confirm the gender this person chose? It will count as checked.':'Decline this review?'))return;
   try{await post('voice/appeal',{clientId,grant});toast('Done','','good');load();}catch(e){toast('Failed',e.message,'bad');}
 }
+/* Age cases (server/age-case.js): someone flagged as a possible minor who says
+   they are 18+. No third-party check exists, so a person decides from the
+   evidence and writes a reason. A claim never lifts the restriction. */
+const AGE_STATE={open:['Needs a decision','warn'],restricted:['Restricted','crit'],cleared:['Cleared','good']};
+async function viewAgeCases(){
+  const r=await vapi('age-cases');
+  const c=r.counts;
+  const tile=(k,v,s,col)=>`<div class="tile"><div class="k">${k}</div><div class="v" ${col?`style="color:${col}"`:''} data-count="${v}">0</div><div class="s">${s}</div></div>`;
+  const row=a=>{
+    const st=AGE_STATE[a.state]||AGE_STATE.open;
+    return `<div class="fmsg"><div class="top"><span><b>${esc(a.username||'Unknown')}</b>${a.account?' · @'+esc(a.account):''} <span class="pill ${st[1]}">${st[0]}</span></span><span>opened ${ago(a.openedAt)} · updated ${ago(a.updatedAt)}</span></div>
+    <div class="txt"><b>Why flagged</b><ul style="margin:4px 0 8px 18px">${a.evidence.map(e=>`<li>${esc(e.text)} <span class="muted">· ${esc(e.source)} · ${fmtTs(e.at)}</span></li>`).join('')||'<li class="muted">no evidence recorded</li>'}</ul>
+    <b>What they said</b><ul style="margin:4px 0 8px 18px">${a.claims.map(e=>`<li>“${esc(e.text)}” <span class="muted">· ${esc(e.source)} · ${fmtTs(e.at)}</span></li>`).join('')||'<li class="muted">nothing yet</li>'}</ul>
+    ${a.decisions.length?`<b>Decisions</b><ul style="margin:4px 0 8px 18px">${a.decisions.map(d=>`<li>${d.outcome==='clear'?'Cleared':'Restricted'} by ${esc(d.by)}: ${esc(d.reason)} <span class="muted">· ${fmtTs(d.at)}</span></li>`).join('')}</ul>`:''}</div>
+    <div class="rowbtns"><button onclick="ageClaim('${jsq(a.clientId)}')">Log what they said</button>
+    ${a.state!=='restricted'?`<button class="danger" onclick="ageDecide('${jsq(a.clientId)}','restrict')">Keep restricted</button>`:''}
+    ${a.state!=='cleared'?`<button onclick="ageDecide('${jsq(a.clientId)}','clear')">Clear</button>`:''}</div></div>`;
+  };
+  $('#main').innerHTML=`<div class="grid tiles anim" style="margin-top:0">
+    ${tile('Needs a decision',c.open,'restricted until someone decides',c.open?'var(--warn)':'')}
+    ${tile('Restricted',c.restricted,'flag confirmed')}
+    ${tile('Cleared',c.cleared,'evidence did not support it','var(--good)')}
+  </div>
+  <div class="card anim"><h2>Age cases <span class="sub">flagged as a possible minor</span></h2>
+  ${r.cases.length?r.cases.map(row).join(''):'<div class="muted">No age cases.</div>'}
+  <p class="muted" style="font-size:.8rem;margin-top:8px">This is not age verification. Saying “I am 18+” proves nothing, so a claim is logged but never lifts a restriction by itself. Decide from the evidence, write a reason, and when it is truly unclear keep them restricted. Restricted people get text only, no friends and tighter moderation. Don't judge age from a photo or a voice.</p></div>
+  <div class="card anim"><h2>Flag someone <span class="sub">add a person to the queue</span></h2>
+  <div class="searchbar"><input id="agfId" placeholder="Client ID"><input id="agfName" placeholder="Username (optional)"><input id="agfWhy" placeholder="Why they look like a minor"><button class="btn" onclick="ageFlag()">Flag</button></div></div>`;
+}
+async function ageFlag(){
+  const clientId=$('#agfId').value.trim(),username=$('#agfName').value.trim(),reason=$('#agfWhy').value.trim();
+  try{await post('age-cases/flag',{clientId,username,reason});toast('Flagged','They are restricted until you decide.','good');load();}catch(e){toast('Failed',e.message,'bad');}
+}
+async function ageClaim(clientId){
+  const text=prompt('What did they say about their age?');if(!text)return;
+  try{await post('age-cases/claim',{clientId,text});toast('Logged','It does not lift the restriction.','good');load();}catch(e){toast('Failed',e.message,'bad');}
+}
+async function ageDecide(clientId,outcome){
+  const reason=prompt(outcome==='clear'?'Why does the evidence not support the flag? (required)':'Why keep them restricted? (required)');if(!reason)return;
+  try{await post('age-cases/decide',{clientId,outcome,reason});toast('Recorded','','good');load();}catch(e){toast('Failed',e.message,'bad');}
+}
 async function viewWarnings(){
   const r=await vapi('warnings');
   const all=r.warnings;
@@ -2737,7 +2801,7 @@ const REP_RANGES=[[1,'24h'],[7,'7 days'],[30,'30 days'],[0,'All time']];
 const REP_SORTS=[['count','Most reports'],['reporters','Most reporters'],['open','Most unhandled'],['lastTs','Most recent']];
 const repPill=(n)=>`<span class="pill ${n>=3?'crit':n>=2?'warn':'info'}">${num(n)}</span>`;
 const repPlace=(u)=>esc(u.country||'')+(u.city&&u.city!=='Unknown'?', '+esc(u.city):'');
-const repBan=(u)=>`<button class="danger" onclick="banUser('${jsq(u.clientId)}','${jsq(u.ip||'')}','${jsq(u.username)}','${jsq(u.country||'')}','${jsq(u.city||'')}')">Ban…</button>`;
+const repBan=(u)=>`<button onclick="restrictFriends('${jsq(u.clientId)}','${jsq(u.account||'')}','${jsq(u.username)}')">Restrict friends…</button><button class="danger" onclick="banUser('${jsq(u.clientId)}','${jsq(u.ip||'')}','${jsq(u.username)}','${jsq(u.country||'')}','${jsq(u.city||'')}')">Ban…</button>`;
 async function viewReports(){
   const qs=['days='+repDays];if(repUser)qs.push('user='+encodeURIComponent(repUser.clientId));
   if(repFilter==='open'||repFilter==='handled')qs.push('status='+repFilter);
@@ -2827,8 +2891,36 @@ window.markHandled=async(id)=>{try{await post('reports/'+id+'/handled');toast('R
 window.markAllHandled=async(n)=>{if(!confirm(`Mark all ${n} unhandled reports as handled? They stay on record (Handled filter) but leave the queue.`))return;try{const x=await post('reports/handled-all');toast(`${x.handled} report(s) marked handled`,'They stay on record.','good');load();}catch(e){toast('Could not update reports',e.message,'bad');}};
 
 let banFilter='active';
+/* Friend restriction: a step short of a ban. For N days the person cannot send
+   or accept friend requests; everything else keeps working. */
+const RESTRICT_DAYS=[1,3,7,14,30,60,90,180,365];
+window.restrictFriends=(clientId,account,username)=>{
+  modal(`Restrict friends: ${esc(username||account||clientId)}`,
+    `<div class="muted" style="font-size:.82rem">They can still talk, chat and use the site. They cannot send or accept friend requests, and a mutual like will not make them friends, until it ends.</div>
+     <label>Number of days</label>
+     <select id="rfDays">${RESTRICT_DAYS.map((d,i)=>`<option value="${d}"${d===7?' selected':''}>${d} day${d===1?'':'s'}</option>`).join('')}<option value="__custom">Other…</option></select>
+     <input id="rfCustom" class="hidden" type="number" min="1" max="365" style="margin-top:8px" placeholder="Days (1–365)">
+     <label>Reason <span style="text-transform:none;letter-spacing:0">(saved to the audit log)</span></label>
+     <input id="rfReason" placeholder="Why">
+     <div class="rowbtns" style="margin-top:16px"><button class="danger" id="rfGo" style="padding:9px 16px">Restrict</button><button id="rfCancel" style="padding:9px 16px">Cancel</button></div>`,
+    (sheet)=>{
+      const sel=sheet.querySelector('#rfDays'),cu=sheet.querySelector('#rfCustom');
+      sel.onchange=()=>{cu.classList.toggle('hidden',sel.value!=='__custom');if(sel.value==='__custom')cu.focus();};
+      sheet.querySelector('#rfCancel').onclick=closeModal;
+      sheet.querySelector('#rfGo').onclick=async()=>{
+        const days=Number(sel.value==='__custom'?cu.value:sel.value);
+        const reason=sheet.querySelector('#rfReason').value.trim();
+        if(!(days>=1&&days<=365)){toast('Pick the days','Choose 1 to 365.','warn');return;}
+        try{await post('friend-restrictions',{clientId,account,username,days,reason});closeModal();toast('Friends restricted',`${username||clientId} · ${days} day${days===1?'':'s'}`,'good');load();}
+        catch(e){toast('Could not restrict',e.message,'bad');}
+      };
+    },{mid:true});
+};
+window.liftRestriction=async(id)=>{try{await post('friend-restrictions/lift',{id});toast('Restriction lifted','They can add friends again.','good');load();}catch(e){toast('Could not lift',e.message,'bad');}};
+
+let banFilterDummy=0;
 async function viewBans(){
-  const r=await vapi('bans');
+  const r=await vapi('bans');bansSnap=r;
   const state=(b)=>b.liftedAt?'lifted':b.expiresAt>r.now?'active':'expired';
   const active=r.bans.filter(b=>state(b)==='active');
   const list=banFilter==='active'?active:r.bans;
@@ -2843,6 +2935,21 @@ async function viewBans(){
   <td>${esc(b.reason)}</td><td class="muted">${b.clientId?'profile':''}${b.account?' · account <b>'+esc(b.account)+'</b>':''}${b.deviceBound?' · device':''}${b.ip?' · network':''}${(b.evasions&&b.evasions.length)?`<br><span class="pill warn">Tried again as ${b.evasions.map(e=>esc(String(e.clientId).slice(0,10))+' ('+esc(e.via)+(e.count>1?' x'+e.count:'')+')').join(', ')}</span>`:''}</td><td>${fmtTs(b.createdAt)}</td><td>${fmtTs(b.expiresAt)}${st==='active'?`<br><span class="muted">${until(b.expiresAt)}</span>`:''}</td>
   <td>${st==='lifted'?'<span class="pill info">Lifted</span>':st==='active'?'<span class="pill crit">Active</span>':'<span class="pill good">Expired</span>'}</td>
   <td>${st==='active'?`<div class="rowbtns"><button onclick="unban('${jsq(b.id)}')">Lift ban</button></div>`:''}</td></tr>`;}).join('')||`<tr><td colspan="7" class="muted">${banFilter==='active'?'No active bans right now.':'No bans on record.'}</td></tr>`}</table></div>`;
+  try{
+    const fr=await vapi('friend-restrictions');
+    const fst=x=>x.liftedAt?'lifted':x.expiresAt>fr.now?'active':'expired';
+    const factive=fr.restrictions.filter(x=>fst(x)==='active');
+    const shown=fr.restrictions.filter(x=>fst(x)==='active').concat(fr.restrictions.filter(x=>fst(x)!=='active').slice(0,20));
+    const c=document.createElement('div');c.className='card anim';
+    c.innerHTML=`<h2>Friend restrictions <span class="sub">${factive.length} active · cannot send or accept friend requests, everything else works</span></h2>
+    <table><tr><th>User</th><th>Reason</th><th>Set</th><th>Ends</th><th>Status</th><th></th></tr>
+    ${shown.map(x=>{const st=fst(x);return `<tr style="${st==='active'?'':'opacity:.55'}"><td><b>${esc(x.username)}</b>${x.account?'<br><span class="muted">account '+esc(x.account)+'</span>':''}</td><td>${esc(x.reason)||'<span class="muted">none</span>'}</td><td>${fmtTs(x.createdAt)}</td><td>${fmtTs(x.expiresAt)}${st==='active'?`<br><span class="muted">${until(x.expiresAt)}</span>`:''}</td>
+    <td>${st==='lifted'?'<span class="pill info">Lifted</span>':st==='active'?'<span class="pill warn">Active</span>':'<span class="pill good">Ended</span>'}</td>
+    <td>${st==='active'?`<div class="rowbtns"><button onclick="liftRestriction('${jsq(x.id)}')">Lift</button></div>`:''}</td></tr>`;}).join('')||'<tr><td colspan="6" class="muted">No friend restrictions. Use "Restrict friends…" next to a user in Live or Reputation, or add one below.</td></tr>'}</table>
+    <div class="searchbar" style="margin-top:10px"><input id="rfId" placeholder="Client ID or account name"><button class="btn" id="rfAdd">Restrict…</button></div>`;
+    $('#main').appendChild(c);
+    c.querySelector('#rfAdd').onclick=()=>{const v=c.querySelector('#rfId').value.trim();if(!v){toast('Enter a user','Client ID or account name.','warn');return;}restrictFriends(v,'',v);};
+  }catch(e){}
   const apBans=r.bans.filter(b=>(b.appeals||[]).length);
   apBans.sort((x,y)=>(y.appeals.some(a=>!a.reply)-x.appeals.some(a=>!a.reply))||(y.appeals[y.appeals.length-1].ts-x.appeals[x.appeals.length-1].ts));
   if(apBans.length){
@@ -2856,25 +2963,102 @@ async function viewBans(){
   }
   document.querySelectorAll('[data-bf]').forEach(b=>b.onclick=()=>{banFilter=b.dataset.bf;load();});
 }
+let bansSnap={bans:[],now:0};
+const APX_MINOR=/minor|under ?18|underage|age/i;
+const APX_TPL={
+  reply:'Thanks for your message. We are reviewing your ban and will update you here.',
+  lift:'We have reviewed your appeal and lifted the ban. Please follow the community rules; another serious report can lead to a permanent ban.',
+  change:'We have reviewed your appeal and changed the length of your ban. You can use TalkLive again when it ends.',
+  keep:'We have reviewed your appeal and the ban stays in place.',
+  minor:'Saying you are 18 or older does not by itself end a review. Your account stays limited (text only, no friends) while a moderator checks it. Please do not give a false age.'
+};
 function replyAppeal(b,aid){
   const a=b&&(b.appeals||[]).find(x=>x.id===aid);if(!a)return;
+  const same=x=>x.id!==b.id&&((b.account&&x.account===b.account)||(b.clientId&&x.clientId===b.clientId));
+  const prev=(bansSnap.bans||[]).filter(same);
+  const covers=[b.clientId?'profile':'',b.account?'account '+esc(b.account):'',b.deviceBound?'device':'',b.ip?'network':''].filter(Boolean).join(' · ');
+  const isMinor=APX_MINOR.test(b.reason||'');
+  const canPerson=!!(b.clientId||b.account);
+  const days=[1,3,7,14,30,60,90,180,365];
+  const thread=(b.appeals||[]).map(x=>`<div class="it"><div class="m muted" style="font-size:.76rem">${fmtTs(x.ts)}${x.id===aid?' · <b>replying to this</b>':''}</div><div>${esc(x.text)}</div>${x.reply?`<div class="me">↳ you: ${esc(x.reply)}</div>`:''}</div>`).join('');
   modal(`Appeal from ${esc(b.username||'user')}`,
-    `<div class="muted" style="margin-bottom:6px">Ban reason: ${esc(b.reason)}</div><div class="fmsg" style="margin-bottom:12px"><div class="txt">${esc(a.text)}</div></div>
-     <label>Your reply</label><textarea id="apMsg" rows="5" maxlength="1000"></textarea>
-     <div class="muted" style="font-size:.78rem;margin-top:8px">Shown on their banned screen now if they are online, otherwise the next time they sign in. They can appeal again after a reply (3 per ban).</div>
-     <div class="rowbtns" style="margin-top:16px"><button data-act="reply" style="padding:9px 16px">Reply</button><button data-act="lift" style="padding:9px 16px">Reply + lift ban</button><button data-act="keep" style="padding:9px 16px">Reply + keep ban</button><button id="apCancel" style="padding:9px 16px">Cancel</button></div>`,
+    `<div class="apx-ctx">
+       <div><b>Ban:</b> ${esc(b.reason)} ${isMinor?'<span class="pill warn">possible minor</span>':''}</div>
+       <div class="m">Set ${fmtTs(b.createdAt)} · ends ${fmtTs(b.expiresAt)} (${until(b.expiresAt)})${covers?' · covers '+covers:''}</div>
+       <div class="m">${prev.length?`${prev.length} other ban${prev.length===1?'':'s'}: ${prev.slice(0,3).map(x=>esc(x.reason)+' ('+ago(x.createdAt)+')').join('; ')}`:'No other bans on this person.'}</div>
+       ${b.caseId?`<div class="rowbtns" style="margin-top:6px"><button id="apCase">View case file (evidence)</button></div>`:''}
+     </div>
+     <div class="apx-sec">What they wrote</div>
+     <div class="apx-thread">${thread}</div>
+
+     <div class="apx-sec">What happens to them</div>
+     <div class="apx-opts">
+       <label class="apx-opt"><input type="radio" name="apAct" value="reply" checked><span class="t"><b>Reply only</b><span class="d">The ban stays as it is. Use this to ask for more information.</span></span></label>
+       <label class="apx-opt"><input type="radio" name="apAct" value="lift"><span class="t"><b>Lift the ban now</b><span class="d">They get back in straight away.</span></span></label>
+       <label class="apx-opt"><input type="radio" name="apAct" value="change"><span class="t"><b>Change the ban length</b> to <select id="apDur">${DUR.map(([v,l])=>`<option value="${v}"${v==='10080'?' selected':''}>${l}</option>`).join('')}</select> from now<span class="d">Shorter or longer than now. Currently ends ${until(b.expiresAt)}.</span></span></label>
+       <label class="apx-opt"><input type="radio" name="apAct" value="keep"><span class="t"><b>Decline the appeal</b><span class="d">Ban stays. Marked as kept in the audit log.</span></span></label>
+     </div>
+
+     <div class="apx-sec">Also</div>
+     <div class="apx-opts">
+       <label class="apx-opt"${canPerson?'':' style="opacity:.5"'}><input type="checkbox" id="apRF"${canPerson?'':' disabled'}><span class="t"><b>Stop friend requests</b> for <select id="apRFd">${days.map(d=>`<option value="${d}"${d===7?' selected':''}>${d} day${d===1?'':'s'}</option>`).join('')}</select><span class="d">They can't send or accept friend requests. Everything else works.</span></span></label>
+       <label class="apx-opt"${canPerson?'':' style="opacity:.5"'}><input type="checkbox" id="apAge"${canPerson?'':' disabled'}><span class="t"><b>Keep under age review</b><span class="d">Restricted (text only, no friends, strict moderation) until you decide in Safety › Age cases.${isMinor?' Recommended: this ban was for a possible minor.':''}</span></span></label>
+     </div>
+
+     <div class="apx-sec">Your reply <span style="text-transform:none;letter-spacing:0">(shown on their banned screen)</span></div>
+     <div class="apx-tpl"><span class="muted" style="font-size:.76rem;align-self:center">Template:</span><button data-tpl="decision">Match decision</button>${isMinor?'<button data-tpl="minor">Age review</button>':''}</div>
+     <textarea id="apMsg" rows="4" maxlength="1000" placeholder="Write a reply…"></textarea>
+     <div class="muted" style="font-size:.74rem;text-align:right" id="apCount">0 / 1000</div>
+
+     <div class="apx-sum" id="apSum"></div>
+     <div class="muted" style="font-size:.74rem;margin-top:8px">Shown now if they are online, otherwise at their next sign-in. They can appeal again after a reply (3 per ban). Saved to the audit log.</div>
+     <div class="rowbtns" style="margin-top:14px"><button id="apGo" style="padding:9px 16px">Send reply</button><button id="apCancel" style="padding:9px 16px">Cancel</button></div>`,
     (sheet)=>{
-      const msg=sheet.querySelector('#apMsg');msg.focus();
-      sheet.querySelector('#apCancel').onclick=closeModal;
-      sheet.querySelectorAll('[data-act]').forEach(btn=>{btn.onclick=async()=>{
+      const q=(x)=>sheet.querySelector(x);
+      const msg=q('#apMsg'),go=q('#apGo'),sum=q('#apSum');
+      const act=()=>q('input[name=apAct]:checked').value;
+      const durLabel=()=>(DUR.find(d=>d[0]===q('#apDur').value)||['',''])[1];
+      const render=()=>{
+        const A=act(),items=[];
+        items.push(A==='lift'?'Lift the ban now':A==='change'?`Ban ends in ${durLabel()} from now`:A==='keep'?'Decline: the ban stays':'Ban stays as it is');
+        if(q('#apRF').checked)items.push(`No friend requests for ${q('#apRFd').value} day(s)`);
+        if(q('#apAge').checked)items.push('Restricted under age review until you decide');
+        items.push('Send your reply');
+        sum.innerHTML=`<b>This will:</b><ul>${items.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`;
+        go.textContent=A==='lift'?'Send and lift ban':A==='change'?'Send and change ban':A==='keep'?'Send and decline':'Send reply';
+        go.className=A==='lift'?'':'danger';
+        q('#apCount').textContent=msg.value.length+' / 1000';
+      };
+      // Picking a length or a day count turns its option on.
+      q('#apDur').onchange=()=>{sheet.querySelector('input[value=change]').checked=true;render();};
+      q('#apRFd').onchange=()=>{if(!q('#apRF').disabled)q('#apRF').checked=true;render();};
+      sheet.querySelectorAll('input[name=apAct]').forEach(r=>r.onchange=()=>{
+        // Lifting a ban for a possible minor defaults to keeping them under review.
+        if(r.value==='lift'&&isMinor&&canPerson)q('#apAge').checked=true;
+        render();
+      });
+      q('#apRF').onchange=render;q('#apAge').onchange=render;msg.oninput=render;
+      sheet.querySelectorAll('[data-tpl]').forEach(t=>t.onclick=()=>{
+        const k=t.dataset.tpl==='minor'?'minor':act();
+        msg.value=(msg.value.trim()?msg.value.trim()+'\n\n':'')+APX_TPL[k];render();msg.focus();
+      });
+      q('#apCancel').onclick=closeModal;
+      const cb=q('#apCase');if(cb)cb.onclick=()=>{caseOpen=b.caseId;go_('cases');};
+      go.onclick=async()=>{
         const text=msg.value.trim();
         if(text.length<2){toast('Write the reply','It cannot be empty.','warn');msg.focus();return;}
+        const A=act(),body={message:text,action:A};
+        if(A==='change')body.minutes=Number(q('#apDur').value);
+        if(q('#apRF').checked)body.restrictDays=Number(q('#apRFd').value);
+        if(q('#apAge').checked)body.ageReview=true;
         sheet.querySelectorAll('button').forEach(x=>x.disabled=true);
-        try{await post('bans/'+encodeURIComponent(b.id)+'/appeals/'+encodeURIComponent(aid)+'/reply',{message:text,action:btn.dataset.act});closeModal();toast('Reply sent',btn.dataset.act==='lift'?'The ban is lifted.':'They will see it on their banned screen.','good');load();}
+        try{const r=await post('bans/'+encodeURIComponent(b.id)+'/appeals/'+encodeURIComponent(aid)+'/reply',body);closeModal();toast('Reply sent',(r.did&&r.did.length?r.did.join(', '):'They will see it on their banned screen.'),'good');load();}
         catch(e){sheet.querySelectorAll('button').forEach(x=>x.disabled=false);toast('Could not send reply',e.message,'bad');}
-      };});
+      };
+      render();msg.focus();
     },{mid:true});
 }
+const go_=(id)=>go(id);
 window.unban=async(id)=>{try{await post('unban',{banId:id});toast('Ban lifted','The user can connect again.','good');load();}catch(e){toast('Could not lift ban',e.message,'bad');}};
 
 /* ---------- cases: every warning and ban with its evidence ----------
@@ -2969,7 +3153,7 @@ async function viewCaseDetail(id){
     ${c.evidence.reports.length?`<table><tr><th>When</th><th>Reason</th><th>Said</th><th>Reporter</th></tr>${c.evidence.reports.map(x=>`<tr><td>${fmtTs(x.ts)}</td><td><b>${esc(x.reason)}</b></td><td>${x.detail?'“'+esc(x.detail)+'”':'<span class="muted">-</span>'}</td><td>${esc(x.reporter||'?')}<br><span class="muted">${esc(x.reporterCountry||'')}</span></td></tr>`).join('')}</table>`:'<div class="muted">No reports in the 30 days before this.</div>'}</div>
   <div class="card anim"><h2>Appeal <span class="sub">${ap.length} of 3 used</span></h2>${appeals}</div>
   <div class="card anim"><h2>This person <span class="sub">${h.warnings} warning(s) · ${h.bans} ban(s) · ${num(h.reportsTotal)} report(s)</span></h2>
-    <div class="rowbtns">${warnBtn(pr.clientId,pr.account,pr.username,pr.country)}<button class="danger" onclick="banUser('${jsq(pr.clientId||'')}','${jsq(pr.ip||'')}','${jsq(pr.username||'')}','${jsq(pr.country||'')}','')">Ban…</button></div>
+    <div class="rowbtns">${warnBtn(pr.clientId,pr.account,pr.username,pr.country)}<button onclick="restrictFriends('${jsq(pr.clientId||'')}','${jsq(pr.account||'')}','${jsq(pr.username||'')}')">Restrict friends…</button><button class="danger" onclick="banUser('${jsq(pr.clientId||'')}','${jsq(pr.ip||'')}','${jsq(pr.username||'')}','${jsq(pr.country||'')}','')">Ban…</button></div>
     ${h.otherCases.length?`<div style="margin-top:12px"><b style="font-size:.85rem">Their other cases</b>${h.otherCases.map(x=>`<div style="display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:8px 0;border-top:1px solid var(--grid);cursor:pointer" onclick="caseGo('${jsq(x.id)}')"><div style="flex:1;min-width:200px">${esc(x.offense.title||x.offense.category)}<br><span class="muted">${ago(x.ts)}</span></div><div><b>${esc(caAction(x))}</b></div><div>${caStatus(x)}</div></div>`).join('')}</div>`:''}</div>
   <div class="card anim"><h2>Your notes <span class="sub">private, only you see these</span></h2>
     ${c.notes.map(n=>`<div class="fmsg" style="margin-bottom:6px"><div class="muted">${fmtTs(n.ts)}</div><div class="txt">${esc(n.text)}</div></div>`).join('')}
