@@ -69,6 +69,14 @@
     + '.tl-st-frame{position:relative;width:100vw;height:100vh;height:100dvh;overflow:hidden;border-radius:0;color:#fff;container-type:inline-size}'
     + '.tl-st-layer{position:absolute;max-width:82cqw;text-align:center;font-family:inherit;font-size:7.5cqw;font-weight:800;line-height:1.2;white-space:pre-wrap;word-break:break-word;text-shadow:0 3px 10px rgba(0,0,0,.3);pointer-events:none;transform-origin:center}'
     + '.tl-st-layer.emoji{font-size:17cqw;text-shadow:none;line-height:1}.tl-st-layer.pill{text-shadow:none;border-radius:12px;padding:6px 12px}'
+    + '.tl-st-layer.f-serif{font-family:Georgia,"Times New Roman",serif;font-style:italic;font-weight:700}.tl-st-layer.f-mono{font-family:"Courier New",ui-monospace,monospace;font-weight:700}'
+    + '.tl-st-layer.f-hand{font-family:"Segoe Script","Brush Script MT","Comic Sans MS",cursive;font-weight:500;font-size:9cqw}.tl-st-layer.f-heavy{font-weight:900;letter-spacing:-.02em;font-size:8.2cqw}'
+    + '.tl-st-layer.f-neon{font-weight:700}.tl-st-layer.f-outline{font-weight:900;text-shadow:none}.tl-st-layer.f-retro{font-family:Georgia,serif;font-style:italic;font-weight:900;text-shadow:4px 4px 0 rgba(0,0,0,.8)}'
+    + '.m-pulse{animation:tlStPulse 1.3s ease-in-out infinite alternate}@keyframes tlStPulse{to{transform:scale(1.09)}}'
+    + '.m-wiggle{animation:tlStWig 1.3s ease-in-out infinite alternate}@keyframes tlStWig{from{transform:rotate(-6deg)}to{transform:rotate(6deg)}}'
+    + '.m-float{animation:tlStFloat 1.3s ease-in-out infinite alternate}@keyframes tlStFloat{to{transform:translateY(-8px)}}'
+    + '.m-pop{animation:tlStPopIn 2.6s linear infinite}@keyframes tlStPopIn{0%{transform:scale(.6)}12%{transform:scale(1.18)}25%,100%{transform:scale(1)}}'
+    + '.m-rainbow{animation:tlStHue 3s linear infinite}@keyframes tlStHue{to{filter:hue-rotate(360deg)}}'
     + '@media (min-width:700px){.tl-st-frame{border-radius:18px;height:min(92dvh,calc(100vw * 16 / 9));width:calc(min(92dvh,calc(100vw * 16 / 9)) * 9 / 16)}}'
     + '.tl-st-text{position:absolute;left:8%;right:8%;top:50%;transform:translateY(-50%);text-align:center;font-family:inherit;font-size:clamp(22px,7vmin,34px);font-weight:800;line-height:1.25;white-space:pre-wrap;word-break:break-word;text-shadow:0 2px 12px rgba(0,0,0,.25);pointer-events:none}'
     + '.tl-st-gif{position:absolute;width:40%;transform:translate(-50%,-50%);border-radius:10px;touch-action:none;user-select:none;-webkit-user-drag:none}'
@@ -254,6 +262,18 @@
     });
   }
 
+  var GRADS = { 'g:sunset': ['#f97316', '#ec4899'], 'g:ocean': ['#06b6d4', '#3b82f6'], 'g:candy': ['#f472b6', '#a855f7'], 'g:aurora': ['#22c55e', '#06b6d4', '#a855f7'], 'g:gold': ['#fde68a', '#f59e0b'] };
+  var FONTS = { serif: 1, mono: 1, hand: 1, heavy: 1, neon: 1, outline: 1, retro: 1 };
+  var MOTIONS = { type: 1, pulse: 1, wiggle: 1, float: 1, pop: 1, rainbow: 1 };
+  // Words typed on letter by letter, held, then typed again - while the story is open.
+  function typeOn(node, text) {
+    var i = 0;
+    (function step() {
+      if (!node.isConnected) return;
+      node.textContent = text.slice(0, i);
+      if (i < text.length) { i++; setTimeout(step, 55); } else setTimeout(function () { i = 0; step(); }, 2400);
+    })();
+  }
   function lightColor(h) {
     var n = parseInt(h.slice(1), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
     return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.6;
@@ -281,8 +301,36 @@
       d.style.top = (l.y * 100) + '%';
       d.style.transform = 'translate(-50%,-50%) rotate(' + (+l.r || 0) + 'deg) scale(' + (+l.s || 1) + ')';
       if (l.t === 'text') {
-        var c = /^#[0-9a-f]{6}$/i.test(l.c || '') ? l.c : '#ffffff';
-        if (l.b) { d.style.background = c; d.style.color = lightColor(c) ? '#111111' : '#ffffff'; } else d.style.color = c;
+        var grad = GRADS[l.c];
+        var c = grad ? grad[0] : (/^#[0-9a-f]{6}$/i.test(l.c || '') ? l.c : '#ffffff');
+        var paint = grad ? 'linear-gradient(90deg,' + grad.join(',') + ')' : c;
+        if (l.f && FONTS[l.f]) d.className += ' f-' + l.f;
+        if (l.a === 'left' || l.a === 'right') d.style.textAlign = l.a;
+        if (l.b) { d.style.background = paint; d.style.color = lightColor(c) ? '#111111' : '#ffffff'; }
+        else if (l.f === 'neon') { d.style.color = '#ffffff'; d.style.textShadow = '0 0 6px ' + c + ',0 0 18px ' + c + ',0 0 32px ' + c; }
+        else if (l.f === 'outline') { d.style.color = 'transparent'; d.style.webkitTextStroke = '0.045em ' + c; }
+        else if (grad) {
+          // A gradient fill: a text-shadow would paint over it, so the shadow becomes a filter.
+          d.style.backgroundImage = paint; d.style.webkitBackgroundClip = 'text'; d.style.backgroundClip = 'text'; d.style.color = 'transparent';
+          d.style.textShadow = 'none';
+          d.style.filter = l.f === 'retro' ? 'drop-shadow(4px 4px 0 rgba(0,0,0,.8))' : 'drop-shadow(0 3px 8px rgba(0,0,0,.3))';
+        }
+        else d.style.color = c;
+        if (l.f === 'heavy') d.textContent = String(l.text).toUpperCase();
+      }
+      // Motions: type on, pulse, wiggle, float, pop, rainbow (still under reduced motion).
+      if (l.m && MOTIONS[l.m] && !(window.matchMedia && matchMedia('(prefers-reduced-motion:reduce)').matches)) {
+        var inner = document.createElement('span');
+        inner.className = 'tl-st-mo m-' + l.m;
+        inner.style.display = 'inline-block';
+        while (d.firstChild) inner.appendChild(d.firstChild);
+        d.appendChild(inner);
+        if (l.m === 'type') typeOn(inner, d.textContent);
+        // Rainbow words: a rainbow fill whose colours keep turning (emoji just shift hue).
+        if (l.m === 'rainbow' && l.t === 'text' && !l.b && l.f !== 'outline') {
+          inner.style.backgroundImage = 'linear-gradient(90deg,#f43f5e,#f59e0b,#22c55e,#3b82f6,#a855f7)';
+          inner.style.webkitBackgroundClip = 'text'; inner.style.backgroundClip = 'text'; inner.style.color = 'transparent';
+        }
       }
       frame.appendChild(d);
     });

@@ -129,13 +129,17 @@ function connect(id, name) {
     ok('a story with a link in a text layer is refused', lay.ok === false, lay);
     const lay2 = await ask(a, 'story-post', { text: '', bg: 'blue', gifs: [{ ...gif, s: 1.6, r: 12 }], layers: [
       { t: 'text', text: 'Hi there', x: 0.3, y: 0.2, s: 2, r: -15, c: '#facc15', b: true },
-      { t: 'emoji', text: '🔥', x: 0.8, y: 0.9, s: 9, r: 400 },
+      { t: 'emoji', text: '🔥', x: 0.8, y: 0.9, s: 9, r: 400, m: 'pulse' },
       { t: 'bogus', text: 'x' },
+      { t: 'text', text: 'Styled', f: 'neon', a: 'left', m: 'type', c: 'g:sunset' },
+      { t: 'text', text: 'Odd', f: 'comic-sans', a: 'middle', m: 'explode', c: 'url(x)' },
     ] });
     ok('a layered story posts', lay2.ok === true, lay2);
     const fl = await ask(b, 'stories-get');
     const ls = fl.people.find((p) => p.clientId === A).stories.find((x) => x.id === lay2.id);
-    ok('layers come back clamped and cleaned', ls && ls.layers.length === 2 && ls.layers[0].c === '#facc15' && ls.layers[0].b === true
+    ok('styles, gradients, alignment and motion are kept; unknown ones dropped', ls && ls.layers[2].f === 'neon' && ls.layers[2].a === 'left' && ls.layers[2].m === 'type'
+      && ls.layers[2].c === 'g:sunset' && !ls.layers[3].f && !ls.layers[3].a && !ls.layers[3].m && ls.layers[3].c === '#ffffff' && ls.layers[1].m === 'pulse', ls && ls.layers);
+    ok('layers come back clamped and cleaned', ls && ls.layers.length === 4 && ls.layers[0].c === '#facc15' && ls.layers[0].b === true
       && ls.layers[1].s === 5 && ls.layers[1].r === 180 && ls.gifs[0].s === 1.6 && ls.gifs[0].r === 12, ls);
     await ask(a, 'story-delete', { id: lay2.id });
 

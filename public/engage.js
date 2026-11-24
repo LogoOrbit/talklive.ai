@@ -658,7 +658,7 @@
   // Stories (stories.js): friends' 24-hour text and GIF stories in the Friends panel.
   (function () {
     var s = document.createElement('script');
-    s.src = '/stories.js?v=0b9ca41d3e';
+    s.src = '/stories.js?v=0a76e82e29';
     s.async = true;
     document.head.appendChild(s);
   })();
