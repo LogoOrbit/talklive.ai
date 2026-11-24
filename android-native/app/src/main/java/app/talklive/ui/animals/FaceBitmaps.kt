@@ -72,6 +72,10 @@ fun FaceImage(res: Int, description: String?, modifier: Modifier = Modifier) {
     var bmp by remember(res, px) { mutableStateOf(if (px > 0) FaceBitmaps.peek(res, px) else null) }
     if (px > 0 && bmp == null) LaunchedEffect(res, px) { bmp = FaceBitmaps.load(context, res, px) }
     Box(modifier.onSizeChanged { if (it.width > 0 && FaceBitmaps.bucket(it.width) != FaceBitmaps.bucket(px)) px = it.width }) {
-        bmp?.let { Image(it, description, Modifier.matchParentSize(), filterQuality = androidx.compose.ui.graphics.FilterQuality.Medium) }
+        val b = bmp
+        if (b != null) Image(b, description, Modifier.matchParentSize(), filterQuality = androidx.compose.ui.graphics.FilterQuality.Medium)
+        // Not drawn yet (the first time a face is shown at this size): the vector itself for
+        // that moment, so a face never shows blank; the cached image takes over once ready.
+        else Image(androidx.compose.ui.res.painterResource(res), description, Modifier.matchParentSize())
     }
 }

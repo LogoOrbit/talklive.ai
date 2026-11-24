@@ -33,6 +33,14 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   page.on('console', (m) => { if (m.type() === 'error') log.push(m.text()); });
   await page.goto(base + '/', { waitUntil: 'domcontentloaded' });
   await wait(3000);
+  // Accept any friend request, so the app can test friend features (stories, games, calls).
+  await page.evaluate(() => {
+    try {
+      socket.on('state-sync', (st) => {
+        (st && st.friendRequests || []).forEach((r) => socket.emit('friend-request-respond', { fromClientId: r.clientId, accept: true }));
+      });
+    } catch (e) { /* the page may not expose its socket */ }
+  });
   await page.click('#startBtn');
   const t0 = Date.now();
   let shotConnected = false;
