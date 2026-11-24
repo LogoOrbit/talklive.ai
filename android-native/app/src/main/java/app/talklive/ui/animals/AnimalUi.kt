@@ -243,6 +243,18 @@ fun AnimalGrid(
     fun unlocked(id: String) = premium || id == held || (look && (lookFace == null || lookFace.removePrefix("a:") == id))
     val haptics = LocalHapticFeedback.current
     val lowEnd = lowEndDevice()
+    // Every face in both tabs drawn into the cache in one background pass, so none is drawn
+    // for the first time mid-scroll (that showed as a hitch, and as faces popping in).
+    val warmContext = androidx.compose.ui.platform.LocalContext.current
+    // A tile is about 80 dp wide; portraits fill 86% of it, classic faces 72%.
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val premiumPx = with(density) { 69.dp.roundToPx() }
+    val classicPx = with(density) { 58.dp.roundToPx() }
+    LaunchedEffect(Unit) {
+        val faces = (PICKER_ANIMALS + PICKER_CHARACTERS).mapNotNull { animalById(it) }.filter { !it.special }
+        FaceBitmaps.prewarm(warmContext, faces.filter { it.premium }.map { it.icon }, premiumPx)
+        FaceBitmaps.prewarm(warmContext, faces.filter { !it.premium }.map { it.icon }, classicPx)
+    }
     var previewing by remember { mutableStateOf<Animal?>(null) }
     previewing?.let { p -> LockedFacePreview(p, onUnlock = { previewing = null; onLocked() }, onDismiss = { previewing = null }) }
     // Two families, two tabs, so the characters are never hidden below the animals.
@@ -278,8 +290,9 @@ fun AnimalGrid(
             val scale by animateFloatAsState(if (on) 1.06f else 1f, spring(dampingRatio = 0.5f, stiffness = 500f), label = "s")
             val ring by animateColorAsState(if (on) a.color else Color.Transparent, label = "ring")
             Column(
-                Modifier.scale(scale).clip(RoundedCornerShape(20.dp))
-                    .background(if (on) a.color.copy(alpha = 0.14f) else MaterialTheme.colorScheme.surface)
+                // A shaped background, not a clip: clipping every tile cost a mask per tile per frame.
+                Modifier.scale(scale)
+                    .background(if (on) a.color.copy(alpha = 0.14f) else MaterialTheme.colorScheme.surface, RoundedCornerShape(20.dp))
                     .border(2.dp, ring, RoundedCornerShape(20.dp))
                     .then(if (isPlusFace(a.id)) Modifier.border(1.5.dp, app.talklive.ui.components.PlusGold.copy(alpha = 0.7f), RoundedCornerShape(20.dp)) else Modifier)
                     .clickable(remember { MutableInteractionSource() }, indication = null) {
@@ -293,15 +306,13 @@ fun AnimalGrid(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Box {
-                    if (a.special) SpecialFaceArt(a.id, Modifier.fillMaxWidth(0.72f).aspectRatio(1f).graphicsLayer { alpha = if (specialLocked) 0.45f else 1f }, animate = !specialLocked)
-                    // Stills in the grid (drawn once, cached), and only the chosen face moves: a grid
-                    // of live vector animations re-drew every face each frame and made scrolling lag.
-                    // Tapping a locked face opens its live preview.
-                    else if (!on || lowEnd) {
-                        if (a.premium) FaceImage(a.icon, a.name, Modifier.fillMaxWidth(0.86f).aspectRatio(1f).clip(CircleShape))
-                        else Image(painterResource(a.icon), a.name, Modifier.fillMaxWidth(0.72f).aspectRatio(1f).clip(CircleShape))
-                    }
-                    else LivingFace(a.icon, a.name, Modifier.fillMaxWidth(if (a.premium) 0.86f else 0.72f).aspectRatio(1f).clip(CircleShape))
+                    // Level faces move only when chosen, like the rest.
+                    if (a.special) SpecialFaceArt(a.id, Modifier.fillMaxWidth(0.72f).aspectRatio(1f).graphicsLayer { alpha = if (specialLocked) 0.45f else 1f }, animate = on && !specialLocked && !lowEnd)
+                    // Stills in the grid: every face is a ready-made bitmap (FaceBitmaps, drawn in
+                    // one background pass when the grid opens), so scrolling only copies pixels.
+                    // Only the chosen face moves. Portraits are round already: no clip mask.
+                    else if (!on || lowEnd) FaceImage(a.icon, a.name, Modifier.fillMaxWidth(if (a.premium) 0.86f else 0.72f).aspectRatio(1f))
+                    else LivingFace(a.icon, a.name, Modifier.fillMaxWidth(if (a.premium) 0.86f else 0.72f).aspectRatio(1f))
                     if (specialLocked) androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Lock, null, tint = app.talklive.ui.theme.GoldText, modifier = Modifier.align(Alignment.TopEnd).size(14.dp))
                     if (isPlusFace(a.id)) Box(Modifier.align(Alignment.TopEnd)) {
                         if (unlocked(a.id)) app.talklive.ui.components.PlusGem(14.dp)
