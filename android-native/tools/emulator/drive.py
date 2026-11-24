@@ -204,17 +204,19 @@ if connected_app:
     # 6. Speaker / earpiece toggle.
     tap(r"^speaker$", 5)
     step("Speaker toggled", True)
-    # 7. End the call the way a person does: Back, then Leave in the dialog.
-    asked = False
-    for _ in range(3):
-        adb("shell", "input", "keyevent", "4")
-        if wait_for(r"leave this call", 5):
-            asked = True
-            break
+    # 7. Back makes a live voice call a bar at the top (the app stays usable); then end it
+    # with the red button, which asks first.
+    adb("shell", "input", "keyevent", "4"); time.sleep(1.5)
+    step("Back minimises the call to a bar", find(r"\u00b7 \d+:\d\d") is not None)
+    bar = find(r"\u00b7 \d+:\d\d")
+    if bar is not None:
+        x, y = center(bar); adb("shell", "input", "tap", str(x), str(y)); time.sleep(1.5)
+    tap(r"^end$|end call|hang up", 6)
+    asked = wait_for(r"leave this call|^leave$", 6)
     step("Leave-call question", asked)
     tap(r"^leave$", 5)
     time.sleep(2)
-    step("Back on Home after the call", wait_for(r"start talking|start chatting", 25))
+    step("Back on Home after the call", wait_for(r"start talking|start chatting", 25) and find(r"\u00b7 \d+:\d\d") is None)
 else:
     # Not connected: stop the search (Back, then Stop).
     adb("shell", "input", "keyevent", "4"); time.sleep(1)
@@ -227,19 +229,24 @@ for tab in ["Friends", "History", "Profile"]:
     step(f"{tab} tab", ok)
 
 # 9. Plus page from Profile.
-ok = tap(r"talklive plus", 10)
+ok = scroll_to(r"^talklive plus$", 6) and tap(r"^talklive plus$", 10)
 step("Plus page", ok and wait_for(r"your profile with plus|start free trial|subscribe|meet the people you want|sign in or create account", 10))
 adb("shell", "input", "keyevent", "4"); time.sleep(1)
 
 # The avatar picker (Profile > edit profile), scrolling measured, and a locked face's preview.
 tap(r"^profile$", 8)
 if tap(r"edit profile", 6) or tap(r"change avatar|avatar", 4):
-    wait_for(r"^animals$|^characters$", 6)
+    ok = wait_for(r"spirit animals|movie characters", 6)
     jank("avatar picker, animals", 8, 1700, 900)
-    if tap(r"^characters$", 5):
+    if tap(r"movie characters", 5):
         jank("avatar picker, characters", 8, 1700, 900)
-        tap(r"^animals$", 5)
-    step("Avatar picker", find(r"^animals$|^characters$") is not None)
+        tap(r"spirit animals", 5)
+    step("Avatar picker", ok)
+    if tap(r"^dragon$|^unicorn$|^lion$", 5):
+        # Edit profile previews any face; Save is what asks for Plus.
+        tap(r"^save$", 5)
+        step("Saving a Plus face asks for Plus", wait_for(r"plus|meet the people you want|sign in or create account", 6))
+        adb("shell", "input", "keyevent", "4"); time.sleep(1)
     adb("shell", "input", "keyevent", "4"); time.sleep(1)
     adb("shell", "input", "keyevent", "4"); time.sleep(1)
 else:
@@ -252,7 +259,7 @@ jank("Friends tab scroll", 6, 1600, 800)
 
 # Stories: the editor (text, style, drag, emoji, undo/redo), posting, viewers.
 ok = tap(r"your story", 8)
-step("Story editor opens", ok and wait_for(r"new story", 8), "" if ok else "no story row (no friends yet?)")
+step("Story editor opens", ok and wait_for(r"tap to write|^aa$", 8), "" if ok else "no story row (no friends yet?)")
 if ok:
     tap(r"^aa$", 5)
     time.sleep(1)
@@ -270,12 +277,12 @@ if ok:
         moved = nd2 is not None and center(nd2) != (x, y)
     step("Words moved by dragging", moved)
     tap(r"😊", 5)
-    tap(r"🔥", 5)
-    step("Emoji added", find(r"🔥") is not None)
+    tap(r"^😀$", 5)
+    step("Emoji added", find(r"^😀$") is not None)
     tap(r"^undo$", 4)
-    gone = find(r"🔥") is None
+    gone = find(r"^😀$") is None
     tap(r"^redo$", 4)
-    back = find(r"🔥") is not None
+    back = find(r"^😀$") is not None
     step("Undo and Redo", gone and back, f"undo removed it: {gone}, redo brought it back: {back}")
     tap(r"^post$", 5)
     step("Story posts", wait_for(r"posted|your story", 15))
@@ -289,11 +296,7 @@ if ok:
 
 # A friend's chat: a game invite shows the waiting animation; a call shows the call screen.
 tap(r"^friends$", 6)
-friend = next((nd for nd in nodes() if re.search(r"online|active|now", nd.get("text") or "", re.I)), None)
-opened = False
-if friend is not None:
-    x, y = center(friend); adb("shell", "input", "tap", str(x), str(y)); time.sleep(2)
-    opened = find(r"play a game|^call$") is not None
+opened = tap(r"^message$", 6) and wait_for(r"play a game|^call$|type a message|message", 6)
 step("Friend chat opens", opened)
 if opened:
     if tap(r"play a game", 5):
