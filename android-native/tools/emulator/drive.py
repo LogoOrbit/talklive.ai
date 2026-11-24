@@ -211,10 +211,9 @@ if connected_app:
     bar = find(r"\u00b7 \d+:\d\d")
     if bar is not None:
         x, y = center(bar); adb("shell", "input", "tap", str(x), str(y)); time.sleep(1.5)
+    # The red button hangs up at once (only Back asks first); then the "how was it" card.
     tap(r"^end$|end call|hang up", 6)
-    asked = wait_for(r"leave this call|^leave$", 6)
-    step("Leave-call question", asked)
-    tap(r"^leave$", 5)
+    step("Hang up ends the call", wait_for(r"how was your chat|start talking|start chatting", 10))
     time.sleep(2)
     step("Back on Home after the call", wait_for(r"start talking|start chatting", 25) and find(r"\u00b7 \d+:\d\d") is None)
 else:
@@ -284,10 +283,13 @@ if ok:
     tap(r"^redo$", 4)
     back = find(r"^😀$") is not None
     step("Undo and Redo", gone and back, f"undo removed it: {gone}, redo brought it back: {back}")
-    tap(r"^post$", 5)
-    step("Story posts", wait_for(r"posted|your story", 15))
-    time.sleep(3)
-    if tap(r"your story", 8):
+    posted_tap = tap(r"^post$", 5)
+    print("     after Post (tapped=%s): %s" % (posted_tap, " | ".join(screen_text())), flush=True)
+    step("Story posts", posted_tap and wait_for(r"^posted$|^posting", 10) or find(r"tap to write") is None)
+    wait_for(r"^your story$", 15)
+    time.sleep(2)
+    print("     before opening own story: %s" % " | ".join(screen_text()), flush=True)
+    if tap(r"^your story$", 8):
         step("Own story opens", wait_for(r"hello story", 8))
         adb("shell", "input", "swipe", "540", "1700", "540", "700", "250"); time.sleep(1.5)
         step("Swipe up shows who saw it", wait_for(r"seen by", 6))
@@ -313,7 +315,7 @@ if opened:
 tap(r"^home$", 8)
 if tap(r"^text$", 6):
     tap(r"start chatting", 8)
-    matched = wait_for(r"you are now chatting|now chatting|message", 40)
+    matched = wait_for(r"you are now chatting|now chatting|type a message|say hi", 75)
     step("Text chat matched", matched)
     if matched:
         # The message box itself (an EditText to the accessibility tree).
