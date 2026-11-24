@@ -2478,6 +2478,15 @@ function replyBanAppeal(banId, appealId, text) {
   return { ban, appeal: a };
 }
 
+// Change how long a ban lasts, counted from now (shorter or longer).
+function setBanExpiry(banId, minutes) {
+  const ban = data.bans.find((b) => b.id === banId);
+  if (!ban || ban.liftedAt) return null;
+  ban.expiresAt = Date.now() + Math.min(Math.max(Number(minutes) || 30, 30), 5 * 365 * 24 * 60) * 60000;
+  save();
+  return ban;
+}
+
 function markBanAppealsSeen(ban) {
   let changed = false;
   for (const a of ban.appeals || []) if (a.reply && !a.seenAt) { a.seenAt = Date.now(); changed = true; }
@@ -4434,6 +4443,7 @@ module.exports = {
   engageGet,
   engageSet,
   voiceGet,
+  setBanExpiry,
   addFriendRestriction,
   activeFriendRestriction,
   friendRestrictions,

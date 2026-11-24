@@ -1128,20 +1128,49 @@ function createAdmin({ io, getRuntime, getLiveCounts, kickBanned, pushBanUpdate,
     res.json({ ok: true });
   });
 
-  // Answer a ban appeal. `action`: reply (just answer), keep (answer, ban stays)
-  // or lift (answer and lift the ban: the person leaves the banned screen now).
+  // Answer a ban appeal and decide what happens to the person, in one step.
+  //   action: reply (answer only), keep (answer, ban stays), lift (answer and
+  //           lift it: they leave the banned screen now) or change (answer and
+  //           set a new length from now, shorter or longer, `minutes`).
+  // Extras, on top of any action:
+  //   restrictDays  also stop friend requests for that many days (1-365)
+  //   ageReview     also open an age case: restricted until a moderator decides
   router.post('/api/bans/:id/appeals/:aid/reply', (req, res) => {
     const body = req.body || {};
     const text = String(body.message || '').trim().slice(0, 1000);
     if (text.length < 2) return res.status(400).json({ error: 'Write the reply first.' });
-    const action = ['lift', 'keep'].includes(body.action) ? body.action : 'reply';
+    const action = ['lift', 'keep', 'change'].includes(body.action) ? body.action : 'reply';
+    const minutes = Math.round(Number(body.minutes));
+    if (action === 'change' && !(minutes >= 30 && minutes <= 5 * 365 * 24 * 60)) return res.status(400).json({ error: 'Choose how long the ban should last.' });
+    const restrictDays = body.restrictDays ? Math.round(Number(body.restrictDays)) : 0;
+    if (body.restrictDays && !(restrictDays >= 1 && restrictDays <= 365)) return res.status(400).json({ error: 'Friend restriction: choose 1 to 365 days.' });
+    const ban = store.data.bans.find((b) => b.id === req.params.id);
+    if (!ban) return res.status(404).json({ error: 'Appeal not found.' });
+    const who = ban.username || ban.account || ban.clientId || ban.ip;
+    const wantsPerson = restrictDays || body.ageReview === true;
+    if (wantsPerson && !ban.clientId && !ban.account) return res.status(400).json({ error: 'This ban has no profile or account to restrict.' });
     const out = store.replyBanAppeal(req.params.id, req.params.aid, text);
     if (!out) return res.status(404).json({ error: 'Appeal not found.' });
-    const who = out.ban.username || out.ban.account || out.ban.clientId || out.ban.ip;
-    if (action === 'lift') store.liftBan(out.ban.id);
-    store.audit('ban-appeal-reply', reqIp(req), `Replied to ban appeal from ${who}${action === 'lift' ? ' and lifted the ban' : action === 'keep' ? ' and kept the ban' : ''}`);
-    if (pushBanUpdate) pushBanUpdate(out.ban);
-    res.json({ ok: true, lifted: action === 'lift' });
+    const did = [];
+    if (action === 'lift') { store.liftBan(ban.id); did.push('lifted the ban'); }
+    else if (action === 'change') { store.setBanExpiry(ban.id, minutes); did.push(`set the ban to ${minutes} min from now`); }
+    else if (action === 'keep') did.push('kept the ban');
+    if (restrictDays) {
+      const rec = store.addFriendRestriction({ clientId: ban.clientId, account: ban.account, username: ban.username, reason: `After ban appeal: ${ban.reason || 'no reason'}`, days: restrictDays });
+      did.push(`restricted friend requests for ${restrictDays} day(s)`);
+      if (onFriendRestriction) onFriendRestriction(rec);
+    }
+    if (body.ageReview === true) {
+      const cid = ban.clientId || store.getAccountClientId(ban.account);
+      if (cid) {
+        store.ageCaseSet(cid, ageCase.flag(store.ageCaseGet(cid), { clientId: cid, username: ban.username, account: ban.account, source: 'ban-appeal', reason: `Ban: ${ban.reason || 'no reason'}. They appealed: ${String(out.appeal.text || '').slice(0, 200)}` }));
+        did.push('opened an age review (restricted until decided)');
+        if (onAgeDecision) onAgeDecision(cid);
+      }
+    }
+    store.audit('ban-appeal-reply', reqIp(req), `Replied to ban appeal from ${who}${did.length ? ' and ' + did.join(', ') : ''}`);
+    if (pushBanUpdate) pushBanUpdate(ban);
+    res.json({ ok: true, lifted: action === 'lift', did });
   });
 
   router.post('/api/unban', (req, res) => {
