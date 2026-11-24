@@ -42,8 +42,8 @@ android {
         applicationId = "app.talklive"
         minSdk = 26
         targetSdk = 36
-        versionCode = 140
-        versionName = "3.17.0"
+        versionCode = 141
+        versionName = "3.18.0"
         buildConfigField("String", "SERVER_URL", "\"https://talklive.app\"")
     }
 
@@ -162,6 +162,7 @@ dependencies {
     implementation(libs.webrtc)
     implementation(libs.coil.compose)
     implementation(libs.billing)
+    implementation(libs.play.app.update)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
     implementation(libs.androidx.lifecycle.process)

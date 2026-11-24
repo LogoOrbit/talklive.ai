@@ -31,6 +31,13 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var engage: app.talklive.engage.EngageRepository
     @Inject lateinit var social: app.talklive.social.SocialRepository
 
+    private lateinit var forcedUpdate: app.talklive.update.ForcedUpdate
+
+    override fun onResume() {
+        super.onResume()
+        forcedUpdate.check()
+    }
+
     /**
      * Run at the screen's fastest refresh rate (90/120/144 Hz) at its current resolution, so
      * scrolling and animations are as smooth as the phone allows. Android still lowers it to
@@ -51,6 +58,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        forcedUpdate = app.talklive.update.ForcedUpdate(this)
         // Only a fresh launch: a rotation or theme change re-runs onCreate with
         // the same intent, and a shortcut launch started a second call.
         if (savedInstanceState == null) handle(intent)
@@ -76,6 +84,7 @@ class MainActivity : ComponentActivity() {
                     // The logo morph, once per launch (not on rotation).
                     var intro by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(savedInstanceState == null) }
                     if (intro) app.talklive.ui.onboarding.LaunchIntro { intro = false }
+                    if (forcedUpdate.required) app.talklive.update.UpdateRequiredScreen(onUpdate = forcedUpdate::update, onExit = ::finish)
                 }
             }
         }

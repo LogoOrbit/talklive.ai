@@ -103,12 +103,8 @@ internal fun GameContent(
                     when (stage) {
                         Stage.Idle, Stage.Invited -> Picker(ui.declined, partnerName, onInvite)
                         Stage.Inviting, Stage.Waiting -> {
-                            app.talklive.ui.components.SymbolIcon("🎮", 44.dp)
-                            Spacer(Modifier.height(8.dp))
-                            Text(
-                                stringResource(if (stage == Stage.Inviting) R.string.game_waiting else R.string.game_starting, partnerName),
-                                style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground,
-                            )
+                            // The game picked, playing itself while the other person joins.
+                            GameWaiting(ui.kind, partnerName, starting = stage == Stage.Waiting)
                             Spacer(Modifier.height(16.dp))
                             SecondaryButton(stringResource(R.string.cancel), onClick = onClose)
                         }

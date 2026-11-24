@@ -106,6 +106,24 @@ def step(name, ok, note=""):
         # What was on screen, so a failure can be read straight from the log.
         print("     on screen: " + " | ".join(screen_text()), flush=True)
 
+def jank(label, swipes=8, y1=1650, y2=750):
+    """Scrolls and reads Android's own frame statistics for the app: how many frames
+    missed their deadline. (The CI emulator draws in software, so absolute numbers are
+    worse than on a phone; they are for comparing runs.)"""
+    adb("shell", "dumpsys", "gfxinfo", PKG, "reset")
+    for i in range(swipes):
+        a, b = (y1, y2) if i % 2 == 0 else (y2, y1)
+        adb("shell", "input", "swipe", "540", str(a), "540", str(b), "260"); time.sleep(0.35)
+    out = adb("shell", "dumpsys", "gfxinfo", PKG).stdout
+    def g(rx):
+        m = re.search(rx, out)
+        return m.group(1) if m else "?"
+    frames = g(r"Total frames rendered: (\d+)")
+    janky = g(r"Janky frames: \d+ \(([\d.]+)%\)")
+    p50, p90, p99 = g(r"50th percentile: (\d+)ms"), g(r"90th percentile: (\d+)ms"), g(r"99th percentile: (\d+)ms")
+    note = f"frames {frames}, janky {janky}%, p50 {p50}ms, p90 {p90}ms, p99 {p99}ms"
+    step(f"Smoothness: {label}", frames != "?", note)
+
 def web_state():
     try:
         with open(os.path.join(OUT, "web-peer.json")) as f:
@@ -137,12 +155,16 @@ tap(r"^continue$")
 step("Rules summary with one agree button", wait_for(r"i.m 18\+ and i agree", 15))
 tap(r"i.m 18\+ and i agree")
 
-# 2. Setup: avatar, then about you.
-step("Pick an avatar", wait_for(r"surprise me", 20))
-tap(r"surprise me"); tap(r"^continue$")
+# 2. Setup (older builds asked for an avatar here), then the daily reward sheet.
+if wait_for(r"surprise me", 8):
+    tap(r"surprise me"); tap(r"^continue$")
+if wait_for(r"daily reward|claim", 8):
+    tap(r"^later$|^claim$", 5); time.sleep(1)
 
-# 3. Home.
-step("Home", wait_for(r"start talking", 25))
+# 3. Home, in voice mode.
+wait_for(r"start talking|start chatting", 25)
+tap(r"^voice$", 5)
+step("Home", wait_for(r"start talking", 15))
 
 # 4. A real voice call with the website user.
 tap(r"start talking")
@@ -182,17 +204,18 @@ if connected_app:
     # 6. Speaker / earpiece toggle.
     tap(r"^speaker$", 5)
     step("Speaker toggled", True)
-    # 7. End the call the way a person does: Back, then Leave in the dialog.
-    asked = False
-    for _ in range(3):
-        adb("shell", "input", "keyevent", "4")
-        if wait_for(r"leave this call", 5):
-            asked = True
-            break
-    step("Leave-call question", asked)
-    tap(r"^leave$", 5)
+    # 7. Back makes a live voice call a bar at the top (the app stays usable); then end it
+    # with the red button, which asks first.
+    adb("shell", "input", "keyevent", "4"); time.sleep(1.5)
+    step("Back minimises the call to a bar", find(r"\u00b7 \d+:\d\d") is not None)
+    bar = find(r"\u00b7 \d+:\d\d")
+    if bar is not None:
+        x, y = center(bar); adb("shell", "input", "tap", str(x), str(y)); time.sleep(1.5)
+    # The red button hangs up at once (only Back asks first); then the "how was it" card.
+    tap(r"^end$|end call|hang up", 6)
+    step("Hang up ends the call", wait_for(r"how was your chat|start talking|start chatting", 10))
     time.sleep(2)
-    step("Back on Home after the call", wait_for(r"start talking|start chatting", 25))
+    step("Back on Home after the call", wait_for(r"start talking|start chatting", 25) and find(r"\u00b7 \d+:\d\d") is None)
 else:
     # Not connected: stop the search (Back, then Stop).
     adb("shell", "input", "keyevent", "4"); time.sleep(1)
@@ -200,20 +223,99 @@ else:
     time.sleep(2)
 
 # 8. The tabs.
-for tab in ["Chats", "Friends", "Profile"]:
+for tab in ["Friends", "History", "Profile"]:
     ok = tap(rf"^{tab}$", 10)
     step(f"{tab} tab", ok)
 
 # 9. Plus page from Profile.
-ok = tap(r"talklive plus", 10)
-step("Plus page", ok and wait_for(r"your profile with plus|start free trial|subscribe", 10))
+ok = scroll_to(r"^talklive plus$", 6) and tap(r"^talklive plus$", 10)
+step("Plus page", ok and wait_for(r"your profile with plus|start free trial|subscribe|meet the people you want|sign in or create account", 10))
 adb("shell", "input", "keyevent", "4"); time.sleep(1)
 
+# The avatar picker (Profile > edit profile), scrolling measured, and a locked face's preview.
+tap(r"^profile$", 8)
+if tap(r"edit profile", 6) or tap(r"change avatar|avatar", 4):
+    ok = wait_for(r"spirit animals|movie characters", 6)
+    jank("avatar picker, animals", 8, 1700, 900)
+    if tap(r"movie characters", 5):
+        jank("avatar picker, characters", 8, 1700, 900)
+        tap(r"spirit animals", 5)
+    step("Avatar picker", ok)
+    if tap(r"^dragon$|^unicorn$|^lion$", 5):
+        # Edit profile previews any face; Save is what asks for Plus.
+        tap(r"^save$", 5)
+        step("Saving a Plus face asks for Plus", wait_for(r"plus|meet the people you want|sign in or create account", 6))
+        adb("shell", "input", "keyevent", "4"); time.sleep(1)
+    adb("shell", "input", "keyevent", "4"); time.sleep(1)
+    adb("shell", "input", "keyevent", "4"); time.sleep(1)
+else:
+    step("Avatar picker", False, "no edit profile button found")
+
+# Friends: the website person accepted the friend request during the call.
+tap(r"^friends$", 8)
+time.sleep(2)
+jank("Friends tab scroll", 6, 1600, 800)
+
+# Stories: the editor (text, style, drag, emoji, undo/redo), posting, viewers.
+ok = tap(r"your story", 8)
+step("Story editor opens", ok and wait_for(r"tap to write|^aa$", 8), "" if ok else "no story row (no friends yet?)")
+if ok:
+    tap(r"^aa$", 5)
+    time.sleep(1)
+    adb("shell", "input", "text", "Hello%sstory")
+    step("Typing: styles, colours, size slider", wait_for(r"typewriter|retro|neon", 6))
+    tap(r"^neon$", 4)
+    tap(r"^done$", 5)
+    step("Words placed on the story", wait_for(r"hello story", 6))
+    nd = find(r"hello story")
+    moved = False
+    if nd is not None:
+        x, y = center(nd)
+        adb("shell", "input", "swipe", str(x), str(y), str(x + 160), str(y - 320), "700"); time.sleep(1.2)
+        nd2 = find(r"hello story")
+        moved = nd2 is not None and center(nd2) != (x, y)
+    step("Words moved by dragging", moved)
+    tap(r"😊", 5)
+    tap(r"^😀$", 5)
+    step("Emoji added", find(r"^😀$") is not None)
+    tap(r"^undo$", 4)
+    gone = find(r"^😀$") is None
+    tap(r"^redo$", 4)
+    back = find(r"^😀$") is not None
+    step("Undo and Redo", gone and back, f"undo removed it: {gone}, redo brought it back: {back}")
+    posted_tap = tap(r"^post$", 5)
+    print("     after Post (tapped=%s): %s" % (posted_tap, " | ".join(screen_text())), flush=True)
+    step("Story posts", posted_tap and wait_for(r"^posted$|^posting", 10) or find(r"tap to write") is None)
+    wait_for(r"^your story$", 15)
+    time.sleep(2)
+    print("     before opening own story: %s" % " | ".join(screen_text()), flush=True)
+    if tap(r"^your story$", 8):
+        step("Own story opens", wait_for(r"hello story", 8))
+        adb("shell", "input", "swipe", "540", "1700", "540", "700", "250"); time.sleep(1.5)
+        step("Swipe up shows who saw it", wait_for(r"seen by", 6))
+        adb("shell", "input", "keyevent", "4"); time.sleep(1)
+        adb("shell", "input", "keyevent", "4"); time.sleep(1)
+
+# A friend's chat: a game invite shows the waiting animation; a call shows the call screen.
+tap(r"^friends$", 6)
+opened = tap(r"^message$", 6) and wait_for(r"play a game|^call$|type a message|message", 6)
+step("Friend chat opens", opened)
+if opened:
+    if tap(r"play a game", 5):
+        tap(r"tic tac toe", 6)
+        step("Game invite: waiting animation", wait_for(r"waiting for", 8))
+        adb("shell", "input", "keyevent", "4"); time.sleep(1)
+        tap(r"^cancel$", 3)
+    if tap(r"^call$", 5):
+        step("Friend call screen", wait_for(r"calling|ringing|private call", 8))
+        tap(r"^cancel$", 6); time.sleep(1.5)
+    adb("shell", "input", "keyevent", "4"); time.sleep(1)
+
 # A random text chat with the website's text page, both directions.
-tap(r"^talk$", 8)
+tap(r"^home$", 8)
 if tap(r"^text$", 6):
     tap(r"start chatting", 8)
-    matched = wait_for(r"you are now chatting|now chatting|message", 40)
+    matched = wait_for(r"you are now chatting|now chatting|type a message|say hi", 75)
     step("Text chat matched", matched)
     if matched:
         # The message box itself (an EditText to the accessibility tree).
@@ -242,17 +344,21 @@ if tap(r"^text$", 6):
 else:
     step("Text chat matched", False, "no Text switch on Home")
 
-# Settings in Profile: the switches, the Calls section, themes, ID, problem report.
+# Settings in Profile: the sections, the Plus-only theme, a problem report.
+# (After a chat the app may ask "Enjoyed talking?": answer Not now first.)
+if wait_for(r"enjoyed talking", 3):
+    tap(r"^not now$", 5)
 tap(r"^profile$", 8)
-for _ in range(3):
-    adb("shell", "input", "swipe", "540", "1700", "540", "700", "300"); time.sleep(0.8)
-step("Settings: Calls, Privacy, Appearance", find(r"start on speaker|read receipts|vibration") is not None)
-ok = scroll_to(r"^ocean$") and tap(r"^ocean$", 6)
-plus = ok and wait_for(r"your profile with plus|start free trial|subscribe|talklive plus", 8)
+step("Settings sections", scroll_to(r"privacy & safety|appearance & sound"))
+ok = scroll_to(r"appearance & sound") and tap(r"appearance & sound", 6)
+ok = ok and scroll_to(r"^ocean$", 4) and tap(r"^ocean$", 6)
+plus = ok and wait_for(r"your profile with plus|start free trial|subscribe|talklive plus|meet the people you want", 8)
 step("Ocean theme is Plus-only (opens Plus)", plus)
-if plus:
+for _ in range(2):
     adb("shell", "input", "keyevent", "4"); time.sleep(1)
-ok = scroll_to(r"report a problem") and tap(r"report a problem", 6)
+tap(r"^profile$", 6)
+ok = scroll_to(r"^help$") and tap(r"^help$", 6)
+ok = (scroll_to(r"report a problem", 4) and tap(r"report a problem", 6)) if ok else False
 if ok:
     adb("shell", "input", "text", "test%sreport%sfrom%sthe%semulator"); time.sleep(1)
     step("Report a problem sheet", True)
@@ -262,15 +368,17 @@ if ok:
     step("Problem report sent", wait_for(r"we got your report", 6) or find(r"tell us what went wrong") is None)
 else:
     step("Report a problem sheet", False)
+for _ in range(2):
+    adb("shell", "input", "keyevent", "4"); time.sleep(1)
 
 # 10. Filters from Home.
-tap(r"^talk$", 8)
-ok = tap(r"match filters", 8)
-step("Filters", ok and wait_for(r"match filters|interests", 8))
+tap(r"^home$", 8)
+ok = tap(r"^filters$|match filters", 8)
+step("Filters", ok and wait_for(r"match filters|interests|countries", 8))
 adb("shell", "input", "keyevent", "4")
 
 # Back on Home: once shows a hint, twice leaves the app.
-tap(r"^talk$", 8)
+tap(r"^home$", 8)
 adb("shell", "input", "keyevent", "4"); time.sleep(0.6)
 step("Back once on Home shows the exit hint", wait_for(r"press back again", 3))
 

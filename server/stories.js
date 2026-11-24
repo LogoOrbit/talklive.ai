@@ -17,6 +17,10 @@ const MAX_LAYERS = 20;
 const MIN_SCALE = 0.3;
 const MAX_SCALE = 5;
 const TEXT_COLORS = ['#ffffff', '#111111', '#facc15', '#ef4444', '#3b82f6', '#22c55e', '#ec4899', '#a855f7', '#f97316'];
+// Font styles and gradient fills for words, and the little motions words and emoji can have.
+const TEXT_FONTS = ['classic', 'serif', 'mono', 'hand', 'heavy', 'neon', 'outline', 'retro'];
+const TEXT_GRADIENTS = ['g:sunset', 'g:ocean', 'g:candy', 'g:aurora', 'g:gold'];
+const TEXT_MOTIONS = ['none', 'type', 'pulse', 'wiggle', 'float', 'pop', 'rainbow'];
 const BACKGROUNDS = ['blue', 'purple', 'pink', 'orange', 'green', 'teal', 'dark', 'sunset', 'ocean', 'berry'];
 
 function createStories({ store, cleanGif, friendIdsOf, isBlockedPair, checkText }) {
@@ -69,9 +73,12 @@ function createStories({ store, cleanGif, friendIdsOf, isBlockedPair, checkText 
       if (!kind || !body) return null;
       const out = { t: kind, text: body, x: clamp01(l.x), y: clamp01(l.y), s: scaleOf(l.s), r: turnOf(l.r) };
       if (kind === 'text') {
-        out.c = TEXT_COLORS.includes(l.c) ? l.c : '#ffffff';
+        out.c = TEXT_COLORS.includes(l.c) || TEXT_GRADIENTS.includes(l.c) ? l.c : '#ffffff';
         if (l.b === true) out.b = true;
+        if (TEXT_FONTS.includes(l.f) && l.f !== 'classic') out.f = l.f;
+        if (l.a === 'left' || l.a === 'right') out.a = l.a;
       }
+      if (TEXT_MOTIONS.includes(l.m) && l.m !== 'none') out.m = l.m;
       return out;
     }).filter(Boolean);
     if (!text && !gifs.length && !layers.length) return { ok: false, error: 'Write something or add a GIF.' };

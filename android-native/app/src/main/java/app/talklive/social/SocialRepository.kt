@@ -806,7 +806,9 @@ class SocialRepository @Inject constructor(
         repeat(3) {
             val got = socket.ask("stories-get")
             if (got != null && got.optBoolean("ok")) {
-                refreshStories()
+                // The list shows the new story before it is called posted, so tapping
+                // "Your story" right away opens it (it used to open the editor again).
+                got.optJSONArray("people")?.let { SocialCache.saveStories(identity.clientId, it); showStories(it) }
                 val mine = got.optJSONArray("people")?.optJSONObject(0)?.optJSONArray("stories")
                 val found = mine != null && (0 until mine.length()).any { i -> mine.optJSONObject(i)?.optString("id") == id }
                 if (found) {

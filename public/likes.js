@@ -232,12 +232,26 @@
   S.on('state-sync', function () { setTimeout(refresh, 300); });
   if (S.connected) setTimeout(refresh, 800);
 
+  // The pink "new" dot is for likes not seen yet: it goes once the likes are opened and
+  // comes back only with new ones (kept in this browser).
+  var SEEN_KEY = 'tl_likes_seen';
+  function seenCount() { try { return +localStorage.getItem(SEEN_KEY) || 0; } catch (e) { return 0; } }
+  function markSeen() {
+    try { localStorage.setItem(SEEN_KEY, String(summary.count)); } catch (e) { /* storage blocked */ }
+    window.dispatchEvent(new CustomEvent('tl-likes'));
+  }
   function chip() {
     if (!summary.count) return '';
-    return '<button type="button" class="tl-chip tl-chip-likes" data-act="likes">' + HEART + '<span>'
-      + esc(tr('likesChip', '{n} liked you', { n: summary.count })) + '</span></button>';
+    var seen = seenCount();
+    if (seen > summary.count) { try { localStorage.setItem(SEEN_KEY, String(summary.count)); } catch (e) { /* fine */ } seen = summary.count; }
+    var fresh = summary.count - seen;
+    return '<button type="button" class="tl-chip tl-chip-likes' + (fresh > 0 ? ' is-new' : '') + '" data-act="likes">' + HEART + '<span>'
+      + esc(tr('likesChip', '{n} liked you', { n: summary.count })) + '</span>'
+      + (fresh > 0 ? '<span class="tl-likes-new" style="margin-left:6px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#ec4899;color:#fff;font-size:11px;font-weight:800;display:inline-grid;place-items:center">' + (fresh > 99 ? '99+' : fresh) + '</span>' : '')
+      + '</button>';
   }
   function openLikes() {
+    markSeen();
     var plus = typeof isPremiumUser !== 'undefined' && isPremiumUser;
     var head = '<button type="button" class="tl-lk-x2" data-close aria-label="' + esc(tr('close', 'Close')) + '">&times;</button>'
       + '<div class="tl-lk-heart" style="margin:0 auto;animation:none;position:relative">' + HEART + '</div>'

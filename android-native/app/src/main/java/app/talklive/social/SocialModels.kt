@@ -230,22 +230,35 @@ data class Disappearing(val on: Boolean, val byMe: Boolean = false, val byName: 
 data class LikesSummary(val count: Int = 0, val matches: Int = 0, val people: List<Person> = emptyList())
 
 /** A GIF placed on a story; [x] and [y] are its centre, 0..1 across and down. */
-data class StoryGif(val url: String, val preview: String, val w: Int, val h: Int, val x: Float, val y: Float, val s: Float = 1f, val r: Float = 0f)
+data class StoryGif(val url: String, val preview: String, val w: Int, val h: Int, val x: Float, val y: Float, val s: Float = 1f, val r: Float = 0f, val id: Long = StoryLayer.nextId())
 
 /**
- * Text or an emoji placed on a story: centre ([x], [y], 0..1), size [s] (1 = normal) and turn [r] in degrees.
- * Text has a colour [c] and may sit on a highlight pill [b].
+ * Text or an emoji placed on a story: centre ([x], [y], 0..1), size [s] (1 = normal) and turn [r]
+ * in degrees. Text has a colour or gradient [c] ("#rrggbb" or "g:name"), may sit on a highlight
+ * pill [b], and has a font style [f] and alignment [a]. [m] is a little motion it plays.
  */
-data class StoryLayer(val id: Long, val kind: String, val text: String, val x: Float, val y: Float, val s: Float = 1f, val r: Float = 0f, val c: String = "#ffffff", val b: Boolean = false) {
+data class StoryLayer(
+    val id: Long, val kind: String, val text: String, val x: Float, val y: Float,
+    val s: Float = 1f, val r: Float = 0f, val c: String = "#ffffff", val b: Boolean = false,
+    val f: String = "classic", val a: String = "center", val m: String = "none",
+) {
     fun json(): org.json.JSONObject = org.json.JSONObject().put("t", kind).put("text", text).put("x", x.toDouble()).put("y", y.toDouble())
-        .put("s", s.toDouble()).put("r", r.toDouble()).also { if (kind == "text") { it.put("c", c); if (b) it.put("b", true) } }
+        .put("s", s.toDouble()).put("r", r.toDouble()).also {
+            if (kind == "text") {
+                it.put("c", c)
+                if (b) it.put("b", true)
+                if (f != "classic") it.put("f", f)
+                if (a != "center") it.put("a", a)
+            }
+            if (m != "none") it.put("m", m)
+        }
 
     companion object {
         private var seq = System.nanoTime()
         fun nextId(): Long = ++seq
         fun from(o: org.json.JSONObject) = StoryLayer(nextId(), o.optString("t", "text"), o.optString("text"),
             o.optDouble("x", 0.5).toFloat(), o.optDouble("y", 0.5).toFloat(), o.optDouble("s", 1.0).toFloat(), o.optDouble("r", 0.0).toFloat(),
-            o.optString("c", "#ffffff"), o.optBoolean("b"))
+            o.optString("c", "#ffffff"), o.optBoolean("b"), o.optString("f", "classic"), o.optString("a", "center"), o.optString("m", "none"))
     }
 }
 

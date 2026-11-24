@@ -69,6 +69,30 @@
     + '.tl-st-frame{position:relative;width:100vw;height:100vh;height:100dvh;overflow:hidden;border-radius:0;color:#fff;container-type:inline-size}'
     + '.tl-st-layer{position:absolute;max-width:82cqw;text-align:center;font-family:inherit;font-size:7.5cqw;font-weight:800;line-height:1.2;white-space:pre-wrap;word-break:break-word;text-shadow:0 3px 10px rgba(0,0,0,.3);pointer-events:none;transform-origin:center}'
     + '.tl-st-layer.emoji{font-size:17cqw;text-shadow:none;line-height:1}.tl-st-layer.pill{text-shadow:none;border-radius:12px;padding:6px 12px}'
+    + '.tl-st-layer.f-serif{font-family:Georgia,"Times New Roman",serif;font-style:italic;font-weight:700}.tl-st-layer.f-mono{font-family:"Courier New",ui-monospace,monospace;font-weight:700}'
+    + '.tl-st-layer.f-hand{font-family:"Segoe Script","Brush Script MT","Comic Sans MS",cursive;font-weight:500;font-size:9cqw}.tl-st-layer.f-heavy{font-weight:900;letter-spacing:-.02em;font-size:8.2cqw}'
+    + '.tl-st-layer.f-neon{font-weight:700}.tl-st-layer.f-outline{font-weight:900;text-shadow:none}.tl-st-layer.f-retro{font-family:Georgia,serif;font-style:italic;font-weight:900;text-shadow:4px 4px 0 rgba(0,0,0,.8)}'
+    + '.tl-st-ed .tl-st-stage{position:absolute;inset:0;z-index:1;touch-action:none}.tl-st-ed .tl-st-layer,.tl-st-ed .tl-st-gif{pointer-events:auto;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}'
+    + '.tl-st-ed .sel{outline:1.5px dashed #fffa;outline-offset:6px;border-radius:8px}.tl-st-hint{position:absolute;left:10%;right:10%;top:45%;text-align:center;font-size:clamp(17px,5cqw,24px);font-weight:800;opacity:.75;pointer-events:none;z-index:1}'
+    + '.tl-st-guide{position:absolute;display:none;background:#fffc;z-index:2;pointer-events:none}.tl-st-guide.v{left:50%;top:0;bottom:0;width:1.5px}.tl-st-guide.h{top:50%;left:0;right:0;height:1.5px}'
+    + '.tl-st-bin{position:absolute;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));width:60px;height:60px;margin-left:-30px;border-radius:50%;background:#0006;border:2px solid #fff;display:none;place-items:center;z-index:4;transition:transform .15s,background .15s;pointer-events:none}'
+    + '.tl-st-bin.on{display:grid}.tl-st-bin.over{background:#ef4444;transform:scale(1.25)}'
+    + '.tl-st-edrow{display:flex;align-items:center;gap:8px}.tl-st-edtop .tl-st-tool{width:42px;height:42px}.tl-st-tool:disabled{opacity:.35;cursor:default}'
+    + '.tl-st-type{position:absolute;inset:0;z-index:7;background:#0009;display:flex;flex-direction:column;padding:12px 12px calc(12px + env(safe-area-inset-bottom))}'
+    + '.tl-st-typebar{display:flex;align-items:center;gap:8px}.tl-st-chip{min-width:40px;height:40px;border-radius:10px;border:0;background:#fff3;color:#fff;font:inherit;font-weight:800;padding:0 10px;cursor:pointer}.tl-st-chip.on{background:#fff;color:#111}'
+    + '.tl-st-typearea{flex:1;display:flex;align-items:center;justify-content:center;position:relative;min-height:120px}'
+    + '.tl-st-typein{width:82%;background:transparent;border:0;outline:0;resize:none;color:#fff;font-family:inherit;font-weight:800;line-height:1.2;text-align:center;border-radius:12px;padding:6px 12px;font-size:7.5cqw}'
+    + '.tl-st-typein.f-serif{font-family:Georgia,serif;font-style:italic;font-weight:700}.tl-st-typein.f-mono{font-family:"Courier New",monospace}.tl-st-typein.f-hand{font-family:"Segoe Script","Brush Script MT",cursive;font-weight:500}.tl-st-typein.f-heavy{font-weight:900;text-transform:uppercase}.tl-st-typein.f-retro{font-family:Georgia,serif;font-style:italic;font-weight:900}'
+    + '.tl-st-size{position:absolute;left:-58px;top:50%;width:150px;transform:rotate(-90deg);accent-color:#fff}'
+    + '.tl-st-fonts,.tl-st-colors{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:6px 0}.tl-st-fonts::-webkit-scrollbar,.tl-st-colors::-webkit-scrollbar{display:none}'
+    + '.tl-st-font{flex:none;border:0;border-radius:12px;background:#fff3;color:#fff;padding:8px 14px;font-size:15px;cursor:pointer;position:static;transform:none;max-width:none;text-shadow:none}.tl-st-font.on{background:#fff;color:#111}'
+    + '.tl-st-font.f-serif{font-family:Georgia,serif;font-style:italic}.tl-st-font.f-mono{font-family:"Courier New",monospace}.tl-st-font.f-hand{font-family:"Segoe Script","Brush Script MT",cursive}.tl-st-font.f-heavy{font-weight:900;text-transform:uppercase}.tl-st-font.f-neon{text-shadow:0 0 8px #22d3ee}.tl-st-font.f-outline{-webkit-text-stroke:1px currentColor;color:transparent}.tl-st-font.f-retro{font-family:Georgia,serif;font-style:italic;font-weight:900}'
+    + '.tl-st-col{flex:none;width:30px;height:30px;border-radius:50%;border:2px solid #fff;cursor:pointer}.tl-st-col.on{transform:scale(1.18)}'
+    + '.m-pulse{animation:tlStPulse 1.3s ease-in-out infinite alternate}@keyframes tlStPulse{to{transform:scale(1.09)}}'
+    + '.m-wiggle{animation:tlStWig 1.3s ease-in-out infinite alternate}@keyframes tlStWig{from{transform:rotate(-6deg)}to{transform:rotate(6deg)}}'
+    + '.m-float{animation:tlStFloat 1.3s ease-in-out infinite alternate}@keyframes tlStFloat{to{transform:translateY(-8px)}}'
+    + '.m-pop{animation:tlStPopIn 2.6s linear infinite}@keyframes tlStPopIn{0%{transform:scale(.6)}12%{transform:scale(1.18)}25%,100%{transform:scale(1)}}'
+    + '.m-rainbow{animation:tlStHue 3s linear infinite}@keyframes tlStHue{to{filter:hue-rotate(360deg)}}'
     + '@media (min-width:700px){.tl-st-frame{border-radius:18px;height:min(92dvh,calc(100vw * 16 / 9));width:calc(min(92dvh,calc(100vw * 16 / 9)) * 9 / 16)}}'
     + '.tl-st-text{position:absolute;left:8%;right:8%;top:50%;transform:translateY(-50%);text-align:center;font-family:inherit;font-size:clamp(22px,7vmin,34px);font-weight:800;line-height:1.25;white-space:pre-wrap;word-break:break-word;text-shadow:0 2px 12px rgba(0,0,0,.25);pointer-events:none}'
     + '.tl-st-gif{position:absolute;width:40%;transform:translate(-50%,-50%);border-radius:10px;touch-action:none;user-select:none;-webkit-user-drag:none}'
@@ -183,7 +207,7 @@
     waitConnected(15000).then(function (ok) {
       if (!ok) { setUpload({ stage: 'failed', data: data, error: tr('storyNoConnection', 'No connection') }); return; }
       setUpload({ stage: 'sending', data: data });
-      ask('story-post', { text: data.text.trim(), bg: data.bg, gifs: data.gifs }).then(function (r) {
+      ask('story-post', { text: String(data.text || '').trim(), bg: data.bg, gifs: data.gifs, layers: data.layers || [] }).then(function (r) {
         if (!r || !r.ok) { setUpload({ stage: 'failed', data: data, error: (r && r.error) || tr('storyFailed', 'Could not post. Try again.') }); return; }
         setUpload({ stage: 'saved', data: data });
         var id = r.id;
@@ -254,38 +278,91 @@
     });
   }
 
+  var GRADS = { 'g:sunset': ['#f97316', '#ec4899'], 'g:ocean': ['#06b6d4', '#3b82f6'], 'g:candy': ['#f472b6', '#a855f7'], 'g:aurora': ['#22c55e', '#06b6d4', '#a855f7'], 'g:gold': ['#fde68a', '#f59e0b'] };
+  var FONTS = { serif: 1, mono: 1, hand: 1, heavy: 1, neon: 1, outline: 1, retro: 1 };
+  var MOTIONS = { type: 1, pulse: 1, wiggle: 1, float: 1, pop: 1, rainbow: 1 };
+  // Words typed on letter by letter, held, then typed again - while the story is open.
+  function typeOn(node, text) {
+    var i = 0;
+    (function step() {
+      if (!node.isConnected) return;
+      node.textContent = text.slice(0, i);
+      if (i < text.length) { i++; setTimeout(step, 55); } else setTimeout(function () { i = 0; step(); }, 2400);
+    })();
+  }
   function lightColor(h) {
     var n = parseInt(h.slice(1), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
     return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.6;
   }
+  // Where a GIF, word or emoji sits: its centre, size and turn.
+  function place(node, o) {
+    node.style.left = (o.x * 100) + '%';
+    node.style.top = (o.y * 100) + '%';
+    node.style.transform = 'translate(-50%,-50%) rotate(' + (+o.r || 0) + 'deg) scale(' + (+o.s || 1) + ')';
+  }
+  // A GIF: its small preview at once (often already loaded by the picker), then the full
+  // GIF once it has arrived - never a blank space while it loads.
+  function gifEl(g) {
+    var w = el('div', 'tl-st-gif');
+    place(w, g);
+    var img = document.createElement('img');
+    img.alt = 'GIF'; img.loading = 'eager'; img.draggable = false;
+    img.src = g.preview || g.url;
+    if (g.preview && g.preview !== g.url) {
+      var full = new Image();
+      full.onload = function () { img.src = g.url; };
+      full.src = g.url;
+    }
+    w.appendChild(img);
+    return w;
+  }
+  // Words or an emoji in their style, colour, alignment and (when watched) motion.
+  function layerEl(l, animate) {
+    var d = el('div', 'tl-st-layer' + (l.t === 'emoji' ? ' emoji' : '') + (l.b ? ' pill' : ''));
+    d.textContent = l.text;
+    place(d, l);
+    if (l.t === 'text') {
+      var grad = GRADS[l.c];
+      var c = grad ? grad[0] : (/^#[0-9a-f]{6}$/i.test(l.c || '') ? l.c : '#ffffff');
+      var paint = grad ? 'linear-gradient(90deg,' + grad.join(',') + ')' : c;
+      if (l.f && FONTS[l.f]) d.className += ' f-' + l.f;
+      if (l.a === 'left' || l.a === 'right') d.style.textAlign = l.a;
+      if (l.b) { d.style.background = paint; d.style.color = lightColor(c) ? '#111111' : '#ffffff'; }
+      else if (l.f === 'neon') { d.style.color = '#ffffff'; d.style.textShadow = '0 0 6px ' + c + ',0 0 18px ' + c + ',0 0 32px ' + c; }
+      else if (l.f === 'outline') { d.style.color = 'transparent'; d.style.webkitTextStroke = '0.045em ' + c; }
+      else if (grad) {
+        // A gradient fill: a text-shadow would paint over it, so the shadow becomes a filter.
+        d.style.backgroundImage = paint; d.style.webkitBackgroundClip = 'text'; d.style.backgroundClip = 'text'; d.style.color = 'transparent';
+        d.style.textShadow = 'none';
+        d.style.filter = l.f === 'retro' ? 'drop-shadow(4px 4px 0 rgba(0,0,0,.8))' : 'drop-shadow(0 3px 8px rgba(0,0,0,.3))';
+      }
+      else d.style.color = c;
+      if (l.f === 'heavy') d.textContent = String(l.text).toUpperCase();
+    }
+    // Motions: type on, pulse, wiggle, float, pop, rainbow (still under reduced motion).
+    if (animate && l.m && MOTIONS[l.m] && !(window.matchMedia && matchMedia('(prefers-reduced-motion:reduce)').matches)) {
+      var inner = document.createElement('span');
+      inner.className = 'tl-st-mo m-' + l.m;
+      inner.style.display = 'inline-block';
+      while (d.firstChild) inner.appendChild(d.firstChild);
+      d.appendChild(inner);
+      if (l.m === 'type') typeOn(inner, d.textContent);
+      // Rainbow words: a rainbow fill whose colours keep turning (emoji just shift hue).
+      if (l.m === 'rainbow' && l.t === 'text' && !l.b && l.f !== 'outline') {
+        inner.style.backgroundImage = 'linear-gradient(90deg,#f43f5e,#f59e0b,#22c55e,#3b82f6,#a855f7)';
+        inner.style.webkitBackgroundClip = 'text'; inner.style.backgroundClip = 'text'; inner.style.color = 'transparent';
+      }
+    }
+    return d;
+  }
   function storyNode(s) {
     var frame = el('div', 'tl-st-frame');
     frame.style.background = BGS[s.bg] || BGS.blue;
-    (s.gifs || []).forEach(function (g) {
-      var w = el('div', 'tl-st-gif');
-      w.style.left = (g.x * 100) + '%';
-      w.style.top = (g.y * 100) + '%';
-      if (g.s || g.r) w.style.transform = 'translate(-50%,-50%) rotate(' + (+g.r || 0) + 'deg) scale(' + (+g.s || 1) + ')';
-      var img = document.createElement('img');
-      img.src = g.url; img.alt = 'GIF'; img.loading = 'eager';
-      w.appendChild(img);
-      frame.appendChild(w);
-    });
+    (s.gifs || []).forEach(function (g) { frame.appendChild(gifEl(g)); });
     // Words and emoji placed, sized and turned anywhere (newer stories); sizes follow the
     // story's width (cqw), so it looks the same as on the phone that made it.
     var layers = s.layers || [];
-    layers.forEach(function (l) {
-      var d = el('div', 'tl-st-layer' + (l.t === 'emoji' ? ' emoji' : '') + (l.b ? ' pill' : ''));
-      d.textContent = l.text;
-      d.style.left = (l.x * 100) + '%';
-      d.style.top = (l.y * 100) + '%';
-      d.style.transform = 'translate(-50%,-50%) rotate(' + (+l.r || 0) + 'deg) scale(' + (+l.s || 1) + ')';
-      if (l.t === 'text') {
-        var c = /^#[0-9a-f]{6}$/i.test(l.c || '') ? l.c : '#ffffff';
-        if (l.b) { d.style.background = c; d.style.color = lightColor(c) ? '#111111' : '#ffffff'; } else d.style.color = c;
-      }
-      frame.appendChild(d);
-    });
+    layers.forEach(function (l) { frame.appendChild(layerEl(l, true)); });
     if (!layers.length && s.text) frame.appendChild(el('div', 'tl-st-text')).textContent = s.text;
     return frame;
   }
@@ -473,17 +550,59 @@
   }
 
   // --- composer ------------------------------------------------------------
+  // Like the app's: tap to write, then move words, emoji and GIFs with a finger or the
+  // mouse; pinch (touch or trackpad) or the mouse wheel sizes them, two fingers or
+  // Shift+wheel turn them; tap words to change them; drop anything on the bin (or press
+  // Delete) to remove it; hold to duplicate; Undo / Redo (Ctrl+Z / Ctrl+Y). Eight type
+  // styles, colours and gradients, alignment, a size slider and motions.
+  var TEXT_COLORS = ['#ffffff', '#111111', '#facc15', '#ef4444', '#3b82f6', '#22c55e', '#ec4899', '#a855f7', '#f97316'];
+  var FONT_LIST = ['classic', 'serif', 'mono', 'hand', 'heavy', 'neon', 'outline', 'retro'];
+  var FONT_NAMES = { classic: 'Classic', serif: 'Elegant', mono: 'Typewriter', hand: 'Handwritten', heavy: 'Loud', neon: 'Neon', outline: 'Outline', retro: 'Retro' };
+  var MOTION_LIST = ['none', 'type', 'pulse', 'wiggle', 'float', 'pop', 'rainbow'];
+  var MOTION_NAMES = { none: 'Still', type: 'Type on', pulse: 'Pulse', wiggle: 'Wiggle', float: 'Float', pop: 'Pop', rainbow: 'Rainbow' };
+  var EMOJI_PICKS = EMOJIS;
+
   function openComposer() {
     var m = modal();
     var draft = loadDraft();
     var bg = draft && BGS[draft.bg] ? draft.bg : BG_KEYS[Math.floor(Math.random() * BG_KEYS.length)];
-    var gifs = [];
-    function keep() { saveDraft({ text: ta.value, bg: bg, gifs: gifs }); }
+    var seq = 0;
+    function nid() { seq++; return 'i' + seq + '_' + Date.now().toString(36); }
+    var gifs = [], layers = [];
+    if (draft) {
+      (draft.gifs || []).forEach(function (g) {
+        if (gifs.length < MAX_GIFS && g && g.url && !gifs.some(function (x) { return x.url === g.url; })) {
+          gifs.push({ id: nid(), url: g.url, preview: g.preview, w: g.w, h: g.h, x: +g.x || 0.5, y: +g.y || 0.4, s: +g.s || 1, r: +g.r || 0 });
+        }
+      });
+      (draft.layers || []).forEach(function (l) { if (l && l.text) layers.push(Object.assign({}, l, { id: nid() })); });
+      // A draft from before layers: its words become one text in the middle.
+      if (draft.text && String(draft.text).trim() && !(draft.layers || []).length) layers.push({ id: nid(), t: 'text', text: String(draft.text).slice(0, 300), x: 0.5, y: 0.45, s: 1, r: 0, c: '#ffffff' });
+    }
+    function strip(o) { var c = Object.assign({}, o); delete c.id; return c; }
+    function keep() { saveDraft({ text: '', bg: bg, gifs: gifs.map(strip), layers: layers.map(strip) }); }
+    function isEmpty() { return !gifs.length && !layers.length; }
+
+    // Undo / Redo: the whole story before each change.
+    var undoS = [], redoS = [];
+    function snapshot() { return JSON.stringify({ bg: bg, gifs: gifs, layers: layers }); }
+    function record() { undoS.push(snapshot()); if (undoS.length > 40) undoS.shift(); redoS = []; syncHistory(); }
+    function restore(sv) { var o = JSON.parse(sv); bg = o.bg; gifs = o.gifs; layers = o.layers; frame.style.background = BGS[bg]; syncSwatches(); paint(); keep(); }
+    function undo() { if (!undoS.length) return; redoS.push(snapshot()); restore(undoS.pop()); syncHistory(); }
+    function redo() { if (!redoS.length) return; undoS.push(snapshot()); restore(redoS.pop()); syncHistory(); }
+
     // Back (browser or phone), Esc and the X all ask before anything is lost.
     var pushed = false, closed = false;
     try { history.pushState({ tlStory: 1 }, ''); pushed = true; } catch (e) { /* no history */ }
     function onPop() { if (closed) return; pushed = false; requestClose(); }
-    function onKey(e) { if (e.key === 'Escape') { e.preventDefault(); requestClose(); } }
+    function onKey(e) {
+      if (typing) { if (e.key === 'Escape') { e.preventDefault(); finishText(); } return; }
+      if (e.key === 'Escape') { e.preventDefault(); requestClose(); return; }
+      var mod = e.ctrlKey || e.metaKey;
+      if (mod && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
+      if (mod && (e.key === 'y' || e.key === 'Y')) { e.preventDefault(); redo(); return; }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selected && !picker) { e.preventDefault(); record(); removeItem(selected); keep(); paint(); }
+    }
     window.addEventListener('popstate', onPop);
     document.addEventListener('keydown', onKey);
     function done() {
@@ -493,57 +612,54 @@
       if (pushed) { pushed = false; try { history.back(); } catch (e) { /* fine */ } }
       closeModal(m);
     }
+    function repush() { if (!pushed) { try { history.pushState({ tlStory: 1 }, ''); pushed = true; } catch (e) { /* fine */ } } }
     function requestClose() {
-      if (picker) { closePicker(); if (!pushed) { try { history.pushState({ tlStory: 1 }, ''); pushed = true; } catch (e) { /* fine */ } } return; }
-      if (!ta.value.trim() && !gifs.length) { clearDraft(); done(); return; }
+      if (typing) { finishText(); repush(); return; }
+      if (picker) { closePicker(); repush(); return; }
+      if (isEmpty()) { clearDraft(); done(); return; }
       if (frame.querySelector('.tl-st-confirm')) return;
       var c = el('div', 'tl-st-confirm', '<div><h3>' + esc(tr('storyLeaveTitle', 'Discard this story?')) + '</h3><p>' + esc(tr('storyLeaveBody', 'Your story is not posted yet. Keep editing, or discard it.')) + '</p>'
         + '<div class="row"><button type="button" class="keep">' + esc(tr('storyKeepEditing', 'Continue editing')) + '</button><button type="button" class="drop">' + esc(tr('storyDiscard', 'Discard story')) + '</button></div></div>');
-      c.querySelector('.keep').addEventListener('click', function () {
-        c.remove();
-        if (!pushed) { try { history.pushState({ tlStory: 1 }, ''); pushed = true; } catch (e) { /* fine */ } }
-        ta.focus();
-      });
+      c.querySelector('.keep').addEventListener('click', function () { c.remove(); repush(); });
       c.querySelector('.drop').addEventListener('click', function () { clearDraft(); done(); });
       frame.appendChild(c);
       c.querySelector('.keep').focus();
     }
-    var frame = el('div', 'tl-st-frame');
+
+    var frame = el('div', 'tl-st-frame tl-st-ed');
     frame.style.background = BGS[bg];
-    var top = el('div', 'tl-st-top');
-    var who = el('div', 'tl-st-who', '<span>' + esc(tr('newStory', 'New story')) + '</span>');
+    var stage = el('div', 'tl-st-stage');
+    var hint = el('div', 'tl-st-hint', esc(tr('storyTapToWrite', 'Tap to write, or add emoji and GIFs. Drag to move, pinch or scroll to resize, hold to copy.')));
+    var guideV = el('div', 'tl-st-guide v'), guideH = el('div', 'tl-st-guide h');
+    var bin = el('div', 'tl-st-bin', '<svg viewBox="0 0 24 24" width="26" height="26" fill="#fff" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4zm-3 6h12l-1 12H7z"/></svg>');
+    frame.appendChild(stage); frame.appendChild(hint); frame.appendChild(guideV); frame.appendChild(guideH); frame.appendChild(bin);
+
+    var top = el('div', 'tl-st-top tl-st-edtop');
     var x = el('button', 'tl-st-close', '&times;');
     x.type = 'button'; x.setAttribute('aria-label', tr('close', 'Close'));
     x.addEventListener('click', function () { requestClose(); });
-    who.appendChild(x);
-    top.appendChild(who);
+    function toolBtn(label, title, fn) { var b = el('button', 'tl-st-tool', label); b.type = 'button'; b.title = title; b.setAttribute('aria-label', title); b.addEventListener('click', fn); return b; }
+    var undoBtn = toolBtn('↶', tr('storyUndo', 'Undo'), undo);
+    var redoBtn = toolBtn('↷', tr('storyRedo', 'Redo'), redo);
+    function syncHistory() { undoBtn.disabled = !undoS.length; redoBtn.disabled = !redoS.length; }
+    var row = el('div', 'tl-st-edrow');
+    row.appendChild(x); row.appendChild(undoBtn); row.appendChild(redoBtn);
+    var sp = el('span'); sp.style.flex = '1'; row.appendChild(sp);
+    row.appendChild(toolBtn('Aa', tr('storyAddText', 'Add text'), function () { editText(null); }));
+    row.appendChild(toolBtn('😊', tr('emoji', 'Emoji'), function () { openEmoji(); }));
+    row.appendChild(toolBtn('GIF', 'GIF', function () { openGifs(); }));
+    top.appendChild(row);
     frame.appendChild(top);
-    var ta = document.createElement('textarea');
-    ta.className = 'tl-st-edit';
-    ta.maxLength = MAX_TEXT;
-    ta.rows = 3;
-    ta.placeholder = tr('storyPlaceholder', 'Type something…');
-    ta.value = draft ? String(draft.text || '').slice(0, MAX_TEXT) : '';
-    ta.addEventListener('input', keep);
-    frame.appendChild(ta);
-
-    var tools = el('div', 'tl-st-tools');
-    var emoBtn = el('button', 'tl-st-tool', '😊'); emoBtn.type = 'button'; emoBtn.title = tr('emoji', 'Emoji');
-    var gifBtn = el('button', 'tl-st-tool', 'GIF'); gifBtn.type = 'button'; gifBtn.title = 'GIF';
-    tools.appendChild(emoBtn); tools.appendChild(gifBtn);
-    frame.appendChild(tools);
 
     var foot = el('div', 'tl-st-foot');
     var sw = el('div', 'tl-st-sw');
+    function syncSwatches() { Array.prototype.forEach.call(sw.children, function (c) { c.classList.toggle('on', c.getAttribute('aria-label') === bg); }); }
     BG_KEYS.forEach(function (k) {
       var b = el('button', k === bg ? 'on' : '');
       b.type = 'button';
       b.style.background = BGS[k];
       b.setAttribute('aria-label', k);
-      b.addEventListener('click', function () {
-        bg = k; frame.style.background = BGS[k]; keep();
-        Array.prototype.forEach.call(sw.children, function (c) { c.classList.toggle('on', c === b); });
-      });
+      b.addEventListener('click', function () { if (k === bg) return; record(); bg = k; frame.style.background = BGS[k]; syncSwatches(); keep(); });
       sw.appendChild(b);
     });
     var post = el('button', 'tl-st-btn primary', esc(tr('storyPost', 'Post')));
@@ -551,7 +667,7 @@
     foot.appendChild(sw); foot.appendChild(post);
     frame.appendChild(foot);
     m.appendChild(frame);
-    setTimeout(function () { ta.focus(); }, 50);
+    syncHistory();
 
     function flash(msg) {
       var e = el('div', 'tl-st-err'); e.textContent = msg;
@@ -559,55 +675,261 @@
       setTimeout(function () { e.remove(); }, 2600);
     }
 
-    // A GIF on the story: drag to place, × to remove.
-    function placeGif(g, restore) {
-      if (gifs.length >= MAX_GIFS) { flash(tr('storyMaxGifs', 'Up to {n} GIFs', { n: MAX_GIFS })); return; }
-      var item = { url: g.url, preview: g.preview, w: g.w, h: g.h, x: restore ? g.x : 0.3 + Math.random() * 0.4, y: restore ? g.y : 0.25 + Math.random() * 0.5 };
-      gifs.push(item);
-      var w = el('div', 'tl-st-gif');
-      w.style.left = (item.x * 100) + '%'; w.style.top = (item.y * 100) + '%';
-      var img = document.createElement('img'); img.src = g.url; img.alt = 'GIF';
-      var rm = el('button', 'tl-st-gx', '&times;'); rm.type = 'button';
-      rm.addEventListener('click', function (e) { e.stopPropagation(); gifs.splice(gifs.indexOf(item), 1); w.remove(); keep(); });
-      w.appendChild(img); w.appendChild(rm);
-      w.addEventListener('pointerdown', function (e) {
-        if (e.target === rm) return;
-        e.preventDefault();
-        w.setPointerCapture(e.pointerId);
-        var rect = frame.getBoundingClientRect();
-        function move(ev) {
-          item.x = Math.min(1, Math.max(0, (ev.clientX - rect.left) / rect.width));
-          item.y = Math.min(1, Math.max(0, (ev.clientY - rect.top) / rect.height));
-          w.style.left = (item.x * 100) + '%'; w.style.top = (item.y * 100) + '%';
-        }
-        function up() { w.removeEventListener('pointermove', move); w.removeEventListener('pointerup', up); keep(); }
-        w.addEventListener('pointermove', move);
-        w.addEventListener('pointerup', up);
-      });
-      frame.insertBefore(w, ta);
-      if (!restore) keep();
+    // --- the things on the story ---
+    var selected = null, typing = null;
+    function itemOf(id) { return layers.filter(function (l) { return l.id === id; })[0] || gifs.filter(function (g) { return g.id === id; })[0] || null; }
+    function nodeOf(id) { return stage.querySelector('[data-id="' + id + '"]'); }
+    function removeItem(id) {
+      layers = layers.filter(function (l) { return l.id !== id; });
+      gifs = gifs.filter(function (g) { return g.id !== id; });
+      if (selected === id) selected = null;
     }
-    if (draft && Array.isArray(draft.gifs)) draft.gifs.slice(0, MAX_GIFS).forEach(function (g) { placeGif(g, true); });
+    function bringFront(id) {
+      var i = layers.findIndex(function (l) { return l.id === id; });
+      if (i >= 0 && i < layers.length - 1) layers.push(layers.splice(i, 1)[0]);
+      var j = gifs.findIndex(function (g) { return g.id === id; });
+      if (j >= 0 && j < gifs.length - 1) gifs.push(gifs.splice(j, 1)[0]);
+    }
+    function paint() {
+      stage.innerHTML = '';
+      gifs.forEach(function (g) { var n = gifEl(g); n.dataset.id = g.id; if (g.id === selected) n.classList.add('sel'); stage.appendChild(n); });
+      layers.forEach(function (l) {
+        if (typing && typing.id === l.id) return;
+        var n = layerEl(l, true); n.dataset.id = l.id; if (l.id === selected) n.classList.add('sel'); stage.appendChild(n);
+      });
+      hint.style.display = isEmpty() && !typing ? '' : 'none';
+    }
+    function duplicate(id) {
+      var it = itemOf(id);
+      if (!it) return;
+      if (!it.t && gifs.length >= MAX_GIFS) { flash(tr('storyMaxGifs', 'Up to {n} GIFs', { n: MAX_GIFS })); return; }
+      record();
+      var copy = Object.assign({}, it, { id: nid(), x: Math.min(1, it.x + 0.05), y: Math.min(1, it.y + 0.05) });
+      if (it.t) layers.push(copy); else gifs.push(copy);
+      selected = copy.id;
+      keep(); paint();
+      if (navigator.vibrate) navigator.vibrate(20);
+    }
 
+    // --- one gesture system: what is under the first finger moves; a second finger anywhere sizes and turns it ---
+    var pts = {}, active = null, moved = false, recorded = false, longT = null, longDone = false, start = null, last = null;
+    var overBin = false;
+    function rect() { return frame.getBoundingClientRect(); }
+    function pair() {
+      var ids = Object.keys(pts);
+      var a = pts[ids[0]], b = pts[ids[1]];
+      return { d: Math.hypot(b.x - a.x, b.y - a.y) || 1, ang: Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI, cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 };
+    }
+    function snapTo(it) {
+      var nv = Math.abs(it.x - 0.5) < 0.015, nh = Math.abs(it.y - 0.5) < 0.012;
+      if (nv) it.x = 0.5; if (nh) it.y = 0.5;
+      guideV.style.display = nv ? 'block' : 'none'; guideH.style.display = nh ? 'block' : 'none';
+      var ob = it.y > 0.84 && Math.abs(it.x - 0.5) < 0.16;
+      if (ob !== overBin) { overBin = ob; bin.classList.toggle('over', ob); if (ob && navigator.vibrate) navigator.vibrate(15); }
+    }
+    function beginMove() { if (!recorded) { record(); recorded = true; } moved = true; bin.classList.add('on'); clearTimeout(longT); }
+    stage.addEventListener('pointerdown', function (e) {
+      if (typing) return;
+      try { stage.setPointerCapture(e.pointerId); } catch (_) { /* fine */ }
+      pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+      var n = Object.keys(pts).length;
+      if (n === 1) {
+        var hit = e.target.closest && e.target.closest('[data-id]');
+        active = hit ? hit.dataset.id : null;
+        moved = false; recorded = false; longDone = false; start = null; last = { x: e.clientX, y: e.clientY };
+        if (active) {
+          selected = active; bringFront(active);
+          var node = nodeOf(active); if (node) { stage.appendChild(node); Array.prototype.forEach.call(stage.children, function (c) { c.classList.toggle('sel', c === node); }); }
+          longT = setTimeout(function () { if (!moved && active) { longDone = true; duplicate(active); } }, 550);
+        }
+      } else if (n === 2) {
+        if (!active) active = selected;
+        clearTimeout(longT);
+        var it = itemOf(active);
+        if (it) { var p = pair(); start = { d: p.d, ang: p.ang, cx: p.cx, cy: p.cy, s: it.s || 1, r: it.r || 0, x: it.x, y: it.y }; }
+      }
+    });
+    stage.addEventListener('pointermove', function (e) {
+      if (!pts[e.pointerId]) return;
+      pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+      var it = active && itemOf(active);
+      if (!it) return;
+      var R = rect();
+      var n = Object.keys(pts).length;
+      if (n >= 2 && start) {
+        var p = pair();
+        beginMove();
+        it.s = Math.min(5, Math.max(0.3, start.s * p.d / start.d));
+        it.r = ((start.r + p.ang - start.ang + 540) % 360) - 180;
+        it.x = Math.min(1, Math.max(0, start.x + (p.cx - start.cx) / R.width));
+        it.y = Math.min(1, Math.max(0, start.y + (p.cy - start.cy) / R.height));
+      } else if (n === 1) {
+        var dx = e.clientX - last.x, dy = e.clientY - last.y;
+        if (!moved && Math.hypot(e.clientX - last.x, e.clientY - last.y) < 6) return;
+        beginMove();
+        it.x = Math.min(1, Math.max(0, it.x + dx / R.width));
+        it.y = Math.min(1, Math.max(0, it.y + dy / R.height));
+        last = { x: e.clientX, y: e.clientY };
+      }
+      snapTo(it);
+      var node = nodeOf(it.id); if (node) place(node, it);
+    });
+    function up(e) {
+      delete pts[e.pointerId];
+      var n = Object.keys(pts).length;
+      if (n === 1) { var k = Object.keys(pts)[0]; last = { x: pts[k].x, y: pts[k].y }; start = null; return; }
+      if (n > 0) return;
+      clearTimeout(longT);
+      bin.classList.remove('on'); guideV.style.display = 'none'; guideH.style.display = 'none';
+      if (moved) {
+        if (overBin && active) { removeItem(active); if (navigator.vibrate) navigator.vibrate(25); }
+        overBin = false; bin.classList.remove('over');
+        keep(); paint();
+      } else if (!longDone) {
+        var it = active && itemOf(active);
+        if (it && it.t === 'text') editText(it);
+        else if (!active) { if (picker) closePicker(); else editText(null); }
+      }
+      active = null;
+    }
+    stage.addEventListener('pointerup', up);
+    stage.addEventListener('pointercancel', up);
+    // Mouse and trackpad: the wheel (or a trackpad pinch) sizes what is selected; Shift turns it.
+    var wheelT = null;
+    stage.addEventListener('wheel', function (e) {
+      var it = selected && itemOf(selected);
+      if (!it) return;
+      e.preventDefault();
+      if (!wheelT) record();
+      clearTimeout(wheelT); wheelT = setTimeout(function () { wheelT = null; keep(); }, 400);
+      if (e.shiftKey) it.r = ((it.r + (e.deltaY > 0 ? 6 : -6) + 540) % 360) - 180;
+      else it.s = Math.min(5, Math.max(0.3, it.s * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015))));
+      var node = nodeOf(it.id); if (node) place(node, it);
+    }, { passive: false });
+
+    // --- writing: its own layer, everything above the keyboard ---
+    function editText(l) {
+      closePicker();
+      typing = l ? Object.assign({}, l) : { id: nid(), t: 'text', text: '', x: 0.5, y: 0.42, s: 1, r: 0, c: '#ffffff', f: 'classic', a: 'center', m: 'none' };
+      typing.f = typing.f || 'classic'; typing.a = typing.a || 'center'; typing.m = typing.m || 'none';
+      var isNew = !l;
+      paint();
+      var ov = el('div', 'tl-st-type');
+      var bar = el('div', 'tl-st-typebar');
+      var hl = el('button', 'tl-st-chip', 'A'); hl.type = 'button'; hl.title = tr('storyHighlight', 'Highlight');
+      var al = el('button', 'tl-st-chip', '≡'); al.type = 'button'; al.title = tr('storyAlign', 'Alignment');
+      var mo = el('button', 'tl-st-chip', ''); mo.type = 'button'; mo.title = tr('storyMotion', 'Motion');
+      var dn = el('button', 'tl-st-btn primary', esc(tr('done', 'Done'))); dn.type = 'button';
+      var spc = el('span'); spc.style.flex = '1';
+      bar.appendChild(hl); bar.appendChild(al); bar.appendChild(mo); bar.appendChild(spc); bar.appendChild(dn);
+      var area = el('div', 'tl-st-typearea');
+      var ta = document.createElement('textarea');
+      ta.className = 'tl-st-typein'; ta.maxLength = 300; ta.rows = 2; ta.value = typing.text;
+      ta.placeholder = tr('storyPlaceholder', 'Type something…');
+      area.appendChild(ta);
+      var size = document.createElement('input');
+      size.type = 'range'; size.min = '0.5'; size.max = '3'; size.step = '0.05'; size.value = String(typing.s || 1);
+      size.className = 'tl-st-size'; size.setAttribute('aria-label', tr('storySize', 'Size'));
+      area.appendChild(size);
+      var fonts = el('div', 'tl-st-fonts');
+      FONT_LIST.forEach(function (f) {
+        var b = el('button', 'tl-st-font f-' + f, esc(tr('storyFont_' + f, FONT_NAMES[f]))); b.type = 'button'; b.dataset.f = f;
+        b.addEventListener('click', function () { typing.f = f; sync(); });
+        fonts.appendChild(b);
+      });
+      var colors = el('div', 'tl-st-colors');
+      TEXT_COLORS.concat(Object.keys(GRADS)).forEach(function (c) {
+        var b = el('button', 'tl-st-col'); b.type = 'button'; b.dataset.c = c;
+        b.style.background = GRADS[c] ? 'linear-gradient(135deg,' + GRADS[c].join(',') + ')' : c;
+        b.addEventListener('click', function () { typing.c = c; sync(); });
+        colors.appendChild(b);
+      });
+      ov.appendChild(bar); ov.appendChild(area); ov.appendChild(fonts); ov.appendChild(colors);
+      frame.appendChild(ov);
+      function sync() {
+        var grad = GRADS[typing.c];
+        var c = grad ? grad[0] : typing.c;
+        ta.className = 'tl-st-typein f-' + typing.f;
+        ta.style.textAlign = typing.a;
+        ta.style.fontSize = (7.5 * (+typing.s || 1)) + 'cqw';
+        if (typing.b) { ta.style.background = grad ? 'linear-gradient(90deg,' + grad.join(',') + ')' : c; ta.style.color = lightColor(c) ? '#111111' : '#ffffff'; }
+        else { ta.style.background = 'transparent'; ta.style.color = typing.f === 'neon' ? '#ffffff' : c; }
+        ta.style.textShadow = typing.f === 'neon' ? '0 0 6px ' + c + ',0 0 18px ' + c : '';
+        hl.classList.toggle('on', !!typing.b);
+        al.textContent = typing.a === 'left' ? '⇤' : typing.a === 'right' ? '⇥' : '≡';
+        mo.textContent = '✦ ' + tr('storyMotion_' + typing.m, MOTION_NAMES[typing.m]);
+        mo.classList.toggle('on', typing.m !== 'none');
+        Array.prototype.forEach.call(fonts.children, function (b) { b.classList.toggle('on', b.dataset.f === typing.f); });
+        Array.prototype.forEach.call(colors.children, function (b) { b.classList.toggle('on', b.dataset.c === typing.c); });
+      }
+      hl.addEventListener('click', function () { typing.b = !typing.b; sync(); });
+      al.addEventListener('click', function () { typing.a = typing.a === 'center' ? 'left' : typing.a === 'left' ? 'right' : 'center'; sync(); });
+      mo.addEventListener('click', function () { typing.m = MOTION_LIST[(MOTION_LIST.indexOf(typing.m) + 1) % MOTION_LIST.length]; sync(); });
+      size.addEventListener('input', function () { typing.s = +size.value; sync(); });
+      ta.addEventListener('input', function () { typing.text = ta.value; });
+      dn.addEventListener('click', function () { finishText(); });
+      area.addEventListener('pointerdown', function (e) { if (e.target === area) finishText(); });
+      typing.ov = ov; typing.isNew = isNew;
+      sync();
+      setTimeout(function () { ta.focus(); }, 30);
+    }
+    function finishText() {
+      if (!typing) return;
+      var t = typing, text = String(t.text || '').trim().slice(0, 300);
+      if (t.ov) t.ov.remove();
+      var clean = { id: t.id, t: 'text', text: text, x: t.x, y: t.y, s: +t.s || 1, r: +t.r || 0, c: t.c || '#ffffff' };
+      if (t.b) clean.b = true;
+      if (t.f && t.f !== 'classic') clean.f = t.f;
+      if (t.a && t.a !== 'center') clean.a = t.a;
+      if (t.m && t.m !== 'none') clean.m = t.m;
+      var i = layers.findIndex(function (l) { return l.id === t.id; });
+      typing = null;
+      if (text || i >= 0) {
+        var before = i >= 0 ? JSON.stringify(layers[i]) : '';
+        if (before !== JSON.stringify(clean)) record();
+        if (!text) layers.splice(i, 1);
+        else if (i >= 0) layers[i] = clean;
+        else layers.push(clean);
+        selected = text ? clean.id : null;
+        keep();
+      }
+      paint();
+    }
+
+    // --- emoji and GIFs ---
     var picker = null;
     function closePicker() { if (picker) { picker.remove(); picker = null; } }
-    emoBtn.addEventListener('click', function () {
+    function openEmoji() {
       if (picker) { closePicker(); return; }
       picker = el('div', 'tl-st-pick');
       var grid = el('div', 'tl-st-emo');
-      EMOJIS.forEach(function (e) {
+      EMOJI_PICKS.forEach(function (e) {
         var b = el('button'); b.type = 'button'; b.textContent = e;
         b.addEventListener('click', function () {
-          var at = ta.selectionStart == null ? ta.value.length : ta.selectionStart;
-          ta.value = (ta.value.slice(0, at) + e + ta.value.slice(ta.selectionEnd || at)).slice(0, MAX_TEXT);
-          ta.selectionStart = ta.selectionEnd = at + e.length;
+          record();
+          var l = { id: nid(), t: 'emoji', text: e, x: 0.35 + Math.random() * 0.3, y: 0.3 + Math.random() * 0.3, s: 1, r: 0 };
+          layers.push(l); selected = l.id;
+          keep(); closePicker(); paint();
         });
         grid.appendChild(b);
       });
       picker.appendChild(grid);
       frame.appendChild(picker);
-    });
-    gifBtn.addEventListener('click', function () {
+    }
+    var lastGifPick = 0;
+    function addGif(g) {
+      var now = Date.now();
+      // One pick is one GIF: a quick second tap, or the same GIF again, adds nothing.
+      if (now - lastGifPick < 800) return;
+      lastGifPick = now;
+      if (gifs.some(function (x) { return x.url === g.url; })) { closePicker(); return; }
+      if (gifs.length >= MAX_GIFS) { flash(tr('storyMaxGifs', 'Up to {n} GIFs', { n: MAX_GIFS })); return; }
+      record();
+      var item = { id: nid(), url: g.url, preview: g.preview, w: g.w, h: g.h, x: 0.5, y: 0.4, s: 1, r: 0 };
+      gifs.push(item); selected = item.id;
+      keep(); closePicker(); paint();
+    }
+    function openGifs() {
       if (picker) { closePicker(); return; }
       picker = el('div', 'tl-st-pick');
       var q = document.createElement('input');
@@ -615,20 +937,20 @@
       var grid = el('div', 'tl-st-grid');
       picker.appendChild(q); picker.appendChild(grid);
       frame.appendChild(picker);
-      var seq = 0;
+      var s2 = 0;
       function load() {
-        var my = ++seq;
+        var my = ++s2;
         var lang = (document.documentElement.lang || 'en').slice(0, 2);
         fetch('/api/gifs?lang=' + encodeURIComponent(lang) + (q.value.trim() ? '&q=' + encodeURIComponent(q.value.trim()) : ''))
           .then(function (r) { return r.ok ? r.json() : { results: [] }; })
           .then(function (j) {
-            if (my !== seq || !picker) return;
+            if (my !== s2 || !picker) return;
             grid.innerHTML = '';
             var list = (j && j.results) || [];
             if (!list.length) grid.appendChild(el('div', '', esc(tr('noGifs', 'No GIFs found'))));
             list.forEach(function (g) {
               var im = document.createElement('img'); im.src = g.preview; im.alt = g.alt || 'GIF'; im.loading = 'lazy';
-              im.addEventListener('click', function () { placeGif(g); closePicker(); });
+              im.addEventListener('click', function () { addGif(g); });
               grid.appendChild(im);
             });
           }).catch(function () { /* offline */ });
@@ -637,17 +959,19 @@
       q.addEventListener('input', function () { clearTimeout(deb); deb = setTimeout(load, 300); });
       load();
       q.focus();
-    });
+    }
 
     post.addEventListener('click', function () {
-      var text = ta.value.trim();
-      if (!text && !gifs.length) { flash(tr('storyEmpty', 'Write something or add a GIF')); return; }
-      // The composer closes at once; the ring on "Your story" carries the post through.
-      var data = { text: ta.value, bg: bg, gifs: gifs.slice() };
+      if (typing) finishText();
+      if (isEmpty()) { flash(tr('storyEmpty', 'Write something or add a GIF')); return; }
+      // The words go along as plain text too, so older apps still show something.
+      var summary = layers.filter(function (l) { return l.t === 'text'; }).map(function (l) { return l.text; }).join('\n').slice(0, MAX_TEXT);
+      var data = { text: summary, bg: bg, gifs: gifs.map(strip), layers: layers.map(strip) };
       saveDraft(data);
       done();
       publish(data);
     });
+    paint();
   }
 
   S.on('stories-changed', function () { refresh(); });

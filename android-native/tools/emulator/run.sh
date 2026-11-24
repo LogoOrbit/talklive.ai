@@ -11,7 +11,7 @@ adb shell settings put global transition_animation_scale 0
 adb shell settings put global animator_duration_scale 0
 adb install -r -g "$APK"
 # The other person: the website, searching for a voice call.
-node "$GITHUB_WORKSPACE/android-native/tools/emulator/web-peer.js" http://localhost:5000 "$OUT" 300 > "$OUT/web-peer.log" 2>&1 &
+node "$GITHUB_WORKSPACE/android-native/tools/emulator/web-peer.js" http://localhost:5000 "$OUT" 1200 > "$OUT/web-peer.log" 2>&1 &
 # And one on the text chat page, for the text-chat part.
 node "$GITHUB_WORKSPACE/android-native/tools/emulator/web-text-peer.js" http://localhost:5000 "$OUT" 480 > "$OUT/web-text-peer.log" 2>&1 &
 # A video of the whole run (the emulator caps one file at 3 minutes).

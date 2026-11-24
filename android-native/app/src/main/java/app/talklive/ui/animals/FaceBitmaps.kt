@@ -34,16 +34,33 @@ object FaceBitmaps {
         override fun sizeOf(key: String, value: ImageBitmap) = value.width * value.height * 4
     }
 
-    fun peek(res: Int, px: Int): ImageBitmap? = cache.get("$res@$px")
+    /**
+     * Sizes are rounded up to steps of 32 px: a tile a pixel or two different from its
+     * neighbour reuses the same image instead of drawing another, and a warm-up can draw ahead
+     * for the size a grid will ask for.
+     */
+    fun bucket(px: Int): Int = ((px + 31) / 32) * 32
+
+    fun peek(res: Int, px: Int): ImageBitmap? = cache.get("$res@${bucket(px)}")
+
+    // One drawing at a time, on a background thread: never competes with scrolling for the CPU.
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private val drawer = Dispatchers.Default.limitedParallelism(1)
 
     suspend fun load(context: Context, res: Int, px: Int): ImageBitmap? {
-        peek(res, px)?.let { return it }
-        return withContext(Dispatchers.Default) {
-            runCatching {
+        val b = bucket(px)
+        peek(res, b)?.let { return it }
+        return withContext(drawer) {
+            peek(res, b) ?: runCatching {
                 val d = ContextCompat.getDrawable(context, res) ?: return@runCatching null
-                d.toBitmap(px, px).asImageBitmap().also { it.prepareToDraw(); cache.put("$res@$px", it) }
+                d.toBitmap(b, b).asImageBitmap().also { it.prepareToDraw(); cache.put("$res@$b", it) }
             }.getOrNull()
         }
+    }
+
+    /** Draws these faces ahead, for a grid about to show them at [px]. */
+    suspend fun prewarm(context: Context, resIds: List<Int>, px: Int) {
+        for (res in resIds.distinct()) load(context.applicationContext, res, px)
     }
 }
 
@@ -54,7 +71,11 @@ fun FaceImage(res: Int, description: String?, modifier: Modifier = Modifier) {
     var px by remember { mutableStateOf(0) }
     var bmp by remember(res, px) { mutableStateOf(if (px > 0) FaceBitmaps.peek(res, px) else null) }
     if (px > 0 && bmp == null) LaunchedEffect(res, px) { bmp = FaceBitmaps.load(context, res, px) }
-    Box(modifier.onSizeChanged { if (it.width > 0) px = it.width }) {
-        bmp?.let { Image(it, description, Modifier.matchParentSize()) }
+    Box(modifier.onSizeChanged { if (it.width > 0 && FaceBitmaps.bucket(it.width) != FaceBitmaps.bucket(px)) px = it.width }) {
+        val b = bmp
+        if (b != null) Image(b, description, Modifier.matchParentSize(), filterQuality = androidx.compose.ui.graphics.FilterQuality.Medium)
+        // Not drawn yet (the first time a face is shown at this size): the vector itself for
+        // that moment, so a face never shows blank; the cached image takes over once ready.
+        else Image(androidx.compose.ui.res.painterResource(res), description, Modifier.matchParentSize())
     }
 }

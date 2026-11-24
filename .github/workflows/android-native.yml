@@ -87,13 +87,19 @@ jobs:
         working-directory: android-native
         env:
           TALKLIVE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-        run: ./gradlew --no-daemon bundleRelease
+        run: |
+          ./gradlew --no-daemon bundleRelease
+          # Name it after the version, e.g. TalkLive-3.18.0-141.aab.
+          NAME=$(sed -n 's/.*versionName = "\(.*\)".*/\1/p' app/build.gradle.kts | head -1)
+          CODE=$(sed -n 's/.*versionCode = \([0-9]*\).*/\1/p' app/build.gradle.kts | head -1)
+          echo "APP_VERSION=$NAME-$CODE" >> "$GITHUB_ENV"
+          mv app/build/outputs/bundle/release/app-release.aab "app/build/outputs/bundle/release/TalkLive-$NAME-$CODE.aab"
 
       - uses: actions/upload-artifact@v4
         if: env.TALKLIVE_KEYSTORE != ''
         with:
-          name: talklive-native-release
-          path: android-native/app/build/outputs/bundle/release/app-release.aab
+          name: TalkLive-${{ env.APP_VERSION }}-playstore
+          path: android-native/app/build/outputs/bundle/release/TalkLive-*.aab
 
       # Signed APKs to hand out directly, one per phone chip (arm64-v8a is
       # every phone from the last several years; armeabi-v7a is older ones).
@@ -108,7 +114,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: env.TALKLIVE_KEYSTORE != ''
         with:
-          name: talklive-native-release-apks
+          name: TalkLive-${{ env.APP_VERSION }}-apks
           path: android-native/app/build/outputs/apk/release/*.apk
 
       - uses: actions/upload-artifact@v4
