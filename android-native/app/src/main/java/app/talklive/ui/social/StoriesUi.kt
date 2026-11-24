@@ -164,9 +164,12 @@ fun MyStoryBubble(me: StoryPerson?, upload: app.talklive.social.StoryUpload?, on
                 AnimalAvatar(me?.animal, me?.name, 50.dp)
             }
             val badge = when { failed -> Color(0xFFEF4444); else -> MaterialTheme.colorScheme.primary }
+            // A marker, not a button: a tappable badge this small gets a 48 dp touch area, which
+            // covered most of the bubble, so tapping your story opened the editor instead. The
+            // bubble does it all (open, add, retry); a second story is added from the viewer.
             if (!busy) Box(
                 Modifier.align(Alignment.BottomEnd).size(22.dp).clip(CircleShape).background(badge)
-                    .border(2.dp, MaterialTheme.colorScheme.background, CircleShape).clickable(onClick = if (failed) onRetry else onAdd),
+                    .border(2.dp, MaterialTheme.colorScheme.background, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
                 if (failed) Icon(Icons.Rounded.Refresh, stringResource(R.string.story_retry), tint = Color.White, modifier = Modifier.size(14.dp))

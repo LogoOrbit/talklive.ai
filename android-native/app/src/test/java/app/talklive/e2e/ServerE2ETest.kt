@@ -82,6 +82,32 @@ class ServerE2ETest {
 
     private fun check(what: String, f: () -> Boolean) = waitFor(what) { f().takeIf { it } }
 
+    // Posting a story (text, style and emoji layers) through the app's own code: the
+    // story list must show it as ours by the time the upload says it is posted.
+    @Test fun story_posts_and_shows_as_mine() {
+        val a = Client("a")
+        a.social.refreshStories()
+        val draft = app.talklive.social.StoryDraft(
+            "", "blue", emptyList(),
+            listOf(
+                app.talklive.social.StoryLayer(app.talklive.social.StoryLayer.nextId(), "text", "Hello story", 0.6f, 0.3f, f = "neon"),
+                app.talklive.social.StoryLayer(app.talklive.social.StoryLayer.nextId(), "emoji", "😀", 0.5f, 0.5f, m = "pulse"),
+            ),
+        )
+        a.social.publishStory(draft)
+        val seenStages = mutableListOf<String>()
+        waitFor("the upload finishes") {
+            a.social.storyUpload.value?.stage?.name?.let { if (seenStages.lastOrNull() != it) seenStages += it }
+            (a.social.storyUpload.value == null && seenStages.isNotEmpty()).takeIf { it }
+        }
+        val me = a.social.stories.value.firstOrNull { it.mine }
+        assertTrue("stages: $seenStages; list: ${a.social.stories.value.map { it.name to it.stories.size }}", me != null && me.stories.size == 1)
+        val story = me!!.stories.first()
+        assertEquals(2, story.layers.size)
+        assertEquals("neon", story.layers.first { it.kind == "text" }.f)
+        assertEquals("pulse", story.layers.first { it.kind == "emoji" }.m)
+    }
+
     @Test fun registers_and_gets_identity() {
         val a = Client("a")
         assertTrue(a.identity.identityToken!!.matches(Regex("^[a-f0-9]{64}$")))

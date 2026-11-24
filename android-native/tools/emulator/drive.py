@@ -345,6 +345,9 @@ else:
     step("Text chat matched", False, "no Text switch on Home")
 
 # Settings in Profile: the sections, the Plus-only theme, a problem report.
+# (After a chat the app may ask "Enjoyed talking?": answer Not now first.)
+if wait_for(r"enjoyed talking", 3):
+    tap(r"^not now$", 5)
 tap(r"^profile$", 8)
 step("Settings sections", scroll_to(r"privacy & safety|appearance & sound"))
 ok = scroll_to(r"appearance & sound") and tap(r"appearance & sound", 6)
