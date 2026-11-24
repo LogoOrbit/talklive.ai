@@ -651,14 +651,14 @@
   // Likes (likes.js): "It's a match!", the post-call heart and the likes chip.
   (function () {
     var s = document.createElement('script');
-    s.src = '/likes.js?v=d2b75bee22';
+    s.src = '/likes.js?v=e80ef8a3d3';
     s.async = true;
     document.head.appendChild(s);
   })();
   // Stories (stories.js): friends' 24-hour text and GIF stories in the Friends panel.
   (function () {
     var s = document.createElement('script');
-    s.src = '/stories.js?v=0a76e82e29';
+    s.src = '/stories.js?v=09fa0d23b9';
     s.async = true;
     document.head.appendChild(s);
   })();
