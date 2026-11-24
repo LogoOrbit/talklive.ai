@@ -161,9 +161,20 @@ fun LikesButton(likes: LikesSummary, onPerson: (Person) -> Unit, onPlus: () -> U
     val count = if (likes.people.isNotEmpty()) maxOf(likes.count, likes.people.size) else likes.count
     if (count <= 0) return
     var open by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
-    androidx.compose.material3.IconButton(onClick = { if (likes.people.isNotEmpty()) open = true else onPlus() }) {
+    // The number is for likes not seen yet: once the likes have been opened it goes,
+    // and comes back only with new ones (kept on the phone, so it stays gone after a restart).
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val prefs = androidx.compose.runtime.remember { context.getSharedPreferences("likes_seen", android.content.Context.MODE_PRIVATE) }
+    var seen by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(prefs.getInt("seen", 0)) }
+    androidx.compose.runtime.LaunchedEffect(count) {
+        // Someone took a like back: what was seen can be no more than what there is.
+        if (count < seen) { seen = count; prefs.edit().putInt("seen", count).apply() }
+    }
+    fun markSeen() { seen = count; prefs.edit().putInt("seen", count).apply() }
+    val fresh = (count - seen).coerceAtLeast(0)
+    androidx.compose.material3.IconButton(onClick = { markSeen(); if (likes.people.isNotEmpty()) open = true else onPlus() }) {
         androidx.compose.material3.BadgedBox(badge = {
-            androidx.compose.material3.Badge(containerColor = LikePink, contentColor = Color.White) { Text(if (count > 99) "99+" else count.toString()) }
+            if (fresh > 0) androidx.compose.material3.Badge(containerColor = LikePink, contentColor = Color.White) { Text(if (fresh > 99) "99+" else fresh.toString()) }
         }) { Icon(Icons.Rounded.Favorite, pluralStringResource(R.plurals.people_liked_you, count, count), tint = LikePink) }
     }
     if (open) androidx.compose.material3.ModalBottomSheet(onDismissRequest = { open = false }) {
@@ -177,7 +188,7 @@ fun LikesButton(likes: LikesSummary, onPerson: (Person) -> Unit, onPlus: () -> U
             LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(likes.people, key = { it.clientId }) { p ->
                     Column(
-                        Modifier.width(64.dp).clip(RoundedCornerShape(12.dp)).clickable { open = false; onPerson(p) },
+                        Modifier.width(68.dp).clickable { open = false; onPerson(p) },
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         AnimalAvatar(p.animal, p.displayName, 52.dp)

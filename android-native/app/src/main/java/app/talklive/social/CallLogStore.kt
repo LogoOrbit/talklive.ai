@@ -32,7 +32,7 @@ data class CallLogEntry(
 
 /**
  * Friend call history, kept on this phone like a phone's call log: calls made,
- * received, missed and declined, with talk time for answered ones.
+ * received, missed and declined, with talk time for answered ones, for three months.
  */
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @Singleton
@@ -107,7 +107,15 @@ class CallLogStore @Inject constructor(
 
     fun remove(id: Long) = scope.launch { _entries.update { l -> l.filterNot { it.id == id } }; save() }
 
-    private fun add(e: CallLogEntry) { _entries.update { (listOf(e) + it).take(200) }; save() }
+    private fun add(e: CallLogEntry) { _entries.update { fresh(listOf(e) + it) }; save() }
+
+    /** Calls stay for three months (a busy log is capped at 2000 so the file stays small). */
+    private fun fresh(l: List<CallLogEntry>): List<CallLogEntry> {
+        val cutoff = System.currentTimeMillis() - KEEP_MS
+        return l.filter { it.ts >= cutoff }.take(2000)
+    }
+
+    private companion object { const val KEEP_MS = 90L * 24 * 60 * 60 * 1000 }
 
     private fun replace(e: CallLogEntry) { _entries.update { l -> l.map { if (it.id == e.id) e else it } }; save() }
 
@@ -129,13 +137,13 @@ class CallLogStore @Inject constructor(
 
     private fun load(): List<CallLogEntry> = runCatching {
         val arr = JSONArray(prefs.getString("entries", "[]"))
-        (0 until arr.length()).mapNotNull { i ->
+        fresh((0 until arr.length()).mapNotNull { i ->
             val o = arr.optJSONObject(i) ?: return@mapNotNull null
             CallLogEntry(
                 o.optLong("id"), o.optString("c"), o.optString("n"), o.optString("a").ifBlank { null },
                 o.optBoolean("o"), runCatching { CallOutcome.valueOf(o.optString("r")) }.getOrDefault(CallOutcome.Missed),
                 o.optLong("t"), o.optLong("d"),
             )
-        }
+        })
     }.getOrDefault(emptyList())
 }

@@ -137,7 +137,7 @@ fun MyStoryBubble(me: StoryPerson?, upload: app.talklive.social.StoryUpload?, on
     val track = MaterialTheme.colorScheme.outlineVariant
     val doneAlpha by androidx.compose.animation.core.animateFloatAsState(if (upload?.stage == app.talklive.social.StoryUpload.Stage.Published) 1f else 0f, label = "done")
     Column(
-        Modifier.width(64.dp).clip(RoundedCornerShape(12.dp)).clickable { when { failed -> onRetry(); busy -> Unit; has -> onOpen(); else -> onAdd() } },
+        Modifier.width(68.dp).clickable { when { failed -> onRetry(); busy -> Unit; has -> onOpen(); else -> onAdd() } },
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box {
@@ -192,7 +192,8 @@ fun MyStoryBubble(me: StoryPerson?, upload: app.talklive.social.StoryUpload?, on
 /** A friend with a story: a coloured ring while there is something new. */
 @Composable
 fun FriendStoryBubble(p: StoryPerson, onOpen: () -> Unit) {
-    Column(Modifier.width(64.dp).clip(RoundedCornerShape(12.dp)).clickable(onClick = onOpen), horizontalAlignment = Alignment.CenterHorizontally) {
+    // No clip on the column: a rounded clip cut the first letter of a long name.
+    Column(Modifier.width(68.dp).clickable(onClick = onOpen), horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             Modifier.size(58.dp).clip(CircleShape)
                 .background(if (p.unseen) StoryRing else SolidColor(MaterialTheme.colorScheme.outlineVariant))
@@ -200,7 +201,11 @@ fun FriendStoryBubble(p: StoryPerson, onOpen: () -> Unit) {
             contentAlignment = Alignment.Center,
         ) { AnimalAvatar(p.animal, p.name, 52.dp) }
         Spacer(Modifier.height(4.dp))
-        Text(p.name, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(
+            p.name, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onBackground, maxLines = 1,
+            overflow = TextOverflow.Ellipsis, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp),
+        )
     }
 }
 
