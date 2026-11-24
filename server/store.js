@@ -4212,15 +4212,27 @@ function retryPg() {
   setTimeout(async () => {
     if (!pgUnreachable || !pgPool) return;
     try {
+      // A cheap probe first. Reconnecting reads the version stamp (which
+      // de-TOASTs the whole ~12MB document) and then pushes the whole store
+      // and every friend chat; against a database whose disk I/O budget is
+      // spent, that times out half-way, burns more of the budget, and is
+      // retried a few minutes later - so it never recovers (November 2026).
+      // Only attempt it once a trivial query answers quickly.
+      const t0 = Date.now();
+      await Promise.race([
+        pgPool.query('SELECT 1'),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('database still slow (probe over 3s)')), 3000)),
+      ]);
+      if (Date.now() - t0 > 3000) throw new Error('database still slow (probe over 3s)');
       await connectPg(false);
       backendStatus.persistBlocked = null;
       lastCensus = census(data);
       console.log('[store] the database is back - both copies are in step again.');
     } catch (err) {
       backendStatus.error = String(err.message || err);
-      // Up to 5 minutes: the app serves the volume copy meanwhile, and a
-      // struggling database recovers faster without a reconnect every minute.
-      pgRetryDelay = Math.min(pgRetryDelay * 2, 5 * 60 * 1000);
+      // Up to 15 minutes: the app serves the volume copy meanwhile, and a
+      // struggling database recovers faster left alone.
+      pgRetryDelay = Math.min(pgRetryDelay * 2, 15 * 60 * 1000);
       retryPg();
     }
   }, pgRetryDelay).unref();
