@@ -2559,12 +2559,13 @@ function linkAccountProfile(usernameLower, socketId) {
   const profile = profiles.get(socketId);
   const currentClientId = profile ? profile.clientId : null;
   let linked = store.getAccountClientId(usernameLower);
-  // Like any big app, an account has its own profile: a guest's friends,
-  // history, streak, stamps and avatar never move into it. A new account (or
-  // one that never had a profile) starts fresh.
+  // A guest who signs up keeps the friends they made: the account adopts this
+  // device's profile unless another account already owns it. Otherwise (no
+  // profile, or one that belongs to someone else) the account starts fresh.
   if (!linked) {
-    linked = store.setAccountClientId(usernameLower, 'a_' + crypto.randomBytes(16).toString('hex'));
-    if (linked && currentClientId) store.moveReferralClaim(currentClientId, linked);
+    const adopt = currentClientId && !store.findUsernameByClientId(currentClientId);
+    linked = store.setAccountClientId(usernameLower, adopt ? currentClientId : 'a_' + crypto.randomBytes(16).toString('hex'));
+    if (linked && currentClientId && linked !== currentClientId) store.moveReferralClaim(currentClientId, linked);
   }
   // The account's settings travel with every sign-in, on any device.
   const settings = withoutLockedFaces(linked, store.getAccountSettings(usernameLower));

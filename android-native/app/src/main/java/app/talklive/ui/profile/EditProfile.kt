@@ -108,7 +108,7 @@ private fun EditProfileContent(
 
     val heldFace = animal
     val heldCover = effectiveCover(myCover, !premium.ended)
-    val heldNick = account?.nickname.orEmpty()
+    val heldNick = account?.nickname ?: vm.guestName()
     val tier = progress?.tier ?: "none"
 
     var tab by rememberSaveable { mutableStateOf(initialTab) }
@@ -194,6 +194,10 @@ private fun EditProfileContent(
                 }
                 EditTab.Name -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                     if (account == null) {
+                        Text(stringResource(R.string.display_name), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
+                        Spacer(Modifier.height(8.dp))
+                        TalkTextField(nick, { nick = it.take(20); error = null }, stringResource(R.string.display_name), imeAction = ImeAction.Done)
+                        Spacer(Modifier.height(20.dp))
                         Text(stringResource(R.string.edit_name_signin), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.height(12.dp))
                         PrimaryButton(stringResource(R.string.sign_in_or_create), onClick = { onClose(); onSignIn() })
@@ -240,7 +244,7 @@ private fun EditProfileContent(
                         val faceChanged = face != null && face != heldFace
                         val coverChanged = coverSel != null && coverSel != heldCover
                         val newNick = nick.trim()
-                        val nickChanged = account != null && newNick.isNotEmpty() && newNick != heldNick
+                        val nickChanged = newNick.isNotEmpty() && newNick != heldNick
                         val idChanged = account != null && idOk && handle != friendId
                         val lookFace = premium.lookFace
                         val faceUnlocked = premium.active || (premium.look && (lookFace == null || lookFace.removePrefix("a:") == face))
@@ -252,10 +256,11 @@ private fun EditProfileContent(
                             !faceChanged && !coverChanged && !nickChanged && !idChanged -> onClose()
                             else -> scope.launch {
                                 saving = true
+                                if (account == null && nickChanged) vm.setGuestName(newNick)
                                 val err = vm.saveProfile(
                                     face = if (faceChanged) face else null,
                                     cover = if (coverChanged) coverSel else null,
-                                    nick = if (nickChanged) newNick else null,
+                                    nick = if (nickChanged && account != null) newNick else null,
                                     handle = if (idChanged) handle else null,
                                 )
                                 saving = false

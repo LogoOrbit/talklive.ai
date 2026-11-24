@@ -63,7 +63,7 @@ class AuthRepository(
         // Like the website: registration carries the account's display name, or
         // everyone sees a random guest name instead of the one you chose.
         socket.registerFields.add { o ->
-            val nick = _account.value?.nickname?.takeIf { it.isNotBlank() }
+            val nick = shownNickname()
             nick?.let { o.put("nickname", it) }
             sentNickname = nick
         }
@@ -82,8 +82,20 @@ class AuthRepository(
 
     /** Re-register only when the name people see would change (no loop with resume). */
     private fun syncNickname() {
-        val nick = _account.value?.nickname?.takeIf { it.isNotBlank() }
-        if (nick != sentNickname) socket.register()
+        if (shownNickname() != sentNickname) socket.register()
+    }
+
+    /** The account's display name, or the name a guest chose for themselves. */
+    private fun shownNickname(): String? =
+        _account.value?.nickname?.takeIf { it.isNotBlank() }
+            ?: prefs.getString(KEY_GUEST_NAME, null)?.takeIf { it.isNotBlank() }
+
+    /** A guest's chosen name (kept on this device, shown to people they meet). */
+    fun guestName(): String = prefs.getString(KEY_GUEST_NAME, "").orEmpty()
+
+    fun setGuestName(name: String) {
+        prefs.edit().putString(KEY_GUEST_NAME, name.trim()).apply()
+        syncNickname()
     }
 
     /** The durable session token of a signed-in account, for HTTP APIs. */
@@ -326,6 +338,7 @@ class AuthRepository(
         const val KEY_TOKEN = "session_token"
         const val KEY_USERNAME = "username"
         const val KEY_NICKNAME = "nickname"
+        const val KEY_GUEST_NAME = "guest_name"
         const val KEY_EMAIL = "email"
         const val KEY_ONBOARDED = "onboarded"
     }
