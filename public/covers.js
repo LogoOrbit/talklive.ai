@@ -607,7 +607,7 @@
   }
 
   function isValid(id) { return typeof id === 'string' && !!BY_ID[id]; }
-  function isPlus(id) { return typeof id === 'string' && id.indexOf('plus:') === 0; }
+  function isPlus(id) { return typeof id === 'string' && (id.indexOf('plus:') === 0 || !!ART_BY[id]); }
   function nameOf(id) {
     var c = BY_ID[id];
     if (!c) return '';

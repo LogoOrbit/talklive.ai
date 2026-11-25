@@ -4812,8 +4812,6 @@ function shownAvatar(p) {
 const FREE_COVERS = new Set([
   'solid:ocean', 'solid:sky', 'solid:mint', 'solid:sunset', 'solid:rose', 'solid:slate',
   'grad:dawn', 'grad:lagoon', 'grad:berry', 'grad:forest', 'grad:peach', 'grad:night',
-  // Art covers (tools/covers): the first of each collection are free.
-  'cin:misty', 'cin:pines', 'cin:tide', 'cin:peak', 'pix:voyage', 'pix:village', 'pix:hills', 'pix:cabin',
 ]);
 const PLUS_COVERS = new Set([
   'plus:aurora', 'plus:galaxy', 'plus:waves', 'plus:neon', 'plus:sakura', 'plus:fireflies',
@@ -4824,6 +4822,8 @@ const PLUS_COVERS = new Set([
   'plus:cin-prism', 'plus:cin-brutalist', 'plus:cin-skyline', 'plus:cin-rain', 'plus:cin-alley',
   'plus:cin-isles', 'plus:cin-golden', 'plus:cin-eclipse', 'plus:pix-metropolis', 'plus:pix-synth',
   'plus:pix-fireflies', 'plus:pix-planetrise', 'plus:pix-rainstreet', 'plus:pix-arcade', 'plus:pix-peaks',
+  // Animated art covers are all Plus.
+  'cin:misty', 'cin:pines', 'cin:tide', 'cin:peak', 'pix:voyage', 'pix:village', 'pix:hills', 'pix:cabin',
   'plus:pix-kingdom', 'plus:pix-oasis', 'plus:pix-temple', 'plus:pix-deepsea', 'plus:pix-volcano',
 ]);
 // What everyone else sees: a Plus cover is reported as null while Plus is off.

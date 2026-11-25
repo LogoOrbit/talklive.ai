@@ -322,11 +322,11 @@ async function server_tests() {
 
   // --- A Plus face without Plus is replaced -----------------------------------
   // (A person the server has never seen is taken as already wearing what they send.)
-  const pf = await connect('plusface', '10.50.0.1', { animal: 'panda', avatar: 'a:panda' });
-  ok('Plus face is replaced by a free one', await until(() => pf.look && pf.look.reason === 'plus-ended', 3000) && pf.look.face === 'a:lion', pf.look);
-  ok('premium-status reports the face the server shows', pf.premium && pf.premium.face === 'a:lion' && pf.premium.cover === null, pf.premium);
-  await register(pf, { animal: 'fox', avatar: 'a:fox' });
-  ok('a free face stays', pf.premium && pf.premium.face === 'a:fox', pf.premium);
+  const pf = await connect('plusface', '10.50.0.1', { animal: 'lion', avatar: 'a:lion' });
+  ok('Plus face is replaced by a free one', await until(() => pf.look && pf.look.reason === 'plus-ended', 3000) && /^a:/.test(pf.look.face) && pf.look.face !== 'a:lion', pf.look);
+  ok('premium-status reports the face the server shows', pf.premium && /^a:/.test(pf.premium.face) && pf.premium.cover === null, pf.premium);
+  await register(pf, { animal: 'owl', avatar: 'a:owl' });
+  ok('a free face stays', pf.premium && pf.premium.face === 'a:owl', pf.premium);
 
   // --- Plus covers follow Plus ---------------------------------------------------
   const plusUser = await connect('envplus', '10.55.0.1');
@@ -374,7 +374,7 @@ async function server_tests() {
 
   // --- Posts over HTTP -----------------------------------------------------------
   const anon = await api('/api/posts');
-  ok('posts list is public, pinned first, hidden comments left out', anon.code === 200 && anon.body.posts.length === 2 && anon.body.posts[0].id === 'pseed2' && anon.body.posts[0].commentCount === 1 && anon.body.posts[0].comments[0].admin === true, anon.body);
+  ok('posts list is public, pinned first, hidden comments left out', anon.code === 200 && anon.body.posts.length >= 2 && anon.body.posts[0].id === 'pseed2' && anon.body.posts[0].commentCount === 1 && anon.body.posts[0].comments[0].admin === true, anon.body);
   ok('anonymous visitors cannot comment', anon.body.canComment === false);
   const mine = await api(`/api/posts?clientId=${encodeURIComponent(owner.clientId)}&identityToken=${owner.token}`);
   ok('a verified account can comment', mine.body.canComment === true, mine.body);

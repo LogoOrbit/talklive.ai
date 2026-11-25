@@ -3127,7 +3127,7 @@
     var nameEl = box.querySelector('.ps-name');
     Array.prototype.forEach.call(nameEl.querySelectorAll('.tl-badge-chip'), function (n) { n.remove(); });
     if (cover && (p.cover || window.TalkLiveCovers)) {
-      lazyMod('covers', '/covers.js?v=58d3636e71').then(function () { window.TalkLiveCovers.apply(cover, p.cover || null); }, function () {});
+      lazyMod('covers', '/covers.js?v=369df128d0').then(function () { window.TalkLiveCovers.apply(cover, p.cover || null); }, function () {});
     }
     if (p.badges && (p.badges.top || (p.badges.earned && p.badges.earned.length))) {
       lazyMod('badges', '/badges.js?v=89e37f1a68').then(function () {

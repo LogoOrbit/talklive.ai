@@ -3851,7 +3851,7 @@ function withBadges(cb) {
 }
 function withCovers(cb) {
   if (window.TalkLiveCovers) { cb(window.TalkLiveCovers); return; }
-  loadLazyScript('covers', '/covers.js?v=58d3636e71').then(() => cb(window.TalkLiveCovers), () => {});
+  loadLazyScript('covers', '/covers.js?v=369df128d0').then(() => cb(window.TalkLiveCovers), () => {});
 }
 var myCover = null;
 var myBadges = null;
@@ -12443,7 +12443,7 @@ window.addEventListener('load', () => {
 function mountCallPosts() {
   const section = document.getElementById('tlCallPosts');
   if (!section || section.dataset.mounted) return;
-  loadLazyScript('posts', '/posts.js?v=cddb42e569').then(() => window.TalkLivePosts.mount(section, { poll: false, kind: 'post' }), () => {});
+  loadLazyScript('posts', '/posts.js?v=8cfd4963c4').then(() => window.TalkLivePosts.mount(section, { poll: false, kind: 'post' }), () => {});
 }
 
 // A reply notification: load the home feed now if it is not yet, then open
@@ -12451,7 +12451,7 @@ function mountCallPosts() {
 function openPostFromNotice(postId) {
   const section = document.getElementById('tlPosts');
   if (!section || !postId) return;
-  loadLazyScript('posts', '/posts.js?v=cddb42e569').then(() => {
+  loadLazyScript('posts', '/posts.js?v=8cfd4963c4').then(() => {
     window.TalkLivePosts.mount(section, { kind: 'post' });
     if (section.tlOpenPost) section.tlOpenPost(postId);
   }, () => {});
@@ -12462,7 +12462,7 @@ function openPostFromNotice(postId) {
 {
   const section = document.getElementById('tlPosts');
   if (section) {
-    const go = () => loadLazyScript('posts', '/posts.js?v=cddb42e569').then(() => window.TalkLivePosts.mount(section, { kind: 'post' }), () => {});
+    const go = () => loadLazyScript('posts', '/posts.js?v=8cfd4963c4').then(() => window.TalkLivePosts.mount(section, { kind: 'post' }), () => {});
     window.addEventListener('load', () => { (window.requestIdleCallback || ((f) => setTimeout(f, 300)))(go, { timeout: 2500 }); });
   }
 }
