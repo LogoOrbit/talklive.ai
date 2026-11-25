@@ -76,7 +76,8 @@ val PLUS_COVERS = listOf(
 )
 private val ALL_COVERS = (SOLID_COVERS + GRADIENT_COVERS + PLUS_COVERS).map { it.id }.toSet() + ART_COVERS.map { it.id }
 
-fun isPlusCover(id: String?): Boolean = id != null && id.startsWith("plus:")
+/** Only solid colours and gradients are free; every animated cover (scenes, cinematic, pixel art) is Plus. */
+fun isPlusCover(id: String?): Boolean = id != null && id.isNotEmpty() && !id.startsWith("solid:") && !id.startsWith("grad:")
 
 /** The cover to draw: a Plus cover is dropped while Plus is not active (spec 5); unknown ids draw the default. */
 fun effectiveCover(id: String?, plusActive: Boolean): String? =

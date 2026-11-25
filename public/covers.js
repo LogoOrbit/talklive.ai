@@ -607,7 +607,8 @@
   }
 
   function isValid(id) { return typeof id === 'string' && !!BY_ID[id]; }
-  function isPlus(id) { return typeof id === 'string' && id.indexOf('plus:') === 0; }
+  // Only solid colours and gradients are free; every animated cover is Plus.
+  function isPlus(id) { return typeof id === 'string' && id !== '' && !/^(solid|grad):/.test(id); }
   function nameOf(id) {
     var c = BY_ID[id];
     if (!c) return '';

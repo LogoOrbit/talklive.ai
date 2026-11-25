@@ -3857,10 +3857,12 @@ var myCover = null;
 var myBadges = null;
 var myBadgesHidden = false;
 var serverSendsExtras = false;
+// Only solid colours and gradients are free; every animated cover is Plus.
+function coverIsPlus(id) { return typeof id === 'string' && id !== '' && !/^(solid|grad):/.test(id); }
 // A Plus cover is only ever shown while Plus is on, whatever was stored.
 function effectiveCover(id) {
   if (typeof id !== 'string' || !id) return null;
-  if (id.indexOf('plus:') === 0 && !isPremiumUser) return null;
+  if (coverIsPlus(id) && !isPremiumUser) return null;
   return id;
 }
 // Paints a profile header (own or somebody else's) as a cover.
@@ -3928,7 +3930,7 @@ function isPlusOnlyFace(id) {
 // Plus ended (or never was): stop showing Plus things, and follow whatever the
 // server then reports.
 function dropPlusCover() {
-  if (isPremiumUser || !myCover || myCover.indexOf('plus:') !== 0) return;
+  if (isPremiumUser || !myCover || !coverIsPlus(myCover)) return;
   myCover = null;
   if (myProfileIsOpen()) renderMyProfileCard();
 }
