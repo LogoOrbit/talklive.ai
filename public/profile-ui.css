@@ -60,8 +60,8 @@
 .tlp-head-btn.is-primary { background: var(--accent); color: #fff; font-weight: 700; }
 .tlp-head-btn:disabled { opacity: .45; cursor: default; }
 .tlp-edit .tlp-preview { flex: 0 0 auto; margin-bottom: 8px; padding-bottom: 12px; }
-.tlp-edit .mp-cover { height: 64px; }
-.tlp-edit .mp-face { margin-top: -38px; }
+.tlp-edit .mp-cover { height: auto; aspect-ratio: 7 / 2; max-height: 170px; min-height: 96px; }
+.tlp-edit .mp-face { margin-top: -38px; position: relative; }
 .tlp-edit .mp-face .my-profile-face { width: 76px; height: 76px; }
 .tlp-edit .my-profile-name { font-size: 19px; margin-top: 6px; }
 .tlp-lock-note { flex: 0 0 auto; margin: 0 0 8px; padding: 8px 12px; border-radius: 12px; font-size: 13px; text-align: center; background: color-mix(in srgb, #f5c451 16%, transparent); }

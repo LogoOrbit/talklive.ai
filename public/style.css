@@ -6530,7 +6530,7 @@ html.perf-lite .tl-hero-clouds, html.perf-lite .tl-hero-range { animation: none;
 
 /* My Profile: cover, Change Avatar, and the sections for everything about you. */
 .my-profile .my-profile-card { position: relative; overflow: hidden; padding-top: 0; }
-.mp-cover { align-self: stretch; height: 104px; margin: 0 -16px; }
+.mp-cover { align-self: stretch; height: auto; aspect-ratio: 5 / 2; max-height: 230px; min-height: 104px; margin: 0 -16px; }
 .mp-face { cursor: default; margin-top: -48px; border-radius: 50%; box-shadow: 0 0 0 4px var(--bg-2), 0 8px 24px rgba(0, 0, 0, 0.3); background: var(--bg-2); }
 .mp-badge:empty { display: none; }
 .mp-badge .tl-badge-chip { margin: 6px 0 0; font-size: 13px; }

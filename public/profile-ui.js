@@ -467,8 +467,7 @@
     if (tb) { setTab(tb.dataset.tab); return; }
     var cv = e.target.closest('[data-cover]');
     if (cv && editSheet.contains(cv)) {
-      // A Plus scene without Plus opens the Plus popup and is never applied.
-      if (window.TalkLiveCovers && window.TalkLiveCovers.isPlus(cv.dataset.cover) && !isPremiumUser) { askPlus(); return; }
+      // Anyone can preview any cover here; Save is what asks for Plus.
       draft.cover = cv.dataset.cover;
       renderCoverPanel();
       refreshEdit();
