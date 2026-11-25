@@ -40,7 +40,7 @@
   var cssReady = new Promise(function (resolve) {
     var link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = '/profile-ui.css?v=7743deeca8';
+    link.href = '/profile-ui.css?v=7a607a3958';
     link.onload = resolve;
     link.onerror = resolve;
     setTimeout(resolve, 3000);

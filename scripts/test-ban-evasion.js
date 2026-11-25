@@ -12,6 +12,9 @@
  */
 const { spawn } = require('child_process');
 const crypto = require('crypto');
+const ID_SECRET = crypto.randomBytes(32).toString('hex');
+// Identity token for a profile id (a guest who signs up keeps its profile and gets no new token).
+const signId = (id) => crypto.createHmac('sha256', ID_SECRET).update(id).digest('hex');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -78,7 +81,7 @@ async function signup(sock, details) {
 
 (async () => {
   const srv = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
-    env: { ...process.env, PORT: String(PORT), DATA_DIR, NODE_ENV: 'development', OWNER_SETUP_TOKEN: 'test-setup-token', DATABASE_URL: '' },
+    env: { ...process.env, PORT: String(PORT), DATA_DIR, NODE_ENV: 'development', OWNER_SETUP_TOKEN: 'test-setup-token', DATABASE_URL: '', IDENTITY_SECRET: ID_SECRET },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   srv.stdout.on('data', (d) => { logs += String(d); });
@@ -159,10 +162,11 @@ async function signup(sock, details) {
 
     // --- accounts ---------------------------------------------------------------
     const home = browser({ ip: '198.51.100.40', cookie: token() });
-    await tryRegister(home);
+    const homeReg = await tryRegister(home);
     const made = await signup(home, { username: 'banneduser', password: 'a-long-pass-1', email: 'banned@example.com' });
     ok('account created', made && made.ok, JSON.stringify(made));
-    const linked = made.profileClientId;
+    // A guest who signs up keeps this device's profile, so the reply may carry no new id.
+    const linked = made.profileClientId || homeReg.clientId;
     ok('the account has its own linked profile', typeof linked === 'string' && linked.length > 8, String(linked));
     const b4 = await api('ban', { clientId: linked, minutes: 60, reason: 'test', alsoDevice: false });
     ok('banning the linked profile records the account', b4.ban.account === 'banneduser', JSON.stringify(b4.ban));
@@ -183,14 +187,14 @@ async function signup(sock, details) {
 
     // Ban by account name only.
     const home2 = browser({ ip: '198.51.100.41', cookie: token() });
-    await tryRegister(home2);
+    const home2Reg = await tryRegister(home2);
     const made2 = await signup(home2, { username: 'otheruser', password: 'a-long-pass-2', email: 'other@example.com' });
     const b5 = await api('ban', { account: 'otheruser', minutes: 60, reason: 'test', alsoDevice: false });
-    ok('banning an account bans its linked profile', b5.ban.clientId === made2.profileClientId && b5.ban.account === 'otheruser', JSON.stringify(b5.ban));
+    ok('banning an account bans its linked profile', b5.ban.clientId === (made2.profileClientId || home2Reg.clientId) && b5.ban.account === 'otheruser', JSON.stringify(b5.ban));
     const viaProfile = browser({ ip: '203.0.113.210' });
     ok('the linked profile cannot register', (await (async () => {
       const r = new Promise((res) => { viaProfile.once('banned', () => res('banned')); viaProfile.once('register-result', () => res('ok')); setTimeout(() => res('timeout'), 2500); });
-      viaProfile.emit('register', { clientId: made2.profileClientId, identityToken: made2.identityToken, nickname: 'x' });
+      viaProfile.emit('register', { clientId: made2.profileClientId || home2Reg.clientId, identityToken: made2.identityToken || signId(made2.profileClientId || home2Reg.clientId), nickname: 'x' });
       return r;
     })()) === 'banned');
 

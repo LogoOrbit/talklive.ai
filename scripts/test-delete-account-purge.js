@@ -93,7 +93,8 @@ async function person(name, email) {
   await ask(sock, 'register', { clientId: guest, nickname: name }, 'register-result');
   const made = await signup(sock, { username: name, password: 'purge-pass-1', nickname: name, email });
   if (!made.ok) throw new Error('signup failed: ' + JSON.stringify(made));
-  const clientId = made.profileClientId;
+  // A guest who signs up keeps this device's profile, so the reply may carry no new id.
+  const clientId = made.profileClientId || guest;
   sock.emit('register', { clientId, identityToken: made.identityToken, nickname: name });
   await once(sock, 'register-result');
   return { sock, clientId, name };

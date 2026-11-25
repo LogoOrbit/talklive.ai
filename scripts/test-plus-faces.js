@@ -113,8 +113,9 @@ const locked = (p) => /lion|raccoon|giraffe|dragon|unicorn|tiger|ninja|detective
     }
     const made = await new Promise((res) => { g.once('signup-result', res); g.emit('signup', { dob: '1990-01-01', username: 'facetest', password: 'face-pass-1', email: 'face@example.com', code }); });
     ok('account created', made.ok === true && made.sessionToken, made);
-    const accountCid = made.profileClientId;
-    const accountTok = made.identityToken;
+    // A guest who signs up keeps this device's profile (no new id in the reply).
+    const accountCid = made.profileClientId || 'c_pf_acct_g1';
+    const accountTok = made.identityToken || sign('c_pf_acct_g1');
     ok('account has its own profile id', typeof accountCid === 'string' && accountCid.length >= 8, made);
 
     // A signed-in socket registering with a Plus face (the account saves its face).

@@ -548,7 +548,8 @@ async function purgeSuite(srv) {
   const once = (ev) => new Promise((res, rej) => { const t = setTimeout(() => rej(new Error('timeout ' + ev)), 6000); sock.once(ev, (d) => { clearTimeout(t); res(d); }); });
   const ask2 = (ev, payload, resultEv) => { const p = once(resultEv); sock.emit(ev, payload); return p; };
   if (!sock.connected) await once('connect');
-  await ask2('register', { clientId: 'c_vfk_guest_' + crypto.randomBytes(4).toString('hex'), nickname: 'vfpurge' }, 'register-result');
+  const guestId = 'c_vfk_guest_' + crypto.randomBytes(4).toString('hex');
+  await ask2('register', { clientId: guestId, nickname: 'vfpurge' }, 'register-result');
   const details = { username: 'vfpurge', password: 'purge-pass-1', nickname: 'vfpurge', email: 'vfpurge@example.com', dob: '1990-01-01' };
   const sent = await ask2('signup-send-code', details, 'signup-code-result');
   if (!sent.ok) return ok('account deletion: signup works', false, sent);
@@ -559,12 +560,14 @@ async function purgeSuite(srv) {
   }
   const made = await ask2('signup', { ...details, code }, 'signup-result');
   if (!made.ok) return ok('account deletion: signup works', false, made);
-  sock.emit('register', { clientId: made.profileClientId, identityToken: made.identityToken, nickname: 'vfpurge', gender: 'female' });
+  // A guest who signs up keeps this device's profile, so the reply may carry no new id.
+  const accountCid = made.profileClientId || guestId;
+  sock.emit('register', { clientId: accountCid, identityToken: made.identityToken, nickname: 'vfpurge', gender: 'female' });
   await once('register-result');
   sock.emit('voice-check-set', { on: false });
   await wait(1200);
   const docFile = path.join(srv.dataDir, 'owner-data.json');
-  const has = () => { try { return !!(JSON.parse(fs.readFileSync(docFile, 'utf8')).voice || {})[made.profileClientId]; } catch (_) { return null; } };
+  const has = () => { try { return !!(JSON.parse(fs.readFileSync(docFile, 'utf8')).voice || {})[accountCid]; } catch (_) { return null; } };
   ok('account deletion: the voice record is saved before deletion', has() === true, has());
   const gone = once('delete-account-result');
   sock.emit('delete-account', { currentPassword: 'purge-pass-1' });
